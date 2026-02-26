@@ -10,7 +10,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
   "body": {
     "number": "№123-Д-2024",
     "cipher": "ДГ-2024-001",
-    "name": "Договор на поставку оборудования",
+    "name": "Договор на поставку",
     "description": "Описание договора",
     "partner_id": "UUID_ПАРТНЁРА",
     "project_id": null,
