@@ -1,0 +1,41 @@
+.usersMenu {
+  position: absolute;
+  z-index: 1000;
+  width: 280px;
+  max-width: 280px;
+}
+
+.usersList {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  // Стили для скроллбара
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 0 8px 8px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d9d9d9;
+    border-radius: 3px;
+
+    &:hover {
+      background: #bfbfbf;
+    }
+  }
+}
+
+.emptyState {
+  padding: 16px 12px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 13px;
+}

@@ -1,0 +1,32 @@
+.container {
+  width: 100%;
+}
+
+.iconMargin {
+  margin-right: 8px;
+}
+
+.competenceTag {
+  font-weight: bold;
+}
+
+.competenceOptionContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.competenceOptionTag {
+  margin-right: 8px;
+  min-width: 60px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.innInputContainer {
+  width: 100%;
+}
+
+.innInput {
+  width: 100%;
+}

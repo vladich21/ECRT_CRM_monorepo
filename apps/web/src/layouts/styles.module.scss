@@ -1,0 +1,44 @@
+.layout {
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  background: #001529;
+  padding: 0 24px;
+  gap: 24px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+
+  img {
+    height: 40px;
+    width: auto;
+  }
+}
+
+.menu {
+  flex: 1;
+  background: transparent;
+  border-bottom: none;
+
+  // Убираем правый отступ у последнего элемента меню
+  :global(.ant-menu-overflow-item:last-child) {
+    margin-right: 0;
+  }
+}
+
+.content {
+  margin: 16px;
+  padding: 24px;
+  overflow-x: auto;
+  min-height: calc(100vh - 64px - 32px); // 64px header + 32px margins
+}
+
+.profileSection {
+  flex-shrink: 0;
+}

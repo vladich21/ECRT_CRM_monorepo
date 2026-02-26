@@ -1,0 +1,48 @@
+.profile-btn {
+    color: #ffffff;
+    margin-top: auto;
+    height: 65px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    cursor: pointer;
+    justify-content: flex-start;
+    margin-left: 25px;
+    transition: all 0.3s ease-in;
+}
+
+.avatar {
+    background-color: #f59a55ff;
+    color: #f56a00;
+    flex-shrink: 0;
+    transition: all 0.3s ease-in;
+
+    &.collapsed {
+        margin-left: 0;
+        margin-right: 6px;
+        transform: scale(0.8);
+    }
+
+    &.expanded {
+        margin-right: 12px;
+        transform: scale(1);
+    }
+}
+
+.name {
+    transition: all 0.3s ease-out;
+    width: auto;
+    overflow: hidden;
+    white-space: nowrap;
+
+    &.collapsed {
+        opacity: 0;
+        max-width: 0;
+    }
+
+    &.expanded {
+        opacity: 1;
+        max-width: 200px;
+    }
+}

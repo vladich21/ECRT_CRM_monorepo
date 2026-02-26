@@ -1,0 +1,22 @@
+import { Partner } from '../../types/partner';
+
+export const partnerUpdateFormMapper = (partnerData: Partner) => {
+  const values = {
+    name: partnerData.name || '',
+    short_name: partnerData.short_name || '',
+    comment: partnerData.comment || '',
+    status_id: partnerData.status_id || null,
+    partner_economic_category_id: partnerData.partner_economic_category_id || null,
+    type_ids: partnerData.type_ids || [],
+    competence_ids: partnerData.competence_ids || [],
+    legal_address: partnerData.legal_address || '',
+    actual_address: partnerData.actual_address || '',
+    phone: partnerData.phone || '',
+    email: partnerData.email || '',
+    website: partnerData.website || '',
+    kpp: partnerData.kpp || '',
+    inn: partnerData.inn || '',
+    ogrn: partnerData.ogrn || '',
+  };
+  return values;
+};

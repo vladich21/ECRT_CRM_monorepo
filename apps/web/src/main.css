@@ -1,0 +1,58 @@
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+}
+
+ol,
+ul {
+  margin: 0px;
+}
+
+.ant-input-disabled {
+  background-color: #f8f8f8 !important;
+  color: black !important;
+  cursor: text !important;
+}
+
+.ant-select-selector {
+  background-color: #f8f8f8 !important;
+  color: black !important;
+  cursor: text !important;
+}
+
+.ant-select-disabled .ant-select-selector {
+  background-color: #f8f8f8 !important;
+  color: rgb(155, 155, 155) !important;
+  cursor: not-allowed !important;
+}
+
+/* Убирает hover-эффект у кнопки поиска */
+.ant-input-search-button {
+  visibility: hidden;
+}
+
+.ant-layout-sider-children {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.user-mention {
+  cursor: pointer;
+  color: #1890ff;
+}
+
+.ant-tabs-content {
+  height: 100%;
+}
+
+.wx-willow-theme {
+  height: 100%;
+}
+
+.ant-collapse-header,
+.ant-collapse-content-box {
+  padding: 0 !important;
+}

@@ -1,0 +1,18 @@
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.currentVersionContainer {
+  margin-top: 4px;
+}
+
+.currentVersionLabel {
+  margin-right: 8px;
+}
+
+.currentVersionDate {
+  margin-left: 16px;
+}

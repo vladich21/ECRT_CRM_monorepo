@@ -1,0 +1,354 @@
+.container {
+  width: 100%;
+
+  &.focused {
+    .editor {
+      border-color: #1677ff;
+    }
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}
+
+.actionBanner {
+  background: #fafafa;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border: 1px solid #e8e8e8;
+}
+
+.actionContent {
+  flex: 1;
+}
+
+.actionHeader {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+  color: #262626;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.actionIcon {
+  font-size: 14px;
+  color: #1677ff;
+}
+
+.existingFiles {
+  margin-top: 8px;
+}
+
+.existingFilesLabel {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 6px;
+}
+
+.existingFilesList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.existingFile {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  font-size: 12px;
+}
+
+.existingFileInfo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.existingFileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #595959;
+}
+
+.existingFileSize {
+  font-size: 11px;
+  color: #8c8c8c;
+  flex-shrink: 0;
+}
+
+.deleteButton {
+  color: #ff4d4f;
+  padding: 0;
+  height: 20px;
+  width: 20px;
+  min-width: 20px;
+  margin-left: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.replyQuote {
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 6px;
+  border-left: 2px solid #1677ff;
+  font-size: 12px;
+  color: #595959;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.closeButton {
+  color: #8c8c8c;
+  flex-shrink: 0;
+  margin-left: 12px;
+  border-radius: 6px;
+}
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.editor {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.2s ease;
+  overflow-y: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+
+  &:focus {
+    border-color: #1677ff;
+  }
+
+  &[contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #bfbfbf;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.actionButton {
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #1677ff;
+  }
+}
+
+.submitButton {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.attachedFiles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.fileTag {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #e6f4ff;
+    border-color: #69b1ff;
+  }
+}
+
+.fileTagIcon {
+  margin-right: 4px;
+}
+
+.fileTagSize {
+  margin-left: 4px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.menu {
+  position: absolute;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+}
+
+.menuItem {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #f5f7fa;
+  }
+}
+
+.actionInfo {
+  background: #fafafa;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border: 1px solid #e8e8e8;
+}
+
+.actionBody {
+  flex: 1;
+}
+
+.actionTitle {
+  font-size: 13px;
+  color: #262626;
+  font-weight: 500;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionTitleIcon {
+  font-size: 14px;
+  color: #1677ff;
+}
+
+.editFilesSection {
+  margin-top: 8px;
+}
+
+.editFilesLabel {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 6px;
+}
+
+.editFilesList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editFileItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  font-size: 12px;
+}
+
+.editFileContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.editFileName {
+  color: #595959;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editFileSize {
+  font-size: 11px;
+  color: #8c8c8c;
+  flex-shrink: 0;
+}
+
+.editFileDeleteBtn {
+  color: #ff4d4f;
+  padding: 0;
+  height: 20px;
+  width: 20px;
+  min-width: 20px;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.replyQuoteBox {
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 6px;
+  border-left: 2px solid #1677ff;
+  font-size: 12px;
+  color: #595959;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actionCloseBtn {
+  color: #8c8c8c;
+  flex-shrink: 0;
+  margin-left: 12px;
+  border-radius: 6px;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.fileTagInline {
+  margin-bottom: 8px;
+  padding: 4px 8px;
+}
+
+.fileTagIconInline {
+  margin-right: 4px;
+}
+
+.fileTagSizeInline {
+  margin-left: 4px;
+  font-size: 12px;
+  opacity: 0.7;
+}
