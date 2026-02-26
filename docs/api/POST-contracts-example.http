@@ -1,0 +1,36 @@
+### Создание договора (POST /api/contracts)
+### Требуется авторизация (Bearer token в заголовке)
+### Тело запроса оборачивается в { body: ... } при отправке через apiClient
+
+POST http://localhost:9001/api/contracts
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "body": {
+    "number": "№123-Д-2024",
+    "cipher": "ДГ-2024-001",
+    "name": "Договор на поставку оборудования",
+    "description": "Описание договора",
+    "partner_id": "UUID_ПАРТНЁРА",
+    "project_id": null,
+    "responsible_id": "UUID_ОТВЕТСТВЕННОГО",
+    "category_id": "UUID_КАТЕГОРИИ",
+    "contract_type_id": null,
+    "amount_excl_vat": 100000,
+    "vat_rate": 20,
+    "amount_vat": 20000,
+    "amount_incl_vat": 120000,
+    "start_date": "2024-01-01",
+    "end_date": "2024-12-31",
+    "date_signed": "2024-01-01",
+    "state_id": "UUID_СТАТУСА",
+    "is_active": true
+  }
+}
+
+### Пример с curl:
+### curl -X POST http://localhost:9001/api/contracts \
+###   -H "Content-Type: application/json" \
+###   -H "Authorization: Bearer YOUR_TOKEN" \
+###   -d '{"body":{"number":"№123-Д","name":"Тест","partner_id":"...","responsible_id":"...","category_id":"...","state_id":"...","date_signed":"2024-01-01","start_date":"2024-01-01","amount_excl_vat":1000,"vat_rate":20}}'
