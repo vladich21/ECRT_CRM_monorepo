@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './modules/auth/auth.module';
+import { JwtGuard } from './modules/auth/jwt.guard';
 import { DatabaseModule } from './database/database.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppController } from './common/controllers/app.controller';
@@ -32,6 +34,7 @@ import { CommentsModule } from './modules/comments/comments.module';
       isGlobal: true,
       envFilePath: ['.env.development', '.env'],
     }),
+    AuthModule,
     DatabaseModule,
     UsersModule,
     DepartmentsModule,
@@ -60,6 +63,10 @@ import { CommentsModule } from './modules/comments/comments.module';
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtGuard,
     },
   ],
 })

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Avatar, Button, Dropdown, Menu } from 'antd';
 import { UserOutlined, DownloadOutlined, MoreOutlined, MessageOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useFilePreview, FilePreviewModal } from '../filePreview/FilePreviewModal';
 import { Comment } from '../../types/comments';
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
@@ -76,6 +77,7 @@ const CommentComponent: React.FC<CommentProps> = ({
     },
   });
 
+  const filePreview = useFilePreview();
   const isEdited = comment.created_at !== comment.updated_at;
   const commentAuthorId = comment.created_by || comment.user_id;
   const isCurrentUser = !!currentUserId && !!commentAuthorId && String(currentUserId) === String(commentAuthorId);
@@ -174,7 +176,7 @@ const CommentComponent: React.FC<CommentProps> = ({
                   <div
                     key={file.id || file.name}
                     className={styles.file}
-                    onClick={() => file.url && window.open(file.url, '_blank')}
+                    onClick={() => file.url && file.name && filePreview.open(file.url, file.name)}
                   >
                     <DownloadOutlined className={styles.fileIcon} />
                     <div className={styles.fileInfo}>
@@ -187,6 +189,7 @@ const CommentComponent: React.FC<CommentProps> = ({
                 ))}
               </div>
             )}
+            {filePreview.modal}
           </div>
         </div>
       </div>

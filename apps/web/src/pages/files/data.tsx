@@ -1,5 +1,5 @@
-import Link from 'antd/es/typography/Link';
 import { getNameById } from '../../helpers/getNameById';
+import { FilePreviewLink } from '../../components/filePreview/FilePreviewModal';
 
 export const getColumnsData = (users: { id: string; name: string }[]) => [
   {
@@ -7,9 +7,7 @@ export const getColumnsData = (users: { id: string; name: string }[]) => [
     dataIndex: 'name',
     key: 'file',
     render: (fileName: string, record: any) => (
-      <Link href={record.url} target='_blank' rel='noopener noreferrer'>
-        {fileName || 'Без названия'}
-      </Link>
+      <FilePreviewLink url={record.url} filename={fileName || 'Без названия'} />
     ),
   },
   {

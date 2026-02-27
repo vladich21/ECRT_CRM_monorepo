@@ -137,6 +137,12 @@ export class UsersService {
     return row ? { id: String(row.id) } : null;
   }
 
+  async findOneByLogin(login: string): Promise<UserResponseDto | null> {
+    const preview = await this.findByLogin(login);
+    if (!preview) return null;
+    return this.findOne(preview.id);
+  }
+
   async findOne(id: string): Promise<UserResponseDto | null> {
     this.logger.debug(`Получение пользователя по id: ${id}`);
     const rows = await this.db.db

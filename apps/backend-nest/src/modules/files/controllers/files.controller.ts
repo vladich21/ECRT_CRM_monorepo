@@ -16,6 +16,7 @@ import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from '../services/files.service';
 import * as path from 'path';
 import { ALLOWED_MIME_TYPES } from '../constants/file-formats';
+import { Public } from '../../auth/public.decorator';
 
 @Controller()
 export class FilesController {
@@ -47,14 +48,15 @@ export class FilesController {
   )
   async upload(
     @UploadedFiles() files: Express.Multer.File[],
-    @Req() req: Request,
+    @Req() req: Request & { user?: { user_id?: string } },
   ) {
     const entityType = req.body?.entityType as string | undefined;
     const entityId = req.body?.entityId as string | undefined;
     if (!entityType || !entityId) {
       throw new BadRequestException('entityType и entityId обязательны');
     }
-    const result = await this.service.upload(files ?? [], entityType, entityId);
+    const uploadedById = req.user?.user_id;
+    const result = await this.service.upload(files ?? [], entityType, entityId, uploadedById);
     return result;
   }
 
@@ -89,6 +91,7 @@ export class FilesController {
     return [row];
   }
 
+  @Public()
   @Get(':entityType/:entityId/:filename')
   async serveFile(
     @Param('entityType') entityType: string,

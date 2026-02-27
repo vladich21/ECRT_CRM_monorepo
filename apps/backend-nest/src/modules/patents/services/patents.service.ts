@@ -180,6 +180,16 @@ export class PatentsService {
     return this.findOne(patentId);
   }
 
+  async remove(id: string) {
+    const row = await this.findOne(id);
+    if (!row) return null;
+    await this.db.db.delete(relPatentsApplicationAreas).where(eq(relPatentsApplicationAreas.patentId, id));
+    await this.db.db.delete(relPatentAuthors).where(eq(relPatentAuthors.patentId, id));
+    await this.db.db.delete(patentGrants).where(eq(patentGrants.patentId, id));
+    await this.db.db.delete(patents).where(eq(patents.id, id));
+    return row;
+  }
+
   async update(id: string, data: Record<string, unknown>) {
     this.logger.debug(`Обновление патента id: ${id}`);
     const current = await this.findOne(id);

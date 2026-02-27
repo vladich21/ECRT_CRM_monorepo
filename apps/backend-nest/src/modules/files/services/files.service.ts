@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
@@ -72,7 +72,7 @@ export class FilesService {
       .select()
       .from(files)
       .where(and(eq(files.entityType, entityType), eq(files.tableId, entityId)))
-      .orderBy(asc(files.name));
+      .orderBy(desc(files.uploadedAt));
     return rows.map((r) => this.toResponse(r, entityType, entityId));
   }
 
