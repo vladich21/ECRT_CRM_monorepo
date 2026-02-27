@@ -14,6 +14,12 @@ export const userApi = {
     return response.data[0];
   },
 
+  getUserByLogin: async (login: string): Promise<{ id: string } | null> => {
+    if (!login?.trim()) return null;
+    const response = await apiClient.get(`/users/by-login/${encodeURIComponent(login.trim())}`);
+    return response.data?.[0] ?? null;
+  },
+
   addUser: async (data: User): Promise<User> => {
     const response = await apiClient.post('/users', data);
     return response.data[0];

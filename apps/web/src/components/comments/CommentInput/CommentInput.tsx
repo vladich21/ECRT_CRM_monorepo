@@ -52,7 +52,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { attachedFiles, fileInputRef, handleFileChange, removeFile, clearFiles, formatFileSize, getFiles } =
+  const { attachedFiles, fileInputRef, handleFileChange, removeFile, clearFiles, formatFileSize, getFiles, acceptFileTypes } =
     useFiles(onAttachFile);
 
   const closeUsersMenu = useCallback(() => {
@@ -376,6 +376,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
           onChange={handleFileChange}
           disabled={disabled}
           multiple
+          accept={acceptFileTypes}
         />
       </div>
 

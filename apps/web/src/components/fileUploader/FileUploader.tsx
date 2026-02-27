@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, Button, message, List, Space, Typography } from 'antd';
 import { InboxOutlined, DeleteOutlined, PaperClipOutlined, ClearOutlined } from '@ant-design/icons';
+import { ACCEPT_FILE_TYPES } from '../../constants/fileFormats';
 
 const { Dragger } = Upload;
 const { Text } = Typography;
@@ -17,7 +18,7 @@ export interface FileWithId {
   file: File;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm, onError, onSuccess }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
   const [files, setFiles] = useState<FileWithId[]>([]);
 
   const handleDragDrop = useCallback(
@@ -31,12 +32,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm, onError, 
         return;
       }
 
-      const newFile: FileWithId = {
-        id: `${uploadFile.name}-${uploadFile.size}-${Date.now()}`,
-        file: uploadFile,
-      };
-
-      setFiles(prev => [...prev, newFile]);
+      setFiles(prev => [...prev, { id: `${uploadFile.name}-${Date.now()}`, file: uploadFile }]);
       onSuccess?.();
     },
     [files],
@@ -74,7 +70,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm, onError, 
   return (
     <Space direction='vertical' style={{ width: '100%' }} size='middle'>
       {/* Drag and Drop область */}
-      <Dragger multiple showUploadList={false} customRequest={handleDragDrop} accept='*/*' disabled={isLoading}>
+      <Dragger multiple showUploadList={false} customRequest={handleDragDrop} accept={ACCEPT_FILE_TYPES} disabled={isLoading}>
         <p className='ant-upload-drag-icon'>
           <InboxOutlined />
         </p>

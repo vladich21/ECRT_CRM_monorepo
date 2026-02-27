@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../../database/database.service';
 import { comments, files, users } from '../../../database/schema';
 
@@ -7,7 +8,10 @@ import { comments, files, users } from '../../../database/schema';
 export class CommentsService {
   private readonly logger = new Logger(CommentsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly config: ConfigService,
+  ) {}
 
   async findAll(entityType?: string, entityId?: string) {
     this.logger.debug(`Получение комментариев entity_type=${entityType} entity_id=${entityId}`);
@@ -59,11 +63,15 @@ export class CommentsService {
       .select()
       .from(files)
       .where(and(eq(files.entityType, 'comment'), eq(files.tableId, id)));
+    const fileBaseUrl =
+      this.config.get<string>('FILE_UPLOAD_URL') ||
+      this.config.get<string>('API_URL') ||
+      'http://localhost:9001/api';
     const filesList = fileRows.map((f) => ({
       id: String(f.id),
       name: f.name ?? '',
-      url: `${process.env.FILE_SERVICE_URL || ''}/comment/${f.tableId}/${f.name}`,
-      size: f.size ?? '',
+      url: `${fileBaseUrl.replace(/\/$/, '')}/comment/${f.tableId}/${encodeURIComponent(f.name ?? '')}`,
+      size: f.size != null ? String(f.size) : '',
     }));
     return this.toResponse(row.comment, row, new Map([[id, fileRows]]), filesList);
   }
@@ -93,6 +101,18 @@ export class CommentsService {
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
     if (data.message !== undefined) updateObj.message = data.message;
     if (data.html !== undefined) updateObj.html = data.html;
+    const filesToDelete = data.files_to_delete as string[] | undefined;
+    if (Array.isArray(filesToDelete) && filesToDelete.length > 0) {
+      await this.db.db
+        .delete(files)
+        .where(
+          and(
+            eq(files.entityType, 'comment'),
+            eq(files.tableId, id as `${string}-${string}-${string}-${string}-${string}`),
+            inArray(files.id, filesToDelete as `${string}-${string}-${string}-${string}-${string}`[]),
+          ),
+        );
+    }
     await this.db.db.update(comments).set(updateObj).where(eq(comments.id, id));
     return this.findOne(id);
   }
@@ -126,12 +146,16 @@ export class CommentsService {
       userRow && userRow.createdByFio != null
         ? [userRow.createdByFio, userRow.createdByFirstName, userRow.createdByMiddleName].filter(Boolean).join(' ')
         : '';
+    const fileBaseUrl =
+      this.config.get<string>('FILE_UPLOAD_URL') ||
+      this.config.get<string>('API_URL') ||
+      'http://localhost:9001/api';
     const rawFiles = filesByCommentId?.get(String(c.id)) ?? [];
     const files = filesOverride ?? rawFiles.map((f) => ({
         id: String(f.id),
         name: f.name ?? '',
-        url: `${process.env.FILE_SERVICE_URL || ''}/comment/${f.tableId}/${f.name}`,
-        size: f.size ?? '',
+        url: `${fileBaseUrl.replace(/\/$/, '')}/comment/${f.tableId}/${encodeURIComponent(f.name ?? '')}`,
+        size: f.size != null ? String(f.size) : '',
       }));
     return {
       id: String(c.id),

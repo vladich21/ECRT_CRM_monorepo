@@ -1,5 +1,5 @@
 import { MyFile } from '../../types/files';
-import { apiClient, fileClient } from '../clients';
+import { apiClient } from '../clients';
 
 export const fileApi = {
   getFilesByEntity: async (entityType: string, entityId: string): Promise<MyFile[]> => {
@@ -7,8 +7,8 @@ export const fileApi = {
     return response.data;
   },
 
-  uploadFiles: async (formData: FormData): Promise<void> => {
-    const response = await fileClient.post(`/upload`, formData, {
+  uploadFiles: async (formData: FormData): Promise<MyFile[]> => {
+    const response = await apiClient.post(`/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

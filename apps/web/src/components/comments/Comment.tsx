@@ -77,7 +77,8 @@ const CommentComponent: React.FC<CommentProps> = ({
   });
 
   const isEdited = comment.created_at !== comment.updated_at;
-  const isCurrentUser = currentUserId === (comment.created_by || comment.user_id);
+  const commentAuthorId = comment.created_by || comment.user_id;
+  const isCurrentUser = !!currentUserId && !!commentAuthorId && String(currentUserId) === String(commentAuthorId);
   const hasParent = comment.parent_id && parentAuthorName && parentContent;
 
   const menu = (

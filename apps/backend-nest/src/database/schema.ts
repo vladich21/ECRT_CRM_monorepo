@@ -7,6 +7,8 @@ import {
   text,
   date,
   numeric,
+  integer,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
@@ -260,20 +262,30 @@ export const partnerContacts = pgTable('partner_contacts', {
   updatedBy: uuid('updated_by'),
 });
 
-export const files = pgTable('files', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  entityType: varchar('entitytype', { length: 255 }).notNull(),
-  tableId: uuid('table_id'),
-  name: varchar('name', { length: 255 }).notNull(),
-  type: varchar('type', { length: 255 }).notNull(),
-  size: varchar('size', { length: 50 }),
-  uploadedById: uuid('uploadedby_id'),
-  uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }),
-  createdBy: uuid('created_by'),
-  updatedBy: uuid('updated_by'),
-});
+export const files = pgTable(
+  'files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    entityType: varchar('entitytype', { length: 255 }).notNull(),
+    tableId: uuid('table_id'),
+    name: varchar('name', { length: 255 }).notNull(),
+    type: varchar('type', { length: 255 }).notNull(),
+    size: integer('size'),
+    uploadedById: uuid('uploadedby_id'),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+    createdBy: uuid('created_by'),
+    updatedBy: uuid('updated_by'),
+  },
+  (table) => [
+    uniqueIndex('files_entitytype').on(
+      table.entityType,
+      table.tableId,
+      table.name,
+    ),
+  ],
+);
 
 export const comments = pgTable('comments', {
   id: uuid('id').primaryKey().defaultRandom(),

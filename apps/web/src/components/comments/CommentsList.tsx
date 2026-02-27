@@ -5,6 +5,7 @@ import CommentInput from './CommentInput/CommentInput';
 import CommentComponent from './Comment';
 import { useParams } from 'react-router-dom';
 import { useComments, useCreateComment, useUpdateComment } from '../../api/comments/commentApiHooks';
+import { useCurrentSrmUserId } from '../../hooks/useCurrentSrmUserId';
 import { Loader } from '../loader/Loader';
 import { NotFound } from '../notFound/NotFound';
 import { useReferenceData } from '../../api/hooks/useReferences';
@@ -28,6 +29,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
   const { data: comments, isLoading, isError } = useComments(entityType, entityId);
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const currentSrmUserId = useCurrentSrmUserId();
   const { openModal, closeModal } = useModalStore();
 
   const [currentCommentId, setCurrentCommentId] = useState<string | null>(null);
@@ -106,6 +108,10 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
         message: data.message,
       };
 
+      if (currentSrmUserId) {
+        payload.created_by = currentSrmUserId;
+      }
+
       if (currentCommentId) {
         payload.parent_id = currentCommentId;
       }
@@ -161,7 +167,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
         },
       });
     },
-    [entityId, entityType, currentCommentId, createComment, queryClient, showNotification],
+    [entityId, entityType, currentCommentId, createComment, queryClient, showNotification, currentSrmUserId],
   );
 
   const handleEdit = useCallback(
@@ -263,7 +269,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
                 key={el.id}
                 comment={el}
                 level={el.level}
-                currentUserId={user?.id}
+                currentUserId={currentSrmUserId}
                 userName={getCommentAuthorName(el, user, referenceBooks?.users || [])}
                 onReply={handleStartReply}
                 onEdit={handleStartEdit}

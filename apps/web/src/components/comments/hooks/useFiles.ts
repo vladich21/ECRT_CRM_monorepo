@@ -1,6 +1,6 @@
-// hooks/useFiles.ts (упрощенная версия)
 import { useCallback, useRef, useState } from 'react';
 import { message } from 'antd';
+import { ACCEPT_FILE_TYPES } from '../../../constants/fileFormats';
 
 export interface AttachedFile {
   id: string;
@@ -16,6 +16,7 @@ interface UseFilesReturn {
   clearFiles: () => void;
   formatFileSize: (bytes: number) => string;
   getFiles: () => File[];
+  acceptFileTypes: string;
 }
 
 export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn => {
@@ -36,36 +37,23 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
       if (!files || files.length === 0) return;
 
       const newFiles: AttachedFile[] = [];
-
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-
-        // Проверяем, не добавлен ли уже такой файл
         const isDuplicate = attachedFiles.some(
-          attachedFile => attachedFile.file.name === file.name && attachedFile.file.size === file.size,
+          f => f.file.name === file.name && f.file.size === file.size,
         );
-
         if (!isDuplicate) {
-          newFiles.push({
-            id: `${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
-            file: file,
-          });
+          newFiles.push({ id: `${Date.now()}-${i}`, file });
         }
       }
 
       if (newFiles.length > 0) {
         setAttachedFiles(prev => [...prev, ...newFiles]);
-
-        // Вызываем колбэк для каждого нового файла
-        newFiles.forEach(newFile => {
-          onAttachFile?.(newFile.file);
-        });
-
-        message.success(`Добавлено файлов: ${newFiles.length}`);
-      } else {
+        newFiles.forEach(f => onAttachFile?.(f.file));
+        message.success(`Добавлено: ${newFiles.length}`);
+      } else if (files.length > 0) {
         message.warning('Файлы уже добавлены');
       }
-
       e.target.value = '';
     },
     [attachedFiles, onAttachFile],
@@ -91,5 +79,6 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
     clearFiles,
     formatFileSize,
     getFiles,
+    acceptFileTypes: ACCEPT_FILE_TYPES,
   };
 };

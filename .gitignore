@@ -12,6 +12,9 @@ out/
 build/
 dist/
 
+# Uploads
+uploads/
+
 # Production
 *.log
 *.pid

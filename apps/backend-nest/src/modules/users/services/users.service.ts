@@ -126,6 +126,17 @@ export class UsersService {
     return this.findOne(id);
   }
 
+  async findByLogin(login: string): Promise<{ id: string } | null> {
+    if (!login?.trim()) return null;
+    const rows = await this.db.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.login, login.trim()))
+      .limit(1);
+    const row = rows[0];
+    return row ? { id: String(row.id) } : null;
+  }
+
   async findOne(id: string): Promise<UserResponseDto | null> {
     this.logger.debug(`Получение пользователя по id: ${id}`);
     const rows = await this.db.db
