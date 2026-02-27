@@ -68,36 +68,6 @@ export class FilesController {
     return res.redirect(302, file.url);
   }
 
-  @Get('partners/:partnerId/files')
-  getPartnerFiles(@Param('partnerId') partnerId: string) {
-    return this.service.findByEntity('partner', partnerId);
-  }
-
-  @Delete('partners/:partnerId/files/:fileId')
-  async deletePartnerFile(
-    @Param('partnerId') partnerId: string,
-    @Param('fileId') fileId: string,
-  ) {
-    const row = await this.service.remove('partner', partnerId, fileId);
-    if (!row) throw new NotFoundException(`Файл ${fileId} не найден`);
-    return [row];
-  }
-
-  @Get('contracts/:contractId/files')
-  getContractFiles(@Param('contractId') contractId: string) {
-    return this.service.findByEntity('contract', contractId);
-  }
-
-  @Delete('contracts/:contractId/files/:fileId')
-  async deleteContractFile(
-    @Param('contractId') contractId: string,
-    @Param('fileId') fileId: string,
-  ) {
-    const row = await this.service.remove('contract', contractId, fileId);
-    if (!row) throw new NotFoundException(`Файл ${fileId} не найден`);
-    return [row];
-  }
-
   @Get(':entityType/:entityId/files')
   getFilesByEntity(
     @Param('entityType') entityType: string,

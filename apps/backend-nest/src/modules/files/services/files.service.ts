@@ -58,25 +58,12 @@ export class FilesService {
     size: number,
     uploadedById?: string,
   ) {
-    const row = {
-      entityType,
-      tableId,
-      name,
-      type: fileType,
-      size,
-      uploadedById: uploadedById || undefined,
-    };
     await this.db.db
       .insert(files)
-      .values(row)
+      .values({ entityType, tableId, name, type: fileType, size, uploadedById: uploadedById || undefined })
       .onConflictDoUpdate({
         target: [files.entityType, files.tableId, files.name],
-        set: {
-          type: fileType,
-          size,
-          uploadedById: uploadedById || undefined,
-          updatedAt: new Date(),
-        },
+        set: { type: fileType, size, uploadedById: uploadedById || undefined, updatedAt: new Date() },
       });
   }
 
