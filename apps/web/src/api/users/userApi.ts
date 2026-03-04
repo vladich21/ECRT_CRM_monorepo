@@ -14,9 +14,9 @@ export const userApi = {
     return response.data[0];
   },
 
-  getUserByLogin: async (login: string): Promise<{ id: string } | null> => {
-    if (!login?.trim()) return null;
-    const response = await apiClient.get(`/users/by-login/${encodeURIComponent(login.trim())}`);
+  getUserByEmail: async (email: string): Promise<{ id: string } | null> => {
+    if (!email?.trim()) return null;
+    const response = await apiClient.get(`/users/by-email/${encodeURIComponent(email.trim())}`);
     return response.data?.[0] ?? null;
   },
 

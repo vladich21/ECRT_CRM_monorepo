@@ -14,9 +14,9 @@ export class UsersController {
     return this.usersService.findAll(previewMode, useFullFormat);
   }
 
-  @Get('by-login/:login')
-  async findByLogin(@Param('login') login: string) {
-    const user = await this.usersService.findByLogin(login);
+  @Get('by-email/:email')
+  async findByEmail(@Param('email') email: string) {
+    const user = await this.usersService.findByEmail(email);
     return user ? [user] : [];
   }
 

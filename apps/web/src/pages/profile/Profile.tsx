@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, Avatar, Descriptions, Tag, Button, Form, Input, Select, Space, Row, Col } from "antd";
+import { App, Card, Avatar, Descriptions, Tag, Button, Form, Input, Select, Space, Row, Col } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -23,6 +23,7 @@ import { Loader } from "../../components/loader/Loader";
 const { Option } = Select;
 
 const ProfilePage = () => {
+  const { modal } = App.useApp();
   const { user } = useAuthStore((state) => state);
   const { logout } = UseLogout();
   const { showNotification, contextHolder } = useNotification();
@@ -34,7 +35,6 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (user) {
-      // Конвертируем данные для формы: ID должны быть строками для Select
       const formData = {
         ...userUpdateFormMapper(user),
         department_id: user.department?.id || null,
@@ -62,8 +62,7 @@ const ProfilePage = () => {
           const pos = referenceBooks.positions.find(p => p.id === String(formValues.position_id));
           if (pos) updatedUser.position = pos;
         }
-        const token = useAuthStoreFull.getState().token || '';
-        useAuthStoreFull.getState().login(updatedUser, token);
+        useAuthStoreFull.getState().login(updatedUser);
       }
     }
   }, [isUpdateSuccess]);
@@ -85,13 +84,7 @@ const ProfilePage = () => {
 
   const handleSave = async (values: any) => {
     if (!user) return;
-    // Конвертируем строковые ID в числа для отправки на бекенд
-    const formValues = {
-      ...values,
-      department_id: values.department_id ? Number(values.department_id) : null,
-      position_id: values.position_id ? Number(values.position_id) : null,
-    };
-    const payload = getChangedFields(formValues, userUpdateFormMapper(user));
+    const payload = getChangedFields(values, userUpdateFormMapper(user));
     if (Object.keys(payload).length === 0) {
       showNotification('info', 'Информация', 'Нет изменений для сохранения');
       setIsEditing(false);
@@ -125,7 +118,16 @@ const ProfilePage = () => {
                   type="primary"
                   danger
                   icon={<LogoutOutlined />}
-                  onClick={logout}
+                  onClick={() =>
+                    modal.confirm({
+                      title: 'Выход из системы',
+                      content: 'Вы точно хотите выйти?',
+                      okText: 'Выйти',
+                      cancelText: 'Отмена',
+                      okButtonProps: { danger: true },
+                      onOk: logout,
+                    })
+                  }
                 >
                   Выйти
                 </Button>

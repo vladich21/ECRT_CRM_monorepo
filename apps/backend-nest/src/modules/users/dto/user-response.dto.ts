@@ -4,7 +4,6 @@ import { RoleRefDto } from './role-ref.dto';
 
 export class UserResponseDto {
   id: string;
-  login: string;
   email: string;
   first_name: string;
   last_name: string;

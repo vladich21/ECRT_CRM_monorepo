@@ -56,4 +56,11 @@ export const authLoadingScreenStore = {
       timers.hideTimer = undefined;
     }, delay);
   },
+
+  showThenNavigate(onNavigate: () => void, navigateAfterMs: number, hideAfterMs: number): void {
+    this.clearTimers();
+    this.show();
+    this.setNavigateTimer(onNavigate, navigateAfterMs);
+    this.setHideTimer(() => this.hide(), hideAfterMs);
+  },
 };

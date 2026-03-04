@@ -1,4 +1,5 @@
 import { asc, eq, inArray } from 'drizzle-orm';
+import * as argon2 from 'argon2';
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { users, departments, positions, refGroups, relUsersGroups } from '../../../database/schema';
@@ -18,8 +19,6 @@ export class UsersService {
     preview?: 'active' | 'all' | 'full',
     useFullFormat?: boolean,
   ): Promise<UserResponseDto[] | UserPreviewDto[]> {
-    // active: только активные (preview=1), all: все (preview=2)
-    // useFullFormat: при full=1 возвращать полные объекты (login, email, department, position, roles)
     const activeFilter = preview === 'active' ? eq(users.isActive, true) : undefined;
     const usePreviewFormat = !useFullFormat && (preview === 'active' || preview === 'all');
 
@@ -33,7 +32,7 @@ export class UsersService {
           middleName: users.middleName,
         })
         .from(users)
-        .orderBy(asc(users.login));
+        .orderBy(asc(users.lastName));
       const previewRows = activeFilter ? await baseSelect.where(activeFilter) : await baseSelect;
       return previewRows.map((row) => ({
         id: String(row.id),
@@ -53,7 +52,7 @@ export class UsersService {
       .from(users)
       .leftJoin(departments, eq(users.departmentId, departments.id))
       .leftJoin(positions, eq(users.positionId, positions.id))
-      .orderBy(asc(users.login));
+      .orderBy(asc(users.lastName));
     const userRows = activeFilter ? await baseQuery.where(activeFilter) : await baseQuery;
 
     const userIds = userRows.map((row) => row.user.id).filter(Boolean);
@@ -96,7 +95,6 @@ export class UsersService {
     const user = await this.findOne(id);
     if (!user) return null;
     const map: Record<string, string> = {
-      login: 'login',
       email: 'email',
       first_name: 'firstName',
       last_name: 'lastName',
@@ -126,21 +124,98 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  async findByLogin(login: string): Promise<{ id: string } | null> {
-    if (!login?.trim()) return null;
+  async findByEmail(email: string): Promise<{ id: string } | null> {
+    if (!email?.trim()) return null;
     const rows = await this.db.db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.login, login.trim()))
+      .where(eq(users.email, email.trim().toLowerCase()))
       .limit(1);
     const row = rows[0];
     return row ? { id: String(row.id) } : null;
   }
 
-  async findOneByLogin(login: string): Promise<UserResponseDto | null> {
-    const preview = await this.findByLogin(login);
-    if (!preview) return null;
-    return this.findOne(preview.id);
+  async getPasswordHashByEmail(email: string): Promise<string | null> {
+    if (!email?.trim()) return null;
+    const rows = await this.db.db
+      .select({ passwordHash: users.passwordHash })
+      .from(users)
+      .where(eq(users.email, email.trim().toLowerCase()))
+      .limit(1);
+    const hash = rows[0]?.passwordHash;
+    return hash ?? null;
+  }
+
+  async verifyPasswordByEmail(email: string, plainPassword: string): Promise<boolean> {
+    const hash = await this.getPasswordHashByEmail(email);
+    if (!hash) return false;
+    return argon2.verify(hash, plainPassword);
+  }
+
+  async getAuthDataByEmail(email: string): Promise<{
+    id: string;
+    email: string;
+    isActive: boolean;
+    passwordHash: string | null;
+    mustChangePassword: boolean;
+    twoFactorEnabled: boolean;
+  } | null> {
+    if (!email?.trim()) return null;
+    const rows = await this.db.db
+      .select({
+        id: users.id,
+        email: users.email,
+        isActive: users.isActive,
+        passwordHash: users.passwordHash,
+        mustChangePassword: users.mustChangePassword,
+        twoFactorEnabled: users.twoFactorEnabled,
+      })
+      .from(users)
+      .where(eq(users.email, email.trim().toLowerCase()))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      email: row.email ?? email,
+      isActive: row.isActive ?? false,
+      passwordHash: row.passwordHash ?? null,
+      mustChangePassword: row.mustChangePassword ?? false,
+      twoFactorEnabled: row.twoFactorEnabled ?? false,
+    };
+  }
+
+  async findOneByEmail(email: string): Promise<UserResponseDto | null> {
+    if (!email?.trim()) return null;
+    const rows = await this.db.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email.trim().toLowerCase()))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return null;
+    return this.findOne(String(row.id));
+  }
+
+  async setPasswordHash(id: string, hash: string, mustChangePassword = false): Promise<void> {
+    await this.db.db
+      .update(users)
+      .set({ passwordHash: hash, mustChangePassword, updatedAt: new Date() })
+      .where(eq(users.id, id));
+  }
+
+  async setMustChangePassword(id: string, value: boolean): Promise<void> {
+    await this.db.db
+      .update(users)
+      .set({ mustChangePassword: value, updatedAt: new Date() })
+      .where(eq(users.id, id));
+  }
+
+  async updateLastLogin(id: string): Promise<void> {
+    await this.db.db
+      .update(users)
+      .set({ lastLoginAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, id));
   }
 
   async findOne(id: string): Promise<UserResponseDto | null> {
@@ -190,7 +265,6 @@ export class UsersService {
   ): UserResponseDto {
     return {
       id: String(user.id),
-      login: user.login ?? '',
       email: user.email ?? '',
       first_name: user.firstName ?? '',
       last_name: user.lastName ?? '',

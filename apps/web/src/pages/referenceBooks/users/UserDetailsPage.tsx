@@ -48,8 +48,6 @@ export default function UserDetailsPage() {
 
             <Descriptions.Item label='Имя'>{user.first_name || <Tag color='gray'>Не указано</Tag>}</Descriptions.Item>
 
-            <Descriptions.Item label='Логин'>{user.login || <Tag color='gray'>Не указано</Tag>}</Descriptions.Item>
-
             <Descriptions.Item label='Email'>{user.email || <Tag color='gray'>Не указано</Tag>}</Descriptions.Item>
 
             <Descriptions.Item label='Телефон'>{user.phone || <Tag color='gray'>Не указано</Tag>}</Descriptions.Item>

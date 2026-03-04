@@ -17,7 +17,8 @@ import { FilesService } from '../services/files.service';
 import * as path from 'path';
 import { ALLOWED_MIME_TYPES } from '../constants/file-formats';
 import { Public } from '../../auth/public.decorator';
-
+import { EntityParams } from '../decorators/entity-params.decorator';
+import type { EntityParamsDto } from '../dto';
 @Controller()
 export class FilesController {
   constructor(private readonly service: FilesService) {}
@@ -30,7 +31,7 @@ export class FilesController {
           try {
             file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
           } catch {
-            // оставляем как есть при ошибке
+            // keep as-is on error
           }
         }
         const mime = file.mimetype || 'application/octet-stream';
@@ -55,9 +56,12 @@ export class FilesController {
     if (!entityType || !entityId) {
       throw new BadRequestException('entityType и entityId обязательны');
     }
-    const uploadedById = req.user?.user_id;
-    const result = await this.service.upload(files ?? [], entityType, entityId, uploadedById);
-    return result;
+    return this.service.upload(
+      files ?? [],
+      entityType,
+      entityId,
+      req.user?.user_id,
+    );
   }
 
   @Get('files/:fileId')
@@ -71,22 +75,20 @@ export class FilesController {
   }
 
   @Get(':entityType/:entityId/files')
-  getFilesByEntity(
-    @Param('entityType') entityType: string,
-    @Param('entityId') entityId: string,
-  ) {
-    const singular = entityType.replace(/s$/, '') || entityType;
-    return this.service.findByEntity(singular, entityId);
+  getFilesByEntity(@EntityParams() params: EntityParamsDto) {
+    return this.service.findByEntity(params.entityType, params.entityId);
   }
 
   @Delete(':entityType/:entityId/files/:fileId')
   async deleteFile(
-    @Param('entityType') entityType: string,
-    @Param('entityId') entityId: string,
+    @EntityParams() params: EntityParamsDto,
     @Param('fileId') fileId: string,
   ) {
-    const singular = entityType.replace(/s$/, '') || entityType;
-    const row = await this.service.remove(singular, entityId, fileId);
+    const row = await this.service.remove(
+      params.entityType,
+      params.entityId,
+      fileId,
+    );
     if (!row) throw new NotFoundException(`Файл ${fileId} не найден`);
     return [row];
   }
@@ -94,22 +96,30 @@ export class FilesController {
   @Public()
   @Get(':entityType/:entityId/:filename')
   async serveFile(
-    @Param('entityType') entityType: string,
-    @Param('entityId') entityId: string,
+    @EntityParams() params: EntityParamsDto,
     @Param('filename') filename: string,
     @Res() res: Response,
   ) {
     const decodedFilename = decodeURIComponent(filename);
-    const filePath = this.service.getFilePath(entityType, entityId, decodedFilename);
-    if (!filePath) {
-      throw new NotFoundException('Файл не найден');
-    }
+    const filePath = this.service.getFilePath(
+      params.entityType,
+      params.entityId,
+      decodedFilename,
+    );
+    if (!filePath) throw new NotFoundException('Файл не найден');
+
     let mimeType = this.service.getMimeType(decodedFilename);
-    if (mimeType.startsWith('text/') || ['application/json', 'application/xml'].includes(mimeType)) {
+    if (
+      mimeType.startsWith('text/') ||
+      ['application/json', 'application/xml'].includes(mimeType)
+    ) {
       mimeType = `${mimeType}; charset=utf-8`;
     }
     res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(decodedFilename)}`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename*=UTF-8''${encodeURIComponent(decodedFilename)}`,
+    );
     return res.sendFile(path.resolve(filePath));
   }
 }

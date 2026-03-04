@@ -5,6 +5,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DatabaseService } from '../../../database/database.service';
 import { files } from '../../../database/schema';
+import { getFileBaseUrl, getUploadPath } from '../files-config';
+import type { FileResponseDto, UploadItemDto } from '../dto';
 
 @Injectable()
 export class FilesService {
@@ -18,33 +20,37 @@ export class FilesService {
     entityType: string,
     entityId: string,
     uploadedById?: string,
-  ) {
+  ): Promise<UploadItemDto[]> {
     if (!uploadedFiles?.length) return [];
-    const uploadPath = this.config.get('UPLOAD_PATH') ?? './uploads';
+
+    const uploadPath = getUploadPath(this.config);
+    const baseUrl = getFileBaseUrl(this.config);
     const basePath = path.join(uploadPath, entityType, entityId);
     fs.mkdirSync(basePath, { recursive: true });
 
-    const baseUrl = this.config.get('FILE_UPLOAD_URL') ?? this.config.get('API_URL') ?? 'http://localhost:9001/api';
-    const result: { name: string; size: string; type: string; url: string }[] = [];
+    const result: UploadItemDto[] = [];
 
     for (const file of uploadedFiles) {
       const destPath = path.join(basePath, file.originalname);
       fs.writeFileSync(destPath, file.buffer);
 
-      const size = file.size;
       const fileType = file.mimetype || 'application/octet-stream';
-
       await this.upsertFile(
         entityType,
         entityId,
         file.originalname,
         fileType,
-        size,
+        file.size,
         uploadedById,
       );
 
-      const url = `${baseUrl.replace(/\/$/, '')}/${entityType}/${entityId}/${encodeURIComponent(file.originalname)}`;
-      result.push({ name: file.originalname, size: String(size), type: fileType, url });
+      const url = `${baseUrl}/${entityType}/${entityId}/${encodeURIComponent(file.originalname)}`;
+      result.push({
+        name: file.originalname,
+        size: String(file.size),
+        type: fileType,
+        url,
+      });
     }
 
     return result;
@@ -57,17 +63,29 @@ export class FilesService {
     fileType: string,
     size: number,
     uploadedById?: string,
-  ) {
+  ): Promise<void> {
     await this.db.db
       .insert(files)
-      .values({ entityType, tableId, name, type: fileType, size, uploadedById: uploadedById || undefined })
+      .values({
+        entityType,
+        tableId,
+        name,
+        type: fileType,
+        size,
+        uploadedById: uploadedById || undefined,
+      })
       .onConflictDoUpdate({
         target: [files.entityType, files.tableId, files.name],
-        set: { type: fileType, size, uploadedById: uploadedById || undefined, updatedAt: new Date() },
+        set: {
+          type: fileType,
+          size,
+          uploadedById: uploadedById || undefined,
+          updatedAt: new Date(),
+        },
       });
   }
 
-  async findByEntity(entityType: string, entityId: string) {
+  async findByEntity(entityType: string, entityId: string): Promise<FileResponseDto[]> {
     const rows = await this.db.db
       .select()
       .from(files)
@@ -76,19 +94,26 @@ export class FilesService {
     return rows.map((r) => this.toResponse(r, entityType, entityId));
   }
 
-  async findById(fileId: string) {
-    const rows = await this.db.db
+  async findById(fileId: string): Promise<FileResponseDto | null> {
+    const [row] = await this.db.db
       .select()
       .from(files)
       .where(eq(files.id, fileId))
       .limit(1);
-    const row = rows[0];
     if (!row) return null;
-    return this.toResponse(row, row.entityType ?? undefined, row.tableId ? String(row.tableId) : undefined);
+    return this.toResponse(
+      row,
+      row.entityType ?? undefined,
+      row.tableId != null ? String(row.tableId) : undefined,
+    );
   }
 
-  async findOne(entityType: string, entityId: string, fileId: string) {
-    const rows = await this.db.db
+  async findOne(
+    entityType: string,
+    entityId: string,
+    fileId: string,
+  ): Promise<FileResponseDto | null> {
+    const [row] = await this.db.db
       .select()
       .from(files)
       .where(
@@ -99,12 +124,15 @@ export class FilesService {
         ),
       )
       .limit(1);
-    const row = rows[0];
     if (!row) return null;
     return this.toResponse(row);
   }
 
-  async remove(entityType: string, entityId: string, fileId: string) {
+  async remove(
+    entityType: string,
+    entityId: string,
+    fileId: string,
+  ): Promise<FileResponseDto | null> {
     const row = await this.findOne(entityType, entityId, fileId);
     if (!row) return null;
     await this.db.db
@@ -120,9 +148,10 @@ export class FilesService {
   }
 
   getFilePath(entityType: string, entityId: string, filename: string): string | null {
-    const uploadPath = this.config.get('UPLOAD_PATH') ?? './uploads';
+    const uploadPath = getUploadPath(this.config);
     const filePath = path.join(uploadPath, entityType, entityId, filename);
-    if (!path.resolve(filePath).startsWith(path.resolve(uploadPath))) return null;
+    const resolvedRoot = path.resolve(uploadPath);
+    if (!path.resolve(filePath).startsWith(resolvedRoot)) return null;
     return fs.existsSync(filePath) ? filePath : null;
   }
 
@@ -152,19 +181,25 @@ export class FilesService {
     return mimeMap[ext] ?? 'application/octet-stream';
   }
 
-  private toResponse(r: (typeof files.$inferSelect), entityType?: string, tableId?: string) {
-    const baseUrl = this.config.get('FILE_UPLOAD_URL') ?? this.config.get('API_URL') ?? 'http://localhost:9001/api';
-    const url = entityType && tableId && r.name
-      ? `${baseUrl.replace(/\/$/, '')}/${entityType}/${tableId}/${encodeURIComponent(r.name)}`
-      : `${baseUrl}/files/${r.id}`;
+  private toResponse(
+    r: (typeof files.$inferSelect),
+    entityType?: string,
+    tableId?: string,
+  ): FileResponseDto {
+    const baseUrl = getFileBaseUrl(this.config);
+    const url =
+      entityType && tableId && r.name
+        ? `${baseUrl}/${entityType}/${tableId}/${encodeURIComponent(r.name)}`
+        : `${baseUrl}/files/${r.id}`;
+
     return {
       id: String(r.id),
-      entitytype: r.entityType ?? '',
-      name: r.name ?? '',
-      size: r.size != null ? String(r.size) : '',
+      entitytype: r.entityType,
+      name: r.name,
+      size: r.size != null ? String(r.size) : null,
       url,
-      uploadedby_id: r.uploadedById ? String(r.uploadedById) : '',
-      uploaded_at: r.uploadedAt ? r.uploadedAt.toISOString() : '',
+      uploadedby_id: r.uploadedById ? String(r.uploadedById) : null,
+      uploaded_at: r.uploadedAt ? r.uploadedAt.toISOString() : null,
     };
   }
 }

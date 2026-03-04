@@ -1,0 +1,71 @@
+@use '../../styles/variables' as *;
+
+.page {
+  min-height: 100vh;
+  background: $bg-tertiary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.card {
+  background: $bg-primary;
+  border-radius: $radius-lg;
+  padding: 40px 40px 32px;
+  box-shadow: $shadow-xl;
+  width: 100%;
+  max-width: 420px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+
+  h2 {
+    margin: 16px 0 0;
+    font-size: $font-xl;
+    font-weight: 600;
+    color: $text-secondary;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.emailHint {
+  color: $text-quaternary;
+  margin-top: 8px;
+  font-size: $font-base;
+}
+
+.loginRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: $text-quaternary;
+  font-size: $font-base;
+}
+
+.codeInput {
+  text-align: center !important;
+  font-size: 24px !important;
+  letter-spacing: 0.3em !important;
+  font-family: 'Inter', monospace !important;
+}
+
+.passwordHint {
+  color: $text-quaternary;
+  font-size: $font-sm;
+  margin-bottom: 16px;
+  line-height: $line-height-relaxed;
+}
+
+.backBtn {
+  margin-top: 8px;
+  color: $text-placeholder !important;
+
+  &:hover {
+    color: $text-quaternary !important;
+  }
+}

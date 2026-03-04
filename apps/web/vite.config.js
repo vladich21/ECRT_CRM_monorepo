@@ -23,6 +23,14 @@ export default defineConfig({
       },
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://192.0.2.17:9001',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

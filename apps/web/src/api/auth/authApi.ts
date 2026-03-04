@@ -1,32 +1,59 @@
+import { apiClient } from '../clients';
 import { User } from '../../types/user';
-import { loginClient } from '../clients';
 
-interface LoginDTO {
-  login: string;
-  pass: string;
+interface CheckLoginResponse {
+  tempCodeSent?: boolean;
+  hasPassword?: boolean;
+  email?: string;
 }
 
 interface AuthResponse {
-  data: User[];
-  JWT: string;
+  success?: boolean;
+  user?: User;
+  awaiting2FA?: boolean;
+  mustChangePassword?: boolean;
+  email?: string;
 }
 
 export const authApi = {
-  login: async (credentials: LoginDTO): Promise<AuthResponse> => {
-    if (import.meta.env.DEV) {
-      console.log('[authApi.login] URL:', loginClient.defaults.baseURL, 'login:', credentials.login);
-    }
-    try {
-      const response = await loginClient.post('/auth', credentials);
-      if (import.meta.env.DEV) {
-        console.log('[authApi.login] success, JWT:', !!response.data?.JWT);
-      }
-      return response.data;
-    } catch (err) {
-      if (import.meta.env.DEV) {
-        console.error('[authApi.login] failed:', err);
-      }
-      throw err;
-    }
+  // Шаг 1: проверить, есть ли у пользователя пароль
+  checkEmail: async (email: string): Promise<CheckLoginResponse> => {
+    const res = await apiClient.post<CheckLoginResponse>('/auth/check', { email });
+    return res.data;
+  },
+
+  // Шаг 2: ввод пароля
+  verifyPassword: async (email: string, password: string): Promise<AuthResponse> => {
+    const res = await apiClient.post<AuthResponse>('/auth/login', { email, password });
+    return res.data;
+  },
+
+  // Подтвердить временный код (первый вход)
+  verifyTempCode: async (email: string, code: string): Promise<{ mustChangePassword: boolean }> => {
+    const res = await apiClient.post<{ mustChangePassword: boolean }>('/auth/verify-temp-code', { email, code });
+    return res.data;
+  },
+
+  // Подтвердить 2FA код
+  verify2fa: async (email: string, code: string): Promise<AuthResponse> => {
+    const res = await apiClient.post<AuthResponse>('/auth/verify-2fa', { email, code });
+    return res.data;
+  },
+
+  // Установить постоянный пароль
+  setPassword: async (email: string, password: string, confirmPassword: string): Promise<AuthResponse> => {
+    const res = await apiClient.post<AuthResponse>('/auth/set-password', { email, password, confirmPassword });
+    return res.data;
+  },
+
+  // Получить текущего пользователя
+  getMe: async (): Promise<{ user: User }> => {
+    const res = await apiClient.get<{ user: User }>('/auth/me');
+    return res.data;
+  },
+
+  // Выход
+  logout: async (): Promise<void> => {
+    await apiClient.post('/auth/logout');
   },
 };

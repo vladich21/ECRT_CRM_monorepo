@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { App as AntdApp } from 'antd';
 import { ConfirmModal } from './components/modals/currentModals/ConfirmModal';
 import { PartnerContactFormModal } from './components/modals/currentModals/ContactModal';
 import { FileUploadModal } from './components/modals/currentModals/FileUploadModal';
@@ -10,37 +11,35 @@ import AppRoutes from './routers/AppRoutes';
 import { useModalStore } from './store/ModalStore';
 import { authLoadingScreenStore } from './store/authLoadingScreenStore';
 
+const MODAL_MAP = {
+  positionForm: PositionFormModal,
+  contactForm: PartnerContactFormModal,
+  confirm: ConfirmModal,
+  fileForm: FileUploadModal,
+  withDescription: WithDescriptionFormModal,
+  patentAreaForm: PatentAreasFormModal,
+};
+
 function App() {
   const modalProps = useModalStore();
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
 
   useEffect(() => {
     authLoadingScreenStore.registerSetState(setShowLoadingScreen);
-    
     return () => {
       authLoadingScreenStore.unregisterSetState();
       authLoadingScreenStore.clearTimers();
     };
   }, []);
 
+  const ActiveModal = MODAL_MAP[modalProps.type];
+
   return (
-    <>
+    <AntdApp>
       <AppRoutes />
       <AuthLoadingScreen visible={showLoadingScreen} />
-      {modalProps.type === 'positionForm' ? (
-        <PositionFormModal {...modalProps} />
-      ) : modalProps.type === 'contactForm' ? (
-        <PartnerContactFormModal {...modalProps} />
-      ) : modalProps.type === 'confirm' ? (
-        <ConfirmModal {...modalProps} />
-      ) : modalProps.type === 'fileForm' ? (
-        <FileUploadModal {...modalProps} />
-      ) : modalProps.type === 'withDescription' ? (
-        <WithDescriptionFormModal {...modalProps} />
-      ) : modalProps.type === 'patentAreaForm' ? (
-        <PatentAreasFormModal {...modalProps} />
-      ) : null}
-    </>
+      {ActiveModal && <ActiveModal {...modalProps} />}
+    </AntdApp>
   );
 }
 

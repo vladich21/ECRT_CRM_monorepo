@@ -14,18 +14,19 @@ export const getColumnsData = (users: { id: string; name: string }[]) => [
     title: 'Размер файла',
     dataIndex: 'size',
     key: 'size',
-    render: (size: number | null) => (size ? `${(size / 1024).toFixed(1)} Кбайт` : '-'),
+    render: (size: string | null) => (size ? `${(Number(size) / 1024).toFixed(1)} Кбайт` : '-'),
   },
   {
     title: 'Кто добавил',
     dataIndex: 'uploadedby_id',
     key: 'uploadedby_id',
-    render: (userId: string) => getNameById(userId, users) || '-',
+    render: (userId: string | null) => getNameById(userId ?? '', users) || '-',
   },
   {
     title: 'Дата загрузки',
     dataIndex: 'uploaded_at',
     key: 'uploaded_at',
-    render: (uploaded_at: string) => new Date(uploaded_at).toLocaleDateString('ru-RU') || '-',
+    render: (uploaded_at: string | null) =>
+      uploaded_at ? new Date(uploaded_at).toLocaleDateString('ru-RU') : '-',
   },
 ];

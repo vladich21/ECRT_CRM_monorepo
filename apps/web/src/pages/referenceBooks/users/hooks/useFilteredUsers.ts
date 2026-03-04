@@ -15,26 +15,25 @@ export const useFilteredUsers = (users: User[], filters: Record<string, any>) =>
           user.last_name?.toLowerCase().includes(searchLower) ||
           user.middle_name?.toLowerCase().includes(searchLower) ||
           user.email?.toLowerCase().includes(searchLower) ||
-          user.login?.toLowerCase().includes(searchLower) ||
           user.phone?.toLowerCase().includes(searchLower);
 
         if (!matchesSearch) return false;
       }
 
       // Фильтр по отделу
-      if (filters.department && user.department?.id !== Number(filters.department)) {
+      if (filters.department && user.department?.id !== String(filters.department)) {
         return false;
       }
 
       // Фильтр по должности
-      if (filters.position && user.position?.id !== Number(filters.position)) {
+      if (filters.position && user.position?.id !== String(filters.position)) {
         return false;
       }
 
       // Фильтр по ролям
       if (filters.role && user.roles?.length > 0) {
-        const userRoleIds = user.roles.map(role => role.id);
-        const hasMatchingRole = userRoleIds.includes(Number(filters.role));
+        const userRoleIds = user.roles.map(role => String(role.id));
+        const hasMatchingRole = userRoleIds.includes(String(filters.role));
         if (!hasMatchingRole) return false;
       }
 

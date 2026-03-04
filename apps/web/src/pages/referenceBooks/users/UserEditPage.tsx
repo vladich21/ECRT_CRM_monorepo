@@ -105,11 +105,6 @@ export default function UserEditPage() {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
-                <Form.Item label='Логин' name='login' rules={[{ required: true, message: 'Введите логин' }]}>
-                  <Input placeholder='Введите логин' />
-                </Form.Item>
-              </Col>
             </Row>
 
             <Row gutter={16}>

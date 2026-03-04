@@ -33,12 +33,6 @@ export const getColumnsData = () => [
     render: (login: string) => login || '-',
   },
   {
-    title: 'Логин',
-    dataIndex: 'login',
-    key: 'login',
-    render: (login: string) => login || '-',
-  },
-  {
     title: 'Отдел',
     dataIndex: 'department',
     key: 'department',

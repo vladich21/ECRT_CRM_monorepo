@@ -13,7 +13,10 @@ import {
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
-  login: varchar('login', { length: 128 }),
+  passwordHash: varchar('password_hash', { length: 255 }),
+  mustChangePassword: boolean('must_change_password').default(false),
+  twoFactorEnabled: boolean('two_factor_enabled').default(false),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   lastName: varchar('last_name', { length: 50 }),
   firstName: varchar('first_name', { length: 50 }),
   middleName: varchar('middle_name', { length: 50 }),
@@ -24,6 +27,16 @@ export const users = pgTable('users', {
   isActive: boolean('is_active').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }),
+});
+
+export const authCodes = pgTable('auth_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  codeHash: varchar('code_hash', { length: 255 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(), // 'temp_password' | '2fa'
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
 export const relUsersGroups = pgTable('rel_users_groups', {

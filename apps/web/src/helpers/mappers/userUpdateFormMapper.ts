@@ -5,7 +5,6 @@ export const userUpdateFormMapper = (userData: User) => {
     last_name: userData.last_name || '',
     first_name: userData.first_name || '',
     middle_name: userData.middle_name || '',
-    login: userData.login || '',
     email: userData.email || '',
     phone: userData.phone || '',
     internal_phone: (userData as any).internal_phone || '',

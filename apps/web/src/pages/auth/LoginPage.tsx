@@ -1,86 +1,117 @@
-import { Row, Col, Image, Button, Form, Input } from 'antd';
+import { Button, Form, Alert, Image } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { useLogin } from '../../api/auth/useLogin';
-import { useNotification } from '../../customhooks/useNotification';
+import { useAuthStore } from '../../store/AuthStore';
 import { authLoadingScreenStore } from '../../store/authLoadingScreenStore';
+import { authApi } from '../../api/auth/authApi';
+import type { User } from '../../types/user';
+import {
+  type FormValues,
+  type LoginState,
+  INITIAL_LOGIN_STATE,
+  STEP_TITLES,
+  STEP_BUTTON_LABELS,
+} from './LoginPage.types';
+import { LoginFormFields } from './LoginFormFields';
+import styles from './LoginPage.module.scss';
 
 function LoginPage() {
-  const { contextHolder, showNotification } = useNotification();
   const navigate = useNavigate();
-  const [form] = Form.useForm();
-  const { mutate, isPending } = useLogin();
-  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+  const storeLogin = useAuthStore((s) => s.login);
+  const [form] = Form.useForm<FormValues>();
+  const [state, setState] = useState<LoginState>(INITIAL_LOGIN_STATE);
 
-  const handelSubmit = (creditals: { login: string; pass: string }) => {
-    authLoadingScreenStore.clearTimers();
-    
-    mutate(creditals, {
-      onSuccess: () => {
-        setShowLoadingScreen(true);
-        authLoadingScreenStore.show();
-        
-        authLoadingScreenStore.setNavigateTimer(() => {
-          navigate('/home');
-        }, 1000);
-        
-        authLoadingScreenStore.setHideTimer(() => {
-          setShowLoadingScreen(false);
-          authLoadingScreenStore.hide();
-        }, 2000);
-      },
-      onError: (error) => {
-        setShowLoadingScreen(false);
-        authLoadingScreenStore.clearTimers();
-        authLoadingScreenStore.hide();
-        showNotification('error', 'Ошибка входа', 'Неверные учетные данные' );
-      }
-    });
+  const set = (patch: Partial<LoginState>) => setState((prev) => ({ ...prev, ...patch }));
+
+  const finish = (user: User | undefined) => {
+    if (user) storeLogin(user);
+    authLoadingScreenStore.showThenNavigate(() => navigate('/home'), 1000, 1500);
   };
 
+  const handleBack = () => {
+    const savedEmail = state.email;
+    setState(INITIAL_LOGIN_STATE);
+    form.resetFields();
+    if (savedEmail) form.setFieldValue('email', savedEmail);
+  };
+
+  const handleSubmit = async (values: FormValues) => {
+    set({ loading: true, error: '' });
+    try {
+      switch (state.step) {
+        case 'login': {
+          const data = await authApi.checkEmail(values.email!);
+          set({ email: values.email!, step: data.tempCodeSent ? 'temp-code' : 'password', maskedEmail: data.email ?? '' });
+          break;
+        }
+        case 'password': {
+          const data = await authApi.verifyPassword(state.email, values.password!);
+          if (data.awaiting2FA) set({ step: '2fa-code', maskedEmail: data.email ?? '' });
+          else if (data.mustChangePassword) set({ step: 'set-password' });
+          else finish(data.user);
+          break;
+        }
+        case 'temp-code':
+          await authApi.verifyTempCode(state.email, values.code!);
+          set({ step: 'set-password' });
+          break;
+        case '2fa-code': {
+          const data = await authApi.verify2fa(state.email, values.code!);
+          finish(data.user);
+          break;
+        }
+        case 'set-password': {
+          const data = await authApi.setPassword(state.email, values.password!, values.confirmPassword!);
+          finish(data.user);
+          break;
+        }
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      set({ error: e.response?.data?.message ?? 'Ошибка подключения к серверу' });
+    } finally {
+      set({ loading: false });
+    }
+  };
+
+  const showCodeHint = state.maskedEmail && (state.step === 'temp-code' || state.step === '2fa-code');
+
   return (
-    <>
-      {contextHolder}
-      {!showLoadingScreen && (
-        <Row justify='center' align='middle' style={{ minHeight: '100vh' }}>
-        <Col>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <Image src='/logo.png' alt='Логотип' preview={false} width={200} />
-          </div>
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <Image src="/logo.png" alt="Логотип" preview={false} width={160} />
+          <h2>{STEP_TITLES[state.step]}</h2>
+          {showCodeHint && <p className={styles.emailHint}>Код отправлен на {state.maskedEmail}</p>}
+        </div>
 
-          <Form form={form} onFinish={handelSubmit} layout='vertical' initialValues={{ remember: true }}>
-            <Form.Item
-              label='Имя пользователя'
-              name='login'
-              rules={[
-                { required: true, message: 'Пожалуйста, введите login' },
-                { type: 'string', message: 'Введите корректный login' },
-              ]}
-            >
-              <Input placeholder='Ваш login' size='large' />
-            </Form.Item>
+        {state.error && (
+          <Alert
+            type="error"
+            message={state.error}
+            showIcon
+            closable
+            style={{ marginBottom: 24 }}
+            onClose={() => set({ error: '' })}
+          />
+        )}
 
-            <Form.Item
-              label='Пароль'
-              name='pass'
-              rules={[
-                { required: true, message: 'Пожалуйста, введите пароль' },
-                { min: 3, message: 'Минимум 3 символа' },
-              ]}
-            >
-              <Input.Password placeholder='Ваш пароль' size='large' />
-            </Form.Item>
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <LoginFormFields step={state.step} email={state.email} onBack={handleBack} />
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button type="primary" htmlType="submit" size="large" loading={state.loading} block>
+              {STEP_BUTTON_LABELS[state.step]}
+            </Button>
+          </Form.Item>
+        </Form>
 
-            <Form.Item>
-              <Button type='primary' htmlType='submit' size='large' loading={isPending} disabled={isPending} block>
-                {isPending ? 'Вход...' : 'Войти'}
-              </Button>
-            </Form.Item>
-          </Form>
-        </Col>
-      </Row>
-      )}
-    </>
+        {state.step !== 'login' && (
+          <Button type="link" block className={styles.backBtn} onClick={handleBack}>
+            Назад
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 
