@@ -1,4 +1,4 @@
-import { Button, Form } from 'antd';
+import { Button } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
 import { PartnerType } from '../../../types/partner';
 
@@ -11,7 +11,6 @@ import { columns } from './data';
 import {
   useCreatePartnerType,
   useDeletePartnerType,
-  usePartnerTypeById,
   usePartnerTypes,
   useUpdatePartnerType,
 } from '../../../api/partners/partnerTypeApiHooks';
@@ -44,7 +43,7 @@ const PartnerTypesListPage: React.FC = () => {
     successMessage: `Тип контрагента успешно ${action === 'edit' ? 'изменен' : 'добавлен'}`,
     errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} тип контрагента`,
     modalType: 'positionForm',
-    modalData: { name: getNameById(+currentPartnerTypeId, data) },
+    modalData: { name: getNameById(currentPartnerTypeId, data), nameLabel: 'название типа контрагента' },
     getMutationProps: action === 'edit' ? () => currentPartnerTypeId : () => undefined,
     showNotification,
   });
@@ -68,14 +67,14 @@ const PartnerTypesListPage: React.FC = () => {
     setCurrentPartnerTypeId('');
   };
 
-  const onDelete = ({ id }: { id: number }) => {
+  const onDelete = ({ id }: { id: string }) => {
     setAction('delete');
-    setCurrentPartnerTypeId(id.toString());
+    setCurrentPartnerTypeId(id);
   };
 
-  const onEdit = ({ id }: { id: number }) => {
+  const onEdit = ({ id }: { id: string }) => {
     setAction('edit');
-    setCurrentPartnerTypeId(id.toString());
+    setCurrentPartnerTypeId(id);
   };
 
   return (

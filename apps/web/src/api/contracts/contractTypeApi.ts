@@ -19,7 +19,7 @@ export const contractTypeApi = {
   },
 
   updateContractType: async (typeId: string, data: Partial<ContractType>): Promise<ContractType> => {
-    const response = await apiClient.put(`/contract-types/${typeId}`, data);
+    const response = await apiClient.patch(`/contract-types/${typeId}`, data);
     return response.data;
   },
 

@@ -11,6 +11,7 @@ import { useDeleteProject, useProjectById } from '../../../api/projects/projectA
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { getNameById } from '../../../helpers/getNameById';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import styles from './ProjectDetailsPage.module.scss';
 
 export default function ProjectDetailsPage() {
   const { projectId } = useParams();
@@ -66,7 +67,7 @@ export default function ProjectDetailsPage() {
   return (
     <div>
       {contextHolder}
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+      <Space direction='vertical' size='middle' className={styles.container}>
         <BackButton />
         <Card
           title={project?.name}
@@ -81,7 +82,7 @@ export default function ProjectDetailsPage() {
             </Space>
           }
         >
-          <Descriptions column={1} bordered>
+          <Descriptions column={1} bordered className={styles.descriptions}>
             <Descriptions.Item label='Код проекта'>
               {project?.code || <Tag color='gray'>Не указан</Tag>}
             </Descriptions.Item>

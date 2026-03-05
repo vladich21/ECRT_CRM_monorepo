@@ -19,6 +19,7 @@ export const WithDescriptionFormModal: React.FC<ModalState> = ({
   ...layoutProps
 }) => {
   const [form] = Form.useForm();
+  const nameLabel: string = modalData.nameLabel ?? 'название';
 
   useEffect(() => {
     if (layoutProps.open) {
@@ -43,15 +44,15 @@ export const WithDescriptionFormModal: React.FC<ModalState> = ({
       <Form form={form} layout='vertical' onFinish={handleFinish} disabled={layoutProps.loading} size='large'>
         <Form.Item
           name='name'
-          label='Название типа контракта'
+          label='Название'
           rules={[
-            { required: true, message: 'Введите название типа контракта' },
+            { required: true, message: `Введите ${nameLabel}` },
             { min: 2, message: 'Название должно содержать минимум 2 символа' },
             { max: 50, message: 'Название не должно превышать 50 символов' },
           ]}
         >
           <Input
-            placeholder='Введите название типа контракта'
+            placeholder={`Введите ${nameLabel}`}
             allowClear
             count={{
               show: true,

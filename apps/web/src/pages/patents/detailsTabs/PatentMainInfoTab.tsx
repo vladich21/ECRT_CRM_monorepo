@@ -7,6 +7,7 @@ import { Patent } from '../../../types/patent';
 import { useOutletContext } from 'react-router-dom';
 import { getEntityById } from '../../../helpers/getEntityById';
 import { getNamesByIds } from '../../../components/getNamesByIds';
+import styles from './PatentMainInfoTab.module.scss';
 
 const { Text } = Typography;
 
@@ -38,18 +39,14 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   };
 
   return (
-    <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+    <Space direction='vertical' size='middle' className={styles.container}>
       {/* Общая информация о РИД */}
       <Descriptions
         title='Общая информация о РИД'
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Наименование РИД'>
           {patent.name || <Text type='secondary'>Не указано</Text>}
@@ -82,11 +79,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Номер регистрации'>
           {patent.registration_number || <Text type='secondary'>Не указан</Text>}
@@ -101,11 +94,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Номер регистрации (ЦИР)'>
           {patent.registration_number_cir || <Text type='secondary'>Не указан</Text>}
@@ -124,11 +113,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Отдел'>
           {patent.department_id ? (
@@ -165,11 +150,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Номер КД'>
           {patent.kd_number || <Text type='secondary'>Не указан</Text>}

@@ -1,0 +1,10 @@
+.container {
+  width: 100%;
+}
+
+.descriptions {
+  :global(.ant-descriptions-item-content) {
+    white-space: normal;
+    word-break: break-word;
+  }
+}

@@ -5,6 +5,7 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { getNameById } from '../../../helpers/getNameById';
 import { renderCompetenceTag } from '../../../components/ui/renderTag';
 import { getEntityById } from '../../../helpers/getEntityById';
+import styles from './PartnerMainInfo.module.scss';
 
 const { Text } = Typography;
 
@@ -16,18 +17,14 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
   const { data: referenceBooks } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies', 'partnerEconomicCategories']);
 
   return (
-    <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+    <Space direction='vertical' size='middle' className={styles.container}>
       {/* Основные реквизиты организации */}
       <Descriptions
         title='Основные реквизиты организации'
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Полное наименование'>
           {partner?.name || <Text type='secondary'>Не указано</Text>}
@@ -88,11 +85,7 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Юридический адрес'>
           {partner?.legal_address || <Text type='secondary'>Не указан</Text>}
@@ -109,11 +102,7 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Телефон'>
           {partner?.phone || <Text type='secondary'>Не указан</Text>}
@@ -140,11 +129,7 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='ИНН'>{partner?.inn || <Text type='secondary'>Не указан</Text>}</Descriptions.Item>
 

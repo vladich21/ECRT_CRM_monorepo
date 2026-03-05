@@ -9,9 +9,8 @@ import DeletedPatentsTable from './PatentsDeletedTable';
 import { useNotification } from '../../customhooks/useNotification';
 import { ReferenceDataForPatents } from './data';
 import { usePatentFilters } from './hooks/usePatentFilters';
-import { useFilteredPatents } from './hooks/useFilteredPatents';
 import { UniversalFilters } from '../../components/basicFilters/BasicFilters';
-import { Patent } from '../../types/patent';
+import styles from './PatentsListPage.module.scss';
 
 export interface CounterType {
   active?: number;
@@ -19,8 +18,6 @@ export interface CounterType {
 }
 
 export type ActionType = 'active' | 'deleted';
-
-const { TabPane } = Tabs;
 
 export default function PatentsListPage() {
   const navigate = useNavigate();
@@ -56,8 +53,8 @@ export default function PatentsListPage() {
       {contextHolder}
       <Card>
         {/* Заголовок и кнопки */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ margin: 0 }}>РИД</h2>
+        <div className={styles.header}>
+          <h2 className={styles.title}>РИД</h2>
           <Space>
             <Button type='primary' icon={<PlusOutlined />} onClick={handleAddPatent} disabled={activeTab === 'deleted'}>
               Добавить РИД
@@ -68,15 +65,22 @@ export default function PatentsListPage() {
         <UniversalFilters filterConfig={filterConfig} value={filters} onChange={setFilters} />
 
         {/* Вкладки */}
-        <Tabs activeKey={activeTab} onChange={key => setActiveTab(key as 'active' | 'deleted')}>
-          <TabPane tab={<span>Активные</span>} key='active'>
-            <ActivePatentsTable filters={filters} referenceData={referenceData} showNotification={showNotification} />
-          </TabPane>
-
-          <TabPane tab={<span>Удаленные</span>} key='deleted'>
-            <DeletedPatentsTable filters={filters} referenceData={referenceData} showNotification={showNotification} />
-          </TabPane>
-        </Tabs>
+        <Tabs
+          activeKey={activeTab}
+          onChange={key => setActiveTab(key as 'active' | 'deleted')}
+          items={[
+            {
+              key: 'active',
+              label: 'Активные',
+              children: <ActivePatentsTable filters={filters} referenceData={referenceData} showNotification={showNotification} />,
+            },
+            {
+              key: 'deleted',
+              label: 'Удалённые',
+              children: <DeletedPatentsTable filters={filters} referenceData={referenceData} showNotification={showNotification} />,
+            },
+          ]}
+        />
       </Card>
     </div>
   );

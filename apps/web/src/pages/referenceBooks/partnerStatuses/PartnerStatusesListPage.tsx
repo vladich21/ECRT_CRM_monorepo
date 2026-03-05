@@ -1,4 +1,4 @@
-import { Button, Form } from 'antd';
+import { Button } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
 import { PartnerStatus } from '../../../types/partner';
 
@@ -10,7 +10,6 @@ import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import {
   useCreatePartnerStatus,
   useDeletePartnerStatus,
-  usePartnerStatusById,
   usePartnerStatuses,
   useUpdatePartnerStatus,
 } from '../../../api/partners/partnerStatusApiHooks';
@@ -32,7 +31,7 @@ const PartnerStatusesListPage: React.FC = () => {
 
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deletePartnerStatusMutation,
-    successMessage: 'Статус контрагента успешно удален',
+    successMessage: 'Статус контрагента успешно удалён',
     errorMessage: 'Не удалось удалить статус контрагента',
     getMutationProps: () => currentPartnerStatusId,
     showNotification,
@@ -41,10 +40,10 @@ const PartnerStatusesListPage: React.FC = () => {
   const { handleOpenModal: openMutateModal } = useMutateByModal<PartnerStatus, Error>({
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editPartnerStatusMutation : addPartnerStatusMutation,
-    successMessage: `Статус контрагента успешно ${action === 'edit' ? 'изменен' : 'добавлен'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} Статус контрагента`,
+    successMessage: `Статус контрагента успешно ${action === 'edit' ? 'изменён' : 'добавлен'}`,
+    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} статус контрагента`,
     modalType: 'positionForm',
-    modalData: { name: getNameById(+currentPartnerStatusId, data) },
+    modalData: { name: getNameById(currentPartnerStatusId, data), nameLabel: 'название статуса контрагента' },
     getMutationProps: action === 'edit' ? () => currentPartnerStatusId : () => undefined,
     showNotification,
   });
@@ -68,14 +67,14 @@ const PartnerStatusesListPage: React.FC = () => {
     setCurrentPartnerStatusId('');
   };
 
-  const onDelete = ({ id }: { id: number }) => {
+  const onDelete = ({ id }: { id: string }) => {
     setAction('delete');
-    setCurrentPartnerStatusId(id.toString());
+    setCurrentPartnerStatusId(id);
   };
 
-  const onEdit = ({ id }: { id: number }) => {
+  const onEdit = ({ id }: { id: string }) => {
     setAction('edit');
-    setCurrentPartnerStatusId(id.toString());
+    setCurrentPartnerStatusId(id);
   };
 
   return (

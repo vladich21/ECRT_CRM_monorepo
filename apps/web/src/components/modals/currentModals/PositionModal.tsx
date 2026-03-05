@@ -17,6 +17,7 @@ export const PositionFormModal: React.FC<ModalState> = ({
   ...layoutProps
 }) => {
   const [form] = Form.useForm();
+  const nameLabel: string = modalData?.nameLabel ?? 'название должности';
 
   useEffect(() => {
     if (layoutProps.open) {
@@ -41,15 +42,15 @@ export const PositionFormModal: React.FC<ModalState> = ({
       <Form form={form} layout='vertical' onFinish={handleFinish} disabled={layoutProps.loading} size='large'>
         <Form.Item
           name='name'
-          label='Название должности'
+          label='Название'
           rules={[
-            { required: true, message: 'Введите название должности' },
+            { required: true, message: `Введите ${nameLabel}` },
             { min: 2, message: 'Название должно содержать минимум 2 символа' },
             { max: 50, message: 'Название не должно превышать 50 символов' },
           ]}
         >
           <Input
-            placeholder='Введите название должности'
+            placeholder={`Введите ${nameLabel}`}
             allowClear
             count={{
               show: true,

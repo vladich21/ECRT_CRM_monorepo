@@ -47,6 +47,7 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
     modalData: {
       name: getNameById(currentCategoryId, data),
       description: getEntityById(currentCategoryId, data)?.description,
+      nameLabel: 'название экономической категории контрагентов',
     },
     getMutationProps: action === 'edit' ? () => currentCategoryId : () => undefined,
     showNotification,

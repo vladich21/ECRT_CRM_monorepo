@@ -85,7 +85,8 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
         }
       },
       onError: error => {
-        showNotification('error', 'Ошибка', (error as ApiError)?.message || errorMessage);
+        const apiMessage = (error as any).response.data.message;
+        showNotification('error', 'Ошибка', apiMessage || (error as ApiError)?.message || errorMessage);
       },
     });
   }, [mutationProps, mutate, getMutationProps, showNotification]);

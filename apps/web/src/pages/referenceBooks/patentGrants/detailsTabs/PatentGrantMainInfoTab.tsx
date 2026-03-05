@@ -5,6 +5,7 @@ import { NotFound } from '../../../../components/notFound/NotFound';
 import { Loader } from '../../../../components/loader/Loader';
 import { useReferenceData } from '../../../../api/hooks/useReferences';
 import { getNameById } from '../../../../helpers/getNameById';
+import styles from './PatentGrantMainInfoTab.module.scss';
 
 const { Text } = Typography;
 
@@ -28,18 +29,14 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
   }
 
   return (
-    <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+    <Space direction='vertical' size='middle' className={styles.container}>
       {/* Основная информация */}
       <Descriptions
         title='Основная информация'
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Номер гранта'>
           {patentGrant?.grant_number || <Text type='secondary'>Не указан</Text>}
@@ -68,11 +65,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
         column={1}
         bordered
         size='middle'
-        labelStyle={{
-          maxWidth: '250px',
-          width: '250px',
-          fontWeight: '600',
-        }}
+        className={styles.descriptions}
       >
         <Descriptions.Item label='Дата продления'>
           {patentGrant?.renewal_date ? (
@@ -90,11 +83,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
           column={1}
           bordered
           size='middle'
-          labelStyle={{
-            maxWidth: '250px',
-            width: '250px',
-            fontWeight: '600',
-          }}
+          className={styles.descriptions}
         >
           <Descriptions.Item label='Примечания'>
             {patentGrant.notes}

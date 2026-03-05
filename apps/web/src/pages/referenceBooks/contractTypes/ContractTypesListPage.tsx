@@ -32,8 +32,8 @@ const ContractTypesListPage: React.FC = () => {
 
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteTypeMutation,
-    successMessage: 'Тип контракта успешно удален',
-    errorMessage: 'Не удалось удалить тип контракта',
+    successMessage: 'Тип договора успешно удален',
+    errorMessage: 'Не удалось удалить тип договора',
     getMutationProps: () => currentTypeId,
     showNotification,
   });
@@ -41,12 +41,13 @@ const ContractTypesListPage: React.FC = () => {
   const { handleOpenModal: openMutateModal } = useMutateByModal<ContractType, Error>({
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editTypeMutation : addTypeMutation,
-    successMessage: `Тип контракта успешно ${action === 'edit' ? 'изменен' : 'добавлен'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} тип контракта`,
+    successMessage: `Тип договора успешно ${action === 'edit' ? 'изменен' : 'добавлен'}`,
+    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} тип договора`,
     modalType: 'withDescription',
     modalData: {
       name: getNameById(currentTypeId, data),
       description: getEntityById(currentTypeId, data)?.description,
+      nameLabel: 'название типа договора',
     },
     getMutationProps: action === 'edit' ? () => currentTypeId : () => undefined,
     showNotification,
@@ -84,9 +85,9 @@ const ContractTypesListPage: React.FC = () => {
   return (
     <div>
       {contextHolder}
-      <h1>Типы контрактов</h1>
+      <h1>Типы договоров</h1>
       <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить тип контракта
+        Добавить тип договора
       </Button>
 
       <BasicTable<ContractType>
