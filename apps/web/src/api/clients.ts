@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-// В dev: VITE_API_URL=/api → запросы идут через Vite proxy (нет CORS)
-// В prod: VITE_API_URL=https://api.company.ru/api → прямые запросы
 const getBaseApiUrl = (): string =>
   import.meta.env.VITE_API_URL || '/api';
 
@@ -11,7 +9,6 @@ const getFileApiUrl = (): string =>
 export const BASE_API_URL = getBaseApiUrl();
 export const FILE_API_URL = getFileApiUrl();
 
-// Основной клиент — JWT хранится в httpOnly cookie, браузер отправляет автоматически
 export const apiClient = axios.create({
   baseURL: BASE_API_URL,
   withCredentials: true,
@@ -22,7 +19,6 @@ export const fileClient = axios.create({
   withCredentials: true,
 });
 
-// loginClient оставлен для обратной совместимости, указывает на тот же baseURL
 export const loginClient = apiClient;
 
 const handleUnauthorized = () => {

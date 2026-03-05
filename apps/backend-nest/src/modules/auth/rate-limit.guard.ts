@@ -53,6 +53,10 @@ export class RateLimitGuard implements CanActivate {
     this.attempts.delete(ip);
   }
 
+  resetForRequest(req: Request): void {
+    this.reset(this.getIp(req));
+  }
+
   private getIp(req: Request): string {
     const forwarded = req.headers['x-forwarded-for'];
     if (forwarded) return (Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0]).trim();

@@ -39,7 +39,6 @@ export class AuthService {
     this.jwtSecret = new TextEncoder().encode(secret);
   }
 
-  // Шаг 1: проверить email — есть пароль или нужен временный код
   async checkEmail(email: string) {
     const user = await this.users.getAuthDataByEmail(email);
 
@@ -54,7 +53,6 @@ export class AuthService {
     return { hasPassword: true };
   }
 
-  // Шаг 2: проверить пароль
   async verifyPassword(email: string, password: string) {
     const user = await this.users.getAuthDataByEmail(email);
 
@@ -66,13 +64,11 @@ export class AuthService {
 
     if (user.mustChangePassword) return { mustChangePassword: true };
 
-    // 2FA обязателен при каждом входе с паролем.
     // Когда появится админ-панель — заменить на: if (user.twoFactorEnabled !== false)
     await this.sendCode(user.id, user.email, '2fa');
     return { awaiting2FA: true, email: this.maskEmail(user.email) };
   }
 
-  // Шаг 3а: временный код (первый вход)
   async verifyTempCode(email: string, code: string) {
     const user = await this.users.getAuthDataByEmail(email);
     if (!user || !user.isActive) throw new UnauthorizedException('Пользователь не найден');
@@ -82,7 +78,6 @@ export class AuthService {
     return { mustChangePassword: true };
   }
 
-  // Шаг 3б: 2FA код
   async verify2fa(email: string, code: string, res: Response) {
     const user = await this.users.getAuthDataByEmail(email);
     if (!user || !user.isActive) throw new UnauthorizedException('Пользователь не найден');
@@ -93,7 +88,6 @@ export class AuthService {
     return { success: true, user: userInfo };
   }
 
-  // Шаг 4: установить постоянный пароль
   async setPassword(email: string, password: string, confirmPassword: string, res: Response) {
     if (password !== confirmPassword) throw new BadRequestException('Пароли не совпадают');
     this.validatePassword(password);
@@ -126,21 +120,17 @@ export class AuthService {
   }
 
   async renewToken(userId: string, res: Response): Promise<void> {
-    const token = await this.signJwt(userId);
-    const secure = this.config.get<string>('NODE_ENV') === 'production';
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure,
-      sameSite: 'lax',
-      maxAge: JWT_TTL_SECONDS * 1000,
-      path: '/',
-    });
+    await this.setAuthCookie(userId, res);
   }
 
   // ─── Приватные ─────────────────────────────────────────────────────────────
 
   private async finishLogin(userId: string, res: Response): Promise<void> {
     await this.users.updateLastLogin(userId);
+    await this.setAuthCookie(userId, res);
+  }
+
+  private async setAuthCookie(userId: string, res: Response): Promise<void> {
     const token = await this.signJwt(userId);
     const secure = this.config.get<string>('NODE_ENV') === 'production';
     res.cookie(JWT_COOKIE, token, {
