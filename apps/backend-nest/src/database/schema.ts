@@ -9,35 +9,44 @@ import {
   numeric,
   integer,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/pg-core';
 
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  passwordHash: varchar('password_hash', { length: 255 }),
-  mustChangePassword: boolean('must_change_password').default(false),
-  twoFactorEnabled: boolean('two_factor_enabled').default(false),
-  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
-  lastName: varchar('last_name', { length: 50 }),
-  firstName: varchar('first_name', { length: 50 }),
-  middleName: varchar('middle_name', { length: 50 }),
-  email: varchar('email', { length: 100 }),
-  phone: varchar('phone', { length: 20 }),
-  departmentId: uuid('department_id'),
-  positionId: uuid('position_id'),
-  isActive: boolean('is_active').default(false),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }),
-});
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    passwordHash: varchar('password_hash', { length: 255 }),
+    mustChangePassword: boolean('must_change_password').default(false),
+    twoFactorEnabled: boolean('two_factor_enabled').default(false),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    lastName: varchar('last_name', { length: 50 }),
+    firstName: varchar('first_name', { length: 50 }),
+    middleName: varchar('middle_name', { length: 50 }),
+    email: varchar('email', { length: 100 }),
+    phone: varchar('phone', { length: 20 }),
+    departmentId: uuid('department_id'),
+    positionId: uuid('position_id'),
+    isActive: boolean('is_active').default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (t) => [uniqueIndex('users_email_idx').on(t.email)],
+);
 
-export const authCodes = pgTable('auth_codes', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull(),
-  codeHash: varchar('code_hash', { length: 255 }).notNull(),
-  type: varchar('type', { length: 20 }).notNull(), // 'temp_password' | '2fa'
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  usedAt: timestamp('used_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
+export const authCodes = pgTable(
+  'auth_codes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull(),
+    codeHash: varchar('code_hash', { length: 255 }).notNull(),
+    type: varchar('type', { length: 20 }).notNull(), // 'temp_password' | '2fa'
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('auth_codes_user_type_idx').on(t.userId, t.type, t.createdAt)],
+);
 
 export const relUsersGroups = pgTable('rel_users_groups', {
   id: uuid('id').primaryKey().defaultRandom(),

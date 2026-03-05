@@ -7,11 +7,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SignJWT, jwtVerify } from 'jose';
+import { randomInt } from 'crypto';
 import * as argon2 from 'argon2';
 import { eq, and, isNull } from 'drizzle-orm';
 import { Response } from 'express';
 import { DatabaseService } from '../../database/database.service';
-import { authCodes, users } from '../../database/schema';
+import { authCodes } from '../../database/schema';
 import { UsersService } from '../users/services/users.service';
 import { MailService } from './mail.service';
 
@@ -28,6 +29,7 @@ const JWT_TTL_SECONDS = 3 * 24 * 60 * 60;
 @Injectable()
 export class AuthService {
   private readonly jwtSecret: Uint8Array;
+  private readonly isProduction: boolean;
 
   constructor(
     private readonly config: ConfigService,
@@ -37,6 +39,7 @@ export class AuthService {
   ) {
     const secret = config.get<string>('JWT_SECRET') ?? '';
     this.jwtSecret = new TextEncoder().encode(secret);
+    this.isProduction = config.get<string>('NODE_ENV') === 'production';
   }
 
   async checkEmail(email: string) {
@@ -84,7 +87,7 @@ export class AuthService {
 
     await this.verifyCode(user.id, code, '2fa');
     await this.finishLogin(user.id, res);
-    const userInfo = await this.users.findOneByEmail(email);
+    const userInfo = await this.users.findOne(user.id);
     return { success: true, user: userInfo };
   }
 
@@ -99,7 +102,7 @@ export class AuthService {
     await this.users.setPasswordHash(user.id, hash, false);
 
     await this.finishLogin(user.id, res);
-    const userInfo = await this.users.findOneByEmail(email);
+    const userInfo = await this.users.findOne(user.id);
     return { success: true, user: userInfo };
   }
 
@@ -132,10 +135,9 @@ export class AuthService {
 
   private async setAuthCookie(userId: string, res: Response): Promise<void> {
     const token = await this.signJwt(userId);
-    const secure = this.config.get<string>('NODE_ENV') === 'production';
     res.cookie(JWT_COOKIE, token, {
       httpOnly: true,
-      secure,
+      secure: this.isProduction,
       sameSite: 'lax',
       maxAge: JWT_TTL_SECONDS * 1000,
       path: '/',
@@ -151,16 +153,18 @@ export class AuthService {
   }
 
   private async sendCode(userId: string, email: string, type: 'temp_password' | '2fa'): Promise<void> {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = randomInt(100000, 1000000).toString();
     const codeHash = await argon2.hash(code, ARGON2_OPTIONS);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    await this.db.db
-      .update(authCodes)
-      .set({ usedAt: new Date() })
-      .where(and(eq(authCodes.userId, userId), eq(authCodes.type, type), isNull(authCodes.usedAt)));
+    await this.db.db.transaction(async (tx) => {
+      await tx
+        .update(authCodes)
+        .set({ usedAt: new Date() })
+        .where(and(eq(authCodes.userId, userId), eq(authCodes.type, type), isNull(authCodes.usedAt)));
 
-    await this.db.db.insert(authCodes).values({ userId, codeHash, type, expiresAt });
+      await tx.insert(authCodes).values({ userId, codeHash, type, expiresAt });
+    });
 
     if (type === 'temp_password') await this.mail.sendTempCode(email, code);
     else await this.mail.send2faCode(email, code);
