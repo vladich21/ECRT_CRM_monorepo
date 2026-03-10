@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Image } from 'antd';
 import styles from './AuthLoadingScreen.module.scss';
 
 interface AuthLoadingScreenProps {
@@ -56,15 +55,18 @@ export const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({ visible })
                 src="/logo_monochrome.png"
                 alt="Логотип"
                 className={styles.logoImage}
-                style={{ width: '200px', height: 'auto' }}
               />
             </div>
           </div>
           <div className={styles.textContainer}>
-            <div className={styles.textLine}>ИНЖИНИРИНГОВЫЙ</div>
-            <div className={styles.textLine}>ЦЕНТР</div>
-            <div className={styles.textLine}>ЖЕЛЕЗНОДОРОЖНОГО</div>
-            <div className={styles.textLine}>ТРАНСПОРТА</div>
+            <div className={styles.textLine}>
+               Инжиниринговый
+              <br />
+               центр
+               <br />
+               железнодорожного
+               <br />
+               транспорта</div>
           </div>
         </div>
       </div>

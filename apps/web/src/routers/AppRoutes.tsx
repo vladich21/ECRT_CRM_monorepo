@@ -52,7 +52,6 @@ import PatentGrantDetailsPage from "../pages/referenceBooks/patentGrants/PatentG
 import { PatentGrantMainInfoTab } from "../pages/referenceBooks/patentGrants/detailsTabs/PatentGrantMainInfoTab";
 import PatentAreasListPage from "../pages/referenceBooks/patentAreas/PatentAreasListPage";
 import GanttsPage from "../pages/gantt/GanttsPage";
-
 const Private = ({ children }: { children: React.ReactNode }) => (
   <PrivateRoute>{children}</PrivateRoute>
 );

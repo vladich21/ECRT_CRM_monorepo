@@ -1,66 +1,44 @@
 type SetLoadingScreenFn = (visible: boolean) => void;
 
-interface Timers {
-  navigateTimer?: NodeJS.Timeout;
-  hideTimer?: NodeJS.Timeout;
+let setLoadingScreenFn: SetLoadingScreenFn | null = null;
+let navigateTimer: ReturnType<typeof setTimeout> | undefined;
+let hideTimer: ReturnType<typeof setTimeout> | undefined;
+
+function clearTimers() {
+  if (navigateTimer) clearTimeout(navigateTimer);
+  if (hideTimer) clearTimeout(hideTimer);
+  navigateTimer = hideTimer = undefined;
 }
 
-let setLoadingScreenFn: SetLoadingScreenFn | null = null;
-const timers: Timers = {};
-
 export const authLoadingScreenStore = {
-  registerSetState: (fn: SetLoadingScreenFn): void => {
+  registerSetState: (fn: SetLoadingScreenFn) => {
     setLoadingScreenFn = fn;
   },
 
-  unregisterSetState: (): void => {
+  unregisterSetState: () => {
     setLoadingScreenFn = null;
   },
 
-  show: (): void => {
-    if (setLoadingScreenFn) {
-      setLoadingScreenFn(true);
-    }
+  show: () => {
+    setLoadingScreenFn?.(true);
   },
 
-  hide: (): void => {
-    if (setLoadingScreenFn) {
-      setLoadingScreenFn(false);
-    }
+  hide: () => {
+    setLoadingScreenFn?.(false);
   },
 
-  clearTimers: (): void => {
-    if (timers.navigateTimer) {
-      clearTimeout(timers.navigateTimer);
-      timers.navigateTimer = undefined;
-    }
-    if (timers.hideTimer) {
-      clearTimeout(timers.hideTimer);
-      timers.hideTimer = undefined;
-    }
-  },
+  clearTimers,
 
-  setNavigateTimer: (callback: () => void, delay: number): void => {
-    if (timers.navigateTimer) {
-      clearTimeout(timers.navigateTimer);
-    }
-    timers.navigateTimer = setTimeout(() => {
-      callback();
-      timers.navigateTimer = undefined;
-    }, delay);
-  },
-
-  setHideTimer: (callback: () => void, delay: number): void => {
-    timers.hideTimer = setTimeout(() => {
-      callback();
-      timers.hideTimer = undefined;
-    }, delay);
-  },
-
-  showThenNavigate(onNavigate: () => void, navigateAfterMs: number, hideAfterMs: number): void {
-    this.clearTimers();
-    this.show();
-    this.setNavigateTimer(onNavigate, navigateAfterMs);
-    this.setHideTimer(() => this.hide(), hideAfterMs);
+  showThenNavigate(onNavigate: () => void, navigateAfterMs: number, hideAfterMs: number) {
+    clearTimers();
+    authLoadingScreenStore.show();
+    navigateTimer = setTimeout(() => {
+      onNavigate();
+      navigateTimer = undefined;
+    }, navigateAfterMs);
+    hideTimer = setTimeout(() => {
+      authLoadingScreenStore.hide();
+      hideTimer = undefined;
+    }, hideAfterMs);
   },
 };

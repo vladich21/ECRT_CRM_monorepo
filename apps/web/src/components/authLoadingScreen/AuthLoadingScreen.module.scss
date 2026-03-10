@@ -16,14 +16,14 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse at bottom left,
-    #e72f14 0%,
+  background: radial-gradient(
+    ellipse at bottom left,
+    #fb5d04 15%,
     #e72f14 30%,
     #be1c24 40%,
     #832434 55%,
     #412c44 65%,
-    #183153 80%,
-    #3c556c 98%
+    #183153 75%,
   );
   transform: translateY(0);
   transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -63,7 +63,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  // gap: 40px;
 }
 
 .preloaderLogo {
@@ -84,10 +83,22 @@
   justify-content: center;
   align-items: center;
   filter: drop-shadow(0 4px 20px rgba(255, 255, 255, 0.3));
+  opacity: 0;
+  animation: logoReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes logoReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .logoImage {
-  // Логотип уже монохромный белый, фильтр не нужен
   opacity: 0.95;
   width: 200px;
   height: auto;
@@ -97,60 +108,42 @@
 .textContainer {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: white;
+  align-items: flex-start;
+  gap: 0;
 }
 
 .textLine {
-  font-size: 28px;
-  font-weight: 500;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  animation: fadeInUp 0.8s ease-out forwards;
-  opacity: 0;
-  color: white;
-  text-shadow: 
-    0 0 20px rgba(255, 255, 255, 0.5),
-    0 0 40px rgba(255, 255, 255, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    0 4px 16px rgba(0, 0, 0, 0.2);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+  text-transform: uppercase;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 7px;
+  line-height: 1.25;
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 
   &:nth-child(1) {
-    animation-delay: 0.1s;
-    font-size: 34px;
-    font-weight: 600;
-    letter-spacing: 5px;
-    text-shadow: 
-      0 0 30px rgba(255, 255, 255, 0.6),
-      0 0 60px rgba(255, 255, 255, 0.4),
-      0 2px 10px rgba(0, 0, 0, 0.4),
-      0 4px 20px rgba(0, 0, 0, 0.3);
-  }
-
-  &:nth-child(2) {
     animation-delay: 0.2s;
-    font-weight: 600;
   }
-
+  &:nth-child(2) {
+    animation-delay: 0.32s;
+  }
   &:nth-child(3) {
-    animation-delay: 0.3s;
-    font-weight: 600;
+    animation-delay: 0.44s;
   }
-
   &:nth-child(4) {
-    animation-delay: 0.4s;
-    font-weight: 600;
+    animation-delay: 0.56s;
   }
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -158,19 +151,22 @@
   }
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
-  .textLine {
-    font-size: 18px;
-    letter-spacing: 1px;
-
-    &:nth-child(1) {
-      font-size: 22px;
-    }
+  .logoImage {
+    width: 140px;
   }
 
-  .logo {
-    width: 80px;
-    height: 80px;
+  .textContainer {
+    margin-top: 16px;
+  }
+
+  .textLine {
+    &:nth-child(1),
+    &:nth-child(2), 
+    &:nth-child(3),
+    &:nth-child(4) {
+      font-size: 20px;
+      letter-spacing: 5px;
+    }
   }
 }

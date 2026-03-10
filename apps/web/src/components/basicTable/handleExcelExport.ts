@@ -1,12 +1,14 @@
 import * as XLSX from 'xlsx';
 
-const flattenTreeData = <T>(treeData: T[]): T[] => {
+const CHILDREN_FIELD = 'children';
+
+const flattenTreeData = <T extends Record<string, unknown>>(treeData: T[]): T[] => {
   const result: T[] = [];
 
   const flatten = (items: T[]) => {
     items.forEach(item => {
       result.push(item);
-      const children = item[childrenField] as T[];
+      const children = (item[CHILDREN_FIELD] as T[] | undefined);
       if (children && children.length > 0) {
         flatten(children);
       }

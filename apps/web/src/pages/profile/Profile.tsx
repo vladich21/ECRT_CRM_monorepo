@@ -182,27 +182,23 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {!isEditing ? (
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="Должность" span={2}>
-              {user?.position?.name || "Нет данных"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Отдел" span={2}>
-              {user?.department?.name || "Нет данных"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email" span={2}>
-              {user?.email ? <a href={`mailto:${user.email}`}><MailOutlined /> {user.email}</a> : "Нет данных"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Телефон" span={2}>
-              {user?.phone ? <a href={`tel:${user.phone.replace(/\D/g, "")}`}><PhoneOutlined /> {user.phone}</a> : "Нет данных"}
-            </Descriptions.Item>
-          </Descriptions>
-        ) : (
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSave}
-          >
+        <Form form={form} layout="vertical" onFinish={handleSave}>
+          {!isEditing ? (
+            <Descriptions bordered column={2}>
+              <Descriptions.Item label="Должность" span={2}>
+                {user?.position?.name || "Нет данных"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Отдел" span={2}>
+                {user?.department?.name || "Нет данных"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email" span={2}>
+                {user?.email ? <a href={`mailto:${user.email}`}><MailOutlined /> {user.email}</a> : "Нет данных"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Телефон" span={2}>
+                {user?.phone ? <a href={`tel:${user.phone.replace(/\D/g, "")}`}><PhoneOutlined /> {user.phone}</a> : "Нет данных"}
+              </Descriptions.Item>
+            </Descriptions>
+          ) : (
             <Row gutter={16}>
               <Col xs={24} md={12}>
                 <Form.Item label="Должность" name="position_id">
@@ -276,8 +272,8 @@ const ProfilePage = () => {
                 </Form.Item>
               </Col>
             </Row>
-          </Form>
-        )}
+          )}
+        </Form>
       </Card>
     </div>
   );
