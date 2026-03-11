@@ -1,6 +1,5 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../../database/database.service';
 import { comments, files, users } from '../../../database/schema';
 
@@ -10,8 +9,16 @@ export class CommentsService {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly config: ConfigService,
   ) {}
+
+  private toFileDto(file: (typeof files.$inferSelect)) {
+    return {
+      id: String(file.id),
+      name: file.name ?? '',
+      url: `/api/comment/${file.tableId}/${encodeURIComponent(file.name ?? '')}`,
+      size: file.size != null ? String(file.size) : '',
+    };
+  }
 
   async findAll(entityType?: string, entityId?: string) {
     this.logger.debug(`Получение комментариев entity_type=${entityType} entity_id=${entityId}`);
@@ -63,16 +70,7 @@ export class CommentsService {
       .select()
       .from(files)
       .where(and(eq(files.entityType, 'comment'), eq(files.tableId, id)));
-    const fileBaseUrl =
-      this.config.get<string>('FILE_UPLOAD_URL') ||
-      this.config.get<string>('API_URL') ||
-      'http://localhost:9001/api';
-    const filesList = fileRows.map((f) => ({
-      id: String(f.id),
-      name: f.name ?? '',
-      url: `${fileBaseUrl.replace(/\/$/, '')}/comment/${f.tableId}/${encodeURIComponent(f.name ?? '')}`,
-      size: f.size != null ? String(f.size) : '',
-    }));
+    const filesList = fileRows.map((file) => this.toFileDto(file));
     return this.toResponse(row.comment, row, new Map([[id, fileRows]]), filesList);
   }
 
@@ -146,17 +144,8 @@ export class CommentsService {
       userRow && userRow.createdByFio != null
         ? [userRow.createdByFio, userRow.createdByFirstName, userRow.createdByMiddleName].filter(Boolean).join(' ')
         : '';
-    const fileBaseUrl =
-      this.config.get<string>('FILE_UPLOAD_URL') ||
-      this.config.get<string>('API_URL') ||
-      'http://localhost:9001/api';
     const rawFiles = filesByCommentId?.get(String(c.id)) ?? [];
-    const files = filesOverride ?? rawFiles.map((f) => ({
-        id: String(f.id),
-        name: f.name ?? '',
-        url: `${fileBaseUrl.replace(/\/$/, '')}/comment/${f.tableId}/${encodeURIComponent(f.name ?? '')}`,
-        size: f.size != null ? String(f.size) : '',
-      }));
+    const files = filesOverride ?? rawFiles.map((file) => this.toFileDto(file));
     return {
       id: String(c.id),
       parent_id: c.parentId ? String(c.parentId) : null,

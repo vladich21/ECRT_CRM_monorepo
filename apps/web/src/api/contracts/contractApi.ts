@@ -3,10 +3,27 @@ import { Reference } from '../../types/referenceTypes';
 import { apiClient } from '../clients';
 import { ContractParams } from './contractApiHooks';
 
+export interface ContractsListResponse {
+  data: Contract[];
+  total: number;
+}
+
 export const contractApi = {
-  getContracts: async (params?: ContractParams): Promise<Contract[]> => {
+  getContracts: async (
+    params?: ContractParams,
+    limit: number = 50,
+    offset: number = 0,
+  ): Promise<ContractsListResponse> => {
     const response = await apiClient.get('/contracts', {
-      params,
+      params: { ...params, limit, offset },
+    });
+    return response.data;
+  },
+
+  /** Все договоры для справочника (выпадающие списки). Без лимита, ответ кэшируется на бэкенде. */
+  getContractsForReference: async (): Promise<ContractsListResponse> => {
+    const response = await apiClient.get('/contracts', {
+      params: { for_reference: 1 },
     });
     return response.data;
   },

@@ -1,15 +1,24 @@
-// api/patentApi.ts
 import { Patent } from '../../types/patent';
 import { apiClient } from '../clients';
 
+export interface PatentsListResponse {
+  data: Patent[];
+  total: number;
+}
+
 export const patentApi = {
-  getPatents: async (is_deleted?: boolean, preview?: boolean): Promise<Patent[]> => {
-    const response = await apiClient.get(
-      `/patents${is_deleted === undefined ? '' : is_deleted ? '/deleted' : '?is_deleted=false'}`,
-      {
-        params: { preview },
-      },
-    );
+  getPatents: async (
+    is_deleted?: boolean,
+    preview?: boolean,
+    limit?: number,
+    offset?: number,
+  ): Promise<Patent[] | PatentsListResponse> => {
+    const path = is_deleted ? '/patents/deleted' : '/patents';
+    const params: Record<string, string | number> = {};
+    if (preview) params.preview = '1';
+    if (limit != null) params.limit = limit;
+    if (offset != null) params.offset = offset;
+    const response = await apiClient.get(path, { params });
     return response.data;
   },
 

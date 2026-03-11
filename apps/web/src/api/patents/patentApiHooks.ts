@@ -1,18 +1,28 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { patentApi } from './patentApi';
+import { patentApi, PatentsListResponse } from './patentApi';
 import { Patent } from '../../types/patent';
 
-export const useActivePatents = (): UseQueryResult<Patent[], Error> => {
-  return useQuery<Patent[], Error>({
-    queryKey: ['patents'],
-    queryFn: () => patentApi.getPatents(false),
+export const useActivePatents = (
+  page?: number,
+  pageSize?: number,
+): UseQueryResult<PatentsListResponse, Error> => {
+  const limit = pageSize ?? 50;
+  const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
+  return useQuery<PatentsListResponse, Error>({
+    queryKey: ['patents', page, pageSize],
+    queryFn: () => patentApi.getPatents(false, false, limit, offset) as Promise<PatentsListResponse>,
   });
 };
 
-export const useDeletedPatents = (): UseQueryResult<Patent[], Error> => {
-  return useQuery<Patent[], Error>({
-    queryKey: ['patents', 'is_deleted'],
-    queryFn: () => patentApi.getPatents(true),
+export const useDeletedPatents = (
+  page?: number,
+  pageSize?: number,
+): UseQueryResult<PatentsListResponse, Error> => {
+  const limit = pageSize ?? 50;
+  const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
+  return useQuery<PatentsListResponse, Error>({
+    queryKey: ['patents', 'deleted', page, pageSize],
+    queryFn: () => patentApi.getPatents(true, false, limit, offset) as Promise<PatentsListResponse>,
   });
 };
 

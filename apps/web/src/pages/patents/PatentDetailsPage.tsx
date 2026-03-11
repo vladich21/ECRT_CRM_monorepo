@@ -6,23 +6,27 @@ import {
   EditOutlined,
   FileTextOutlined,
   SafetyCertificateOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
-import { useDeletePatent, usePatentById } from '../../api/patents/patentApiHooks';
+import { useDeletePatent, usePatentById, useRestorePatent } from '../../api/patents/patentApiHooks';
 import { NotFound } from '../../components/notFound/NotFound';
 import { Loader } from '../../components/loader/Loader';
 import { BackButton } from '../../components/backButton/BackButton';
 import { useNotification } from '../../customhooks/useNotification';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import type { ActionType } from './PatentsListPage';
 
 export default function PatentDetailsPage() {
   const { patentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const returnTab = (location.state as { tab?: ActionType })?.tab ?? 'active';
+
   const { contextHolder, showNotification } = useNotification();
   const { data: patent, isLoading, isError } = usePatentById(patentId!);
-  const mutation = useDeletePatent();
+  const deleteMutation = useDeletePatent();
+  const restoreMutation = useRestorePatent();
 
-  // Определяем активную вкладку из URL
   const getActiveTabFromPath = () => {
     const path = location.pathname;
     if (path.includes('/files')) return 'files';
@@ -33,10 +37,19 @@ export default function PatentDetailsPage() {
 
   const activeTab = getActiveTabFromPath();
 
-  const { handleOpenModal } = useConfirmByModal({
-    mutation,
+  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
+    mutation: deleteMutation,
     successMessage: 'Патент успешно удалён',
     errorMessage: 'Не удалось удалить патент',
+    redirectPath: '/patents',
+    getMutationProps: () => patentId!,
+    showNotification,
+  });
+
+  const { handleOpenModal: openRestoreModal } = useConfirmByModal({
+    mutation: restoreMutation,
+    successMessage: 'Патент успешно восстановлен',
+    errorMessage: 'Не удалось восстановить патент',
     redirectPath: '/patents',
     getMutationProps: () => patentId!,
     showNotification,
@@ -46,7 +59,6 @@ export default function PatentDetailsPage() {
     navigate(`/patents/${patentId}/edit`);
   };
 
-  // Обработчик смены вкладки
   const handleTabChange = (key: string) => {
     const basePath = `/patents/${patentId}`;
 
@@ -98,11 +110,15 @@ export default function PatentDetailsPage() {
     },
   ];
 
+  const handleBack = () => {
+    navigate('/patents', { state: { tab: returnTab } });
+  };
+
   return (
     <div>
       {contextHolder}
       <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton path='/patents' />
+        <BackButton onClick={handleBack} />
         <Card
           title={
             <>
@@ -115,9 +131,20 @@ export default function PatentDetailsPage() {
               <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
                 Редактировать
               </Button>
-              <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
-                Удалить
-              </Button>
+              {patent.is_deleted ? (
+                <Button
+                  type='primary'
+                  icon={<UndoOutlined />}
+                  onClick={openRestoreModal}
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                >
+                  Восстановить
+                </Button>
+              ) : (
+                <Button type='primary' danger icon={<DeleteOutlined />} onClick={openDeleteModal}>
+                  Удалить
+                </Button>
+              )}
             </Space>
           }
         >

@@ -1,4 +1,4 @@
-import { asc, eq, inArray, sql } from 'drizzle-orm';
+import { asc, count, eq, inArray, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
@@ -7,12 +7,22 @@ import {
   patentGrants,
   relPatentAuthors,
 } from '../../../database/schema';
+import { PaginationParams } from '../../../common/pagination';
 
 @Injectable()
 export class PatentsService {
   private readonly logger = new Logger(PatentsService.name);
 
   constructor(private readonly db: DatabaseService) {}
+
+  private async patentExists(patentId: string): Promise<boolean> {
+    const rows = await this.db.db
+      .select({ id: patents.id })
+      .from(patents)
+      .where(eq(patents.id, patentId))
+      .limit(1);
+    return Boolean(rows[0]);
+  }
 
   async findOne(id: string) {
     this.logger.debug(`Получение патента по id: ${id}`);
@@ -88,8 +98,13 @@ export class PatentsService {
     }
   }
 
-  async findAll(preview?: boolean, isDeleted?: boolean) {
+  async findAll(
+    preview?: boolean,
+    isDeleted?: boolean,
+    pagination?: PaginationParams,
+  ): Promise<{ data: unknown[]; total: number } | unknown[]> {
     this.logger.debug(`Получение патентов (preview=${preview}, is_deleted=${isDeleted})`);
+    const { limit = 50, offset = 0 } = pagination ?? { limit: 50, offset: 0 };
     const where = isDeleted !== undefined ? eq(patents.isDeleted, isDeleted) : undefined;
 
     if (preview) {
@@ -97,26 +112,41 @@ export class PatentsService {
         .select({ id: patents.id, name: patents.name })
         .from(patents)
         .where(where ?? sql`true`)
-        .orderBy(asc(patents.name));
+        .orderBy(asc(patents.name))
+        .limit(limit)
+        .offset(offset);
       return rows.map((r) => ({
         id: String(r.id),
         name: String(r.name ?? ''),
       }));
     }
 
-    const rows = await this.db.db
-      .select()
-      .from(patents)
-      .where(where ?? sql`true`)
-      .orderBy(asc(patents.name));
+    const runCount = async (): Promise<number> => {
+      let q = this.db.db.select({ value: count() }).from(patents);
+      if (where) q = q.where(where) as typeof q;
+      const result = await q;
+      return Number(result[0]?.value ?? 0);
+    };
+
+    const [total, rows] = await Promise.all([
+      runCount(),
+      this.db.db
+        .select()
+        .from(patents)
+        .where(where ?? sql`true`)
+        .orderBy(asc(patents.name))
+        .limit(limit)
+        .offset(offset),
+    ]);
     const patentIds = rows.map((r) => String(r.id));
     const [areaIdsMap, authorIdsMap] = await Promise.all([
       this.getAreaIdsMap(patentIds),
       this.getAuthorIdsMap(patentIds),
     ]);
-    return rows.map((r) =>
+    const data = rows.map((r) =>
       this.toResponse(r, areaIdsMap[String(r.id)] ?? [], authorIdsMap[String(r.id)] ?? []),
     );
+    return { data, total };
   }
 
   private toResponse(
@@ -144,7 +174,7 @@ export class PatentsService {
       area_ids: areaIds,
       created_at: r.createdAt ? r.createdAt.toISOString() : '',
       updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
-      created_by: r.createdBy ? 0 : 0,
+      created_by: r.createdBy ? String(r.createdBy) : '',
     };
   }
 
@@ -181,13 +211,14 @@ export class PatentsService {
   }
 
   async remove(id: string) {
-    const row = await this.findOne(id);
-    if (!row) return null;
-    await this.db.db.delete(relPatentsApplicationAreas).where(eq(relPatentsApplicationAreas.patentId, id));
-    await this.db.db.delete(relPatentAuthors).where(eq(relPatentAuthors.patentId, id));
-    await this.db.db.delete(patentGrants).where(eq(patentGrants.patentId, id));
-    await this.db.db.delete(patents).where(eq(patents.id, id));
-    return row;
+    this.logger.debug(`Мягкое удаление патента id: ${id}`);
+    const current = await this.findOne(id);
+    if (!current) return null;
+    await this.db.db
+      .update(patents)
+      .set({ isDeleted: true, updatedAt: new Date() })
+      .where(eq(patents.id, id));
+    return this.findOne(id);
   }
 
   async update(id: string, data: Record<string, unknown>) {
@@ -220,6 +251,17 @@ export class PatentsService {
     await this.db.db.update(patents).set(updateObj).where(eq(patents.id, id));
     await this.syncAreaIds(id, data);
     await this.syncAuthorIds(id, data);
+    return this.findOne(id);
+  }
+
+  async restore(id: string) {
+    this.logger.debug(`Восстановление патента id: ${id}`);
+    const current = await this.findOne(id);
+    if (!current) return null;
+    await this.db.db
+      .update(patents)
+      .set({ isDeleted: false, updatedAt: new Date() })
+      .where(eq(patents.id, id));
     return this.findOne(id);
   }
 
@@ -256,8 +298,7 @@ export class PatentsService {
 
   async getGrants(patentId: string) {
     this.logger.debug(`Получение grants для патента ${patentId}`);
-    const exists = await this.db.db.select({ id: patents.id }).from(patents).where(eq(patents.id, patentId)).limit(1);
-    if (!exists[0]) return null;
+    if (!(await this.patentExists(patentId))) return null;
     try {
       const rows = await this.db.db
         .select()
@@ -265,17 +306,17 @@ export class PatentsService {
         .where(eq(patentGrants.patentId, patentId))
         .orderBy(asc(patentGrants.grantDate));
       return rows.map((r) => ({
-      id: String(r.id),
-      patent_id: r.patentId ? String(r.patentId) : '',
-      grant_number: r.grantNumber ?? '',
-      grant_date: r.grantDate ? String(r.grantDate) : '',
-      office: r.office ?? '',
-      status: r.status ?? '',
-      renewal_date: r.renewalDate ? String(r.renewalDate) : '',
-      notes: r.notes ?? '',
-      created_at: r.createdAt ? r.createdAt.toISOString() : '',
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
-    }));
+        id: String(r.id),
+        patent_id: r.patentId ? String(r.patentId) : '',
+        grant_number: r.grantNumber ?? '',
+        grant_date: r.grantDate ? String(r.grantDate) : '',
+        office: r.office ?? '',
+        status: r.status ?? '',
+        renewal_date: r.renewalDate ? String(r.renewalDate) : '',
+        notes: r.notes ?? '',
+        created_at: r.createdAt ? r.createdAt.toISOString() : '',
+        updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
+      }));
     } catch {
       return [];
     }
@@ -283,8 +324,7 @@ export class PatentsService {
 
   async createGrant(patentId: string, data: Record<string, unknown>) {
     this.logger.debug(`Добавление grant для патента ${patentId}`);
-    const exists = await this.db.db.select({ id: patents.id }).from(patents).where(eq(patents.id, patentId)).limit(1);
-    if (!exists[0]) return null;
+    if (!(await this.patentExists(patentId))) return null;
     const insertData: Record<string, unknown> = {
       patentId,
       grantNumber: data.grant_number ?? null,

@@ -7,11 +7,21 @@ function getExtension(filename: string): string {
   return filename.split('.').pop()?.toLowerCase() ?? '';
 }
 
-const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']);
+/** Только PDF открывается в превью; остальные форматы — сразу скачивание */
+export function canPreview(filename: string): boolean {
+  return getExtension(filename) === 'pdf';
+}
 
-function canPreview(filename: string): boolean {
-  const ext = getExtension(filename);
-  return ext === 'pdf' || IMAGE_EXTENSIONS.has(ext);
+/** Скачать файл по ссылке без открытия превью (для не-PDF) */
+export function triggerFileDownload(url: string, filename: string): void {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'download';
+  a.target = '_blank';
+  a.rel = 'noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 // ─── модалка ─────────────────────────────────────────────────────────────────
@@ -24,8 +34,6 @@ interface FilePreviewModalProps {
 }
 
 export function FilePreviewModal({ open, url, filename, onClose }: FilePreviewModalProps) {
-  const isImage = IMAGE_EXTENSIONS.has(getExtension(filename));
-
   return (
     <Modal
       open={open}
@@ -38,13 +46,7 @@ export function FilePreviewModal({ open, url, filename, onClose }: FilePreviewMo
       destroyOnClose
     >
       <div className={styles.content}>
-        {isImage ? (
-          <div className={styles.image}>
-            <img src={url} alt={filename} />
-          </div>
-        ) : (
-          <iframe src={url} className={styles.iframe} title="PDF предпросмотр" />
-        )}
+        <iframe src={url} className={styles.iframe} title="PDF предпросмотр" />
       </div>
       <div className={styles.footer}>
         <Button icon={<DownloadOutlined />} href={url} download={filename} target="_blank">

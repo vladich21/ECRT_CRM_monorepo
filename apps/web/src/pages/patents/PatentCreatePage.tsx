@@ -70,15 +70,13 @@ export default function PatentCreatePage() {
     if (addAreaResult?.id) {
       try {
         const currentValues: (string | number)[] = form.getFieldValue('area_ids') || [];
-
-        const newId = typeof currentValues[0] === 'string' ? addAreaResult.id.toString() : Number(addAreaResult.id);
-
-        if (!currentValues.includes(newId)) {
-          const newValues = [...currentValues, newId];
-          form.setFieldValue('area_ids', newValues);
-        } else {
+        const newId = String(addAreaResult.id);
+        if (!newId || newId === 'NaN') return;
+        const currentStr = currentValues.map((v) => String(v)).filter((v) => v && v !== 'NaN');
+        if (!currentStr.includes(newId)) {
+          form.setFieldValue('area_ids', [...currentStr, newId]);
         }
-      } catch (error) {}
+      } catch {}
     }
   }, [addAreaResult, form]);
 
@@ -92,7 +90,11 @@ export default function PatentCreatePage() {
   }, [isCreateError, isCreateSuccess, navigate, showNotification]);
 
   const handleCreate = async (values: any) => {
-    const areaIds = values.area_ids ? values.area_ids.filter((id: any) => id !== null && id !== undefined) : [];
+    const areaIds = values.area_ids
+      ? values.area_ids
+          .map((id: unknown) => (id != null ? String(id) : ''))
+          .filter((id: string) => id && id !== 'NaN')
+      : [];
     const authorIds = values.author_ids ? values.author_ids.filter((id: any) => id !== null && id !== undefined) : [];
 
     const payload = {

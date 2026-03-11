@@ -1,13 +1,85 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, count, eq } from 'drizzle-orm';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { contracts, patents } from '../../../database/schema';
+import { PaginationParams } from '../../../common/pagination';
+
+/** TTL кэша списка договоров для справочников */
+const CONTRACTS_LIST_CACHE_TTL_MS = 10 * 60 * 1000; // 10 мин
+
+interface CachedList {
+  data: unknown[];
+  total: number;
+  expiresAt: number;
+}
 
 @Injectable()
 export class ContractsService {
   private readonly logger = new Logger(ContractsService.name);
+  /** In-memory кэш первой страницы списка (без partner_id) для использования в справочниках */
+  private listCache: Map<string, CachedList> = new Map();
 
   constructor(private readonly db: DatabaseService) {}
+
+  private cacheKey(preview: boolean, limit: number): string {
+    return `contracts:preview:${preview}:limit:${limit}`;
+  }
+
+  private cacheKeyAll(preview: boolean): string {
+    return `contracts:preview:${preview}:all`;
+  }
+
+  private invalidateListCache(): void {
+    this.listCache.clear();
+  }
+
+  private getValidCache(key: string): CachedList | null {
+    const cached = this.listCache.get(key);
+    if (!cached || cached.expiresAt <= Date.now()) return null;
+    return cached;
+  }
+
+  private setListCache(key: string, result: { data: unknown[]; total: number }): void {
+    this.listCache.set(key, {
+      ...result,
+      expiresAt: Date.now() + CONTRACTS_LIST_CACHE_TTL_MS,
+    });
+  }
+
+  private async getContractsTotal(partnerFilter?: any): Promise<number> {
+    let countQuery = this.db.db.select({ value: count() }).from(contracts);
+    if (partnerFilter) countQuery = countQuery.where(partnerFilter) as typeof countQuery;
+    const result = await countQuery;
+    return Number(result[0]?.value ?? 0);
+  }
+
+  private async getContractsRows(
+    preview: boolean,
+    partnerFilter?: any,
+    pagination?: PaginationParams,
+  ) {
+    if (preview) {
+      let query: any = this.db.db
+        .select({ id: contracts.id, name: contracts.name, number: contracts.number })
+        .from(contracts)
+        .orderBy(asc(contracts.number));
+      if (partnerFilter) query = query.where(partnerFilter);
+      if (pagination) query = query.limit(pagination.limit).offset(pagination.offset);
+      return query;
+    }
+
+    let query: any = this.db.db.select().from(contracts).orderBy(asc(contracts.number));
+    if (partnerFilter) query = query.where(partnerFilter);
+    if (pagination) query = query.limit(pagination.limit).offset(pagination.offset);
+    return query;
+  }
+
+  private mapContractsRows(rows: any[], preview: boolean): unknown[] {
+    if (preview) {
+      return rows.map((row) => ({ id: String(row.id), name: row.name ?? row.number ?? '' }));
+    }
+    return rows.map((row) => this.toResponse(row));
+  }
 
   async create(data: Record<string, unknown>) {
     this.logger.debug('Создание договора');
@@ -36,23 +108,55 @@ export class ContractsService {
       if (data[snake] !== undefined) insertData[camel] = data[snake];
     }
     const [row] = await this.db.db.insert(contracts).values(insertData as any).returning();
+    this.invalidateListCache();
     return row ? this.toResponse(row) : null;
   }
 
-  async findAll(preview?: boolean, partnerId?: string) {
-    this.logger.debug(`Получение договоров (preview=${preview}, partner_id=${partnerId})`);
-    const partnerFilter = partnerId ? eq(contracts.partnerId, partnerId) : undefined;
-    if (preview) {
-      const base = this.db.db
-        .select({ id: contracts.id, name: contracts.name, number: contracts.number })
-        .from(contracts)
-        .orderBy(asc(contracts.number));
-      const rows = partnerFilter ? await base.where(partnerFilter) : await base;
-      return rows.map((row) => ({ id: String(row.id), name: row.name ?? row.number ?? '' }));
+  async findAll(
+    preview?: boolean,
+    partnerId?: string,
+    pagination?: PaginationParams,
+    options?: { forReference?: boolean },
+  ): Promise<{ data: unknown[]; total: number }> {
+    const forReference = options?.forReference && !partnerId;
+    this.logger.debug(
+      `Получение договоров (preview=${preview}, partner_id=${partnerId}, forReference=${forReference})`,
+    );
+
+    if (forReference) {
+      const key = this.cacheKeyAll(!!preview);
+      const cached = this.getValidCache(key);
+      if (cached) return { data: cached.data, total: cached.total };
     }
-    const base = this.db.db.select().from(contracts).orderBy(asc(contracts.number));
-    const rows = partnerFilter ? await base.where(partnerFilter) : await base;
-    return rows.map((row) => this.toResponse(row));
+
+    const partnerFilter = partnerId ? eq(contracts.partnerId, partnerId) : undefined;
+    const { limit = 50, offset = 0 } = pagination ?? { limit: 50, offset: 0 };
+
+    if (!forReference && !partnerId && offset === 0) {
+      const key = this.cacheKey(!!preview, limit);
+      const cached = this.getValidCache(key);
+      if (cached) return { data: cached.data, total: cached.total };
+    }
+
+    if (forReference) {
+      const rows = await this.getContractsRows(!!preview);
+      const result = {
+        data: this.mapContractsRows(rows, !!preview),
+        total: rows.length,
+      };
+      this.setListCache(this.cacheKeyAll(!!preview), result);
+      return result;
+    }
+
+    const [total, rows] = await Promise.all([
+      this.getContractsTotal(partnerFilter),
+      this.getContractsRows(!!preview, partnerFilter, { limit, offset }),
+    ]);
+    const result = { data: this.mapContractsRows(rows, !!preview), total };
+    if (!partnerId && offset === 0) {
+      this.setListCache(this.cacheKey(!!preview, limit), result);
+    }
+    return result;
   }
 
   async findOne(id: string) {
@@ -94,6 +198,7 @@ export class ContractsService {
       if (data[snake] !== undefined) updateObj[camel] = data[snake];
     }
     await this.db.db.update(contracts).set(updateObj).where(eq(contracts.id, id));
+    this.invalidateListCache();
     return this.findOne(id);
   }
 
@@ -112,6 +217,7 @@ export class ContractsService {
       );
     }
     await this.db.db.delete(contracts).where(eq(contracts.id, id));
+    this.invalidateListCache();
     return row;
   }
 

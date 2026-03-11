@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ContractsService } from '../services/contract.service';
+import { parsePagination } from '../../../common/pagination';
 
 @Controller('contracts')
 export class ContractsController {
@@ -24,8 +25,18 @@ export class ContractsController {
   }
 
   @Get()
-  findAll(@Query('preview') preview?: string, @Query('partner_id') partnerId?: string) {
-    return this.service.findAll(preview === '1', partnerId);
+  findAll(
+    @Query('preview') preview?: string,
+    @Query('partner_id') partnerId?: string,
+    @Query('for_reference') forReference?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    if (forReference === '1' && !partnerId) {
+      return this.service.findAll(preview === '1', undefined, undefined, { forReference: true });
+    }
+    const pagination = parsePagination(limit, offset);
+    return this.service.findAll(preview === '1', partnerId, pagination);
   }
 
   @Get(':id')

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Avatar, Button, Dropdown, Menu } from 'antd';
 import { UserOutlined, DownloadOutlined, MoreOutlined, MessageOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useFilePreview, FilePreviewModal } from '../filePreview/FilePreviewModal';
+import { useFilePreview, canPreview, triggerFileDownload } from '../filePreview/FilePreviewModal';
 import { Comment } from '../../types/comments';
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
@@ -176,7 +176,11 @@ const CommentComponent: React.FC<CommentProps> = ({
                   <div
                     key={file.id || file.name}
                     className={styles.file}
-                    onClick={() => file.url && file.name && filePreview.open(file.url, file.name)}
+                    onClick={() => {
+                      if (!file.url || !file.name) return;
+                      if (canPreview(file.name)) filePreview.open(file.url, file.name);
+                      else triggerFileDownload(file.url, file.name);
+                    }}
                   >
                     <DownloadOutlined className={styles.fileIcon} />
                     <div className={styles.fileInfo}>

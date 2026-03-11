@@ -1,4 +1,3 @@
-// hooks/useReferenceData.ts
 import { useQuery } from '@tanstack/react-query';
 import { projectApi } from '../projects/projectApi';
 import { userApi } from '../users/userApi';
@@ -70,10 +69,30 @@ export interface ReferenceData {
 }
 
 const referenceApiMethods = {
-  // preview=2 — все пользователи (включая неактивных), чтобы отображать ответственных в договорах
-  users: () => userApi.getUsers(2),
+  // preview=2 — все пользователи (включая неактивных); для справочника подтягиваем все страницы
+  users: async () => {
+    const pageSize = 100; // на бэке cap=100
+    const maxTotal = 10_000; // защита от случайной загрузки “всего мира”
+    const all: Array<{ id: string; name: string }> = [];
+    let offset = 0;
+
+    while (true) {
+      const { data, total } = await userApi.getUsers(2, false, pageSize, offset);
+      all.push(...((data as unknown) as Array<{ id: string; name: string }>));
+      offset += data.length;
+
+      if (data.length === 0) break;
+      if (all.length >= total) break;
+      if (all.length >= maxTotal) break;
+    }
+
+    return all;
+  },
   departments: () => departmentApi.getDepartments(1),
-  roles: roleApi.getRoles,
+  roles: () =>
+    roleApi.getRoles().then((list) =>
+      list.map((r) => ({ id: r.id, name: r.role_name ?? (r as { name?: string }).name ?? r.id })),
+    ),
   positions: () => positionApi.getPositions(1),
   projects: () => projectApi.getProjects(1),
   competencies: partnerCompetenceApi.getPartnerCompetencies,
@@ -83,44 +102,42 @@ const referenceApiMethods = {
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,
 
-  contracts: contractApi.getContracts,
+  // Все договоры для выпадающих списков (for_reference=1, без лимита). Ответ кэшируется на бэкенде (п. 3.2 STACK_AND_LOAD_ANALYSIS.md).
+  contracts: () => contractApi.getContractsForReference().then((r) => r.data),
   contractStates: contractApi.getContractsStates,
   contractCategories: contractApi.getContractsCategories,
   contractTypes: contractTypeApi.getContractTypes,
 
   contractStageStates: contractStageStateApi.getContractStageStates,
 
-  patents: () => patentApi.getPatents(false, true),
+  patents: () =>
+    patentApi.getPatents(false, true).then((r) => (Array.isArray(r) ? r : r.data)),
   patentStatuses: patentStatusesApi.getPatentStatuses,
   patentIntellectProps: patentIntellectPropsApi.getPatentIntellectProps,
   patentAreas: patentAreasApi.getPatentAreas,
 };
 
 export const useReferenceData = (neededReferences: ReferenceType[] = []) => {
+  const sortedReferences = [...neededReferences].sort();
+
   return useQuery({
-    queryKey: ['reference-data', ...neededReferences.sort()],
+    queryKey: ['reference-data', ...sortedReferences],
     queryFn: async (): Promise<Partial<ReferenceData>> => {
-      // Создаем промисы только для нужных справочников
-      const promises = neededReferences.map(refType => {
+      const promises = neededReferences.map((refType) => {
         const apiMethod = referenceApiMethods[refType];
         return apiMethod
-          ? apiMethod().then(data => ({
+          ? apiMethod().then((data) => ({
               type: refType,
               data,
             }))
           : Promise.resolve({ type: refType, data: [] });
       });
-
-      // Выполняем запросы параллельно
       const results = await Promise.allSettled(promises);
-
-      // Собираем результаты
-      const formattedData: Partial<any> = {};
-
-      results.forEach(result => {
+      const formattedData: Partial<ReferenceData> = {};
+      results.forEach((result) => {
         if (result.status === 'fulfilled') {
           const { type, data } = result.value;
-          formattedData[type] = data;
+          (formattedData as Record<ReferenceType, unknown>)[type] = data;
         }
       });
 

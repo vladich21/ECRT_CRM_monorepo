@@ -1,13 +1,15 @@
 import { Patent } from '../../types/patent';
 import BasicTable from '../../components/basicTable/BasicTable';
 import { getActiveColumns, ReferenceDataForPatents } from './data';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { NotFound } from '../../components/notFound/NotFound';
 import { useActivePatents, useDeletePatent } from '../../api/patents/patentApiHooks';
 import { NotificationType } from '../../customhooks/useNotification';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import { useModalStore } from '../../store/ModalStore';
 import { useNavigate } from 'react-router-dom';
 import { useFilteredPatents } from './hooks/useFilteredPatents';
+import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 
 interface ActivePatentsTableProps {
   referenceData: ReferenceDataForPatents;
@@ -17,39 +19,47 @@ interface ActivePatentsTableProps {
 
 export default function ActivePatentsTable({ referenceData, filters, showNotification }: ActivePatentsTableProps) {
   const navigate = useNavigate();
-  const { data: patents = [], isLoading, isError } = useActivePatents();
+  const modalProps = useModalStore();
+  const pendingPatentIdRef = useRef('');
+  const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } = useServerTablePagination();
+  const { data, isLoading, isError } = useActivePatents(page, pageSize);
+  const patents = data?.data ?? [];
+  const total = data?.total ?? 0;
 
-  const [currentPatentId, setCurrentPatentId] = useState('');
   const deletePatentMutation = useDeletePatent();
 
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deletePatentMutation,
-    successMessage: 'Патент успешно удалена',
+    successMessage: 'Патент успешно удалён',
     errorMessage: 'Не удалось удалить патент',
-    getMutationProps: () => currentPatentId,
+    getMutationProps: () => pendingPatentIdRef.current,
     showNotification,
   });
 
-  const filterPatents = (patents: Patent[]) => useFilteredPatents(patents, filters);
+  const filteredPatents = useFilteredPatents(patents, filters);
 
   useEffect(() => {
-    if (currentPatentId) openDeleteModal();
-  }, [currentPatentId]);
+    resetPage();
+  }, [filters, resetPage]);
+
+  useEffect(() => {
+    if (!modalProps.open) {
+      pendingPatentIdRef.current = '';
+    }
+  }, [modalProps.open]);
 
   const onEdit = (record: Patent) => {
-    navigate(`/patents/${record.id}/edit`, {});
+    navigate(`/patents/${record.id}/edit`);
   };
 
-  const onDelete = ({ id }: { id: number }) => {
-    setCurrentPatentId(id.toString());
+  const onDelete = (record: Patent) => {
+    pendingPatentIdRef.current = record.id;
+    openDeleteModal();
   };
 
   const handleRowClick = (record: Patent) => {
     navigate(`/patents/${record.id}`, {
-      state: {
-        user: record,
-        from: 'patents-list',
-      },
+      state: { user: record, from: 'patents-list', tab: 'active' as const },
     });
   };
 
@@ -58,7 +68,7 @@ export default function ActivePatentsTable({ referenceData, filters, showNotific
   }
   return (
     <BasicTable<Patent>
-      data={filterPatents(patents)}
+      data={filteredPatents}
       loading={isLoading}
       columns={getActiveColumns(referenceData)}
       onRowClick={handleRowClick}
@@ -68,6 +78,8 @@ export default function ActivePatentsTable({ referenceData, filters, showNotific
       onDelete={onDelete}
       actionsColumnTitle='Действия'
       actionsColumnWidth={100}
+      pagination={getPaginationConfig(total)}
+      onChange={handleTableChange}
     />
   );
 }

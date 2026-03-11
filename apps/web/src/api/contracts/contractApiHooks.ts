@@ -8,12 +8,23 @@ export interface ContractParams extends Partial<PartnerContact> {
   preview?: boolean;
 }
 
-export const useContracts = (params?: ContractParams): UseQueryResult<Contract[], Error> => {
-  return useQuery<Contract[], Error>({
-    queryKey: ['contracts', params ? params : undefined],
-    queryFn: () => contractApi.getContracts(params),
+export interface ContractsListResult {
+  data: Contract[];
+  total: number;
+}
+
+export function useContracts(
+  params?: ContractParams,
+  page?: number,
+  pageSize?: number,
+): UseQueryResult<ContractsListResult, Error> {
+  const limit = pageSize ?? 50;
+  const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
+  return useQuery<ContractsListResult, Error>({
+    queryKey: ['contracts', params ?? undefined, page, pageSize],
+    queryFn: () => contractApi.getContracts(params, limit, offset),
   });
-};
+}
 
 export const useContractsStates = (): UseQueryResult<Reference[], Error> => {
   return useQuery<Reference[], Error>({

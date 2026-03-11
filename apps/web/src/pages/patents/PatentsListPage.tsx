@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, Tabs, Button, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useReferenceData } from '../../api/hooks/useReferences';
@@ -21,8 +21,14 @@ export type ActionType = 'active' | 'deleted';
 
 export default function PatentsListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
-  const [activeTab, setActiveTab] = useState<ActionType>('active');
+  const [activeTab, setActiveTab] = useState<ActionType>(() => (location.state as { tab?: ActionType })?.tab ?? 'active');
+
+  useEffect(() => {
+    const tab = (location.state as { tab?: ActionType })?.tab;
+    if (tab === 'active' || tab === 'deleted') setActiveTab(tab);
+  }, [location.state]);
   const [filters, setFilters] = useState<Record<string, any>>({});
 
   const { data: referenceBooks, isError: isReferencesError } = useReferenceData([
@@ -36,10 +42,8 @@ export default function PatentsListPage() {
   ]);
   const referenceData = referenceBooks as ReferenceDataForPatents;
 
-  // Используем кастомные хуки для фильтрации
   const { filterConfig } = usePatentFilters();
 
-  // Обработчики действий
   const handleAddPatent = () => {
     navigate('/patents/create');
   };
@@ -77,7 +81,14 @@ export default function PatentsListPage() {
             {
               key: 'deleted',
               label: 'Удалённые',
-              children: <DeletedPatentsTable filters={filters} referenceData={referenceData} showNotification={showNotification} />,
+              children: (
+                <DeletedPatentsTable
+                  filters={filters}
+                  referenceData={referenceData}
+                  showNotification={showNotification}
+                  onRestoreSuccess={() => setActiveTab('active')}
+                />
+              ),
             },
           ]}
         />

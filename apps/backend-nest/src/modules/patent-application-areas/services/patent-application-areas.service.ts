@@ -1,5 +1,5 @@
 import { asc, eq } from 'drizzle-orm';
-import { Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { refPatentApplicationAreas } from '../../../database/schema';
 
@@ -64,10 +64,19 @@ export class PatentApplicationAreasService {
     this.logger.debug(`Удаление области применения id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
-    await this.db.db
-      .delete(refPatentApplicationAreas)
-      .where(eq(refPatentApplicationAreas.id, id));
-    return row;
+    try {
+      await this.db.db
+        .delete(refPatentApplicationAreas)
+        .where(eq(refPatentApplicationAreas.id, id));
+      return row;
+    } catch (err) {
+      if ((err as { cause?: { code?: string } })?.cause?.code === '23503') {
+        throw new ConflictException(
+          'Нельзя удалить область применения — она привязана к РИД (патентам).',
+        );
+      }
+      throw err;
+    }
   }
 
   private toResponse(r: (typeof refPatentApplicationAreas.$inferSelect)) {

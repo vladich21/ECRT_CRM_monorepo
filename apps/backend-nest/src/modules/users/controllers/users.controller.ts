@@ -1,17 +1,22 @@
 import { Body, Controller, Get, NotFoundException, Param, Put, Query } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
+import { parsePagination } from '../../../common/pagination';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll(@Query('preview') preview?: string, @Query('full') full?: string) {
-    // preview=1: только активные, preview=2: все (для отображения ответственных в договорах)
-    // full=1: полный формат (login, email, department, position, roles) — для таблицы пользователей
+  findAll(
+    @Query('preview') preview?: string,
+    @Query('full') full?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
     const previewMode = preview === '1' ? 'active' : preview === '2' ? 'all' : 'full';
     const useFullFormat = full === '1' || full === 'true';
-    return this.usersService.findAll(previewMode, useFullFormat);
+    const pagination = parsePagination(limit, offset);
+    return this.usersService.findAll(previewMode, useFullFormat, pagination);
   }
 
   @Get('by-email/:email')

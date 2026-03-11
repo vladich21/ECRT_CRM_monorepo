@@ -20,8 +20,7 @@ export class CommentsController {
     @Query('entity_type') entityType?: string,
     @Query('entity_id') entityId?: string,
   ) {
-    const rows = await this.service.findAll(entityType, entityId);
-    return rows;
+    return this.service.findAll(entityType, entityId);
   }
 
   @Get(':id')

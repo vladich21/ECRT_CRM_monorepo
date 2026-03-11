@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from 'drizzle-orm';
+import { asc, count, eq, inArray } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
@@ -8,6 +8,7 @@ import { UserPreviewDto } from '../dto/user-preview.dto';
 import { DepartmentRefDto } from '../dto/department-ref.dto';
 import { PositionRefDto } from '../dto/position-ref.dto';
 import { RoleRefDto } from '../dto/role-ref.dto';
+import { PaginationParams } from '../../../common/pagination';
 
 @Injectable()
 export class UsersService {
@@ -18,30 +19,43 @@ export class UsersService {
   async findAll(
     preview?: 'active' | 'all' | 'full',
     useFullFormat?: boolean,
-  ): Promise<UserResponseDto[] | UserPreviewDto[]> {
+    pagination?: PaginationParams,
+  ): Promise<{ data: UserResponseDto[] | UserPreviewDto[]; total: number }> {
+    const { limit = 50, offset = 0 } = pagination ?? { limit: 50, offset: 0 };
     const activeFilter = preview === 'active' ? eq(users.isActive, true) : undefined;
     const usePreviewFormat = !useFullFormat && (preview === 'active' || preview === 'all');
 
+    const runCount = async () => {
+      let countQuery = this.db.db.select({ value: count() }).from(users);
+      if (activeFilter) countQuery = countQuery.where(activeFilter) as typeof countQuery;
+      const rows = await countQuery;
+      return Number(rows[0]?.value ?? 0);
+    };
+
     if (usePreviewFormat) {
       this.logger.debug(`Получение списка пользователей (preview=${preview})`);
-      const baseSelect = this.db.db
+      let baseSelect = this.db.db
         .select({
           id: users.id,
           lastName: users.lastName,
           firstName: users.firstName,
           middleName: users.middleName,
         })
-        .from(users)
-        .orderBy(asc(users.lastName));
-      const previewRows = activeFilter ? await baseSelect.where(activeFilter) : await baseSelect;
-      return previewRows.map((row) => ({
+        .from(users);
+      if (activeFilter) baseSelect = baseSelect.where(activeFilter) as typeof baseSelect;
+      const [total, rows] = await Promise.all([
+        runCount(),
+        baseSelect.orderBy(asc(users.lastName)).limit(limit).offset(offset),
+      ]);
+      const data = rows.map((row) => ({
         id: String(row.id),
         name: [row.lastName, row.firstName, row.middleName].filter(Boolean).join(' ').trim() || String(row.id),
       }));
+      return { data, total };
     }
 
     this.logger.debug('Получение полного списка пользователей');
-    const baseQuery = this.db.db
+    let baseQuery = this.db.db
       .select({
         user: users,
         departmentId: departments.id,
@@ -51,9 +65,13 @@ export class UsersService {
       })
       .from(users)
       .leftJoin(departments, eq(users.departmentId, departments.id))
-      .leftJoin(positions, eq(users.positionId, positions.id))
-      .orderBy(asc(users.lastName));
-    const userRows = activeFilter ? await baseQuery.where(activeFilter) : await baseQuery;
+      .leftJoin(positions, eq(users.positionId, positions.id));
+    if (activeFilter) baseQuery = baseQuery.where(activeFilter) as typeof baseQuery;
+
+    const [total, userRows] = await Promise.all([
+      runCount(),
+      baseQuery.orderBy(asc(users.lastName)).limit(limit).offset(offset),
+    ]);
 
     const userIds = userRows.map((row) => row.user.id).filter(Boolean);
     const roleRows =
@@ -77,7 +95,7 @@ export class UsersService {
       rolesByUser.set(userId, list);
     }
 
-    return userRows.map((userRow) =>
+    const data = userRows.map((userRow) =>
       this.toResponse(userRow.user, {
         department: userRow.departmentId
           ? { id: String(userRow.departmentId), name: userRow.departmentName ?? '' }
@@ -88,6 +106,7 @@ export class UsersService {
         roles: rolesByUser.get(String(userRow.user.id)) ?? [],
       }),
     );
+    return { data, total };
   }
 
   async update(id: string, data: Record<string, unknown>): Promise<UserResponseDto | null> {

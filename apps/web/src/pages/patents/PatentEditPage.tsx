@@ -66,7 +66,11 @@ export default function PatentCreatePage() {
   }, [isCreateError, isCreateSuccess]);
 
   const handleUpdate = async (values: any) => {
-    const areaIds = values.area_ids ? values.area_ids.filter((id: any) => id !== null && id !== undefined) : [];
+    const areaIds = values.area_ids
+      ? values.area_ids
+          .map((id: unknown) => (id != null ? String(id) : ''))
+          .filter((id: string) => id && id !== 'NaN')
+      : [];
     const authorIds = values.author_ids ? values.author_ids.filter((id: any) => id !== null && id !== undefined) : [];
 
     const payload = {

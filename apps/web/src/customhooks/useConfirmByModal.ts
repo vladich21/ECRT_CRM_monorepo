@@ -41,7 +41,6 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
   showNotification,
   onSuccess,
 }: UseDeleteOptions<TData, TError, TVariables>): UseDeleteReturn => {
-  const mutationProps = getMutationProps();
   const navigate = useNavigate();
   const { openModal, closeModal, open: isOpenModal } = useModalStore();
 
@@ -70,6 +69,7 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
   }, []);
 
   const onConfirm = useCallback(() => {
+    const mutationProps = getMutationProps();
     if (!mutationProps) {
       showNotification('error', 'Ошибка', 'ID не найден');
       return;
@@ -89,7 +89,7 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
         showNotification('error', 'Ошибка', apiMessage || (error as ApiError)?.message || errorMessage);
       },
     });
-  }, [mutationProps, mutate, getMutationProps, showNotification]);
+  }, [getMutationProps, mutate, showNotification]);
 
   const onCancel = useCallback(() => {
     closeModal();

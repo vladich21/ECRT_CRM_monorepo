@@ -1,11 +1,21 @@
 import { User } from '../../types/user';
 import { apiClient } from '../clients';
 
+export interface UsersListResponse {
+  data: User[];
+  total: number;
+}
+
 export const userApi = {
-  getUsers: async (preview = 2, full = false): Promise<User[]> => {
-    const params: Record<string, number | string> = { preview };
+  getUsers: async (
+    preview = 2,
+    full = false,
+    limit = 50,
+    offset = 0,
+  ): Promise<UsersListResponse> => {
+    const params: Record<string, number | string> = { preview, limit: String(limit), offset: String(offset) };
     if (full) params.full = '1';
-    const response = await apiClient.get('/users', { params });
+    const response = await apiClient.get<UsersListResponse>('/users', { params });
     return response.data;
   },
 

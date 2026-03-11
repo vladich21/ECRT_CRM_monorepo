@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
 import { PatentsService } from '../services/patents.service';
+import { parsePagination } from '../../../common/pagination';
 
 @Controller('patents')
 export class PatentsController {
@@ -16,14 +17,22 @@ export class PatentsController {
   findAll(
     @Query('preview') preview?: string,
     @Query('is_deleted') isDeleted?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
   ) {
-    const isDeletedBool = isDeleted === 'true' ? true : isDeleted === 'false' ? false : undefined;
-    return this.service.findAll(preview === '1', isDeletedBool);
+    const isDeletedBool = isDeleted === 'true' ? true : isDeleted === 'false' ? false : false;
+    const pagination = parsePagination(limit, offset);
+    return this.service.findAll(preview === '1', isDeletedBool, pagination);
   }
 
   @Get('deleted')
-  findDeleted(@Query('preview') preview?: string) {
-    return this.service.findAll(preview === '1', true);
+  findDeleted(
+    @Query('preview') preview?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    const pagination = parsePagination(limit, offset);
+    return this.service.findAll(preview === '1', true, pagination);
   }
 
   @Get(':id/grants')
@@ -56,6 +65,13 @@ export class PatentsController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     const row = await this.service.remove(id);
+    if (!row) throw new NotFoundException(`Патент ${id} не найден`);
+    return [row];
+  }
+
+  @Put(':id/restore')
+  async restore(@Param('id') id: string) {
+    const row = await this.service.restore(id);
     if (!row) throw new NotFoundException(`Патент ${id} не найден`);
     return [row];
   }
