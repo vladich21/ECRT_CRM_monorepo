@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import type { AdvancedFilters, FilterTab } from '../ContractsListPage.types';
-import { DEFAULT_ADVANCED_FILTERS } from '../ContractsListPage.types';
+import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types';
+import { DEFAULT_ADVANCED_FILTERS } from '../list/ContractsListPage.types';
 import { countActiveFilters } from '../filters/contractListFilters';
 
 type UseContractListFiltersParams = {

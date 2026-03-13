@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Tabs, Button, Space } from 'antd';
+import { Tabs, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { NotFound } from '../../components/notFound/NotFound';
@@ -10,7 +10,7 @@ import { useNotification } from '../../customhooks/useNotification';
 import { ReferenceDataForPatents } from './data';
 import { usePatentFilters } from './hooks/usePatentFilters';
 import { UniversalFilters } from '../../components/basicFilters/BasicFilters';
-import styles from './PatentsListPage.module.scss';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
 
 export interface CounterType {
   active?: number;
@@ -55,44 +55,46 @@ export default function PatentsListPage() {
   return (
     <div>
       {contextHolder}
-      <Card>
-        {/* Заголовок и кнопки */}
-        <div className={styles.header}>
-          <h2 className={styles.title}>РИД</h2>
-          <Space>
-            <Button type='primary' icon={<PlusOutlined />} onClick={handleAddPatent} disabled={activeTab === 'deleted'}>
-              Добавить РИД
-            </Button>
-          </Space>
-        </div>
+      <PageHeader
+        title="РИД"
+        subtitle="Результаты интеллектуальной деятельности"
+        actions={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddPatent}
+            disabled={activeTab === 'deleted'}
+          >
+            Добавить РИД
+          </Button>
+        }
+      />
 
-        <UniversalFilters filterConfig={filterConfig} value={filters} onChange={setFilters} />
+      <UniversalFilters filterConfig={filterConfig} value={filters} onChange={setFilters} />
 
-        {/* Вкладки */}
-        <Tabs
-          activeKey={activeTab}
-          onChange={key => setActiveTab(key as 'active' | 'deleted')}
-          items={[
-            {
-              key: 'active',
-              label: 'Активные',
-              children: <ActivePatentsTable filters={filters} referenceData={referenceData} showNotification={showNotification} />,
-            },
-            {
-              key: 'deleted',
-              label: 'Удалённые',
-              children: (
-                <DeletedPatentsTable
-                  filters={filters}
-                  referenceData={referenceData}
-                  showNotification={showNotification}
-                  onRestoreSuccess={() => setActiveTab('active')}
-                />
-              ),
-            },
-          ]}
-        />
-      </Card>
+      <Tabs
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as 'active' | 'deleted')}
+        items={[
+          {
+            key: 'active',
+            label: 'Активные',
+            children: <ActivePatentsTable filters={filters} referenceData={referenceData} showNotification={showNotification} />,
+          },
+          {
+            key: 'deleted',
+            label: 'Удалённые',
+            children: (
+              <DeletedPatentsTable
+                filters={filters}
+                referenceData={referenceData}
+                showNotification={showNotification}
+                onRestoreSuccess={() => setActiveTab('active')}
+              />
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

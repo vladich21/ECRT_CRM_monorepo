@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, Form, Input, Button, Select, Switch, Space, Row, Col, Divider, InputNumber, DatePicker } from 'antd';
 import {
   SaveOutlined,
@@ -14,64 +14,55 @@ import {
   UnorderedListOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { useCreateContract } from '../../api/contracts/contractApiHooks';
-import { useNotification } from '../../customhooks/useNotification';
-import { BackButton } from '../../components/backButton/BackButton';
-import { Loader } from '../../components/loader/Loader';
-import { NotFound } from '../../components/notFound/NotFound';
-import { initialFormValues } from './data';
-import { numberFormatter, numberParser } from '../../helpers/numberFormatters';
+import { useReferenceData } from '../../../api/hooks/useReferences';
+import { useNotification } from '../../../customhooks/useNotification';
+import { Loader } from '../../../components/loader/Loader';
+import { getChangedFields } from '../../../helpers/getChangedFields';
+import { NotFound } from '../../../components/notFound/NotFound';
+import dayjs from 'dayjs';
+import { useContractById, useUpdateContract } from '../../../api/contracts/contractApiHooks';
+import { contractUpdateFormMapper } from '../../../helpers/mappers/contractUpdateFormMapper';
+import { numberFormatter, numberParser } from '../../../helpers/numberFormatters';
+import { BackButton } from '../../../components/backButton/BackButton';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
-export default function ContractCreatePage() {
+export default function ContractEditPage() {
+  const { contractId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-  const partnerIdFromState = (location.state as any)?.partnerId;
-
+  const [isFormChanged, setIsFormChanged] = useState(false);
+  const { data: contract, isLoading: isContractLoading, isError: isContractError } = useContractById(contractId!);
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['projects', 'partners', 'users', 'contractStates', 'contractCategories', 'contractTypes']);
-
   const {
     mutate,
-    isPending: isCreateLoading,
-    isError: isCreateError,
-    isSuccess: isCreateSuccess,
-  } = useCreateContract();
+    isPending: isUpdateLoading,
+    isError: isUpdateError,
+    isSuccess: isUpdateSuccess,
+  } = useUpdateContract();
 
   useEffect(() => {
-    const draftState = referenceBooks?.contractStates?.find(state =>
-      state.code === 'draft' || state.name.toLowerCase().includes('чернов')
-    );
-    if (draftState && !form.getFieldValue('state_id')) {
-      form.setFieldValue('state_id', draftState.id);
+    if (contract) {
+      form.setFieldsValue(contractUpdateFormMapper(contract));
     }
-
-    if (partnerIdFromState && !form.getFieldValue('partner_id')) {
-      form.setFieldValue('partner_id', partnerIdFromState);
-    }
-  }, [referenceBooks?.contractStates, form, partnerIdFromState]);
+  }, [contract, form]);
 
   useEffect(() => {
-    if (isCreateSuccess) {
-      showNotification('success', 'Успех', 'Договор успешно создан');
-      if (partnerIdFromState) {
-        setTimeout(() => navigate(`/partners/${partnerIdFromState}/contracts`), 1000);
-      } else {
-        setTimeout(() => navigate(-1), 1000);
-      }
-    } else if (isCreateError) {
-      showNotification('error', 'Ошибка', 'Не удалось создать договор');
+    if (isUpdateSuccess) {
+      showNotification('success', 'Успех', 'Договор успешно изменён');
+      setTimeout(() => navigate(`/contracts/${contractId}`), 1000);
+    } else if (isUpdateError) {
+      showNotification('error', 'Ошибка', 'Не удалось изменить договор');
     }
-  }, [isCreateError, isCreateSuccess, navigate, showNotification, partnerIdFromState]);
+  }, [isUpdateError, isUpdateSuccess, navigate, contractId, showNotification]);
 
+  // Расчет НДС и итоговой суммы
   const calculateAmounts = (amountExclVal: number, vatRate: number) => {
     const amountVat = amountExclVal * (vatRate / 100);
     const amountInclVat = amountExclVal + amountVat;
@@ -98,38 +89,43 @@ export default function ContractCreatePage() {
 
   const isSubmittingRef = useRef(false);
 
-  const handleCreate = async (values: any) => {
+  const handleSave = async (values: any) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
 
-    const payload = {
-      ...values,
-      partner_id: values.partner_id,
-      responsible_id: values.responsible_id,
-      project_id: values.project_id || null,
-      contract_type_id: values.contract_type_id || null,
-      date_signed: values.date_signed ? values.date_signed.format('YYYY-MM-DD') : null,
-      start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : null,
-      end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : null,
-      amount_excl_vat: Number(values.amount_excl_vat) || 0,
-      vat_rate: Number(values.vat_rate) || 0,
-      amount_vat: Number(values.amount_vat) || 0,
-      amount_incl_vat: Number(values.amount_incl_vat) || 0,
-    };
+    const payload = getChangedFields(values, contractUpdateFormMapper(contract!));
 
-    mutate(payload, {
-      onSettled: () => {
-        isSubmittingRef.current = false;
-      },
-    });
+    // Преобразование дат обратно в строки
+    if (payload.date_signed && dayjs.isDayjs(payload.date_signed)) {
+      payload.date_signed = payload.date_signed.format('YYYY-MM-DD');
+    }
+    if (payload.start_date && dayjs.isDayjs(payload.start_date)) {
+      payload.start_date = payload.start_date.format('YYYY-MM-DD');
+    }
+    if (payload.end_date && dayjs.isDayjs(payload.end_date)) {
+      payload.end_date = payload.end_date.format('YYYY-MM-DD');
+    }
+
+    mutate(
+      { id: contractId!, data: payload },
+      { onSettled: () => { isSubmittingRef.current = false; } }
+    );
   };
 
-  if (isReferencesLoading) {
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  const handleFormChange = () => {
+    setIsFormChanged(true);
+  };
+
+  if (isReferencesLoading || isContractLoading) {
     return <Loader />;
   }
 
-  if (isReferencesError || !referenceBooks) {
-    return <NotFound errorMessage='Не удалось подгрузить справочники' />;
+  if (isReferencesError || isContractError || !contract || !referenceBooks) {
+    return <NotFound errorMessage='Не найден договор или справочник' />;
   }
 
   return (
@@ -137,21 +133,20 @@ export default function ContractCreatePage() {
       {contextHolder}
       <Space direction='vertical' size='middle' style={{ width: '100%' }}>
         <BackButton />
-
         <Card
           title={
             <span>
               <FileTextOutlined style={{ marginRight: 8 }} />
-              Создание нового договора
+              Редактирование договора: {contract.number}
             </span>
           }
         >
           <Form
             form={form}
             layout='vertical'
-            initialValues={initialFormValues}
-            onFinish={handleCreate}
-            disabled={isCreateLoading}
+            onFieldsChange={handleFormChange}
+            onFinish={handleSave}
+            disabled={isUpdateLoading}
             onKeyPress={e => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -191,6 +186,8 @@ export default function ContractCreatePage() {
                 </Form.Item>
               </Col>
             </Row>
+
+            <Row gutter={16}></Row>
 
             <Row gutter={16}>
               <Col xs={24}>
@@ -416,12 +413,12 @@ export default function ContractCreatePage() {
 
             <Row gutter={16}>
               <Col xs={24} md={12}>
-                <Form.Item label='Состояние' name='state_id'>
-                  <Select
-                    placeholder='Черновик'
-                    disabled
-                    style={{ cursor: 'not-allowed' }}
-                  >
+                <Form.Item
+                  label='Состояние'
+                  name='state_id'
+                  rules={[{ required: true, message: 'Выберите состояние' }]}
+                >
+                  <Select placeholder='Выберите состояние'>
                     {referenceBooks?.contractStates?.map(state => (
                       <Option key={state.id} value={state.id}>
                         {state.name}
@@ -432,8 +429,8 @@ export default function ContractCreatePage() {
               </Col>
 
               <Col xs={24} md={12}>
-                <Form.Item label='Активен' name='is_active' valuePropName='checked' initialValue={true}>
-                  <Switch checkedChildren='Активен' unCheckedChildren='Не активен' defaultChecked />
+                <Form.Item label='Активен' name='is_active' valuePropName='checked'>
+                  <Switch checkedChildren='Активен' unCheckedChildren='Не активен' />
                 </Form.Item>
               </Col>
             </Row>
@@ -442,11 +439,19 @@ export default function ContractCreatePage() {
             <Divider />
             <Form.Item>
               <Space>
-                <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading} size='large'>
-                  Создать договор
+                <Button
+                  type='primary'
+                  htmlType='submit'
+                  icon={<SaveOutlined />}
+                  loading={isUpdateLoading}
+                  disabled={!isFormChanged}
+                  size='large'
+                >
+                  Сохранить изменения
                 </Button>
-                <Button onClick={() => form.resetFields()} size='large' disabled={isCreateLoading}>
-                  Очистить форму
+
+                <Button onClick={handleBack} size='large'>
+                  Отмена
                 </Button>
               </Space>
             </Form.Item>

@@ -1,0 +1,26 @@
+@use '../../styles/variables' as v;
+@use '../../components/pageLayout/listPageShared' as lp;
+
+.wrap    { padding: 0; }
+
+
+// ─── Кнопка «Фильтры» ─────────────────────────────────────────────────────────
+.filtersBtnActive { @include lp.filtersBtnActive; }
+.filtersBadge     { @include lp.filtersBadge; }
+
+// ─── Строка поиска ────────────────────────────────────────────────────────────
+.filterSection   { @include lp.filterSection; }
+.filterTabsRow   { @include lp.filterTabsRow; justify-content: flex-end; }
+.filterTabsRight { @include lp.filterTabsRight; }
+.searchInTabsRow { @include lp.searchInput; }
+.searchIcon      { @include lp.searchIcon; }
+.resultCount     { @include lp.resultCount; }
+
+// ─── Пагинация ────────────────────────────────────────────────────────────────
+.pagination { @include lp.pagination; }
+
+// ─── Модальное окно фильтров ──────────────────────────────────────────────────
+.filtersModalGrid    { @include lp.filtersModalGrid; }
+.filtersModalField   { @include lp.filtersModalField; }
+.filtersModalLabel   { @include lp.filtersModalLabel; }
+.filtersModalControl { @include lp.filtersModalControl; }

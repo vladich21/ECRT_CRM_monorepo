@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Card, Button, Space, Tabs } from 'antd';
+import { Button, Tabs } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useDeletePartner, usePartnerById } from '../../api/partners/partnerApiHooks';
 import { NotFound } from '../../components/notFound/NotFound';
@@ -7,6 +7,8 @@ import { Loader } from '../../components/loader/Loader';
 import { BackButton } from '../../components/backButton/BackButton';
 import { useNotification } from '../../customhooks/useNotification';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
+import styles from './PartnerDetailsPage.module.scss';
 
 export default function PartnerDetailsPage() {
   const { partnerId } = useParams();
@@ -90,28 +92,41 @@ export default function PartnerDetailsPage() {
   ];
 
   return (
-    <div>
+    <div className={styles.pageRoot}>
       {contextHolder}
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+
+      <div className={styles.pageBackRow}>
         <BackButton path='/partners' />
-        <Card
-          title={partner.short_name || partner.name || 'Поставщик'}
-          extra={
-            <Space>
-              <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
-                Редактировать
-              </Button>
-              <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
-                Удалить
-              </Button>
-            </Space>
-          }
-        >
-          <Tabs activeKey={activeTab} items={tabItems} size='large' onChange={handleTabChange} />
-          {/* Outlet для рендеринга дочерних компонентов */}
-          <Outlet context={partner} />
-        </Card>
-      </Space>
+      </div>
+
+      <PageHeader
+        title={partner.short_name || partner.name || 'Контрагент'}
+        subtitle={partner.name !== partner.short_name ? partner.name : undefined}
+        actions={
+          <>
+            <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
+              Редактировать
+            </Button>
+            <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
+              Удалить
+            </Button>
+          </>
+        }
+        filters={
+          <div className={styles.pageTabs}>
+            <Tabs
+              activeKey={activeTab}
+              items={tabItems}
+              onChange={handleTabChange}
+              tabBarStyle={{ margin: 0, borderBottom: 'none' }}
+            />
+          </div>
+        }
+      />
+
+      <div className={styles.contentWrap}>
+        <Outlet context={partner} />
+      </div>
     </div>
   );
 }

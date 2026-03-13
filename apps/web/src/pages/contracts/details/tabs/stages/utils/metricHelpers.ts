@@ -1,7 +1,7 @@
-import { Contract, ContractStage } from '../../../../types/contract';
+import { Contract, ContractStage } from '../../../../../../types/contract';
 import { formatDate } from '../data';
-import { MetricRow } from '../../../../components/ui/MetricCard';
-import { getTagColorByData } from '../../../../helpers/getTagColorByData';
+import { MetricRow } from '../../../../../../components/ui/MetricCard';
+import { getTagColorByData } from '../../../../../../helpers/getTagColorByData';
 
 const formatDateValue = (date: string | null | undefined): string => {
   return date ? formatDate(date) : '-';

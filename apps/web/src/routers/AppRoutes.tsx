@@ -29,14 +29,15 @@ import PartnerContactsListPage from "../pages/partners/detailsTabs/Contacts/Cont
 import { PartnerMainInfoTab } from "../pages/partners/detailsTabs/PartnerMainInfo";
 import PartnerTypesListPage from "../pages/referenceBooks/partnerTypes/PartnerTypesListPage";
 import PartnerStatusesListPage from "../pages/referenceBooks/partnerStatuses/PartnerStatusesListPage";
-import ContractsListPage from "../pages/contracts/ContractsListPage";
-import ContractCreatePage from "../pages/contracts/ContractCreatePage";
-import ContractDetailsPage from "../pages/contracts/ContractDetailsPage";
-import ContractEditPage from "../pages/contracts/ContractEditPage";
+import ContractsListPage from "../pages/contracts/list/ContractsListPage";
+import ContractCreatePage from "../pages/contracts/create/ContractCreatePage";
+import ContractDetailsPage from "../pages/contracts/details/ContractDetailsPage";
+import ContractEditPage from "../pages/contracts/edit/ContractEditPage";
 import PartnerCompetencesListPage from "../pages/referenceBooks/competencies/CompetenciesListPage";
 import PartnerCompetenceCreatePage from "../pages/referenceBooks/competencies/CompetenceCreatePage";
 import PartnerCompetenceEditPage from "../pages/referenceBooks/competencies/CompetencyEditPage";
-import { ContractMainInfoTab } from "../pages/contracts/detailsTabs/ContractMainInfoTab";
+import { ContractMainInfoTab } from "../pages/contracts/details/tabs/main/ContractMainInfoTab";
+import { ContractFilesTab } from "../pages/contracts/details/tabs/files/ContractFilesTab";
 import FilesListPage from "../pages/files/FilesListPage";
 import PatentCreatePage from "../pages/patents/PatentCreatePage";
 import PatentEditPage from "../pages/patents/PatentEditPage";
@@ -158,7 +159,8 @@ export default function AppRoutes() {
           <Route path=":contractId" element={<ContractDetailsPage />}>
             <Route index element={<ContractMainInfoTab />} />
             <Route path="additional-agreements" element={<div>Доп. соглашения (в разработке)</div>} />
-            <Route path="files" element={<FilesListPage />} />
+            <Route path="files" element={<ContractFilesTab />} />
+            <Route path="history" element={<div>История изменений (в разработке)</div>} />
           </Route>
         </Route>
 

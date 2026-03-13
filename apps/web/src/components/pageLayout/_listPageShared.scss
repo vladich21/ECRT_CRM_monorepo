@@ -1,0 +1,117 @@
+// Shared mixins for list pages (contracts, partners, patents…)
+//
+// Usage:
+//   @use '…/components/pageLayout/listPageShared' as lp;
+//   .myClass { @include lp.filterSection; }
+
+@use '../../styles/variables' as v;
+
+// Design tokens for the portal UI
+$color-accent:  #002f55;
+$color-text:    #1e293b;
+$color-muted:   #64748b;
+$color-border:  #e2e8f0;
+$color-surface: #f8fafc;
+
+// ─── Кнопка «Фильтры» ─────────────────────────────────────────────────────────
+
+@mixin filtersBtnActive {
+  border-color: $color-accent !important;
+  color: $color-accent !important;
+}
+
+@mixin filtersBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(0, 47, 85, 0.12);
+  color: $color-accent;
+  font-size: v.$font-base;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+// ─── Строка поиска / фильтров под шапкой ─────────────────────────────────────
+
+@mixin filterSection {
+  border-top: 1px solid $color-border;
+  background: $color-surface;
+}
+
+@mixin filterTabsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  min-height: 46px;
+}
+
+@mixin filterTabsRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+@mixin searchInput {
+  width: 280px;
+  flex-shrink: 0;
+  border-radius: v.$radius-lg;
+
+  :global(.ant-input-group-addon)  { display: none; }
+  :global(.ant-input-affix-wrapper),
+  :global(.ant-input)              { border-radius: v.$radius-lg; }
+}
+
+@mixin searchIcon {
+  color: $color-muted;
+  font-size: v.$font-base;
+}
+
+@mixin resultCount {
+  font-size: v.$font-base;
+  color: $color-muted;
+  white-space: nowrap;
+
+  strong { color: $color-text; }
+}
+
+// ─── Пагинация ────────────────────────────────────────────────────────────────
+
+@mixin pagination {
+  margin-top: v.$spacing-xl;
+  padding-bottom: v.$spacing-2xl;
+  display: flex;
+  justify-content: center;
+
+  :global(.ant-pagination)             { font-size: v.$font-base; }
+  :global(.ant-pagination-total-text)  { margin-right: 12px; color: $color-muted; }
+}
+
+// ─── Модальное окно фильтров ──────────────────────────────────────────────────
+
+@mixin filtersModalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px 24px;
+}
+
+@mixin filtersModalField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+@mixin filtersModalLabel {
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: $color-muted;
+}
+
+@mixin filtersModalControl {
+  width: 100%;
+}

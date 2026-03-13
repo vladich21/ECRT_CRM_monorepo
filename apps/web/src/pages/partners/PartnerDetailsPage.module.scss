@@ -1,0 +1,28 @@
+.pageRoot {
+  padding: 0;
+}
+
+
+.pageTabs {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 24px;
+
+  :global(.ant-tabs-tab) {
+    color: #64748b;
+    font-size: 14px;
+  }
+
+  :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+    color: #1e293b !important;
+  }
+
+  :global(.ant-tabs-ink-bar) {
+    background: #002f55;
+  }
+}
+
+.contentWrap {
+  margin-top: 0;
+}

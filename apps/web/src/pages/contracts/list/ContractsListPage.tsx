@@ -2,14 +2,15 @@ import { Button, Input, Pagination, Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMemo, useEffect } from 'react';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { NotFound } from '../../components/notFound/NotFound';
-import { useNotification } from '../../customhooks/useNotification';
-import { Contract } from '../../types/contract';
-import { useContracts } from '../../api/contracts/contractApiHooks';
-import { isContractDraft } from './utils/contractStateUtils';
-import { useServerTablePagination } from '../../hooks/useServerTablePagination';
-import { BackButton } from '../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { useReferenceData } from '../../../api/hooks/useReferences';
+import { NotFound } from '../../../components/notFound/NotFound';
+import { useNotification } from '../../../customhooks/useNotification';
+import { Contract } from '../../../types/contract';
+import { useContracts } from '../../../api/contracts/contractApiHooks';
+import { isContractDraft } from '../utils/contractStateUtils';
+import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { BackButton } from '../../../components/backButton/BackButton';
 import { ContractCard } from './ContractCard';
 import { ContractFiltersModal } from './ContractFiltersModal';
 import {
@@ -20,8 +21,8 @@ import {
   filterByTab,
   filterByAdvanced,
   filterBySearch,
-} from './filters/contractListFilters';
-import { useContractListFilters } from './hooks/useContractListFilters';
+} from '../filters/contractListFilters';
+import { useContractListFilters } from '../hooks/useContractListFilters';
 import styles from './ContractsListPage.module.scss';
 
 function validateAmountFilters(filters: {
@@ -154,83 +155,75 @@ export default function ContractsListPage() {
   return (
     <div className={styles.wrap}>
       {contextHolder}
-      <BackButton path="/" />
+      {/* Показываем «Назад» только на отдельной странице /contracts, не внутри карточки партнёра */}
+      {!partnerId && <BackButton path="/" />}
 
-      <div className={styles.pageBlock}>
-        <header className={styles.pageHeader}>
-          <div className={styles.pageHeaderContainer}>
-            <div className={styles.pageHeaderLeft}>
-              <h1 className={styles.pageTitle}>Договоры</h1>
-              <span className={styles.pageSubtitle}>
-                Реестр договоров организации
-              </span>
-            </div>
-            <div className={styles.pageHeaderRight}>
-              <Button type="default">Экспорт</Button>
-              <Button
-                type="default"
-                icon={<FilterOutlined />}
-                onClick={openFiltersModal}
-                className={
-                  activeFiltersCount > 0 ? styles.filtersBtnActive : undefined
-                }
-              >
-                Фильтры
-                {activeFiltersCount > 0 && (
-                  <span className={styles.filtersBadge}>
-                    {activeFiltersCount}
+      <PageHeader
+        title="Договоры"
+        subtitle="Реестр договоров организации"
+        actions={
+          <>
+            <Button type="default">Экспорт</Button>
+            <Button
+              type="default"
+              icon={<FilterOutlined />}
+              onClick={openFiltersModal}
+              className={
+                activeFiltersCount > 0 ? styles.filtersBtnActive : undefined
+              }
+            >
+              Фильтры
+              {activeFiltersCount > 0 && (
+                <span className={styles.filtersBadge}>{activeFiltersCount}</span>
+              )}
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => navigate('/contracts/create', { state: { partnerId } })}
+            >
+              Новый договор
+            </Button>
+          </>
+        }
+        filters={
+          !isPageLoading ? (
+            <div className={styles.filterSection}>
+              <div className={styles.filterTabsRow}>
+                <div className={styles.filterTabs}>
+                  {FILTER_TABS.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`${styles.filterTab}${
+                        activeTab === key ? ` ${styles.filterTabActive}` : ''
+                      }`}
+                      onClick={() => setActiveTab(key)}
+                    >
+                      {label}{' '}
+                      <span className={styles.filterTabCount}>{tabCounts[key]}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.filterTabsRight}>
+                  <Input.Search
+                    className={styles.searchInTabsRow}
+                    placeholder="Поиск по номеру, названию, партнёру..."
+                    allowClear
+                    enterButton={false}
+                    prefix={<SearchOutlined className={styles.searchIcon} />}
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                  />
+                  <span className={styles.resultCount}>
+                    Показано: <strong>{filteredContracts.length}</strong> из{' '}
+                    <strong>{totalCount}</strong>
                   </span>
-                )}
-              </Button>
-              <Button
-                type="primary"
-                onClick={() =>
-                  navigate('/contracts/create', { state: { partnerId } })
-                }
-              >
-                Новый договор
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        {!isPageLoading && (
-          <div className={styles.filterSection}>
-            <div className={styles.filterTabsRow}>
-              <div className={styles.filterTabs}>
-                {FILTER_TABS.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`${styles.filterTab}${
-                      activeTab === key ? ` ${styles.filterTabActive}` : ''
-                    }`}
-                    onClick={() => setActiveTab(key)}
-                  >
-                    {label}{' '}
-                    <span className={styles.filterTabCount}>{tabCounts[key]}</span>
-                  </button>
-                ))}
-              </div>
-              <div className={styles.filterTabsRight}>
-                <Input.Search
-                  className={styles.searchInTabsRow}
-                  placeholder="Поиск по номеру, названию, партнёру..."
-                  allowClear
-                  enterButton={false}
-                  prefix={<SearchOutlined className={styles.searchIcon} />}
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                />
-                <span className={styles.resultCount}>
-                  Показано: <strong>{filteredContracts.length}</strong> из{' '}
-                  <strong>{totalCount}</strong>
-                </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       <ContractFiltersModal
         open={isFiltersModalOpen}

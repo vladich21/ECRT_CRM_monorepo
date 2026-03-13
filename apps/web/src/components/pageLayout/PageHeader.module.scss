@@ -1,0 +1,72 @@
+// Shared page header styles — used by PageHeader component and ContractDetailsHeader
+
+$portal-base: #ffffff;
+$portal-secondary: #1e293b;
+$portal-secondary-muted: #64748b;
+$portal-secondary-border: #e2e8f0;
+$portal-accent: #002f55;
+$shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
+
+// ── Outer white card block ────────────────────────────────────────────────────
+.pageBlock {
+  background: $portal-base;
+  border-radius: 8px;
+  box-shadow: $shadow;
+  border: 1px solid $portal-secondary-border;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+// ── Header row ────────────────────────────────────────────────────────────────
+.pageHeader {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.pageHeaderContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.pageHeaderLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: $portal-secondary;
+}
+
+.pageSubtitle {
+  color: $portal-secondary-muted;
+  font-size: 14px;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+.pageHeaderRight {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pageHeaderRight :global(.ant-btn-primary:not(.ant-btn-dangerous)) {
+  background-color: #1677ff !important;
+  border-color: #1677ff !important;
+  &:hover {
+    background-color: #4096ff !important;
+    border-color: #4096ff !important;
+  }
+}

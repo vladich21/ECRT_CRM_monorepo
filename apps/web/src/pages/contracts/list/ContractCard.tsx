@@ -1,8 +1,8 @@
-import { Contract } from '../../types/contract';
-import { getNameById } from '../../helpers/getNameById';
-import { getEntityById } from '../../helpers/getEntityById';
-import { getContractStateTagClass } from './utils/contractStateUtils';
-import type { ReferenceData } from '../../api/hooks/useReferences';
+import { Contract } from '../../../types/contract';
+import { getNameById } from '../../../helpers/getNameById';
+import { getEntityById } from '../../../helpers/getEntityById';
+import { getContractStateTagClass } from '../utils/contractStateUtils';
+import type { ReferenceData } from '../../../api/hooks/useReferences';
 import styles from './ContractsListPage.module.scss';
 
 type Refs = Pick<ReferenceData, 'partners' | 'contractStates' | 'contractCategories'> | null;

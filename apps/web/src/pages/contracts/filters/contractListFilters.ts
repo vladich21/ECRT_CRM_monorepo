@@ -1,7 +1,7 @@
 import type { Contract } from '../../../types/contract';
 import type { ContractState } from '../../../types/contract';
-import type { AdvancedFilters, FilterTab } from '../ContractsListPage.types';
-import type { ContractListReferences } from '../ContractsListPage.types';
+import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types';
+import type { ContractListReferences } from '../list/ContractsListPage.types';
 import { isContractDraft } from '../utils/contractStateUtils';
 
 /** Фильтрация по вкладке (все / активные / черновики / неактивные) */

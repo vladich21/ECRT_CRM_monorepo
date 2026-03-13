@@ -97,7 +97,7 @@ const referenceApiMethods = {
   projects: () => projectApi.getProjects(1),
   competencies: partnerCompetenceApi.getPartnerCompetencies,
 
-  partners: () => partnerApi.getPartners(1),
+  partners: () => partnerApi.getPartnersForReference(),
   partnerTypes: partnerTypeApi.getPartnerTypes,
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,

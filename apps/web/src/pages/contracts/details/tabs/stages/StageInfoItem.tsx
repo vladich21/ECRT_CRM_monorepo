@@ -1,9 +1,9 @@
 import React from 'react';
 import { Typography, Tag } from 'antd';
 import { CalendarOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
-import { ContractStage } from '../../../../types/contract';
-import { getNameById } from '../../../../helpers/getNameById';
-import { formatDate } from '../data';
+import { ContractStage } from '../../../../../types/contract';
+import { getNameById } from '../../../../../helpers/getNameById';
+import { formatDate } from './data';
 import styles from '../../ContractDetails.module.scss';
 
 const { Text } = Typography;

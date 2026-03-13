@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, ne, or } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
@@ -8,6 +8,14 @@ import {
   relPartnersCompetencies,
   contracts,
 } from '../../../database/schema';
+import { PaginationParams } from '../../../common/pagination';
+
+export interface PartnerQueryFilters {
+  search?: string;
+  typeIds?: string[];
+  statusIds?: string[];
+  competenceIds?: string[];
+}
 
 @Injectable()
 export class PartnersService {
@@ -15,20 +23,76 @@ export class PartnersService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  async findAll(preview?: boolean) {
+  async findAll(
+    preview?: boolean,
+    pagination?: PaginationParams,
+    filters?: PartnerQueryFilters,
+  ): Promise<{ data: unknown[]; total: number }> {
     this.logger.debug(`Получение партнёров (preview=${preview})`);
+
+    // ── preview-режим (справочник, без пагинации) ────────────────────────────
     if (preview) {
       const rows = await this.db.db
         .select({ id: partners.id, name: partners.name })
         .from(partners)
         .orderBy(asc(partners.name));
-      return rows.map((r) => ({ id: String(r.id), name: r.name ?? '' }));
+      const data = rows.map((r) => ({ id: String(r.id), name: r.name ?? '' }));
+      return { data, total: data.length };
     }
-    const rows = await this.db.db
-      .select()
-      .from(partners)
-      .orderBy(asc(partners.name));
+
+    // ── собираем условия фильтрации ──────────────────────────────────────────
+    const conditions: ReturnType<typeof eq>[] = [];
+
+    if (filters?.search) {
+      const term = `%${filters.search}%`;
+      conditions.push(
+        or(ilike(partners.name, term), ilike(partners.inn, term)) as ReturnType<typeof eq>,
+      );
+    }
+
+    if (filters?.statusIds?.length) {
+      conditions.push(inArray(partners.statusId, filters.statusIds) as ReturnType<typeof eq>);
+    }
+
+    // Для many-to-many: сначала находим id партнёров, у которых есть нужные типы
+    if (filters?.typeIds?.length) {
+      const typeRows = await this.db.db
+        .select({ partnerId: relPartnersTypes.partnerId })
+        .from(relPartnersTypes)
+        .where(inArray(relPartnersTypes.typeId, filters.typeIds));
+      const matchedIds = [...new Set(typeRows.map((r) => r.partnerId).filter(Boolean))] as string[];
+      if (matchedIds.length === 0) return { data: [], total: 0 };
+      conditions.push(inArray(partners.id, matchedIds) as ReturnType<typeof eq>);
+    }
+
+    if (filters?.competenceIds?.length) {
+      const compRows = await this.db.db
+        .select({ partnerId: relPartnersCompetencies.partnerId })
+        .from(relPartnersCompetencies)
+        .where(inArray(relPartnersCompetencies.competenceId, filters.competenceIds));
+      const matchedIds = [...new Set(compRows.map((r) => r.partnerId).filter(Boolean))] as string[];
+      if (matchedIds.length === 0) return { data: [], total: 0 };
+      conditions.push(inArray(partners.id, matchedIds) as ReturnType<typeof eq>);
+    }
+
+    const where = conditions.length ? and(...conditions) : undefined;
+    const { limit = 20, offset = 0 } = pagination ?? {};
+
+    // ── count + данные параллельно ───────────────────────────────────────────
+    const [totalResult, rows] = await Promise.all([
+      this.db.db.select({ value: count() }).from(partners).where(where),
+      this.db.db
+        .select()
+        .from(partners)
+        .where(where)
+        .orderBy(asc(partners.name))
+        .limit(limit)
+        .offset(offset),
+    ]);
+
+    const total = totalResult[0]?.value ?? 0;
     const ids = rows.map((r) => r.id).filter(Boolean) as string[];
+
     const [typeRows, compRows] = ids.length
       ? await Promise.all([
           this.db.db
@@ -41,6 +105,7 @@ export class PartnersService {
             .where(inArray(relPartnersCompetencies.partnerId, ids)),
         ])
       : [[], []];
+
     const typeMap = new Map<string, string[]>();
     for (const t of typeRows) {
       if (t.partnerId && t.typeId) {
@@ -49,6 +114,7 @@ export class PartnersService {
         typeMap.set(String(t.partnerId), arr);
       }
     }
+
     const compMap = new Map<string, string[]>();
     for (const c of compRows) {
       if (c.partnerId && c.competenceId) {
@@ -57,11 +123,14 @@ export class PartnersService {
         compMap.set(String(c.partnerId), arr);
       }
     }
-    return rows.map((r) => ({
+
+    const data = rows.map((r) => ({
       ...this.toResponse(r),
       type_ids: typeMap.get(String(r.id)) ?? [],
       competence_ids: compMap.get(String(r.id)) ?? [],
     }));
+
+    return { data, total };
   }
 
   async findOne(id: string) {

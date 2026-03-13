@@ -1,0 +1,75 @@
+.progressSection {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+}
+
+.sectionHeaderBordered {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sectionBody {
+  padding: 12px 18px 14px;
+
+  // Tighten vertical-layout cells
+  :global(th.ant-descriptions-item) {
+    padding-bottom: 1px !important;
+  }
+
+  :global(td.ant-descriptions-item) {
+    padding-bottom: 8px !important;
+  }
+}
+
+// Collapse block for description field
+.descriptionCollapse {
+  margin-top: 10px;
+  border-top: 1px solid #f0f0f0;
+
+  :global(.ant-collapse-header) {
+    padding: 8px 0 !important;
+  }
+
+  :global(.ant-collapse-content-box) {
+    padding: 0 0 6px !important;
+  }
+}
+
+// Label shown in the Collapse header
+.descriptionLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.descriptionText {
+  display: block;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.6;
+}
+
+// Descriptions table classNames
+.descLabel {
+  color: rgba(0, 0, 0, 0.45) !important;
+  font-size: 13px !important;
+}
+
+.descContent {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+}

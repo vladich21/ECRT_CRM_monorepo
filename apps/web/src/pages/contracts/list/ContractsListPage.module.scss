@@ -1,4 +1,4 @@
-@use '../../styles/variables' as v;
+@use '../../../styles/variables' as v;
 
 $portal-base: #ffffff;
 $portal-secondary: #1e293b;
@@ -29,66 +29,6 @@ $tag-default-text: #1d4ed8;
   padding: 0;
 }
 
-.pageBlock {
-  background: $portal-base;
-  border-radius: 8px;
-  box-shadow: $shadow;
-  border: 1px solid $portal-secondary-border;
-  margin-bottom: v.$spacing-xl;
-  overflow: hidden;
-}
-
-.pageHeader {
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: v.$spacing-xl;
-  flex-wrap: wrap;
-}
-
-.pageHeaderContainer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: v.$spacing-xl;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-.pageHeaderLeft {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.pageTitle {
-  margin: 0;
-  font-size: v.$font-2xl;
-  font-weight: 600;
-  color: $portal-secondary;
-}
-
-.pageSubtitle {
-  color: $portal-secondary-muted;
-  font-size: v.$font-base;
-}
-
-.pageHeaderRight {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.pageHeaderRight :global(.ant-btn-primary) {
-  background-color: #1677ff !important;
-  border-color: #1677ff !important;
-  &:hover {
-    background-color: #4096ff !important;
-    border-color: #4096ff !important;
-  }
-}
 
 .filtersBtnActive {
   border-color: $portal-accent !important;
@@ -164,7 +104,7 @@ $tag-default-text: #1d4ed8;
   justify-content: space-between;
   gap: 16px;
   padding: 0 24px;
-  min-height: 48px;
+  min-height: 46px;
 }
 
 .filterTabs {
@@ -215,7 +155,7 @@ $tag-default-text: #1d4ed8;
   border: none;
   background: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -6px;
+  margin-bottom: -4px;
   transition: color 0.2s, border-color 0.2s;
   &:hover {
     color: $portal-secondary;

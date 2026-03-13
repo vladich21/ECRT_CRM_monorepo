@@ -1,13 +1,24 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { Partner } from '../../types/partner';
-import { partnerApi } from './partnerApi';
+import { partnerApi, PartnerListParams, PartnersListResponse } from './partnerApi';
 
-export const usePartners = (preview?: number): UseQueryResult<Partner[], Error> => {
-  return useQuery<Partner[], Error>({
-    queryKey: ['partners'],
-    queryFn: () => partnerApi.getPartners(preview),
+export interface PartnersListResult {
+  data: Partner[];
+  total: number;
+}
+
+export function usePartners(
+  filters?: PartnerListParams,
+  page?: number,
+  pageSize?: number,
+): UseQueryResult<PartnersListResult, Error> {
+  const limit = pageSize ?? 20;
+  const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
+  return useQuery<PartnersListResult, Error>({
+    queryKey: ['partners', filters ?? null, page, pageSize],
+    queryFn: () => partnerApi.getPartners(filters, limit, offset),
   });
-};
+}
 
 export const usePartnerById = (partnerId: string): UseQueryResult<Partner, Error> => {
   return useQuery<Partner, Error>({
@@ -25,14 +36,11 @@ export const usePartnerByInn = (): UseMutationResult<Partner, Error, any> => {
 
 export const useCreatePartner = (): UseMutationResult<Partner, Error, Partner> => {
   const queryClient = useQueryClient();
-
   return useMutation<Partner, Error, Partner>({
     mutationFn: (data: Partner) => partnerApi.addPartner(data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partners');
-        },
+        predicate: (query) => query.queryKey.some((k) => typeof k === 'string' && k === 'partners'),
       });
     },
   });
@@ -40,14 +48,11 @@ export const useCreatePartner = (): UseMutationResult<Partner, Error, Partner> =
 
 export const useUpdatePartner = (): UseMutationResult<Partner, Error, { id: string; data: Partial<Partner> }> => {
   const queryClient = useQueryClient();
-
   return useMutation<Partner, Error, { id: string; data: Partial<Partner> }>({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Partner> }) => partnerApi.editPartner(id, data),
-    onSuccess: (_, variables) => {
+    mutationFn: ({ id, data }) => partnerApi.editPartner(id, data),
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partners');
-        },
+        predicate: (query) => query.queryKey.some((k) => typeof k === 'string' && k === 'partners'),
       });
     },
   });
@@ -55,14 +60,11 @@ export const useUpdatePartner = (): UseMutationResult<Partner, Error, { id: stri
 
 export const useDeletePartner = (): UseMutationResult<Partner, Error, string, unknown> => {
   const queryClient = useQueryClient();
-
   return useMutation<Partner, Error, string>({
     mutationFn: (partnerId: string) => partnerApi.deletePartner(partnerId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partners');
-        },
+        predicate: (query) => query.queryKey.some((k) => typeof k === 'string' && k === 'partners'),
       });
     },
   });

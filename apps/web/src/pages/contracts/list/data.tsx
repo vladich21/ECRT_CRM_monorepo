@@ -1,10 +1,10 @@
 import { ColumnType } from 'antd/es/table';
-import { Contract } from '../../types/contract';
+import { Contract } from '../../../types/contract';
 import { Tag } from 'antd';
-import { ReferenceData } from '../../api/hooks/useReferences';
-import { getNameById } from '../../helpers/getNameById';
-import { getTagColorByData } from '../../helpers/getTagColorByData';
-import { getEntityById } from '../../helpers/getEntityById';
+import { ReferenceData } from '../../../api/hooks/useReferences';
+import { getNameById } from '../../../helpers/getNameById';
+import { getTagColorByData } from '../../../helpers/getTagColorByData';
+import { getEntityById } from '../../../helpers/getEntityById';
 
 export const initialFormValues = {
   number: '',

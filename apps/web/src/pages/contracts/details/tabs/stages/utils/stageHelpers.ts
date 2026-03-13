@@ -1,5 +1,5 @@
-import { ContractStage } from '../../../../types/contract';
-import { getEntityById } from '../../../../helpers/getEntityById';
+import { ContractStage } from '../../../../../../types/contract';
+import { getEntityById } from '../../../../../../helpers/getEntityById';
 
 export const getStageStatus = (stage: ContractStage, contractStageStates?: any[]) => {
   const hasActualEndDate = Boolean(stage.actual_end_date);

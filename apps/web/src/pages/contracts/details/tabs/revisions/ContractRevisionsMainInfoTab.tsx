@@ -1,13 +1,13 @@
 import { Button, Space, Tag, Tooltip } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import BasicTable from '../../../components/basicTable/BasicTable';
-import { useNotification } from '../../../customhooks/useNotification';
-import { ContractRevision } from '../../../types/contract';
-import { useContractRevisions } from '../../../api/contractRevisions/contractRevisionsApiHooks';
-import { getRevisionColumnsData } from './data';
-import { formatDate } from '../../../helpers/formatDate';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { useReferenceData } from '../../../api/hooks/useReferences';
+import BasicTable from '../../../../../components/basicTable/BasicTable';
+import { useNotification } from '../../../../../customhooks/useNotification';
+import { ContractRevision } from '../../../../../types/contract';
+import { useContractRevisions } from '../../../../../api/contractRevisions/contractRevisionsApiHooks';
+import { getRevisionColumnsData } from '../stages/data';
+import { formatDate } from '../../../../../helpers/formatDate';
+import { NotFound } from '../../../../../components/notFound/NotFound';
+import { useReferenceData } from '../../../../../api/hooks/useReferences';
 import styles from './ContractRevisionsMainInfoTab.module.scss';
 
 export default function ContractRevisionsListTab() {

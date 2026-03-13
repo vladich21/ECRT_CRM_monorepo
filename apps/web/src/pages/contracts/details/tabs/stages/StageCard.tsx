@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, Tag, Button, Row, Col, Typography } from 'antd';
 import { UpOutlined, DownOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { ContractStage } from '../../../../types/contract';
-import { getStageStatus, getStageStatusDisplay, calculateDaysUntilDeadline, calculateBudgetDeviation } from '../utils/stageHelpers';
+import { ContractStage } from '../../../../../types/contract';
+import { getStageStatus, getStageStatusDisplay, calculateDaysUntilDeadline, calculateBudgetDeviation } from './utils/stageHelpers';
 import styles from '../../ContractDetails.module.scss';
 import { StageInfoItem } from './StageInfoItem';
 

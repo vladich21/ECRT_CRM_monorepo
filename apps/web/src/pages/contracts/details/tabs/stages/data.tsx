@@ -1,11 +1,11 @@
 import { ColumnType } from 'antd/es/table';
-import { ContractRevision, ContractStage } from '../../../types/contract';
+import { ContractRevision, ContractStage } from '../../../../../types/contract';
 import { Tag, Progress, Space, Tooltip } from 'antd';
-import { ReferenceData } from '../../../api/hooks/useReferences';
+import { ReferenceData } from '../../../../../api/hooks/useReferences';
 import { CalendarOutlined, DollarOutlined, NumberOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { getTagColorByData } from '../../../helpers/getTagColorByData';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
+import { getTagColorByData } from '../../../../../helpers/getTagColorByData';
+import { getEntityById } from '../../../../../helpers/getEntityById';
+import { getNameById } from '../../../../../helpers/getNameById';
 import styles from './data.module.scss';
 
 export const getStageColumnsData = (
