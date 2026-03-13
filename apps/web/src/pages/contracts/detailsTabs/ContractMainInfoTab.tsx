@@ -11,6 +11,7 @@ import MetricCard from '../../../components/ui/MetricCard';
 import InfoField from '../../../components/ui/InfoField';
 import { createContractMetrics } from './utils/metricHelpers';
 import { formatDate } from './data';
+import { StageCard } from './stages/StageCard';
 import styles from '../../contracts/ContractDetails.module.scss';
 
 const { Title, Text } = Typography;
@@ -22,6 +23,7 @@ const formatDateValue = (date: string | null | undefined): string => {
 export function ContractMainInfoTab() {
   const contract = useOutletContext<Contract>();
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(true);
+  const [expandedStageIds, setExpandedStageIds] = useState<Record<string, boolean>>({});
 
   const {
     data: referenceBooks,
@@ -29,8 +31,11 @@ export function ContractMainInfoTab() {
     isLoading: isReferencesLoading,
   } = useReferenceData(['users', 'projects', 'partners', 'contractStates', 'contractCategories']);
 
-  // Эндпоинт этапов не готов, используем пустой массив
-  const stages: ContractStage[] = [];
+  // Этапы пока берём из API; мок для демо закомментирован.
+  const stages: ContractStage[] = useMemo(() => {
+    // if (contract?.id === '9a75a367-5856-4aa3-a93f-224485f5372b') { return [ /* mock stages */ ]; }
+    return [];
+  }, [contract?.id]);
 
   const sortedStages = useMemo(
     () => [...stages].sort((a, b) => a.stage_number - b.stage_number),
@@ -50,7 +55,9 @@ export function ContractMainInfoTab() {
     return <NotFound errorMessage='Договор не найден' />;
   }
 
-  const totalProgress = 0;
+  const totalProgress = sortedStages.length
+    ? (sortedStages.filter(s => Boolean(s.actual_end_date)).length / sortedStages.length) * 100
+    : 0;
 
   const statusMetricRows = [
     {
@@ -149,7 +156,7 @@ export function ContractMainInfoTab() {
                 <InfoField label="Категория" value={getNameById(contract.category_id, referenceBooks?.contractCategories) || '-'} />
                 <InfoField label="Ответственный" value={getNameById(contract.responsible_id, referenceBooks?.users) || '-'} />
                 <InfoField label="Дата подписания" value={formatDateValue(contract.date_signed)} />
-                <InfoField label="НДС" value={`${contract.vat_rate || 0}% (${(contract.amount_vat || 0).toLocaleString('ru-RU')} ₽)`} />
+                <InfoField label="НДС" value={`${contract.vat_rate || 0}%`} />
               </Row>
             </div>
           </div>
@@ -161,12 +168,31 @@ export function ContractMainInfoTab() {
           <Title level={4} className={styles.stagesTitle}>Этапы выполнения</Title>
         </div>
 
-        <Alert
-          message="Функционал этапов в разработке"
-          description="Эндпоинты для работы с этапами договора находятся в разработке. Функционал будет доступен в ближайшее время."
-          type="info"
-          showIcon
-        />
+        {sortedStages.length === 0 ? (
+          <Alert
+            message="Функционал этапов в разработке"
+            description="Эндпоинты для работы с этапами договора находятся в разработке."
+            type="info"
+            showIcon
+          />
+        ) : (
+          <Row gutter={[16, 16]}>
+            {sortedStages.map((stage) => {
+              const isExpanded = expandedStageIds[stage.id] ?? stage.stage_number === 2;
+              return (
+                <StageCard
+                  key={stage.id}
+                  stage={stage}
+                  users={referenceBooks.users}
+                  isExpanded={isExpanded}
+                  onToggle={() =>
+                    setExpandedStageIds((prev) => ({ ...prev, [stage.id]: !(prev[stage.id] ?? false) }))
+                  }
+                />
+              );
+            })}
+          </Row>
+        )}
       </Card>
     </div>
   );

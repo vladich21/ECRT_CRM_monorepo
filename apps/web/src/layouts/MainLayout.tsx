@@ -56,7 +56,7 @@ function MainLayout({ children }: MainLayoutProps) {
           borderRadius: borderRadiusLG,
         }}
       >
-        {children ?? <Outlet />}
+        <div className={styles.contentInner}>{children ?? <Outlet />}</div>
       </Content>
     </Layout>
   );

@@ -1,0 +1,449 @@
+@use '../../styles/variables' as v;
+
+$portal-base: #ffffff;
+$portal-secondary: #1e293b;
+$portal-secondary-muted: #64748b;
+$portal-secondary-border: #e2e8f0;
+$portal-accent: #002f55;
+$shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
+$shadow-hover: 0 4px 12px rgba(30, 41, 59, 0.12);
+
+$tag-active-bg: #bbf7d0;
+$tag-active-text: #15803d;
+$tag-inactive-bg: #fecaca;
+$tag-inactive-text: #b91c1c;
+$tag-draft-bg: #e2e8f0;
+$tag-draft-text: #334155;
+$tag-signed-bg: #bbf7d0;
+$tag-signed-text: #15803d;
+$tag-approval-bg: #bfdbfe;
+$tag-approval-text: #1d4ed8;
+$tag-rejected-bg: #fecaca;
+$tag-rejected-text: #b91c1c;
+$tag-closed-bg: #e2e8f0;
+$tag-closed-text: #475569;
+$tag-default-bg: #bfdbfe;
+$tag-default-text: #1d4ed8;
+
+.wrap {
+  padding: 0;
+}
+
+.pageBlock {
+  background: $portal-base;
+  border-radius: 8px;
+  box-shadow: $shadow;
+  border: 1px solid $portal-secondary-border;
+  margin-bottom: v.$spacing-xl;
+  overflow: hidden;
+}
+
+.pageHeader {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$spacing-xl;
+  flex-wrap: wrap;
+}
+
+.pageHeaderContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$spacing-xl;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.pageHeaderLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: v.$font-2xl;
+  font-weight: 600;
+  color: $portal-secondary;
+}
+
+.pageSubtitle {
+  color: $portal-secondary-muted;
+  font-size: v.$font-base;
+}
+
+.pageHeaderRight {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pageHeaderRight :global(.ant-btn-primary) {
+  background-color: #1677ff !important;
+  border-color: #1677ff !important;
+  &:hover {
+    background-color: #4096ff !important;
+    border-color: #4096ff !important;
+  }
+}
+
+.filtersBtnActive {
+  border-color: $portal-accent !important;
+  color: $portal-accent !important;
+}
+
+.filtersBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(0, 47, 85, 0.12);
+  color: $portal-accent;
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.filtersModalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px 24px;
+}
+
+.filtersModalField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filtersModalLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: $portal-secondary-muted;
+}
+
+.filtersModalControl {
+  width: 100%;
+}
+
+.filtersModalAmountRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filtersModalAmountInput {
+  width: 120px;
+}
+
+.filtersModalAmountSep {
+  color: $portal-secondary-muted;
+  font-size: 14px;
+}
+
+.filtersModalAmountUnit {
+  font-size: 14px;
+  color: $portal-secondary-muted;
+}
+
+.filterSection {
+  border-top: 1px solid $portal-secondary-border;
+  background: #f8fafc;
+}
+
+.filterTabsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  min-height: 48px;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 0;
+}
+
+.filterTabsRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.searchInTabsRow {
+  width: 280px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  :global(.ant-input-group-addon) {
+    display: none;
+  }
+  :global(.ant-input-affix-wrapper),
+  :global(.ant-input) {
+    border-radius: 8px;
+  }
+}
+
+.searchIcon {
+  color: $portal-secondary-muted;
+  font-size: 14px;
+}
+
+.resultCount {
+  font-size: 14px;
+  color: $portal-secondary-muted;
+  white-space: nowrap;
+  strong {
+    color: $portal-secondary;
+  }
+}
+
+.filterTab {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: $portal-secondary-muted;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -6px;
+  transition: color 0.2s, border-color 0.2s;
+  &:hover {
+    color: $portal-secondary;
+  }
+}
+
+.filterTabActive {
+  color: $portal-secondary;
+  border-bottom-color: $portal-accent;
+}
+
+.filterTabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 47, 85, 0.1);
+  color: $portal-accent;
+  margin-left: 6px;
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 auto;
+}
+
+.contractCard {
+  position: relative;
+  padding: 12px 18px 12px 22px;
+  background: $portal-base;
+  border: 1px solid $portal-secondary-border;
+  border-radius: 8px;
+  box-shadow: $shadow;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  &:hover {
+    box-shadow: $shadow-hover;
+    border-color: rgba(30, 41, 59, 0.18);
+  }
+}
+
+.contractCardBody {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cardMain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cardNum {
+  font-size: v.$font-lg;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: $portal-secondary;
+  flex-shrink: 0;
+}
+
+.cardCategory {
+  font-size: 14px;
+  color: $portal-secondary-muted;
+  background: $tag-default-bg;
+  border: 1px solid $portal-secondary-border;
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.cardPartner {
+  font-size: v.$font-base;
+  color: $portal-secondary;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cardMeta {
+  font-size: 14px;
+  color: $portal-secondary-muted;
+  flex-shrink: 0;
+}
+
+.cardMetaSep {
+  margin: 0 4px;
+  color: $portal-secondary-border;
+}
+
+.cardMetaDot {
+  white-space: nowrap;
+}
+
+.cardRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cardAmountWrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.cardAmount {
+  font-size: v.$font-lg;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: $portal-secondary;
+}
+
+.cardAmountLabel {
+  font-size: 14px;
+  color: $portal-secondary-muted;
+}
+
+.cardStatusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.tagStatusActive,
+.tagStatusInactive,
+.tagStateDraft,
+.tagStateSigned,
+.tagStateOnApproval,
+.tagStateRejected,
+.tagStateClosed,
+.tagStateDefault {
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.tagStatusActive {
+  background: $tag-active-bg;
+  color: $tag-active-text;
+  border-color: rgba(21, 128, 61, 0.4);
+}
+
+.tagStatusInactive {
+  background: $tag-inactive-bg;
+  color: $tag-inactive-text;
+  border-color: rgba(185, 28, 28, 0.35);
+}
+
+.tagStateDraft {
+  background: $tag-draft-bg;
+  color: $tag-draft-text;
+  border-color: #cbd5e1;
+}
+
+.tagStateSigned,
+.tagStateApproved {
+  background: $tag-signed-bg;
+  color: $tag-signed-text;
+  border-color: rgba(21, 128, 61, 0.4);
+}
+
+.tagStateOnApproval {
+  background: $tag-approval-bg;
+  color: $tag-approval-text;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.tagStateRejected {
+  background: $tag-rejected-bg;
+  color: $tag-rejected-text;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.tagStateClosed {
+  background: $tag-closed-bg;
+  color: $tag-closed-text;
+  border-color: #cbd5e1;
+}
+
+.tagStateDefault {
+  background: $tag-default-bg;
+  color: $tag-default-text;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.pagination {
+  margin-top: v.$spacing-xl;
+  padding-bottom: v.$spacing-2xl;
+  display: flex;
+  justify-content: center;
+  :global(.ant-pagination) {
+    font-size: 14px;
+  }
+  :global(.ant-pagination-total-text) {
+    margin-right: 12px;
+    color: $portal-secondary-muted;
+  }
+}
+
+.loading {
+  padding: v.$spacing-4xl;
+  text-align: center;
+  color: $portal-secondary-muted;
+}
+
+.empty {
+  padding: v.$spacing-4xl;
+  text-align: center;
+  color: $portal-secondary-muted;
+  background: $portal-base;
+  border-radius: 8px;
+  border: 1px dashed $portal-secondary-border;
+}

@@ -35,8 +35,13 @@
 .content {
   margin: 16px;
   padding: 24px;
+  overflow: visible;
+  min-height: calc(100vh - 64px - 32px);
+}
+
+.contentInner {
   overflow-x: auto;
-  min-height: calc(100vh - 64px - 32px); // 64px header + 32px margins
+  min-height: calc(100vh - 64px - 32px - 48px);
 }
 
 .profileSection {

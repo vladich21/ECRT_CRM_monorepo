@@ -12,3 +12,15 @@ export function isContractDraft(
   const name = (state.name ?? '').toLowerCase();
   return code === 'draft' || name.includes('чернов');
 }
+
+/** Класс тега состояния договора для списка (совпадает с именами в ContractsListPage.module.scss) */
+export function getContractStateTagClass(code: string | undefined): string {
+  if (!code) return 'tagStateDefault';
+  const c = code.toUpperCase();
+  if (c === 'DRAFT') return 'tagStateDraft';
+  if (c === 'ON_APPROVAL') return 'tagStateOnApproval';
+  if (c === 'APPROVED' || c === 'SIGNED') return 'tagStateSigned';
+  if (c === 'REJECTED') return 'tagStateRejected';
+  if (c === 'CLOZED' || c === 'CLOSED') return 'tagStateClosed';
+  return 'tagStateDefault';
+}

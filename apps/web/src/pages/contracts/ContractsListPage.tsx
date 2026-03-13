@@ -1,125 +1,281 @@
-import { Button } from 'antd';
+import { Button, Input, Pagination, Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { getColumnsData } from './data';
-import BasicTable from '../../components/basicTable/BasicTable';
+import { useMemo, useEffect } from 'react';
+import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { NotFound } from '../../components/notFound/NotFound';
 import { useNotification } from '../../customhooks/useNotification';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { Contract } from '../../types/contract';
-import { useContracts, useDeleteContract } from '../../api/contracts/contractApiHooks';
-import { useContractFilters } from './hooks/useContractFilters';
-import { useFilteredContracts } from './hooks/useFilteredContracts';
-import { UniversalFilters } from '../../components/basicFilters/BasicFilters';
+import { useContracts } from '../../api/contracts/contractApiHooks';
 import { isContractDraft } from './utils/contractStateUtils';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
+import { BackButton } from '../../components/backButton/BackButton';
+import { ContractCard } from './ContractCard';
+import { ContractFiltersModal } from './ContractFiltersModal';
+import {
+  FILTER_TABS,
+  type ContractListReferences,
+} from './ContractsListPage.types';
+import {
+  filterByTab,
+  filterByAdvanced,
+  filterBySearch,
+} from './filters/contractListFilters';
+import { useContractListFilters } from './hooks/useContractListFilters';
+import styles from './ContractsListPage.module.scss';
+
+function validateAmountFilters(filters: {
+  amountMin: number | null;
+  amountMax: number | null;
+}): string | null {
+  if (
+    filters.amountMin != null &&
+    filters.amountMax != null &&
+    filters.amountMin > filters.amountMax
+  ) {
+    return 'Минимальная сумма не может быть больше максимальной';
+  }
+  return null;
+}
+
+function buildSelectOptions(references: ContractListReferences) {
+  return {
+    partners: (references?.partners ?? []).map((partner) => ({
+      label: partner.name,
+      value: partner.id,
+    })),
+    categories: (references?.contractCategories ?? []).map((category) => ({
+      label: category.name,
+      value: category.id,
+    })),
+    states: (references?.contractStates ?? []).map((state) => ({
+      label: state.name,
+      value: state.id,
+    })),
+  };
+}
 
 export default function ContractsListPage() {
   const navigate = useNavigate();
   const { partnerId } = useParams();
-  const [filters, setFilters] = useState<Record<string, any>>({});
-  const [currentContractId, setCurrentContractId] = useState('');
+  const { contextHolder, showNotification } = useNotification();
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    activeTab,
+    setActiveTab,
+    isFiltersModalOpen,
+    openFiltersModal,
+    closeFiltersModal,
+    appliedFilters,
+    draftFilters,
+    updateDraftFilter,
+    applyFilters,
+    resetDraftFilters,
+    activeFiltersCount,
+  } = useContractListFilters({
+    validateFilters: validateAmountFilters,
+  });
 
   const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
   const { data, isLoading, isError } = useContracts(
     partnerId ? { partner_id: partnerId } : undefined,
     page,
-    pageSize,
+    pageSize
   );
-  const contracts = data?.data ?? [];
-  const total = data?.total ?? 0;
-
-  const { contextHolder, showNotification } = useNotification();
-  const deleteContractMutation = useDeleteContract();
-
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteContractMutation,
-    successMessage: 'Договор успешно удален',
-    errorMessage: 'Не удалось удалить договор',
-    getMutationProps: () => currentContractId,
-    showNotification,
-  });
-
   const {
     data: referenceBooks,
-    isError: isReferencesError,
-    isLoading: isReferencesLoading,
+    isError: isRefsError,
+    isLoading: isRefsLoading,
   } = useReferenceData(['partners', 'contractStates', 'contractCategories']);
 
-  const { filterConfig } = useContractFilters();
-  const filteredContracts = useFilteredContracts(contracts, filters);
+  const contracts = data?.data ?? [];
+  const totalCount = data?.total ?? 0;
+  const references = referenceBooks as ContractListReferences;
+
+  const tabCounts = useMemo(
+    () => ({
+      all: contracts.length,
+      active: contracts.filter((contract) => contract.is_active).length,
+      draft: contracts.filter((contract) =>
+        isContractDraft(contract.state_id, references?.contractStates)
+      ).length,
+      inactive: contracts.filter((contract) => !contract.is_active).length,
+    }),
+    [contracts, references?.contractStates]
+  );
+
+  const filteredContracts = useMemo(() => {
+    const afterTab = filterByTab(
+      contracts,
+      activeTab,
+      references?.contractStates
+    );
+    const afterAdvanced = filterByAdvanced(afterTab, appliedFilters);
+    return filterBySearch(afterAdvanced, searchQuery, references);
+  }, [contracts, activeTab, appliedFilters, searchQuery, references]);
+
+  const selectOptions = useMemo(
+    () => buildSelectOptions(references),
+    [references]
+  );
+
+  const handleApplyFilters = () => {
+    const result = applyFilters();
+    if (!result.success && result.error) {
+      showNotification('error', 'Ошибка', result.error);
+    }
+  };
 
   useEffect(() => {
     resetPage();
-  }, [filters, resetPage]);
+  }, [searchQuery, activeTab, appliedFilters, resetPage]);
 
-  useEffect(() => {
-    if (currentContractId) openDeleteModal();
-  }, [currentContractId, openDeleteModal]);
-
-  const handleRowClick = (record: Contract) => {
-    navigate(`/contracts/${record.id}`, {
-      state: {
-        contract: record,
-        from: 'contracts-list',
-      },
+  const handleContractClick = (contract: Contract) =>
+    navigate(`/contracts/${contract.id}`, {
+      state: { contract, from: 'contracts-list' },
     });
-  };
 
-  const onEdit = (record: Contract) => {
-    navigate(`/contracts/${record.id}/edit`);
-  };
+  const handlePageChange = (newPage: number, newPageSize?: number) =>
+    handleTableChange({
+      current: newPage,
+      pageSize: newPageSize ?? pageSize,
+    } as never);
 
-  const onDelete = (record: Contract) => {
-    if (isContractDraft(record.state_id, referenceBooks?.contractStates)) {
-      showNotification('error', 'Ошибка', 'Черновики удалять нельзя');
-      return;
-    }
-    setCurrentContractId(record.id.toString());
-  };
-
-  if (isReferencesError || isError) {
-    return <NotFound errorMessage='Не удалось выполнить запрос' />;
+  if (isRefsError || isError) {
+    return <NotFound errorMessage="Не удалось выполнить запрос" />;
   }
 
+  const isPageLoading = isRefsLoading || isLoading;
+  const paginationConfig = getPaginationConfig(totalCount);
+
   return (
-    <div>
+    <div className={styles.wrap}>
       {contextHolder}
-      <h1>Договоры</h1>
-      <Button
-        type='primary'
-        onClick={() => navigate('/contracts/create', { state: { partnerId } })}
-        style={{ marginBottom: 16 }}
-      >
-        Добавить договор
-      </Button>
+      <BackButton path="/" />
 
-      <UniversalFilters filterConfig={filterConfig} value={filters} onChange={setFilters} />
+      <div className={styles.pageBlock}>
+        <header className={styles.pageHeader}>
+          <div className={styles.pageHeaderContainer}>
+            <div className={styles.pageHeaderLeft}>
+              <h1 className={styles.pageTitle}>Договоры</h1>
+              <span className={styles.pageSubtitle}>
+                Реестр договоров организации
+              </span>
+            </div>
+            <div className={styles.pageHeaderRight}>
+              <Button type="default">Экспорт</Button>
+              <Button
+                type="default"
+                icon={<FilterOutlined />}
+                onClick={openFiltersModal}
+                className={
+                  activeFiltersCount > 0 ? styles.filtersBtnActive : undefined
+                }
+              >
+                Фильтры
+                {activeFiltersCount > 0 && (
+                  <span className={styles.filtersBadge}>
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </Button>
+              <Button
+                type="primary"
+                onClick={() =>
+                  navigate('/contracts/create', { state: { partnerId } })
+                }
+              >
+                Новый договор
+              </Button>
+            </div>
+          </div>
+        </header>
 
-      <div style={{ marginBottom: 16, color: '#666' }}>
-        Показано: <strong>{filteredContracts.length}</strong> из <strong>{total}</strong>
+        {!isPageLoading && (
+          <div className={styles.filterSection}>
+            <div className={styles.filterTabsRow}>
+              <div className={styles.filterTabs}>
+                {FILTER_TABS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`${styles.filterTab}${
+                      activeTab === key ? ` ${styles.filterTabActive}` : ''
+                    }`}
+                    onClick={() => setActiveTab(key)}
+                  >
+                    {label}{' '}
+                    <span className={styles.filterTabCount}>{tabCounts[key]}</span>
+                  </button>
+                ))}
+              </div>
+              <div className={styles.filterTabsRight}>
+                <Input.Search
+                  className={styles.searchInTabsRow}
+                  placeholder="Поиск по номеру, названию, партнёру..."
+                  allowClear
+                  enterButton={false}
+                  prefix={<SearchOutlined className={styles.searchIcon} />}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                />
+                <span className={styles.resultCount}>
+                  Показано: <strong>{filteredContracts.length}</strong> из{' '}
+                  <strong>{totalCount}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <BasicTable<Contract>
-        data={filteredContracts}
-        loading={isReferencesLoading || isLoading}
-        columns={getColumnsData({
-          partners: referenceBooks?.partners!,
-          contractStates: referenceBooks?.contractStates!,
-          contractCategories: referenceBooks?.contractCategories!,
-        })}
-        onRowClick={handleRowClick}
-        enableContextMenu={true}
-        showActions
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-        pagination={getPaginationConfig(total)}
-        onChange={handleTableChange}
+      <ContractFiltersModal
+        open={isFiltersModalOpen}
+        draftFilters={draftFilters}
+        onUpdateDraftFilter={updateDraftFilter}
+        onClose={closeFiltersModal}
+        onApply={handleApplyFilters}
+        onReset={resetDraftFilters}
+        selectOptions={selectOptions}
       />
+
+      {isPageLoading ? (
+        <div className={styles.loading}>
+          <Spin size="large" />
+        </div>
+      ) : filteredContracts.length === 0 ? (
+        <div className={styles.empty}>Нет договоров</div>
+      ) : (
+        <>
+          <div className={styles.cardList}>
+            {filteredContracts.map((contract) => (
+              <ContractCard
+                key={contract.id}
+                contract={contract}
+                refs={references}
+                onClick={handleContractClick}
+              />
+            ))}
+          </div>
+          {(paginationConfig.total ?? 0) > 0 && (
+            <div className={styles.pagination}>
+              <Pagination
+                current={paginationConfig.current}
+                pageSize={paginationConfig.pageSize}
+                total={paginationConfig.total}
+                showSizeChanger
+                pageSizeOptions={[20, 50, 100]}
+                showTotal={(total) => `Всего: ${total}`}
+                onChange={handlePageChange}
+                onShowSizeChange={(_, size) => handlePageChange(1, size)}
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
