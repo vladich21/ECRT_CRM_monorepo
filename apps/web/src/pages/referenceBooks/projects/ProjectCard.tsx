@@ -35,8 +35,8 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
         </div>
         <div className={styles.projectName}>{project.name || '—'}</div>
         <div className={styles.metaRow}>
-          <Tag color={st.color}>{st.label}</Tag>
-        </div>
+          <Tag color={st.color} style={{ fontSize: 14 }}>{st.label}</Tag>
+        </div>  
         {project.short_name && (
           <div className={styles.metaRow} style={{ marginTop: 2 }}>
             <span>{project.short_name}</span>

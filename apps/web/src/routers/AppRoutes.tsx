@@ -38,7 +38,7 @@ import PartnerCompetenceCreatePage from "../pages/referenceBooks/competencies/Co
 import PartnerCompetenceEditPage from "../pages/referenceBooks/competencies/CompetencyEditPage";
 import { ContractMainInfoTab } from "../pages/contracts/details/tabs/main/ContractMainInfoTab";
 import { ContractFilesTab } from "../pages/contracts/details/tabs/files/ContractFilesTab";
-import FilesListPage from "../pages/files/FilesListPage";
+import { EntityFilesTab } from "../components/entityFiles/EntityFilesTab";
 import PatentCreatePage from "../pages/patents/PatentCreatePage";
 import PatentEditPage from "../pages/patents/PatentEditPage";
 import PatentDetailsPage from "../pages/patents/PatentDetailsPage";
@@ -119,7 +119,7 @@ export default function AppRoutes() {
           <Route path=":patentId/edit" element={<PatentEditPage />} />
           <Route path=":patentId" element={<PatentDetailsPage />} >
             <Route index element={<PatentMainInfoTab />} />
-            <Route path="files" element={<FilesListPage entityType="patent" />} />
+            <Route path="files" element={<EntityFilesTab entityType="patent" />} />
             <Route path="comments" element={<CommentsList entityType="patent" />} />
             <Route path="grants" element={<PatentGrantsListPage />} />
           </Route>
@@ -135,7 +135,7 @@ export default function AppRoutes() {
           <Route path=":grantId/edit" element={<PatentGrantEditPage />} />
           <Route path=":grantId" element={<PatentGrantDetailsPage />}>
             <Route index element={<PatentGrantMainInfoTab />} />
-            <Route path="files" element={<FilesListPage entityType="grant" />} />
+            <Route path="files" element={<EntityFilesTab entityType="grant" />} />
           </Route>
         </Route>
 
@@ -149,7 +149,7 @@ export default function AppRoutes() {
             <Route path="contacts" element={<PartnerContactsListPage />} />
             <Route path="contracts" element={<ContractsListPage />} />
             <Route path="comments" element={<CommentsList entityType="partner" />} />
-            <Route path="files" element={<FilesListPage entityType="partner" />} />
+            <Route path="files" element={<EntityFilesTab entityType="partner" />} />
           </Route>
         </Route>
 

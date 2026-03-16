@@ -8,7 +8,7 @@
 
 // ─── Dark gradient header ───────────────────────────────────────────────────
 .header {
-  background: linear-gradient(135deg, #0a1628 0%, #1a2e52 60%, rgba(22, 119, 255, 0.13) 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1a3a6b 100%);
   padding: 28px 32px 0;
   position: relative;
   overflow: hidden;
@@ -73,7 +73,7 @@
 .companyName {
   margin: 0;
   color: #fff;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -104,7 +104,7 @@
 }
 
 .metaType {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -137,7 +137,7 @@
   font-size: 14px;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.5);
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   transition: all 0.2s;
   user-select: none;
 

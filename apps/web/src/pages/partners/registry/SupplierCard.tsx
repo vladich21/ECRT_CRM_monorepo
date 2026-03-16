@@ -48,7 +48,7 @@ export default function SupplierCard({ partner, references, onClick }: SupplierC
           </span>
         </div>
         <div className={styles.metaRow}>
-          <Tag color={statusColor}>{statusName}</Tag>
+          <Tag color={statusColor} style={{ fontSize: 14 }}>{statusName}</Tag>
         </div>
         {typeNames.length > 0 && (
           <div className={styles.metaRow} style={{ marginTop: 2 }}>

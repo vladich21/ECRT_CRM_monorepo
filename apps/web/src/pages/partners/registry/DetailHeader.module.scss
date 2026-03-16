@@ -1,5 +1,5 @@
 .header {
-  background: linear-gradient(135deg, #0a1628 0%, #1a2e52 60%, rgba(22, 119, 255, 0.13) 100%);
+  // background: linear-gradient(135deg, #0066ff 0%, #bbc2cf 60%, rgba(5, 75, 172, 0.13) 100%);
   padding: 28px 32px 0;
   position: relative;
   overflow: hidden;
@@ -77,7 +77,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -96,6 +96,7 @@
 }
 
 .metaRow {
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -108,23 +109,23 @@
   gap: 6px;
   border-radius: 20px;
   padding: 4px 14px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .metaInn {
   color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .metaType {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
 .metaCity {
   color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 4px;

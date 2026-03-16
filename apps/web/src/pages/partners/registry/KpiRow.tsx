@@ -8,7 +8,7 @@ import {
 const complianceColor = (score: number) => {
   if (score >= 80) return '#52c41a';
   if (score >= 50) return '#faad14';
-  return '#ff4d4f';
+  return '#db221f';
 };
 import styles from './KpiRow.module.scss';
 

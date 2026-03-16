@@ -109,12 +109,12 @@ export default function PatentDetailsPage() {
           <span key="name" className={styles.metaText}>{patent.name}</span>
         ),
         ipTypeName && (
-          <span key="ipType" className={styles.metaType} style={{ color: '#d3adf7' }}>
+          <span key="ipType" className={styles.metaType} style={{ color: '#ffffff80' }}>
             {ipTypeName}
           </span>
         ),
         statusName && (
-          <span key="status" className={styles.metaType} style={{ color: '#91caff' }}>
+          <span key="status" className={styles.metaType} style={{ color: '#ffffff80' }}>
             {statusName}
           </span>
         ),

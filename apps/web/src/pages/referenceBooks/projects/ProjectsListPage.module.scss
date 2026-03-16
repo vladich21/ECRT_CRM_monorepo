@@ -99,7 +99,7 @@ $portal-accent: #002f55;
 
 .name {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   color: #141414;
   white-space: nowrap;
 }
@@ -112,7 +112,7 @@ $portal-accent: #002f55;
 
 .projectName {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   color: #141414;
   margin-bottom: 4px;
   display: -webkit-box;
@@ -129,7 +129,7 @@ $portal-accent: #002f55;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .metaText {
@@ -147,14 +147,14 @@ $portal-accent: #002f55;
   gap: 4px;
   border-radius: 20px;
   padding: 2px 8px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
 }
 
 .categoryCol { flex: 1; min-width: 0; }
 
 .categoryName {
-  font-size: 13px;
+  font-size: 14px;
   color: #262626;
   margin-bottom: 4px;
   overflow: hidden;
@@ -163,7 +163,7 @@ $portal-accent: #002f55;
 }
 
 .description {
-  font-size: 12px;
+  font-size: 14px;
   color: #8c8c8c;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -181,13 +181,13 @@ $portal-accent: #002f55;
 .statsBlock { text-align: left; }
 
 .statValue {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #141414;
 }
 
 .statLabel {
-  font-size: 11px;
+  font-size: 14px;
   color: #8c8c8c;
 }
 
@@ -200,7 +200,7 @@ $portal-accent: #002f55;
 }
 
 .activityDate {
-  font-size: 11px;
+  font-size: 14px;
   color: #8c8c8c;
   display: flex;
   align-items: center;

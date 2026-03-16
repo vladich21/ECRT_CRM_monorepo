@@ -65,6 +65,7 @@ $shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
 .pageHeaderRight :global(.ant-btn-primary:not(.ant-btn-dangerous)) {
   background-color: #1677ff !important;
   border-color: #1677ff !important;
+  color: #ffffff;
   &:hover {
     background-color: #4096ff !important;
     border-color: #4096ff !important;

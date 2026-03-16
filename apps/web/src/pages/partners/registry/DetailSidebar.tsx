@@ -94,34 +94,6 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
         </div>
       </div>
 
-      {/* Адреса */}
-      <div className={styles.card}>
-        <h3 className={styles.cardTitle}>Адреса</h3>
-        <div className={styles.contactItems}>
-          {partner.legal_address ? (
-            <div className={styles.contactItem}>
-              <EnvironmentOutlined style={{ color: '#1677ff' }} />
-              <div>
-                <div style={{ fontSize: 11, color: '#8c8c8c' }}>Юридический</div>
-                {partner.legal_address}
-              </div>
-            </div>
-          ) : null}
-          {partner.actual_address ? (
-            <div className={styles.contactItem}>
-              <EnvironmentOutlined style={{ color: '#52c41a' }} />
-              <div>
-                <div style={{ fontSize: 11, color: '#8c8c8c' }}>Фактический</div>
-                {partner.actual_address}
-              </div>
-            </div>
-          ) : null}
-          {!partner.legal_address && !partner.actual_address && (
-            <div className={styles.contactItem} style={{ color: '#8c8c8c' }}>Не указаны</div>
-          )}
-        </div>
-      </div>
-
       {/* Реквизиты */}
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Реквизиты</h3>
@@ -140,6 +112,34 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
           </div>
         </div>
       </div>
+      {/* Адреса */}
+      <div className={styles.card}>
+        <h3 className={styles.cardTitle}>Адреса</h3>
+        <div className={styles.contactItems}>
+          {partner.legal_address ? (
+            <div className={styles.contactItem}>
+              <EnvironmentOutlined style={{ color: '#1677ff' }} />
+              <div>
+                <div style={{ fontSize: 14, color: '#8c8c8c' }}>Юридический</div>
+                {partner.legal_address}
+              </div>
+            </div>
+          ) : null}
+          {partner.actual_address ? (
+            <div className={styles.contactItem}>
+              <EnvironmentOutlined style={{ color: '#52c41a' }} />
+              <div>
+                <div style={{ fontSize: 14, color: '#8c8c8c' }}>Фактический</div>
+                {partner.actual_address}
+              </div>
+            </div>
+          ) : null}
+          {!partner.legal_address && !partner.actual_address && (
+            <div className={styles.contactItem} style={{ color: '#8c8c8c' }}>Не указаны</div>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }

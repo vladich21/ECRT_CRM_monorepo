@@ -50,8 +50,8 @@ export function PatentCard({ patent, refs, onClick }: Props) {
           </span>
         </div>
         <div className={styles.metaRow}>
-          <Tag color={st.color}>{st.label}</Tag>
-          {statusName && <Tag>{statusName}</Tag>}
+          <Tag color={st.color} style={{ fontSize: 14 }}>{st.label}</Tag>
+          {statusName && <Tag style={{ fontSize: 14 }}>{statusName}</Tag>}
         </div>
         {ipTypeName && (
           <div className={styles.metaRow} style={{ marginTop: 2 }}>

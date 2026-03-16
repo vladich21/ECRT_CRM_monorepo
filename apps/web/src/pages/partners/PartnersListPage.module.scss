@@ -15,7 +15,7 @@
 
 // ─── Filter section ─────────────────────────────────────────────────────────
 .filterSection   { @include lp.filterSection; }
-.filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
+.filterTabsRow   { @include lp.filterTabsRow; justify-content: flex-end; }
 .filterTabsRight { @include lp.filterTabsRight; }
 .searchInTabsRow { @include lp.searchInput; }
 .searchIcon      { @include lp.searchIcon; }

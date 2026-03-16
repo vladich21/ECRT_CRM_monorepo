@@ -4,8 +4,6 @@ import {
   NumberOutlined,
   SafetyCertificateOutlined,
   TeamOutlined,
-  ProjectOutlined,
-  UserOutlined,
 } from '@ant-design/icons';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { Loader } from '../../../components/loader/Loader';
@@ -117,9 +115,9 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           </div>
         </div>
 
-        {/* Общая информация о РИД */}
+        {/* Основные сведения */}
         <div className={styles.card}>
-          <h3 className={styles.cardTitle}>Общая информация о РИД</h3>
+          <h3 className={styles.cardTitle}>Основные сведения</h3>
           <div className={styles.infoRows}>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Наименование РИД</span>
@@ -128,21 +126,17 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               </span>
             </div>
             <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Объект собственности</span>
-              {ipTypeName ? (
-                <span className={styles.tagGreen}>{ipTypeName}</span>
-              ) : (
-                <span className={styles.infoValueMuted}>Не указан</span>
-              )}
+              <span className={styles.infoLabel}>Проект</span>
+              <span className={projectName ? styles.infoValueWide : styles.infoValueMuted}>
+                {projectName || 'Не указан'}
+              </span>
             </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Статус</span>
-              {statusName ? (
-                <span className={styles.tagVolcano}>{statusName}</span>
-              ) : (
-                <span className={styles.infoValueMuted}>Не указано</span>
-              )}
-            </div>
+            {projectCode && (
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Номер проекта</span>
+                <span className={styles.infoValue}>{projectCode}</span>
+              </div>
+            )}
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Область применения</span>
               {areaNames.length > 0 ? (
@@ -191,6 +185,35 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           </div>
         </div>
 
+      </div>
+
+      {/* ─── Right sidebar ───────────────────────────────────────────── */}
+      <div className={styles.sidebar}>
+        {/* Классификация */}
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Классификация</h3>
+          <div className={styles.infoRows}>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Объект ИС</span>
+              <span className={ipTypeName ? styles.infoValue : styles.infoValueMuted}>
+                {ipTypeName || '—'}
+              </span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Статус</span>
+              <span className={statusName ? styles.infoValue : styles.infoValueMuted}>
+                {statusName || '—'}
+              </span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Отдел</span>
+              <span className={deptName ? styles.infoValue : styles.infoValueMuted}>
+                {deptName || '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Документация */}
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Документация</h3>
@@ -203,74 +226,14 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Договор (доходный)</span>
-              {contract ? (
-                <span className={styles.tagOrange}>{contract.number}</span>
-              ) : (
-                <span className={styles.infoValueMuted}>Не указан</span>
-              )}
+              <span className={contract ? styles.infoValue : styles.infoValueMuted}>
+                {contract ? contract.number : 'Не указан'}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Шифр договора</span>
               <span className={contract?.cipher ? styles.infoValue : styles.infoValueMuted}>
                 {contract?.cipher || 'Не указан'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Right sidebar ───────────────────────────────────────────── */}
-      <div className={styles.sidebar}>
-        {/* Классификация */}
-        <div className={styles.card}>
-          <h3 className={styles.cardTitle}>Классификация</h3>
-          <div className={styles.infoRows}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Объект ИС</span>
-              {ipTypeName ? (
-                <span className={styles.tagGreen}>{ipTypeName}</span>
-              ) : (
-                <span className={styles.infoValueMuted}>—</span>
-              )}
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Статус</span>
-              {statusName ? (
-                <span className={styles.tagVolcano}>{statusName}</span>
-              ) : (
-                <span className={styles.infoValueMuted}>—</span>
-              )}
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Отдел</span>
-              {deptName ? (
-                <span className={styles.tagPurple}>{deptName}</span>
-              ) : (
-                <span className={styles.infoValueMuted}>—</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Проект */}
-        <div className={styles.card}>
-          <h3 className={styles.cardTitle}>
-            <ProjectOutlined style={{ marginRight: 6 }} />
-            Проект
-          </h3>
-          <div className={styles.infoRows}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Проект</span>
-              {projectName ? (
-                <span className={styles.tagCyan}>{projectName}</span>
-              ) : (
-                <span className={styles.infoValueMuted}>—</span>
-              )}
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Номер проекта</span>
-              <span className={projectCode ? styles.infoValue : styles.infoValueMuted}>
-                {projectCode || '—'}
               </span>
             </div>
           </div>

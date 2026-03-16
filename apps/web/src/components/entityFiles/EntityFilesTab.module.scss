@@ -7,7 +7,6 @@
 
 // ── Upload dragger ────────────────────────────────────────────────────────────
 .draggerEmpty {
-  // Large centered drop zone when no files exist
   :global(.ant-upload-drag) {
     border-radius: 8px;
     background: #fafafa;
@@ -15,7 +14,6 @@
 }
 
 .draggerCompact {
-  // Thin strip when files already exist
   :global(.ant-upload-drag) {
     padding: 8px 0 !important;
     border-radius: 8px;
@@ -91,10 +89,10 @@
 }
 
 // File type colours
-.iconPdf   { color: #ff4d4f; }
-.iconWord  { color: #1677ff; }
-.iconExcel { color: #52c41a; }
-.iconImage { color: #722ed1; }
+.iconPdf     { color: #ff4d4f; }
+.iconWord    { color: #1677ff; }
+.iconExcel   { color: #52c41a; }
+.iconImage   { color: #722ed1; }
 .iconDefault { color: #8c8c8c; }
 
 .fileName {

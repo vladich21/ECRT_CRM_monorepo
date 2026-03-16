@@ -60,9 +60,9 @@ export function ContractCard({ contract, refs, onClick }: Props) {
           )}
         </div>
         <div className={styles.metaRow}>
-          <Tag color={st.color}>{st.label}</Tag>
+          <Tag color={st.color} style={{ fontSize: 14 }}>{st.label}</Tag>
           {stateEntity && (
-            <Tag>{stateEntity.name}</Tag>
+            <Tag style={{ fontSize: 14 }}>{stateEntity.name}</Tag>
           )}
         </div>
         <div className={styles.metaRow} style={{ marginTop: 2 }}>

@@ -107,7 +107,6 @@ export default function PartnerEditPage() {
       <BackButton />
       <PageHeader
         title={`Редактирование контрагента: ${partner?.short_name || partner?.name}`}
-        subtitle="Внесите изменения в данные контрагента"
       />
 
       <div className={styles.formCard}>
