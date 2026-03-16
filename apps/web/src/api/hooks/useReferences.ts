@@ -15,6 +15,8 @@ import { patentStatusesApi } from '../patents/patentStatusApi';
 import { patentIntellectPropsApi } from '../patents/patentIntellectPropsApi';
 import { Contract, ContractStageState, ContractState, ContractType } from '../../types/contract';
 import { partnerEconomicCategoryApi } from '../partners/partnerEconomicCategoryApi';
+import { partnerCategoryApi } from '../partners/partnerCategoryApi';
+import { PartnerCategory } from '../../types/partner';
 import { patentApi } from '../patents/patentApi';
 import { PatentArea } from '../../types/patent';
 import { patentAreasApi } from '../patents/patentAreasApi';
@@ -31,6 +33,7 @@ export type ReferenceType =
   | 'competencies'
   | 'partnerStatuses'
   | 'partnerTypes'
+  | 'partnerCategories'
   | 'partnerEconomicCategories'
   | 'contracts'
   | 'contractStates'
@@ -51,6 +54,7 @@ export interface ReferenceData {
   competencies: Array<PartnerCompetence>;
 
   partners: Array<Reference>;
+  partnerCategories: Array<PartnerCategory>;
   partnerTypes: Array<PartnerType>;
   partnerStatuses: Array<PartnerStatus>;
   partnerEconomicCategories: Array<Reference>;
@@ -98,6 +102,7 @@ const referenceApiMethods = {
   competencies: partnerCompetenceApi.getPartnerCompetencies,
 
   partners: () => partnerApi.getPartnersForReference(),
+  partnerCategories: partnerCategoryApi.getPartnerCategories,
   partnerTypes: partnerTypeApi.getPartnerTypes,
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,

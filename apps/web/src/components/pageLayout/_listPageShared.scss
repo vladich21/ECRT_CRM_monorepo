@@ -92,6 +92,50 @@ $color-surface: #f8fafc;
   :global(.ant-pagination-total-text)  { margin-right: 12px; color: $color-muted; }
 }
 
+// ─── Filter tabs (status/type tabs under header) ────────────────────────────
+
+@mixin filterTabs {
+  display: flex;
+  gap: 0;
+}
+
+@mixin filterTab {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: $color-muted;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -4px;
+  transition: color 0.2s, border-color 0.2s;
+  &:hover {
+    color: $color-text;
+  }
+}
+
+@mixin filterTabActive {
+  color: $color-text;
+  border-bottom-color: $color-accent;
+}
+
+@mixin filterTabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 47, 85, 0.1);
+  color: $color-accent;
+  margin-left: 6px;
+}
+
 // ─── Модальное окно фильтров ──────────────────────────────────────────────────
 
 @mixin filtersModalGrid {

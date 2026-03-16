@@ -8,19 +8,18 @@ import {
   PhoneOutlined,
   TeamOutlined,
   IdcardOutlined,
-  DesktopOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useUpdateUser, useUserById } from '../../../api/users/userApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { userUpdateFormMapper } from '../../../helpers/mappers/userUpdateFormMapper';
+import styles from './UserFormPage.module.scss';
 import { Loader } from '../../../components/loader/Loader';
 import { getChangedFields } from '../../../helpers/getChangedFields';
 import { NotFound } from '../../../components/notFound/NotFound';
-import { TextWithDevTooltip } from '../../../components/inDevelopment/Tooltip';
-import { DevelopmentBadge } from '../../../components/inDevelopment/InDevelopment';
 
 const { Option } = Select;
 
@@ -37,7 +36,7 @@ export default function UserEditPage() {
 
   useEffect(() => {
     if (user) form.setFieldsValue(userUpdateFormMapper(user));
-  }, [user]);
+  }, [user, form]);
 
   useEffect(() => {
     if (isUpdateSuccess) {
@@ -61,7 +60,6 @@ export default function UserEditPage() {
     const toUuidOrNull = (v: unknown) => (v != null && v !== '' ? String(v) : null);
     if ('department_id' in payload) payload.department_id = toUuidOrNull(payload.department_id);
     if ('position_id' in payload) payload.position_id = toUuidOrNull(payload.position_id);
-    if ('workplace_id' in payload) payload.workplace_id = toUuidOrNull(payload.workplace_id);
     if ('role_ids' in payload && Array.isArray(payload.role_ids))
       payload.role_ids = payload.role_ids.map(String).filter(id => id && id !== '');
     mutate({ id: userId!, data: payload });
@@ -70,18 +68,15 @@ export default function UserEditPage() {
   const handleBack = () => navigate(-1);
 
   return (
-    <div>
+    <div className={styles.wrap}>
       {contextHolder}
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton />
-        <Card
-          title={
-            <span>
-              <UserOutlined style={{ marginRight: 8 }} />
-              Редактирование пользователя: {user.last_name} {user.first_name}
-            </span>
-          }
-        >
+      <BackButton />
+      <PageHeader
+        title={`Редактирование: ${user.last_name} ${user.first_name}`}
+        subtitle="Внесите изменения в данные пользователя"
+      />
+
+      <div className={styles.formCard}>
           <Form
             form={form}
             layout='vertical'
@@ -155,15 +150,6 @@ export default function UserEditPage() {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label={<TextWithDevTooltip text='Внутренний номер' />}
-                  name='internal_phone'
-                  rules={[{ pattern: /^\d{3,8}$/, message: 'Введите от 3 до 8 цифр' }]}
-                >
-                  <Input disabled placeholder='nnn' maxLength={8} />
-                </Form.Item>
-              </Col>
             </Row>
 
             {/* Организационная информация */}
@@ -218,19 +204,6 @@ export default function UserEditPage() {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={8}>
-                <Form.Item label={<TextWithDevTooltip text='Рабочее место' />} name='workplace_id'>
-                  <Select placeholder='Выберите номер места' allowClear disabled suffixIcon={<DesktopOutlined />}>
-                    {/* todo: Доработать выбор рабочих мест */}
-                    {referenceBooks?.positions?.map(position => (
-                      <Option key={position.id} value={position.id}>
-                        {position.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
             </Row>
 
             {/* Права доступа */}
@@ -264,27 +237,22 @@ export default function UserEditPage() {
             </Row>
 
             {/* Кнопки действий */}
-            <Form.Item>
-              <Space>
-                <Button
-                  type='primary'
-                  htmlType='submit'
-                  icon={<SaveOutlined />}
-                  disabled={!isFormChanged}
-                  loading={isUpdateLoading}
-                  size='large'
-                >
-                  Сохранить изменения
-                </Button>
-
-                <Button onClick={handleBack} size='large'>
-                  Отмена
-                </Button>
-              </Space>
-            </Form.Item>
+            <div className={styles.formActions}>
+              <Button onClick={handleBack}>
+                Отмена
+              </Button>
+              <Button
+                type='primary'
+                htmlType='submit'
+                icon={<SaveOutlined />}
+                disabled={!isFormChanged}
+                loading={isUpdateLoading}
+              >
+                Сохранить изменения
+              </Button>
+            </div>
           </Form>
-        </Card>
-      </Space>
+      </div>
     </div>
   );
 }

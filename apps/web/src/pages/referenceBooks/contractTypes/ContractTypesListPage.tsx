@@ -1,5 +1,5 @@
-import { Button } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ContractType } from '../../../types/contract';
 
 import { useEffect, useState } from 'react';
@@ -83,13 +83,7 @@ const ContractTypesListPage: React.FC = () => {
   };
 
   return (
-    <div>
-      {contextHolder}
-      <h1>Типы договоров</h1>
-      <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить тип договора
-      </Button>
-
+    <ReferenceBookListPage title="Типы договоров" addButtonLabel="Добавить тип договора" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <BasicTable<ContractType>
         data={data}
         loading={loading}
@@ -100,7 +94,7 @@ const ContractTypesListPage: React.FC = () => {
         actionsColumnTitle='Действия'
         actionsColumnWidth={100}
       />
-    </div>
+    </ReferenceBookListPage>
   );
 };
 

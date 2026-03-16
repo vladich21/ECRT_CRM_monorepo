@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import { PartnersService } from '../services/partners.service';
 import { parsePagination } from '../../../common/pagination';
@@ -45,14 +46,23 @@ export class PartnersController {
   }
 
   @Post()
-  async create(@Body('body') body?: Record<string, unknown>) {
-    const row = await this.service.create(body ?? {});
+  async create(
+    @Body('body') body?: Record<string, unknown>,
+    @Req() req?: Request & { user?: { user_id?: string } },
+  ) {
+    const userId = req?.user?.user_id;
+    const row = await this.service.create(body ?? {}, userId);
     return row ? [row] : [];
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body('body') body?: Record<string, unknown>) {
-    const row = await this.service.update(id, body ?? {});
+  async update(
+    @Param('id') id: string,
+    @Body('body') body?: Record<string, unknown>,
+    @Req() req?: Request & { user?: { user_id?: string } },
+  ) {
+    const userId = req?.user?.user_id;
+    const row = await this.service.update(id, body ?? {}, userId);
     if (!row) throw new NotFoundException(`Партнёр ${id} не найден`);
     return [row];
   }

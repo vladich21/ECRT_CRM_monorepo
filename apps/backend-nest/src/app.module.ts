@@ -23,6 +23,7 @@ import { PatentApplicationAreasModule } from './modules/patent-application-areas
 import { PatentGrantsModule } from './modules/patent-grants/patent-grants.module';
 import { PartnerCompetenciesModule } from './modules/partner-competencies/partner-competencies.module';
 import { PartnerStatusesModule } from './modules/partner-statuses/partner-statuses.module';
+import { PartnerCategoriesModule } from './modules/partner-categories/partner-categories.module';
 import { PartnerTypesModule } from './modules/partner-types/partner-types.module';
 import { PartnerEconomicCategoriesModule } from './modules/partner-economic-categories/partner-economic-categories.module';
 import { FilesModule } from './modules/files/files.module';
@@ -53,6 +54,7 @@ import { CommentsModule } from './modules/comments/comments.module';
     PatentGrantsModule,
     PartnerCompetenciesModule,
     PartnerStatusesModule,
+    PartnerCategoriesModule,
     PartnerTypesModule,
     PartnerEconomicCategoriesModule,
     FilesModule,

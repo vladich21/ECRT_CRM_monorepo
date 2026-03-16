@@ -1,6 +1,7 @@
 import { Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { PlusOutlined } from '@ant-design/icons';
 import { useUsers } from '../../../api/users/userApiHooks';
 import { getColumnsData } from './data';
 import { User } from '../../../types/user';
@@ -12,6 +13,9 @@ import { useUsersFilters } from './hooks/useUsersFilters';
 import { useFilteredUsers } from './hooks/useFilteredUsers';
 import { UniversalFilters } from '../../../components/basicFilters/BasicFilters';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { BackButton } from '../../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import styles from './UsersListPage.module.scss';
 
 export default function UsersListPage() {
   const navigate = useNavigate();
@@ -39,21 +43,31 @@ export default function UsersListPage() {
   }
 
   return (
-    <div>
+    <div className={styles.wrap}>
       {contextHolder}
+      <BackButton />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>Пользователи</h1>
-        <Button type='primary' onClick={() => navigate('/users/create')}>
-          Добавить пользователя
-        </Button>
-      </div>
-
-      <UniversalFilters filterConfig={filterConfig} value={filters} onChange={setFilters} />
-
-      <div style={{ marginBottom: 16, color: '#666' }}>
-        Показано: <strong>{filteredUsers.length}</strong> из <strong>{total}</strong>
-      </div>
+      <PageHeader
+        title="Пользователи"
+        subtitle="Управление пользователями системы"
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/users/create')}>
+            Добавить пользователя
+          </Button>
+        }
+        filters={
+          <div className={styles.filterSection}>
+            <div className={styles.filterTabsRow}>
+              <UniversalFilters filterConfig={filterConfig} value={filters} onChange={setFilters} />
+              <div className={styles.filterTabsRight}>
+                <span className={styles.resultCount}>
+                  Показано: <strong>{filteredUsers.length}</strong> из <strong>{total}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+      />
 
       <BasicTable
         data={mapUsersForTable(filteredUsers)}

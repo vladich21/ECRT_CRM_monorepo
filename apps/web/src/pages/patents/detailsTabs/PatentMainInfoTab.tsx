@@ -1,4 +1,12 @@
-import { Descriptions, Tag, Space, Typography } from 'antd';
+import {
+  FileTextOutlined,
+  CalendarOutlined,
+  NumberOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
+  ProjectOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { Loader } from '../../../components/loader/Loader';
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -6,10 +14,20 @@ import { getNameById } from '../../../helpers/getNameById';
 import { Patent } from '../../../types/patent';
 import { useOutletContext } from 'react-router-dom';
 import { getEntityById } from '../../../helpers/getEntityById';
-import { getNamesByIds } from '../../../components/getNamesByIds';
 import styles from './PatentMainInfoTab.module.scss';
 
-const { Text } = Typography;
+function formatDate(dateString: string) {
+  return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '—';
+}
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
 
 export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const {
@@ -26,155 +44,257 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
     'patentAreas',
   ]);
 
-  if (isReferencesLoading) {
-    return <Loader />;
-  }
-
+  if (isReferencesLoading) return <Loader />;
   if (isReferencesError || !referenceBooks) {
-    return <NotFound errorMessage='Патент не найден или не подгрузились справочники' />;
+    return <NotFound errorMessage="Не подгрузились справочники" />;
   }
 
-  const formatDate = (dateString: string) => {
-    return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '-';
-  };
+  const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps);
+  const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses);
+  const deptName = getNameById(patent.department_id, referenceBooks?.departments);
+  const projectName = getNameById(patent.project_id, referenceBooks?.projects);
+  const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
+  const contract = referenceBooks.contracts?.find((el) => el.id === patent.contract_id);
+  const authorNames = (patent.author_ids ?? [])
+    .map((id) => referenceBooks?.users?.find((u) => u.id === id)?.name)
+    .filter(Boolean) as string[];
+  const areaNames = (patent.area_ids ?? [])
+    .map((id) => referenceBooks?.patentAreas?.find((a) => a.id === id)?.name)
+    .filter(Boolean) as string[];
 
   return (
-    <Space direction='vertical' size='middle' className={styles.container}>
-      {/* Общая информация о РИД */}
-      <Descriptions
-        title='Общая информация о РИД'
-        column={1}
-        bordered
-        size='middle'
-        className={styles.descriptions}
-      >
-        <Descriptions.Item label='Наименование РИД'>
-          {patent.name || <Text type='secondary'>Не указано</Text>}
-        </Descriptions.Item>
+    <div className={styles.layout}>
+      {/* ─── Left column ─────────────────────────────────────────────── */}
+      <div className={styles.leftColumn}>
+        {/* KPI tiles */}
+        <div className={styles.kpiRow}>
+          <div className={styles.kpiTile}>
+            <div className={styles.kpiContent}>
+              <div>
+                <div className={styles.kpiValue}>{patent.registration_number || '—'}</div>
+                <div className={styles.kpiLabel}>Рег. номер (ИЦ ЖТ)</div>
+              </div>
+              <div className={styles.kpiIcon} style={{ background: '#e6f4ff', color: '#1677ff' }}>
+                <NumberOutlined />
+              </div>
+            </div>
+          </div>
 
-        <Descriptions.Item label='Объект собственности'>
-          {patent.intellectprop_id ? (
-            <Tag color='green'>{getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps)}</Tag>
+          <div className={styles.kpiTile}>
+            <div className={styles.kpiContent}>
+              <div>
+                <div className={styles.kpiValue}>{formatDate(patent.registration_date)}</div>
+                <div className={styles.kpiLabel}>Дата регистрации</div>
+              </div>
+              <div className={styles.kpiIcon} style={{ background: '#f6ffed', color: '#52c41a' }}>
+                <CalendarOutlined />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.kpiTile}>
+            <div className={styles.kpiContent}>
+              <div>
+                <div className={styles.kpiValue}>{patent.registration_number_cir || '—'}</div>
+                <div className={styles.kpiLabel}>Рег. номер (ЦИР)</div>
+              </div>
+              <div className={styles.kpiIcon} style={{ background: '#f9f0ff', color: '#722ed1' }}>
+                <SafetyCertificateOutlined />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.kpiTile}>
+            <div className={styles.kpiContent}>
+              <div>
+                <div className={styles.kpiValue}>{patent.kd_number || '—'}</div>
+                <div className={styles.kpiLabel}>Номер КД</div>
+              </div>
+              <div className={styles.kpiIcon} style={{ background: '#fff7e6', color: '#d48806' }}>
+                <FileTextOutlined />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Общая информация о РИД */}
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Общая информация о РИД</h3>
+          <div className={styles.infoRows}>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Наименование РИД</span>
+              <span className={patent.name ? styles.infoValue : styles.infoValueMuted}>
+                {patent.name || 'Не указано'}
+              </span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Объект собственности</span>
+              {ipTypeName ? (
+                <span className={styles.tagGreen}>{ipTypeName}</span>
+              ) : (
+                <span className={styles.infoValueMuted}>Не указан</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Статус</span>
+              {statusName ? (
+                <span className={styles.tagVolcano}>{statusName}</span>
+              ) : (
+                <span className={styles.infoValueMuted}>Не указано</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Область применения</span>
+              {areaNames.length > 0 ? (
+                <div className={styles.tagsWrap}>
+                  {areaNames.map((name) => (
+                    <span key={name} className={styles.areaTag}>{name}</span>
+                  ))}
+                </div>
+              ) : (
+                <span className={styles.infoValueMuted}>Не указано</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Регистрационные данные */}
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Регистрационные данные</h3>
+          <div className={styles.infoRows}>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Номер регистрации (ИЦ ЖТ)</span>
+              <span className={patent.registration_number ? styles.infoValue : styles.infoValueMuted}>
+                {patent.registration_number || 'Не указан'}
+              </span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Дата регистрации (ИЦ ЖТ)</span>
+              <span className={styles.infoValue}>{formatDate(patent.registration_date)}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Номер регистрации (ЦИР)</span>
+              <span className={patent.registration_number_cir ? styles.infoValue : styles.infoValueMuted}>
+                {patent.registration_number_cir || 'Не указан'}
+              </span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Дата регистрации (ЦИР)</span>
+              <span className={styles.infoValue}>{formatDate(patent.registration_date_cir)}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Номер патентной заявки</span>
+              <span className={patent.application_number ? styles.infoValue : styles.infoValueMuted}>
+                {patent.application_number || 'Не указан'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Документация */}
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Документация</h3>
+          <div className={styles.infoRows}>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Номер КД</span>
+              <span className={patent.kd_number ? styles.infoValue : styles.infoValueMuted}>
+                {patent.kd_number || 'Не указан'}
+              </span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Договор (доходный)</span>
+              {contract ? (
+                <span className={styles.tagOrange}>{contract.number}</span>
+              ) : (
+                <span className={styles.infoValueMuted}>Не указан</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Шифр договора</span>
+              <span className={contract?.cipher ? styles.infoValue : styles.infoValueMuted}>
+                {contract?.cipher || 'Не указан'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Right sidebar ───────────────────────────────────────────── */}
+      <div className={styles.sidebar}>
+        {/* Классификация */}
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Классификация</h3>
+          <div className={styles.infoRows}>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Объект ИС</span>
+              {ipTypeName ? (
+                <span className={styles.tagGreen}>{ipTypeName}</span>
+              ) : (
+                <span className={styles.infoValueMuted}>—</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Статус</span>
+              {statusName ? (
+                <span className={styles.tagVolcano}>{statusName}</span>
+              ) : (
+                <span className={styles.infoValueMuted}>—</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Отдел</span>
+              {deptName ? (
+                <span className={styles.tagPurple}>{deptName}</span>
+              ) : (
+                <span className={styles.infoValueMuted}>—</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Проект */}
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>
+            <ProjectOutlined style={{ marginRight: 6 }} />
+            Проект
+          </h3>
+          <div className={styles.infoRows}>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Проект</span>
+              {projectName ? (
+                <span className={styles.tagCyan}>{projectName}</span>
+              ) : (
+                <span className={styles.infoValueMuted}>—</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Номер проекта</span>
+              <span className={projectCode ? styles.infoValue : styles.infoValueMuted}>
+                {projectCode || '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Авторы (Исполнители) */}
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>
+            <TeamOutlined style={{ marginRight: 6 }} />
+            Авторы ({authorNames.length})
+          </h3>
+          {authorNames.length > 0 ? (
+            authorNames.map((name) => (
+              <div key={name} className={styles.authorItem}>
+                <div className={styles.authorAvatar}>{getInitials(name)}</div>
+                <span className={styles.authorName}>{name}</span>
+              </div>
+            ))
           ) : (
-            <Text type='secondary'>Не указан</Text>
+            <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>Не указаны</span>
           )}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Статус'>
-          {patent.status_id ? (
-            <Tag color='volcano'>{getNameById(patent.status_id, referenceBooks?.patentStatuses)}</Tag>
-          ) : (
-            <Text type='secondary'>Не указано</Text>
-          )}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Область применения'>
-          {getNamesByIds(patent.area_ids, referenceBooks?.patentAreas)}
-        </Descriptions.Item>
-      </Descriptions>
-
-      {/* Регистрационные данные АО "ИЦ ЖТ" */}
-      <Descriptions
-        title='Регистрационные данные АО "ИЦ ЖТ"'
-        column={1}
-        bordered
-        size='middle'
-        className={styles.descriptions}
-      >
-        <Descriptions.Item label='Номер регистрации'>
-          {patent.registration_number || <Text type='secondary'>Не указан</Text>}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Дата регистрации'>{formatDate(patent.registration_date)}</Descriptions.Item>
-      </Descriptions>
-
-      {/* Регистрационные данные ЦИР */}
-      <Descriptions
-        title='Регистрационные данные ЦИР'
-        column={1}
-        bordered
-        size='middle'
-        className={styles.descriptions}
-      >
-        <Descriptions.Item label='Номер регистрации (ЦИР)'>
-          {patent.registration_number_cir || <Text type='secondary'>Не указан</Text>}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Дата регистрации (ЦИР)'>{formatDate(patent.registration_date_cir)}</Descriptions.Item>
-
-        <Descriptions.Item label='Номер патентной заявки'>
-          {patent.application_number || <Text type='secondary'>Не указан</Text>}
-        </Descriptions.Item>
-      </Descriptions>
-
-      {/* Организационная принадлежность */}
-      <Descriptions
-        title='Организационная принадлежность'
-        column={1}
-        bordered
-        size='middle'
-        className={styles.descriptions}
-      >
-        <Descriptions.Item label='Отдел'>
-          {patent.department_id ? (
-            <Tag color='purple'>{getNameById(patent.department_id, referenceBooks?.departments)}</Tag>
-          ) : (
-            <Text type='secondary'>Не указан</Text>
-          )}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Авторы (Исполнители)'>
-          {getNamesByIds(patent.author_ids, referenceBooks?.users)}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Проект'>
-          {patent.project_id ? (
-            <Tag color='cyan'>{getNameById(patent.project_id, referenceBooks?.projects)}</Tag>
-          ) : (
-            <Text type='secondary'>Не указан</Text>
-          )}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Номер проекта'>
-          {patent.project_id ? (
-            <Text>{getEntityById(patent.project_id, referenceBooks?.projects)?.code}</Text>
-          ) : (
-            <Text type='secondary'>Не указан</Text>
-          )}
-        </Descriptions.Item>
-      </Descriptions>
-
-      {/* Документация и участники */}
-      <Descriptions
-        title='Документация и участники'
-        column={1}
-        bordered
-        size='middle'
-        className={styles.descriptions}
-      >
-        <Descriptions.Item label='Номер КД'>
-          {patent.kd_number || <Text type='secondary'>Не указан</Text>}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Договор (доходный)'>
-          {patent.contract_id ? (
-            <Tag color='orange'>{referenceBooks.contracts?.find(el => el.id === patent.contract_id)?.number}</Tag>
-          ) : (
-            <Text type='secondary'>Не указан</Text>
-          )}
-        </Descriptions.Item>
-
-        <Descriptions.Item label='Шифр договора'>
-          {patent.contract_id ? (
-            referenceBooks.contracts?.find(el => el.id === patent.contract_id)?.cipher || (
-              <Text type='secondary'>(не заполнено)</Text>
-            )
-          ) : (
-            <Text type='secondary'>Не указан</Text>
-          )}
-        </Descriptions.Item>
-      </Descriptions>
-    </Space>
+        </div>
+      </div>
+    </div>
   );
 }
 

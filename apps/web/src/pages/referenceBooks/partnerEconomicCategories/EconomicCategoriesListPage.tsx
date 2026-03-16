@@ -1,5 +1,5 @@
-import { Button } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PartnerEconomicCategory } from '../../../types/partner';
 
 import { useEffect, useState } from 'react';
@@ -46,8 +46,10 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
     modalType: 'withDescription',
     modalData: {
       name: getNameById(currentCategoryId, data),
+      code: getEntityById(currentCategoryId, data)?.code,
       description: getEntityById(currentCategoryId, data)?.description,
       nameLabel: 'название экономической категории контрагентов',
+      showCode: true,
     },
     getMutationProps: action === 'edit' ? () => currentCategoryId : () => undefined,
     showNotification,
@@ -83,13 +85,7 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
   };
 
   return (
-    <div>
-      {contextHolder}
-      <h1>Экономические категории контрагентов</h1>
-      <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить экономическую категорию
-      </Button>
-
+    <ReferenceBookListPage title="Экономические категории контрагентов" addButtonLabel="Добавить экономическую категорию" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <BasicTable<PartnerEconomicCategory>
         data={data}
         loading={loading}
@@ -100,7 +96,7 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
         actionsColumnTitle='Действия'
         actionsColumnWidth={100}
       />
-    </div>
+    </ReferenceBookListPage>
   );
 };
 

@@ -18,10 +18,12 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useCreateContract } from '../../../api/contracts/contractApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { initialFormValues } from '../list/data';
 import { numberFormatter, numberParser } from '../../../helpers/numberFormatters';
+import styles from './ContractCreatePage.module.scss';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -133,19 +135,12 @@ export default function ContractCreatePage() {
   }
 
   return (
-    <div>
+    <div className={styles.wrap}>
       {contextHolder}
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton />
+      <BackButton />
+      <PageHeader title="Создание нового договора" subtitle="Заполните данные для создания договора" />
 
-        <Card
-          title={
-            <span>
-              <FileTextOutlined style={{ marginRight: 8 }} />
-              Создание нового договора
-            </span>
-          }
-        >
+      <div className={styles.formCard}>
           <Form
             form={form}
             layout='vertical'
@@ -439,20 +434,16 @@ export default function ContractCreatePage() {
             </Row>
 
             {/* Кнопки действий */}
-            <Divider />
-            <Form.Item>
-              <Space>
-                <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading} size='large'>
-                  Создать договор
-                </Button>
-                <Button onClick={() => form.resetFields()} size='large' disabled={isCreateLoading}>
-                  Очистить форму
-                </Button>
-              </Space>
-            </Form.Item>
+            <div className={styles.formActions}>
+              <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
+                Очистить форму
+              </Button>
+              <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading}>
+                Создать договор
+              </Button>
+            </div>
           </Form>
-        </Card>
-      </Space>
+      </div>
     </div>
   );
 }

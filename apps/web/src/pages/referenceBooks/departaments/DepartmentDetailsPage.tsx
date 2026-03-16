@@ -1,15 +1,20 @@
-import { useParams } from 'react-router-dom';
-import { Card, Descriptions, Button, Tag, Space } from 'antd';
-import { TeamOutlined } from '@ant-design/icons';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from 'antd';
+import { EditOutlined, TeamOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { useDepartmentById } from '../../../api/departments/departmentsApiHooks';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { Loader } from '../../../components/loader/Loader';
-import { BackButton } from '../../../components/backButton/BackButton';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { getNameById } from '../../../helpers/getNameById';
+import { useNotification } from '../../../customhooks/useNotification';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
+import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import styles from './DepartmentDetails.module.scss';
 
 export default function DepartmentDetailsPage() {
   const { departmentId } = useParams();
+  const navigate = useNavigate();
+  const { contextHolder } = useNotification();
   const { data: department, isLoading, isError } = useDepartmentById(departmentId!);
 
   const {
@@ -26,50 +31,84 @@ export default function DepartmentDetailsPage() {
     return <NotFound errorMessage='Отдел не найден или не подгрузились справочники' />;
   }
 
+  const handleEdit = () => navigate(`/departments/${departmentId}/edit`);
+
   return (
-    <div>
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton />
+    <DetailPageHeader
+      title={department.name || 'Отдел'}
+      backLabel="Отделы"
+      onBack={() => navigate('/departments')}
+      statusBadge={{
+        label: department.is_active ? 'Активен' : 'Не активен',
+        color: department.is_active ? '#52c41a' : '#ff4d4f',
+      }}
+      metaItems={[
+        department.short_name && (
+          <span key="short" className={hStyles.metaText}>
+            <TeamOutlined /> {department.short_name}
+          </span>
+        ),
+        department.parent_id && (
+          <span key="parent" className={hStyles.metaText}>
+            <ApartmentOutlined /> {getNameById(department.parent_id, referenceBooks?.departments!)}
+          </span>
+        ),
+      ].filter(Boolean)}
+      actions={
+        <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+          Редактировать
+        </Button>
+      }
+      tabs={[{ key: 'main', label: 'Основное' }]}
+      activeTab="main"
+      onTabChange={() => {}}
+      contextHolder={contextHolder}
+    >
+      <div className={styles.layout}>
+        <div className={styles.leftColumn}>
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Основная информация</h3>
+            <div className={styles.infoRows}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Название</span>
+                <span className={department.name ? styles.infoValue : styles.infoValueMuted}>
+                  {department.name || 'Не указано'}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Короткое название</span>
+                <span className={department.short_name ? styles.infoValue : styles.infoValueMuted}>
+                  {department.short_name || 'Не указано'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <Card
-          title={department.name}
-          extra={
-            <Button icon={<TeamOutlined />} onClick={() => {}}>
-              Сотрудники
-            </Button>
-          }
-        >
-          <Descriptions column={1} bordered>
-            <Descriptions.Item label='Статус'>
-              {department.is_active ? <Tag color='green'>Активен</Tag> : <Tag color='red'>Не активен</Tag>}
-            </Descriptions.Item>
-
-            <Descriptions.Item label='Название'>
-              {department.name || <Tag color='gray'>Не указано</Tag>}
-            </Descriptions.Item>
-
-            <Descriptions.Item label='Короткое название'>
-              {department.short_name || <Tag color='gray'>Не указано</Tag>}
-            </Descriptions.Item>
-
-            <Descriptions.Item label='Руководитель'>
-              {department.manager_id ? (
-                <Tag color='blue'>{getNameById(department.manager_id, referenceBooks?.users)}</Tag>
-              ) : (
-                <Tag color='gray'>Не назначен</Tag>
-              )}
-            </Descriptions.Item>
-
-            <Descriptions.Item label='Родительский отдел'>
-              {department.parent_id ? (
-                <Tag color='purple'>{getNameById(department.parent_id, referenceBooks?.departments!)} </Tag>
-              ) : (
-                <Tag color='gray'>Нет</Tag>
-              )}
-            </Descriptions.Item>
-          </Descriptions>
-        </Card>
-      </Space>
-    </div>
+        <div className={styles.sidebar}>
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Организационная структура</h3>
+            <div className={styles.infoRows}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Руководитель</span>
+                <span className={department.manager_id ? styles.infoValue : styles.infoValueMuted}>
+                  {department.manager_id
+                    ? getNameById(department.manager_id, referenceBooks?.users)
+                    : 'Не назначен'}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Родительский отдел</span>
+                <span className={department.parent_id ? styles.infoValue : styles.infoValueMuted}>
+                  {department.parent_id
+                    ? getNameById(department.parent_id, referenceBooks?.departments!)
+                    : 'Нет'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </DetailPageHeader>
   );
 }

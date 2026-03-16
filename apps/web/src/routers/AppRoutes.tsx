@@ -148,6 +148,7 @@ export default function AppRoutes() {
 
             <Route path="contacts" element={<PartnerContactsListPage />} />
             <Route path="contracts" element={<ContractsListPage />} />
+            <Route path="comments" element={<CommentsList entityType="partner" />} />
             <Route path="files" element={<FilesListPage entityType="partner" />} />
           </Route>
         </Route>

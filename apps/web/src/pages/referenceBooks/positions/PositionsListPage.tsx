@@ -1,5 +1,5 @@
-import { Button, Form } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { Position } from '../../../types/referenceTypes';
 import { columns } from './data';
 import {
@@ -79,13 +79,7 @@ const PositionsListPage: React.FC = () => {
   };
 
   return (
-    <div>
-      {contextHolder}
-      <h1>Должности</h1>
-      <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить должность
-      </Button>
-
+    <ReferenceBookListPage title="Должности" addButtonLabel="Добавить должность" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <BasicTable<Position>
         data={data}
         loading={loading}
@@ -97,7 +91,7 @@ const PositionsListPage: React.FC = () => {
         actionsColumnWidth={100}
         enableExport
       />
-    </div>
+    </ReferenceBookListPage>
   );
 };
 

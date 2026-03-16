@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { App, Card, Avatar, Descriptions, Tag, Button, Form, Input, Select, Space, Row, Col } from "antd";
+import { App, Avatar, Button, Form, Input, Select, Row, Col } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -19,6 +19,7 @@ import { useNotification } from "../../customhooks/useNotification";
 import { userUpdateFormMapper } from "../../helpers/mappers/userUpdateFormMapper";
 import { getChangedFields } from "../../helpers/getChangedFields";
 import { Loader } from "../../components/loader/Loader";
+import styles from "./Profile.module.scss";
 
 const { Option } = Select;
 
@@ -48,7 +49,6 @@ const ProfilePage = () => {
     if (isUpdateSuccess) {
       showNotification('success', 'Успех', 'Профиль успешно обновлён');
       setIsEditing(false);
-      // Обновляем данные пользователя в store
       if (user && referenceBooks) {
         const formValues = form.getFieldsValue();
         const updatedUser = { ...user };
@@ -78,9 +78,7 @@ const ProfilePage = () => {
     return null;
   }
 
-  if (isReferencesLoading) {
-    return <Loader />;
-  }
+  if (isReferencesLoading) return <Loader />;
 
   const handleSave = async (values: any) => {
     if (!user) return;
@@ -98,20 +96,52 @@ const ProfilePage = () => {
     setIsEditing(false);
   };
 
+  const fullName = `${user?.last_name || ''} ${user?.first_name || ''} ${user?.middle_name || ''}`.trim();
+
   return (
-    <div style={{ padding: "24px" }}>
+    <div className={styles.pageRoot}>
       {contextHolder}
-      <Card
-        title="Профиль пользователя"
-        extra={
-          <Space>
+
+      {/* Dark gradient header */}
+      <div className={styles.header}>
+        <div className={styles.circleOuter} />
+        <div className={styles.circleInner} />
+
+        <div className={styles.headerContent}>
+          <Avatar
+            size={80}
+            icon={<UserOutlined />}
+            className={styles.avatar}
+            style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
+          />
+          <div className={styles.headerInfo}>
+            <h1 className={styles.userName}>{fullName}</h1>
+            <div>
+              {user?.roles?.map((role) => (
+                <span
+                  key={role.id}
+                  className={role.role_name === "admin" ? styles.roleTagAdmin : styles.roleTagDefault}
+                >
+                  {role.role_name}
+                </span>
+              ))}
+              <span
+                className={styles.statusBadge}
+                style={{
+                  background: user?.is_active ? 'rgba(82, 196, 26, 0.2)' : 'rgba(255, 77, 79, 0.2)',
+                  border: `1px solid ${user?.is_active ? 'rgba(82, 196, 26, 0.5)' : 'rgba(255, 77, 79, 0.5)'}`,
+                  color: user?.is_active ? '#52c41a' : '#ff4d4f',
+                }}
+              >
+                {user?.is_active ? 'Активен' : 'Неактивен'}
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.headerActions}>
             {!isEditing ? (
               <>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => setIsEditing(true)}
-                >
+                <Button type="primary" icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
                   Редактировать
                 </Button>
                 <Button
@@ -134,147 +164,133 @@ const ProfilePage = () => {
               </>
             ) : (
               <>
-                <Button
-                  icon={<CloseOutlined />}
-                  onClick={handleCancel}
-                  disabled={isUpdating}
-                >
+                <Button icon={<CloseOutlined />} onClick={handleCancel} disabled={isUpdating}>
                   Отмена
                 </Button>
-                <Button
-                  type="primary"
-                  icon={<SaveOutlined />}
-                  onClick={() => form.submit()}
-                  loading={isUpdating}
-                >
+                <Button type="primary" icon={<SaveOutlined />} onClick={() => form.submit()} loading={isUpdating}>
                   Сохранить
                 </Button>
               </>
             )}
-          </Space>
-        }
-      >
-        <div style={{ display: "flex", gap: "24px", marginBottom: "24px" }}>
-          <Avatar
-            size={128}
-            src="https://example.com/avatar.jpg"
-            icon={<UserOutlined />}
-            style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
-          />
-
-          <div>
-            <h2 style={{ marginBottom: "8px" }}>
-              {user?.last_name} {user?.first_name} {user?.middle_name}
-            </h2>
-
-            {user?.roles?.map((role) => (
-              <Tag
-                key={role.id}
-                color={role.role_name === "admin" ? "red" : "blue"}
-              >
-                {role.role_name}
-              </Tag>
-            ))}
-
-            <Tag color={user?.is_active ? "green" : "red"}>
-              {user?.is_active ? "Активен" : "Неактивен"}
-            </Tag>
           </div>
         </div>
+      </div>
 
+      {/* Content */}
+      <div className={styles.contentWrap}>
         <Form form={form} layout="vertical" onFinish={handleSave}>
           {!isEditing ? (
-            <Descriptions bordered column={2}>
-              <Descriptions.Item label="Должность" span={2}>
-                {user?.position?.name || "Нет данных"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Отдел" span={2}>
-                {user?.department?.name || "Нет данных"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email" span={2}>
-                {user?.email ? <a href={`mailto:${user.email}`}><MailOutlined /> {user.email}</a> : "Нет данных"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Телефон" span={2}>
-                {user?.phone ? <a href={`tel:${user.phone.replace(/\D/g, "")}`}><PhoneOutlined /> {user.phone}</a> : "Нет данных"}
-              </Descriptions.Item>
-            </Descriptions>
+            <div className={styles.layout}>
+              <div className={styles.leftColumn}>
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>Контактная информация</h3>
+                  <div className={styles.infoRows}>
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Email</span>
+                      {user?.email ? (
+                        <a href={`mailto:${user.email}`} className={styles.infoLink}>
+                          <MailOutlined /> {user.email}
+                        </a>
+                      ) : (
+                        <span className={styles.infoValueMuted}>Не указано</span>
+                      )}
+                    </div>
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Телефон</span>
+                      {user?.phone ? (
+                        <a href={`tel:${user.phone.replace(/\D/g, "")}`} className={styles.infoLink}>
+                          <PhoneOutlined /> {user.phone}
+                        </a>
+                      ) : (
+                        <span className={styles.infoValueMuted}>Не указано</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.sidebar}>
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>Организация</h3>
+                  <div className={styles.infoRows}>
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Должность</span>
+                      <span className={user?.position?.name ? styles.infoValue : styles.infoValueMuted}>
+                        {user?.position?.name || 'Не указано'}
+                      </span>
+                    </div>
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Отдел</span>
+                      <span className={user?.department?.name ? styles.infoValue : styles.infoValueMuted}>
+                        {user?.department?.name || 'Не указано'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item label="Должность" name="position_id">
-                  <Select
-                    showSearch
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder="Выберите должность"
-                    allowClear
-                    suffixIcon={<IdcardOutlined />}
+            <div className={styles.card}>
+              <h3 className={styles.cardTitle}>Редактирование профиля</h3>
+              <Row gutter={16}>
+                <Col xs={24} md={12}>
+                  <Form.Item label="Должность" name="position_id">
+                    <Select
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                      }
+                      placeholder="Выберите должность"
+                      allowClear
+                      suffixIcon={<IdcardOutlined />}
+                    >
+                      {referenceBooks?.positions?.map(position => (
+                        <Option key={position.id} value={position.id}>{position.name}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label="Отдел" name="department_id">
+                    <Select
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                      }
+                      placeholder="Выберите отдел"
+                      allowClear
+                      suffixIcon={<TeamOutlined />}
+                    >
+                      {referenceBooks?.departments?.map(dept => (
+                        <Option key={dept.id} value={dept.id}>{dept.name}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Введите корректный email' }]}>
+                    <Input prefix={<MailOutlined />} placeholder="email@example.com" type="email" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label="Телефон"
+                    name="phone"
+                    rules={[
+                      { pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/, message: 'Введите корректный номер' },
+                      { max: 25, message: 'Максимум 25 символов' },
+                    ]}
                   >
-                    {referenceBooks?.positions?.map(position => (
-                      <Option key={position.id} value={position.id}>
-                        {position.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item label="Отдел" name="department_id">
-                  <Select
-                    showSearch
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder="Выберите отдел"
-                    allowClear
-                    suffixIcon={<TeamOutlined />}
-                  >
-                    {referenceBooks?.departments?.map(dept => (
-                      <Option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="Email"
-                  name="email"
-                  rules={[{ type: 'email', message: 'Введите корректный email' }]}
-                >
-                  <Input prefix={<MailOutlined />} placeholder="email@example.com" type="email" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="Телефон"
-                  name="phone"
-                  rules={[
-                    {
-                      pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/,
-                      message: 'Введите корректный номер телефона (например: +7 (999) 999-99-99)',
-                    },
-                    { max: 25, message: 'Телефон не должен превышать 25 символов' },
-                  ]}
-                >
-                  <Input prefix={<PhoneOutlined />} placeholder="+7 (999) 123-45-67" />
-                </Form.Item>
-              </Col>
-            </Row>
+                    <Input prefix={<PhoneOutlined />} placeholder="+7 (999) 123-45-67" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
           )}
         </Form>
-      </Card>
+      </div>
     </div>
   );
 };

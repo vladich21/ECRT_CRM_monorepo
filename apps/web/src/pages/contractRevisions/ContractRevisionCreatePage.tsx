@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card,
   Form,
   Input,
   InputNumber,
@@ -10,12 +9,11 @@ import {
   Button,
   Space,
   Tag,
-  Divider,
   Switch,
   Row,
   Col,
 } from 'antd';
-import { SaveOutlined, CloseOutlined, HistoryOutlined, PlusOutlined } from '@ant-design/icons';
+import { SaveOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { useForm } from 'antd/es/form/Form';
 import dayjs from 'dayjs';
 import { useContractById } from '../../api/contracts/contractApiHooks';
@@ -25,12 +23,14 @@ import { useReferenceData } from '../../api/hooks/useReferences';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import { BackButton } from '../../components/backButton/BackButton';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { ContractStage } from '../../types/contract';
 import BasicTable from '../../components/basicTable/BasicTable';
 import { getStageColumnsData } from '../contracts/detailsTabs/data';
 import { ContractRevision } from '../../types/contract';
 import { getEntityById } from '../../helpers/getEntityById';
 import { useNotification } from '../../customhooks/useNotification';
+import styles from './ContractRevisionCreatePage.module.scss';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -147,182 +147,176 @@ export default function CreateContractRevisionPage() {
   }
 
   return (
-    <div>
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton />
+    <div className={styles.wrap}>
+      {contextHolder}
+      <BackButton />
+      <PageHeader
+        title='Создание новой ревизии договора'
+        subtitle={<Tag color='blue'>На основе версии: {contract.number}</Tag>}
+      />
 
-        <Card
-          title={
-            <Space>
-              <HistoryOutlined />
-              <span>Создание новой ревизии договора</span>
-              <Tag color='blue'>На основе версии: {contract.number}</Tag>
-            </Space>
-          }
+      <div className={styles.formCard}>
+        <Form
+          form={form}
+          layout='vertical'
+          onFinish={handleSubmit}
+          initialValues={{
+            is_active: true,
+          }}
         >
-          <Form
-            form={form}
-            layout='vertical'
-            onFinish={handleSubmit}
-            initialValues={{
-              is_active: true,
-            }}
-          >
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Form.Item
-                  name='number'
-                  label='Номер договора'
-                  rules={[{ required: true, message: 'Введите номер договора' }]}
-                >
-                  <Input placeholder='Введите номер' />
-                </Form.Item>
-              </Col>
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Form.Item
+                name='number'
+                label='Номер договора'
+                rules={[{ required: true, message: 'Введите номер договора' }]}
+              >
+                <Input placeholder='Введите номер' />
+              </Form.Item>
+            </Col>
 
-              <Col span={12}>
-                <Form.Item name='cipher' label='Шифр'>
-                  <Input placeholder='Введите шифр' />
-                </Form.Item>
-              </Col>
+            <Col span={12}>
+              <Form.Item name='cipher' label='Шифр'>
+                <Input placeholder='Введите шифр' />
+              </Form.Item>
+            </Col>
 
-              <Col span={24}>
-                <Form.Item
-                  name='name'
-                  label='Название договора'
-                  rules={[{ required: true, message: 'Введите название' }]}
-                >
-                  <Input placeholder='Введите название' />
-                </Form.Item>
-              </Col>
+            <Col span={24}>
+              <Form.Item
+                name='name'
+                label='Название договора'
+                rules={[{ required: true, message: 'Введите название' }]}
+              >
+                <Input placeholder='Введите название' />
+              </Form.Item>
+            </Col>
 
-              <Col span={24}>
-                <Form.Item name='description' label='Описание'>
-                  <TextArea rows={3} placeholder='Введите описание' />
-                </Form.Item>
-              </Col>
+            <Col span={24}>
+              <Form.Item name='description' label='Описание'>
+                <TextArea rows={3} placeholder='Введите описание' />
+              </Form.Item>
+            </Col>
 
-              <Col span={12}>
-                <Form.Item name='partner_id' label='Партнер'>
-                  <Select placeholder='Выберите партнера' loading={isReferencesLoading} allowClear>
-                    {referenceBooks?.partners?.map(partner => (
-                      <Option key={partner.id} value={partner.id}>
-                        {partner.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+            <Col span={12}>
+              <Form.Item name='partner_id' label='Партнер'>
+                <Select placeholder='Выберите партнера' loading={isReferencesLoading} allowClear>
+                  {referenceBooks?.partners?.map(partner => (
+                    <Option key={partner.id} value={partner.id}>
+                      {partner.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
-              <Col span={12}>
-                <Form.Item name='category_id' label='Категория'>
-                  <Select placeholder='Выберите категорию' loading={isReferencesLoading} allowClear>
-                    {referenceBooks?.contractCategories?.map(category => (
-                      <Option key={category.id} value={category.id}>
-                        {category.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+            <Col span={12}>
+              <Form.Item name='category_id' label='Категория'>
+                <Select placeholder='Выберите категорию' loading={isReferencesLoading} allowClear>
+                  {referenceBooks?.contractCategories?.map(category => (
+                    <Option key={category.id} value={category.id}>
+                      {category.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
-              <Col span={8}>
-                <Form.Item name='amount_excl_vat' label='Сумма без НДС'>
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    min={0}
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                  />
-                </Form.Item>
-              </Col>
+            <Col span={8}>
+              <Form.Item name='amount_excl_vat' label='Сумма без НДС'>
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+                />
+              </Form.Item>
+            </Col>
 
-              <Col span={8}>
-                <Form.Item name='vat_rate' label='Ставка НДС (%)'>
-                  <InputNumber style={{ width: '100%' }} min={0} max={100} formatter={value => `${value}%`} />
-                </Form.Item>
-              </Col>
+            <Col span={8}>
+              <Form.Item name='vat_rate' label='Ставка НДС (%)'>
+                <InputNumber style={{ width: '100%' }} min={0} max={100} formatter={value => `${value}%`} />
+              </Form.Item>
+            </Col>
 
-              <Col span={8}>
-                <Form.Item name='amount_incl_vat' label='Сумма с НДС'>
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    min={0}
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                  />
-                </Form.Item>
-              </Col>
+            <Col span={8}>
+              <Form.Item name='amount_incl_vat' label='Сумма с НДС'>
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+                />
+              </Form.Item>
+            </Col>
 
-              <Col span={8}>
-                <Form.Item name='start_date' label='Дата начала'>
-                  <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
-                </Form.Item>
-              </Col>
+            <Col span={8}>
+              <Form.Item name='start_date' label='Дата начала'>
+                <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
+              </Form.Item>
+            </Col>
 
-              <Col span={8}>
-                <Form.Item name='end_date' label='Дата окончания'>
-                  <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
-                </Form.Item>
-              </Col>
+            <Col span={8}>
+              <Form.Item name='end_date' label='Дата окончания'>
+                <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
+              </Form.Item>
+            </Col>
 
-              <Col span={8}>
-                <Form.Item name='date_signed' label='Дата подписания'>
-                  <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
-                </Form.Item>
-              </Col>
+            <Col span={8}>
+              <Form.Item name='date_signed' label='Дата подписания'>
+                <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
+              </Form.Item>
+            </Col>
 
-              <Col span={12}>
-                <Form.Item name='state_id' label='Состояние'>
-                  <Select placeholder='Выберите состояние' loading={isReferencesLoading} allowClear>
-                    {referenceBooks?.contractStates?.map(state => (
-                      <Option key={state.id} value={state.id}>
-                        {state.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+            <Col span={12}>
+              <Form.Item name='state_id' label='Состояние'>
+                <Select placeholder='Выберите состояние' loading={isReferencesLoading} allowClear>
+                  {referenceBooks?.contractStates?.map(state => (
+                    <Option key={state.id} value={state.id}>
+                      {state.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
-              <Col span={12}>
-                <Form.Item name='is_active' label='Статус активности' valuePropName='checked'>
-                  <Switch checkedChildren='Активен' unCheckedChildren='Не активен' />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Space direction='vertical' style={{ width: '100%' }} size='middle'>
-              <Button type='primary' icon={<PlusOutlined />} onClick={handleAddStage}>
-                Добавить этап
-              </Button>
+            <Col span={12}>
+              <Form.Item name='is_active' label='Статус активности' valuePropName='checked'>
+                <Switch checkedChildren='Активен' unCheckedChildren='Не активен' />
+              </Form.Item>
+            </Col>
+          </Row>
 
-              <BasicTable<ContractStage>
-                data={stages}
-                loading={isStagesLoading}
-                columns={[
-                  ...getStageColumnsData({
-                    contractStageStates: referenceBooks?.contractStageStates!,
-                    contracts: referenceBooks?.contracts!,
-                  }),
-                ]}
-                enableContextMenu={true}
-                showActions
-                onEdit={handleStageEdit}
-                onDelete={handleStageDelete}
-                rowKey='id'
-              />
-            </Space>
+          <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+            <Button type='primary' icon={<PlusOutlined />} onClick={handleAddStage}>
+              Добавить этап
+            </Button>
 
-            <Divider />
+            <BasicTable<ContractStage>
+              data={stages}
+              loading={isStagesLoading}
+              columns={[
+                ...getStageColumnsData({
+                  contractStageStates: referenceBooks?.contractStageStates!,
+                  contracts: referenceBooks?.contracts!,
+                }),
+              ]}
+              enableContextMenu={true}
+              showActions
+              onEdit={handleStageEdit}
+              onDelete={handleStageDelete}
+              rowKey='id'
+            />
+          </Space>
 
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button icon={<CloseOutlined />} onClick={handleCancel}>
-                Отмена
-              </Button>
+          <div className={styles.formActions}>
+            <Button icon={<CloseOutlined />} onClick={handleCancel}>
+              Отмена
+            </Button>
 
-              <Button type='primary' icon={<SaveOutlined />} htmlType='submit' loading={isCreateLoading}>
-                Создать ревизию
-              </Button>
-            </Space>
-          </Form>
-        </Card>
-      </Space>
+            <Button type='primary' icon={<SaveOutlined />} htmlType='submit' loading={isCreateLoading}>
+              Создать ревизию
+            </Button>
+          </div>
+        </Form>
+      </div>
     </div>
   );
 }

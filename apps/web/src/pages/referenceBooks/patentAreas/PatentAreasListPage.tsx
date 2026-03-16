@@ -1,5 +1,5 @@
-import { Button } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PatentArea } from '../../../types/patent';
 
 import { useEffect, useState } from 'react';
@@ -83,13 +83,7 @@ const PatentAreasListPage: React.FC = () => {
   };
 
   return (
-    <div>
-      {contextHolder}
-      <h1>Области патентных заявок</h1>
-      <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить область патентных заявок
-      </Button>
-
+    <ReferenceBookListPage title="Области патентных заявок" addButtonLabel="Добавить область патентных заявок" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <BasicTable<PatentArea>
         data={data}
         loading={loading}
@@ -100,7 +94,7 @@ const PatentAreasListPage: React.FC = () => {
         actionsColumnTitle='Действия'
         actionsColumnWidth={100}
       />
-    </div>
+    </ReferenceBookListPage>
   );
 };
 

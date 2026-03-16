@@ -57,7 +57,7 @@ export function ContractDetailsHeader({
                     isContractActive ? tagStyles.tagStatusActive : tagStyles.tagStatusInactive
                   }
                 >
-                  {isContractActive ? 'Активен' : 'Неактивен'}
+                  {isContractActive ? 'Действует' : 'Не действует'}
                 </span>
 
                 <span className={detailsStyles.phSubSeparator}>·</span>

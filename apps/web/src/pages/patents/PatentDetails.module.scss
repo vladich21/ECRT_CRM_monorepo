@@ -1,0 +1,15 @@
+// ── Patent Details — page-specific styles ──
+// Header and content wrap styles are in DetailPageHeader shared component
+
+.metaText {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metaType {
+  font-size: 13px;
+  font-weight: 500;
+}

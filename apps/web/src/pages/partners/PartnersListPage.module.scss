@@ -3,24 +3,40 @@
 
 .wrap    { padding: 0; }
 
-
-// ─── Кнопка «Фильтры» ─────────────────────────────────────────────────────────
+// ─── Кнопка «Фильтры» ─────────────────────────────────────────────────────
 .filtersBtnActive { @include lp.filtersBtnActive; }
 .filtersBadge     { @include lp.filtersBadge; }
 
-// ─── Строка поиска ────────────────────────────────────────────────────────────
+// ─── Модальное окно фильтров ──────────────────────────────────────────────
+.filtersModalGrid    { @include lp.filtersModalGrid; }
+.filtersModalField   { @include lp.filtersModalField; }
+.filtersModalLabel   { @include lp.filtersModalLabel; }
+.filtersModalControl { @include lp.filtersModalControl; }
+
+// ─── Filter section ─────────────────────────────────────────────────────────
 .filterSection   { @include lp.filterSection; }
-.filterTabsRow   { @include lp.filterTabsRow; justify-content: flex-end; }
+.filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
 .filterTabsRight { @include lp.filterTabsRight; }
 .searchInTabsRow { @include lp.searchInput; }
 .searchIcon      { @include lp.searchIcon; }
 .resultCount     { @include lp.resultCount; }
 
-// ─── Пагинация ────────────────────────────────────────────────────────────────
-.pagination { @include lp.pagination; }
+.typeSelect {
+  width: 180px;
+  flex-shrink: 0;
+}
 
-// ─── Модальное окно фильтров ──────────────────────────────────────────────────
-.filtersModalGrid    { @include lp.filtersModalGrid; }
-.filtersModalField   { @include lp.filtersModalField; }
-.filtersModalLabel   { @include lp.filtersModalLabel; }
-.filtersModalControl { @include lp.filtersModalControl; }
+// ─── Cards list ─────────────────────────────────────────────────────────────
+.cardsList {
+  margin-top: 16px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 0;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+// ─── Pagination ─────────────────────────────────────────────────────────────
+.pagination { @include lp.pagination; }

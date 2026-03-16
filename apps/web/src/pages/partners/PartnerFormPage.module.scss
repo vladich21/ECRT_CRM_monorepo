@@ -1,9 +1,15 @@
-.container {
-  width: 100%;
+@use '../../components/pageLayout/formPageShared' as fp;
+
+.wrap {
+  @include fp.formPageWrap;
 }
 
-.iconMargin {
-  margin-right: 8px;
+.formCard {
+  @include fp.formContainer;
+}
+
+.formActions {
+  @include fp.formActions;
 }
 
 .competenceTag {
@@ -24,9 +30,10 @@
 }
 
 .innInputContainer {
+  display: flex;
   width: 100%;
 }
 
 .innInput {
-  width: 100%;
+  flex: 1;
 }

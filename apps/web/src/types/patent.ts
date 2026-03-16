@@ -35,6 +35,8 @@ export interface PatentGrant {
   id: string;
   patent_id: string;
   grant_number: string;
+  grant_date?: string;
+  office?: string;
   status: string;
   renewal_date: string;
   notes?: string;

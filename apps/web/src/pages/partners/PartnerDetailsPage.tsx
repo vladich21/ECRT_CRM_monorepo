@@ -1,28 +1,54 @@
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Button, Tabs } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  BankOutlined,
+  StarFilled,
+  AimOutlined,
+  CheckCircleFilled,
+  ClockCircleFilled,
+} from '@ant-design/icons';
 import { useDeletePartner, usePartnerById } from '../../api/partners/partnerApiHooks';
+import { useReferenceData } from '../../api/hooks/useReferences';
 import { NotFound } from '../../components/notFound/NotFound';
 import { Loader } from '../../components/loader/Loader';
-import { BackButton } from '../../components/backButton/BackButton';
+import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
 import styles from './PartnerDetailsPage.module.scss';
+
+const STATUS_COLORS: Record<string, string> = {
+  'Активный': '#52c41a',
+  'Потенциальный': '#1677ff',
+  'Заблокирован': '#ff4d4f',
+  'Архив': '#8c8c8c',
+};
+
+const TAB_ITEMS = [
+  { key: 'main', label: 'Основное' },
+  { key: 'contacts', label: 'Контактные лица' },
+  { key: 'contracts', label: 'Договоры' },
+  { key: 'comments', label: 'Комментарии' },
+  { key: 'files', label: 'Файлы' },
+];
 
 export default function PartnerDetailsPage() {
   const { partnerId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { contextHolder, showNotification } = useNotification();
+
   const { data: partner, isLoading, isError } = usePartnerById(partnerId!);
+  const { data: references } = useReferenceData(['partnerStatuses', 'partnerTypes']);
   const mutation = useDeletePartner();
 
-  // Определяем активную вкладку из URL
   const getActiveTabFromPath = () => {
     const path = location.pathname;
     if (path.includes('/contacts')) return 'contacts';
     if (path.includes('/contracts')) return 'contracts';
+    if (path.includes('/comments')) return 'comments';
     if (path.includes('/files')) return 'files';
     return 'main';
   };
@@ -31,102 +57,95 @@ export default function PartnerDetailsPage() {
 
   const { handleOpenModal } = useConfirmByModal({
     mutation,
-    successMessage: 'Поставщик успешно удалён',
-    errorMessage: 'Не удалось удалить поставщика',
+    successMessage: 'Контрагент успешно удалён',
+    errorMessage: 'Не удалось удалить контрагента',
     redirectPath: '/partners',
     getMutationProps: () => partnerId!,
     showNotification,
   });
 
-  const handleEdit = () => {
-    navigate(`/partners/${partnerId}/edit`);
-  };
-
-  // Обработчик смены вкладки
   const handleTabChange = (key: string) => {
     const basePath = `/partners/${partnerId}`;
-
     switch (key) {
-      case 'main':
-        navigate(basePath);
-        break;
-      case 'contacts':
-        navigate(`${basePath}/contacts`);
-        break;
-      case 'contracts':
-        navigate(`${basePath}/contracts`);
-        break;
-      case 'files':
-        navigate(`${basePath}/files`);
-        break;
-      default:
-        navigate(basePath);
+      case 'main':      navigate(basePath); break;
+      case 'contacts':  navigate(`${basePath}/contacts`); break;
+      case 'contracts': navigate(`${basePath}/contracts`); break;
+      case 'comments':  navigate(`${basePath}/comments`); break;
+      case 'files':     navigate(`${basePath}/files`); break;
+      default:          navigate(basePath);
     }
   };
 
-  if (isLoading) {
-    return <Loader />;
-  }
+  if (isLoading) return <Loader />;
+  if (isError || !partner) return <NotFound errorMessage="Контрагент не найден" />;
 
-  if (isError || !partner) {
-    return <NotFound errorMessage='Поставщик не найден' />;
-  }
-
-  const tabItems = [
-    {
-      key: 'main',
-      label: 'Основная информация',
-    },
-    {
-      key: 'contacts',
-      label: 'Контактные лица',
-    },
-    {
-      key: 'contracts',
-      label: 'Договоры',
-    },
-    {
-      key: 'files',
-      label: 'Файлы',
-    },
-  ];
+  const statusName = references?.partnerStatuses?.find(s => s.id === partner.status_id)?.name;
+  const typeNames = (partner.type_ids ?? [])
+    .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
+    .filter(Boolean);
 
   return (
-    <div className={styles.pageRoot}>
-      {contextHolder}
-
-      <div className={styles.pageBackRow}>
-        <BackButton path='/partners' />
-      </div>
-
-      <PageHeader
-        title={partner.short_name || partner.name || 'Контрагент'}
-        subtitle={partner.name !== partner.short_name ? partner.name : undefined}
-        actions={
-          <>
-            <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
-              Редактировать
-            </Button>
-            <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
-              Удалить
-            </Button>
-          </>
-        }
-        filters={
-          <div className={styles.pageTabs}>
-            <Tabs
-              activeKey={activeTab}
-              items={tabItems}
-              onChange={handleTabChange}
-              tabBarStyle={{ margin: 0, borderBottom: 'none' }}
-            />
+    <DetailPageHeader
+      title={partner.short_name || partner.name || 'Контрагент'}
+      backLabel="Реестр контрагентов"
+      onBack={() => navigate('/partners')}
+      statusBadge={statusName ? {
+        label: statusName,
+        color: STATUS_COLORS[statusName] ?? '#1677ff',
+      } : undefined}
+      badges={[
+        <Tooltip key="approved" title={partner.is_approved ? 'Утверждён: юр. проверка, анкета, первичная оценка пройдены' : 'Не утверждён: не все проверки пройдены'}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, background: partner.is_approved ? 'rgba(82,196,26,0.1)' : 'rgba(255,77,79,0.1)', color: partner.is_approved ? '#52c41a' : '#ff4d4f', fontSize: 12, fontWeight: 500 }}>
+            {partner.is_approved ? <CheckCircleFilled style={{ fontSize: 12 }} /> : <ClockCircleFilled style={{ fontSize: 12 }} />}
+            {partner.is_approved ? 'Утверждён' : 'Не утверждён'}
           </div>
-        }
-      />
-
-      <div className={styles.contentWrap}>
-        <Outlet context={partner} />
-      </div>
-    </div>
+        </Tooltip>,
+        partner.is_key_supplier && (
+          <div key="key" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, background: 'rgba(250,173,20,0.1)', color: '#faad14', fontSize: 12, fontWeight: 500 }}>
+            <StarFilled style={{ fontSize: 12 }} />
+            Ключевой
+          </div>
+        ),
+        partner.is_targeted && (
+          <div key="target" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, background: 'rgba(22,119,255,0.1)', color: '#1677ff', fontSize: 12, fontWeight: 500 }}>
+            <AimOutlined style={{ fontSize: 12 }} />
+            Целевой
+          </div>
+        ),
+      ].filter(Boolean) as React.ReactNode[]}
+      metaItems={[
+        partner.inn && (
+          <span key="inn" className={hStyles.metaText}>
+            <BankOutlined /> ИНН {partner.inn}
+          </span>
+        ),
+        typeNames.length > 0 && (
+          <span key="types" className={hStyles.metaText}>
+            {typeNames.join(', ')}
+          </span>
+        ),
+        partner.actual_address && (
+          <span key="addr" className={hStyles.metaText}>
+            {partner.actual_address}
+          </span>
+        ),
+      ].filter(Boolean) as React.ReactNode[]}
+      actions={
+        <>
+          <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/partners/${partnerId}/edit`)}>
+            Редактировать
+          </Button>
+          <Button type="primary" danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
+            Удалить
+          </Button>
+        </>
+      }
+      tabs={TAB_ITEMS}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      contextHolder={contextHolder}
+    >
+      <Outlet context={partner} />
+    </DetailPageHeader>
   );
 }

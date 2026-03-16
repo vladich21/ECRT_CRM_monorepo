@@ -1,10 +1,10 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Card, Descriptions, Button, Tag, Space, Divider } from 'antd';
+import { Descriptions, Button, Tag, Space, Divider } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import { useContractRevisionById } from '../../api/contractRevisions/contractRevisionsApiHooks';
 import { NotFound } from '../../components/notFound/NotFound';
 import { Loader } from '../../components/loader/Loader';
-import { BackButton } from '../../components/backButton/BackButton';
 import { formatDate } from '../../helpers/formatDate';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { getNameById } from '../../helpers/getNameById';
@@ -12,10 +12,19 @@ import BasicTable from '../../components/basicTable/BasicTable';
 import { ContractStage } from '../../types/contract';
 import { getStageColumnsData } from '../contracts/detailsTabs/data';
 import { useContractStages } from '../../api/contractStages/contractStagesApiHooks';
+import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
+import styles from './ContractRevisionDetailsPage.module.scss';
+
+const TAB_ITEMS = [
+  { key: 'info', label: 'Информация' },
+  { key: 'stages', label: 'Этапы' },
+];
 
 export default function ContractRevisionDetailsPage() {
   const { contractId, revisionNumber } = useParams();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('info');
 
   const { data: revision, isLoading, isError } = useContractRevisionById(contractId!, Number(revisionNumber));
 
@@ -36,21 +45,41 @@ export default function ContractRevisionDetailsPage() {
   }
 
   return (
-    <div>
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton />
-
-        <Card
-          title={
-            <Space>
-              <HistoryOutlined />
-              <Link to={`/contracts/${contractId}`}>Ревизия договора №{revision.revision_number}</Link>
-              <span color='blue'>Версия {revision.revision_number}</span>
-              {revision.is_active && <Tag color='green'>Текущая</Tag>}
-            </Space>
-          }
+    <DetailPageHeader
+      title={`Ревизия договора №${revision.revision_number}`}
+      backLabel='К договору'
+      onBack={() => navigate(`/contracts/${contractId}`)}
+      statusBadge={
+        revision.is_active
+          ? { label: 'Текущая', color: '#52c41a' }
+          : { label: 'Не активна', color: '#ff4d4f' }
+      }
+      metaItems={[
+        <span key='ver' className={hStyles.metaText}>
+          Версия {revision.revision_number}
+        </span>,
+        revision.created_at && (
+          <span key='date' className={hStyles.metaText}>
+            Создана: {formatDate(revision.created_at)}
+          </span>
+        ),
+      ]}
+      actions={
+        <Button
+          className={hStyles.actionBtn}
+          icon={<HistoryOutlined />}
+          onClick={() => navigate(`/contracts/${contractId}/revisions`)}
         >
-          <Descriptions column={2} bordered size='small'>
+          Все ревизии
+        </Button>
+      }
+      tabs={TAB_ITEMS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      {activeTab === 'info' && (
+        <div className={styles.contentCard}>
+          <Descriptions column={2} bordered size='small' className={styles.descriptionsBlock}>
             <Descriptions.Item label='Номер договора' span={1}>
               {revision.number || '-'}
             </Descriptions.Item>
@@ -109,40 +138,23 @@ export default function ContractRevisionDetailsPage() {
               <Tag color={revision.is_active ? 'green' : 'red'}>{revision.is_active ? 'Активен' : 'Не активен'}</Tag>
             </Descriptions.Item>
           </Descriptions>
+        </div>
+      )}
 
-          <Divider />
-
-          <Descriptions column={2} bordered size='small'>
-            <Descriptions.Item label='Дата создания ревизии'>
-              {revision.created_at ? formatDate(revision.created_at) : '-'}
-            </Descriptions.Item>
-          </Descriptions>
-
-          <Space direction='vertical' style={{ width: '100%' }}>
-            <BasicTable<ContractStage>
-              data={stages}
-              loading={isReferencesLoading || isLoading}
-              columns={getStageColumnsData({
-                contractStageStates: referenceBooks?.contractStageStates!,
-                contracts: referenceBooks?.contracts!,
-              })}
-              enableContextMenu={true}
-              rowKey='stage_number'
-            />
-          </Space>
-
-          <Space direction='vertical' style={{ width: '100%' }}>
-            <Button
-              type='link'
-              block
-              icon={<HistoryOutlined />}
-              onClick={() => navigate(`/contracts/${contractId}/revisions`)}
-            >
-              Все ревизии договора
-            </Button>
-          </Space>
-        </Card>
-      </Space>
-    </div>
+      {activeTab === 'stages' && (
+        <div className={styles.contentCard}>
+          <BasicTable<ContractStage>
+            data={stages}
+            loading={isReferencesLoading || isLoading}
+            columns={getStageColumnsData({
+              contractStageStates: referenceBooks?.contractStageStates!,
+              contracts: referenceBooks?.contracts!,
+            })}
+            enableContextMenu={true}
+            rowKey='stage_number'
+          />
+        </div>
+      )}
+    </DetailPageHeader>
   );
 }

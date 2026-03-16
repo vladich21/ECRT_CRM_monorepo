@@ -1,5 +1,5 @@
-import { Button } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PartnerStatus } from '../../../types/partner';
 
 import { useEffect, useState } from 'react';
@@ -78,13 +78,7 @@ const PartnerStatusesListPage: React.FC = () => {
   };
 
   return (
-    <div>
-      {contextHolder}
-      <h1>Статусы контрагентов</h1>
-      <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить статус контрагента
-      </Button>
-
+    <ReferenceBookListPage title="Статусы контрагентов" addButtonLabel="Добавить статус контрагента" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <BasicTable<PartnerStatus>
         data={data}
         loading={loading}
@@ -95,7 +89,7 @@ const PartnerStatusesListPage: React.FC = () => {
         actionsColumnTitle='Действия'
         actionsColumnWidth={100}
       />
-    </div>
+    </ReferenceBookListPage>
   );
 };
 

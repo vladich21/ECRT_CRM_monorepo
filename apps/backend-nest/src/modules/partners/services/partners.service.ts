@@ -6,7 +6,13 @@ import {
   partners,
   relPartnersTypes,
   relPartnersCompetencies,
+  partnerContacts,
   contracts,
+  refPartnerStatuses,
+  refPartnerEconomicCategories,
+  refPartnerTypes,
+  refPartnerCompetencies,
+  refPartnerCategories,
 } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
 
@@ -159,10 +165,14 @@ export class PartnersService {
     };
   }
 
-  async create(data: Record<string, unknown>) {
+  async create(data: Record<string, unknown>, userId?: string) {
     this.logger.debug('Создание партнёра');
     this.validateInnKppRequired(data);
-    const insertData = this.mapToDb(data);
+    await this.validateReferences(data);
+    const insertData = {
+      ...this.mapToDb(data),
+      ...(userId ? { createdBy: userId, updatedBy: userId } : {}),
+    };
     await this.checkInnKppUnique(insertData.inn, insertData.kpp);
     const [row] = await this.db.db.insert(partners).values(insertData).returning();
     if (!row) return null;
@@ -171,12 +181,13 @@ export class PartnersService {
     return this.findOne(partnerId);
   }
 
-  async update(id: string, data: Record<string, unknown>) {
+  async update(id: string, data: Record<string, unknown>, userId?: string) {
     this.logger.debug(`Обновление партнёра id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     const merged = { ...current, ...data };
     this.validateInnKppRequired(merged);
+    await this.validateReferences(data);
     if (data.inn !== undefined || data.kpp !== undefined) {
       const innVal = merged.inn && String(merged.inn).trim() ? String(merged.inn).trim() : null;
       const kppVal = merged.kpp && String(merged.kpp).trim() ? String(merged.kpp).trim() : null;
@@ -194,10 +205,19 @@ export class PartnersService {
       email: 'email',
       website: 'website',
       status_id: 'statusId',
+      category_id: 'categoryId',
       comment: 'comment',
       partner_economic_category_id: 'partnerEconomicCategoryId',
+      is_key_supplier: 'isKeySupplier',
+      is_targeted: 'isTargeted',
+      legal_check_passed: 'legalCheckPassed',
+      questionnaire_filled: 'questionnaireFilled',
+      initial_assessment_done: 'initialAssessmentDone',
+      rating: 'rating',
+      next_audit_date: 'nextAuditDate',
     };
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
+    if (userId) updateObj.updatedBy = userId;
     for (const [snake, camel] of Object.entries(map)) {
       if (data[snake] !== undefined) updateObj[camel] = data[snake];
     }
@@ -220,6 +240,7 @@ export class PartnersService {
         'Невозможно удалить партнёра: к нему привязаны договоры.',
       );
     }
+    await this.db.db.delete(partnerContacts).where(eq(partnerContacts.partnerId, id));
     await this.db.db.delete(relPartnersTypes).where(eq(relPartnersTypes.partnerId, id));
     await this.db.db.delete(relPartnersCompetencies).where(eq(relPartnersCompetencies.partnerId, id));
     await this.db.db.delete(partners).where(eq(partners.id, id));
@@ -242,6 +263,59 @@ export class PartnersService {
       await this.db.db.insert(relPartnersCompetencies).values(
         competenceIds.map((competenceId) => ({ partnerId, competenceId })),
       );
+    }
+  }
+
+  private async validateReferences(data: Record<string, unknown>) {
+    if (data.category_id) {
+      const rows = await this.db.db
+        .select({ id: refPartnerCategories.id })
+        .from(refPartnerCategories)
+        .where(eq(refPartnerCategories.id, String(data.category_id)))
+        .limit(1);
+      if (rows.length === 0) {
+        throw new ConflictException('Указанная категория контрагента не найдена');
+      }
+    }
+    if (data.status_id) {
+      const rows = await this.db.db
+        .select({ id: refPartnerStatuses.id })
+        .from(refPartnerStatuses)
+        .where(eq(refPartnerStatuses.id, String(data.status_id)))
+        .limit(1);
+      if (rows.length === 0) {
+        throw new ConflictException('Указанный статус контрагента не найден');
+      }
+    }
+    if (data.partner_economic_category_id) {
+      const rows = await this.db.db
+        .select({ id: refPartnerEconomicCategories.id })
+        .from(refPartnerEconomicCategories)
+        .where(eq(refPartnerEconomicCategories.id, String(data.partner_economic_category_id)))
+        .limit(1);
+      if (rows.length === 0) {
+        throw new ConflictException('Указанная экономическая категория не найдена');
+      }
+    }
+    const typeIds = Array.isArray(data.type_ids) ? data.type_ids.filter((x): x is string => typeof x === 'string') : [];
+    if (typeIds.length) {
+      const rows = await this.db.db
+        .select({ id: refPartnerTypes.id })
+        .from(refPartnerTypes)
+        .where(inArray(refPartnerTypes.id, typeIds));
+      if (rows.length !== typeIds.length) {
+        throw new ConflictException('Один или несколько типов контрагента не найдены');
+      }
+    }
+    const competenceIds = Array.isArray(data.competence_ids) ? data.competence_ids.filter((x): x is string => typeof x === 'string') : [];
+    if (competenceIds.length) {
+      const rows = await this.db.db
+        .select({ id: refPartnerCompetencies.id })
+        .from(refPartnerCompetencies)
+        .where(inArray(refPartnerCompetencies.id, competenceIds));
+      if (rows.length !== competenceIds.length) {
+        throw new ConflictException('Одна или несколько компетенций не найдены');
+      }
     }
   }
 
@@ -281,6 +355,8 @@ export class PartnersService {
   private mapToDb(data: Record<string, unknown>) {
     const toUuid = (v: unknown): string | null =>
       v == null || v === '' ? null : typeof v === 'string' ? v : null;
+    const toBool = (v: unknown): boolean | undefined =>
+      v === true || v === 'true' ? true : v === false || v === 'false' ? false : undefined;
     return {
       name: data.name != null ? String(data.name) : null,
       shortName: data.short_name != null ? String(data.short_name) : null,
@@ -293,12 +369,21 @@ export class PartnersService {
       email: data.email != null ? String(data.email) : null,
       website: data.website != null ? String(data.website) : null,
       statusId: toUuid(data.status_id),
+      categoryId: toUuid(data.category_id),
       comment: data.comment != null ? String(data.comment) : null,
       partnerEconomicCategoryId: toUuid(data.partner_economic_category_id),
+      ...(toBool(data.is_key_supplier) !== undefined && { isKeySupplier: toBool(data.is_key_supplier) }),
+      ...(toBool(data.is_targeted) !== undefined && { isTargeted: toBool(data.is_targeted) }),
+      ...(toBool(data.legal_check_passed) !== undefined && { legalCheckPassed: toBool(data.legal_check_passed) }),
+      ...(toBool(data.questionnaire_filled) !== undefined && { questionnaireFilled: toBool(data.questionnaire_filled) }),
+      ...(toBool(data.initial_assessment_done) !== undefined && { initialAssessmentDone: toBool(data.initial_assessment_done) }),
+      ...(data.rating !== undefined && { rating: data.rating != null ? String(data.rating) : null }),
+      ...(data.next_audit_date !== undefined && { nextAuditDate: data.next_audit_date != null ? String(data.next_audit_date) : null }),
     };
   }
 
   private toResponse(r: (typeof partners.$inferSelect)) {
+    const isApproved = !!(r.legalCheckPassed && r.questionnaireFilled && r.initialAssessmentDone);
     return {
       id: String(r.id),
       name: r.name ?? '',
@@ -312,8 +397,17 @@ export class PartnersService {
       email: r.email ?? '',
       website: r.website ?? '',
       status_id: r.statusId ? String(r.statusId) : '',
+      category_id: r.categoryId ? String(r.categoryId) : '',
       comment: r.comment ?? '',
       partner_economic_category_id: r.partnerEconomicCategoryId ? String(r.partnerEconomicCategoryId) : '',
+      is_key_supplier: r.isKeySupplier ?? false,
+      is_targeted: r.isTargeted ?? false,
+      legal_check_passed: r.legalCheckPassed ?? false,
+      questionnaire_filled: r.questionnaireFilled ?? false,
+      initial_assessment_done: r.initialAssessmentDone ?? false,
+      is_approved: isApproved,
+      rating: r.rating ? Number(r.rating) : null,
+      next_audit_date: r.nextAuditDate ?? null,
       created_at: r.createdAt ? r.createdAt.toISOString() : '',
       updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
     };

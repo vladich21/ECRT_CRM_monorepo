@@ -1,13 +1,13 @@
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Card, Button, Space, Tabs } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { Button, Space } from 'antd';
+import { DeleteOutlined, EditOutlined, CopyrightOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useDeletePatentGrant, usePatentGrantById } from '../../../api/patents/patentGrantsApiHooks';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { Loader } from '../../../components/loader/Loader';
-import { BackButton } from '../../../components/backButton/BackButton';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { PatentGrantMainInfoTab } from './detailsTabs/PatentGrantMainInfoTab';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
+import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 
 export default function PatentGrantDetailsPage() {
   const { grantId } = useParams();
@@ -17,7 +17,6 @@ export default function PatentGrantDetailsPage() {
   const { data: patentGrant, isLoading, isError } = usePatentGrantById(grantId!);
   const mutation = useDeletePatentGrant();
 
-  // Определяем активную вкладку из URL
   const getActiveTabFromPath = () => {
     const path = location.pathname;
     if (path.includes('/files')) return 'files';
@@ -39,7 +38,6 @@ export default function PatentGrantDetailsPage() {
     navigate(`/patent-grants/${grantId}/edit`);
   };
 
-  // Обработчик смены вкладки
   const handleTabChange = (key: string) => {
     const basePath = `/patent-grants/${grantId}`;
 
@@ -63,40 +61,50 @@ export default function PatentGrantDetailsPage() {
     return <NotFound errorMessage='Патентный грант не найден' />;
   }
 
-  const tabItems = [
-    {
-      key: 'main',
-      label: 'Основное',
-    },
-    {
-      key: 'files',
-      label: 'Файлы',
-    },
-  ];
-
   return (
-    <div>
-      {contextHolder}
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton path={`/patents/${patentGrant.patent_id}/grants`} />
-        <Card
-          title={`Патентный грант ${patentGrant.grant_number}`}
-          extra={
-            <Space>
-              <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
-                Редактировать
-              </Button>
-              <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
-                Удалить
-              </Button>
-            </Space>
-          }
-        >
-          <Tabs activeKey={activeTab} items={tabItems} size='large' onChange={handleTabChange} />
-          {/* Outlet для рендеринга дочерних компонентов */}
-          <Outlet context={patentGrant} />
-        </Card>
-      </Space>
-    </div>
+    <DetailPageHeader
+      title={`Патентный грант ${patentGrant.grant_number}`}
+      backLabel="Патентные гранты"
+      onBack={() => navigate(`/patents/${patentGrant.patent_id}/grants`)}
+      statusBadge={
+        patentGrant.status
+          ? {
+              label: patentGrant.status,
+              color: patentGrant.status === 'Активный' ? '#52c41a' : '#ff4d4f',
+            }
+          : undefined
+      }
+      metaItems={[
+        patentGrant.grant_number && (
+          <span key="number" className={hStyles.metaText}>
+            <CopyrightOutlined /> {patentGrant.grant_number}
+          </span>
+        ),
+        patentGrant.renewal_date && (
+          <span key="date" className={hStyles.metaText}>
+            <CalendarOutlined /> {new Date(patentGrant.renewal_date).toLocaleDateString('ru-RU')}
+          </span>
+        ),
+      ].filter(Boolean)}
+      actions={
+        <Space>
+          <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+            Редактировать
+          </Button>
+          <Button type="primary" danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
+            Удалить
+          </Button>
+        </Space>
+      }
+      tabs={[
+        { key: 'main', label: 'Основное' },
+        { key: 'files', label: 'Файлы' },
+      ]}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      contextHolder={contextHolder}
+    >
+      <Outlet context={patentGrant} />
+    </DetailPageHeader>
   );
 }

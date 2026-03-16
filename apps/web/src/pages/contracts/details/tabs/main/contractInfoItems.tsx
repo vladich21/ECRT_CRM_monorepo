@@ -97,7 +97,7 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
             contract.is_active ? listStyles.tagStatusActive : listStyles.tagStatusInactive
           }
         >
-          {contract.is_active ? 'Активен' : 'Неактивен'}
+          {contract.is_active ? 'Действует' : 'Не действует'}
         </span>
       ),
     },

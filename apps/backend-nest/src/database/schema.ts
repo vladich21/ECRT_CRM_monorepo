@@ -225,6 +225,14 @@ export const relPatentAuthors = pgTable('rel_patents_users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const refPartnerCategories = pgTable('ref_partner_categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }),
+});
+
 export const refPartnerStatuses = pgTable('ref_partner_statuses', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }),
@@ -336,8 +344,16 @@ export const partners = pgTable('partners', {
   email: varchar('email', { length: 255 }),
   website: varchar('website', { length: 255 }),
   statusId: uuid('status_id'),
+  categoryId: uuid('category_id'),
   comment: text('comment'),
   partnerEconomicCategoryId: uuid('partner_economic_category_id'),
+  isKeySupplier: boolean('is_key_supplier').default(false),
+  isTargeted: boolean('is_targeted').default(false),
+  legalCheckPassed: boolean('legal_check_passed').default(false),
+  questionnaireFilled: boolean('questionnaire_filled').default(false),
+  initialAssessmentDone: boolean('initial_assessment_done').default(false),
+  rating: numeric('rating', { precision: 3, scale: 2 }),
+  nextAuditDate: date('next_audit_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }),
   createdBy: uuid('created_by'),

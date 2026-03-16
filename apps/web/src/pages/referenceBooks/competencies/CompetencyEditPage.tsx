@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Card, Form, Input, Button, Space, Row, Col, Divider, ColorPicker, Tag } from 'antd';
-import styles from './CompetencyEditPage.module.scss';
+import { Form, Input, Button, Row, Col, Divider, ColorPicker, Tag } from 'antd';
 import { HighlightOutlined, SaveOutlined, TagOutlined } from '@ant-design/icons';
 import { useNotification } from '../../../customhooks/useNotification';
 import { Loader } from '../../../components/loader/Loader';
@@ -12,7 +11,9 @@ import { partnerCompetenceUpdateFormMapper } from '../../../helpers/mappers/comp
 import { initialColors } from './data';
 import { getHexColor } from '../../../helpers/getHexColor';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useWatch } from 'antd/es/form/Form';
+import styles from './CompetencyFormPage.module.scss';
 
 export default function PartnerCompetenceEditPage() {
   const { competenceId } = useParams();
@@ -107,141 +108,130 @@ export default function PartnerCompetenceEditPage() {
   };
 
   return (
-    <div>
+    <div className={styles.wrap}>
       {contextHolder}
-      <Space direction='vertical' size='middle' className={styles.container}>
-        <BackButton />
-        <Card
-          title={
-            <span>
-              <TagOutlined className={styles.iconMargin} />
-              Редактирование компетенции партнера: {competence.name}
-            </span>
-          }
+      <BackButton />
+      <PageHeader title={`Редактирование компетенции: ${competence.name}`} subtitle="Измените данные компетенции" />
+
+      <div className={styles.formCard}>
+        <Form
+          form={form}
+          onFieldsChange={() => setIsFormChanged(true)}
+          layout='vertical'
+          onFinish={handleSave}
+          onKeyPress={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+            }
+          }}
+          scrollToFirstError
         >
-          <Form
-            form={form}
-            onFieldsChange={() => setIsFormChanged(true)}
-            layout='vertical'
-            onFinish={handleSave}
-            onKeyPress={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-              }
-            }}
-            scrollToFirstError
-          >
-            {/* Основная информация */}
-            <Divider orientation='left'>
-              <TagOutlined /> Основная информация
-            </Divider>
+          {/* Основная информация */}
+          <Divider orientation='left'>
+            <TagOutlined /> Основная информация
+          </Divider>
 
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label='Название компетенции'
-                  name='name'
-                  rules={[{ required: true, message: 'Введите название компетенции' }]}
-                >
-                  <Input placeholder='Введите название компетенции' prefix={<TagOutlined />} />
-                </Form.Item>
-              </Col>
-            </Row>
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label='Название компетенции'
+                name='name'
+                rules={[{ required: true, message: 'Введите название компетенции' }]}
+              >
+                <Input placeholder='Введите название компетенции' prefix={<TagOutlined />} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-            {/* Цветовая схема */}
-            <Divider orientation='left'>
-              <HighlightOutlined /> Цветовая схема
-            </Divider>
+          {/* Цветовая схема */}
+          <Divider orientation='left'>
+            <HighlightOutlined /> Цветовая схема
+          </Divider>
 
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item label='Цвет фона' name='color_bg'>
-                  <ColorPicker
-                    format='hex'
-                    showText
-                    presets={[
-                      {
-                        label: 'Рекомендуемые цвета',
-                        colors: [
-                          '#1890ff',
-                          '#52c41a',
-                          '#faad14',
-                          '#f5222d',
-                          '#722ed1',
-                          '#fa541c',
-                          '#13c2c2',
-                          '#eb2f96',
-                        ],
-                      },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
+          <Row gutter={16}>
+            <Col xs={24} md={8}>
+              <Form.Item label='Цвет фона' name='color_bg'>
+                <ColorPicker
+                  format='hex'
+                  showText
+                  presets={[
+                    {
+                      label: 'Рекомендуемые цвета',
+                      colors: [
+                        '#1890ff',
+                        '#52c41a',
+                        '#faad14',
+                        '#f5222d',
+                        '#722ed1',
+                        '#fa541c',
+                        '#13c2c2',
+                        '#eb2f96',
+                      ],
+                    },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
 
-              <Col xs={24} md={8}>
-                <Form.Item label='Цвет текста' name='color_text'>
-                  <ColorPicker
-                    format='hex'
-                    showText
-                    presets={[
-                      {
-                        label: 'Рекомендуемые цвета',
-                        colors: ['#ffffff', '#000000', '#fafafa', '#262626', '#1890ff', '#52c41a'],
-                      },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label='Цвет текста' name='color_text'>
+                <ColorPicker
+                  format='hex'
+                  showText
+                  presets={[
+                    {
+                      label: 'Рекомендуемые цвета',
+                      colors: ['#ffffff', '#000000', '#fafafa', '#262626', '#1890ff', '#52c41a'],
+                    },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
 
-              <Col xs={24} md={8}>
-                <Form.Item label='Цвет границы' name='color_border'>
-                  <ColorPicker
-                    format='hex'
-                    showText
-                    presets={[
-                      {
-                        label: 'Рекомендуемые цвета',
-                        colors: ['#1890ff', '#d9d9d9', '#52c41a', '#faad14', '#f5222d', '#722ed1'],
-                      },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+            <Col xs={24} md={8}>
+              <Form.Item label='Цвет границы' name='color_border'>
+                <ColorPicker
+                  format='hex'
+                  showText
+                  presets={[
+                    {
+                      label: 'Рекомендуемые цвета',
+                      colors: ['#1890ff', '#d9d9d9', '#52c41a', '#faad14', '#f5222d', '#722ed1'],
+                    },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-            {/* Предпросмотр */}
-            <Divider orientation='left'>
-              <HighlightOutlined /> Предпросмотр
-            </Divider>
+          {/* Предпросмотр */}
+          <Divider orientation='left'>
+            <HighlightOutlined /> Предпросмотр
+          </Divider>
 
-            <Row gutter={16}>
-              <Col xs={24}>
-                <Form.Item label='Пример отображения'>{renderTagPreview()}</Form.Item>
-              </Col>
-            </Row>
+          <Row gutter={16}>
+            <Col xs={24}>
+              <Form.Item label='Пример отображения'>{renderTagPreview()}</Form.Item>
+            </Col>
+          </Row>
 
-            {/* Кнопки действий */}
-            <Form.Item>
-              <Space>
-                <Button
-                  type='primary'
-                  htmlType='submit'
-                  icon={<SaveOutlined />}
-                  disabled={!isFormChanged}
-                  loading={isUpdateLoading}
-                  size='large'
-                >
-                  Сохранить изменения
-                </Button>
-
-                <Button onClick={handleBack} size='large'>
-                  Отмена
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Card>
-      </Space>
+          {/* Кнопки действий */}
+          <div className={styles.formActions}>
+            <Button onClick={handleBack}>
+              Отмена
+            </Button>
+            <Button
+              type='primary'
+              htmlType='submit'
+              icon={<SaveOutlined />}
+              disabled={!isFormChanged}
+              loading={isUpdateLoading}
+            >
+              Сохранить изменения
+            </Button>
+          </div>
+        </Form>
+      </div>
     </div>
   );
 }

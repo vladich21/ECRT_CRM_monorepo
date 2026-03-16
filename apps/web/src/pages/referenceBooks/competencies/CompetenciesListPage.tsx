@@ -1,4 +1,3 @@
-import { Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { getColumnsData } from './data';
 import BasicTable from '../../../components/basicTable/BasicTable';
@@ -8,6 +7,7 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { useEffect, useState } from 'react';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useDeletePartnerCompetence, usePartnerCompetencies } from '../../../api/partners/partnerCompetenceApiHooks';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 
 export default function PartnerCompetencesListPage() {
   const navigate = useNavigate();
@@ -42,13 +42,12 @@ export default function PartnerCompetencesListPage() {
   }
 
   return (
-    <div>
-      {contextHolder}
-      <h1>Компетенции партнеров</h1>
-      <Button type='primary' onClick={() => navigate('/competencies/create')} style={{ marginBottom: 16 }}>
-        Добавить компетенцию
-      </Button>
-
+    <ReferenceBookListPage
+      title="Компетенции партнеров"
+      addButtonLabel="Добавить компетенцию"
+      onAdd={() => navigate('/competencies/create')}
+      contextHolder={contextHolder}
+    >
       <BasicTable<PartnerCompetence>
         data={partnerCompetences}
         loading={isLoading}
@@ -60,6 +59,6 @@ export default function PartnerCompetencesListPage() {
         actionsColumnTitle='Действия'
         actionsColumnWidth={100}
       />
-    </div>
+    </ReferenceBookListPage>
   );
 }

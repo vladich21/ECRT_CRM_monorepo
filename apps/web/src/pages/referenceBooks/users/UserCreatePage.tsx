@@ -8,7 +8,6 @@ import {
   PhoneOutlined,
   TeamOutlined,
   IdcardOutlined,
-  DesktopOutlined,
   SafetyCertificateOutlined,
   UserAddOutlined,
 } from '@ant-design/icons';
@@ -16,11 +15,11 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useCreateUser } from '../../../api/users/userApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { initialFormValues } from './data';
-import { DevelopmentBadge } from '../../../components/inDevelopment/InDevelopment';
-import { TextWithDevTooltip } from '../../../components/inDevelopment/Tooltip';
+import styles from './UserFormPage.module.scss';
 
 const { Option } = Select;
 
@@ -53,7 +52,6 @@ export default function UserCreatePage() {
       ...values,
       department_id: toUuidOrNull(values.department_id),
       position_id: toUuidOrNull(values.position_id),
-      workplace_id: undefined,
       role_ids: Array.isArray(roleIds) ? roleIds.map(String).filter(id => id && id !== '') : [],
       roles: undefined,
     };
@@ -70,19 +68,12 @@ export default function UserCreatePage() {
   }
 
   return (
-    <div>
+    <div className={styles.wrap}>
       {contextHolder}
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton />
+      <BackButton />
+      <PageHeader title="Создание нового пользователя" subtitle="Заполните данные для создания пользователя" />
 
-        <Card
-          title={
-            <span>
-              <UserAddOutlined style={{ marginRight: 8 }} />
-              Создание нового пользователя
-            </span>
-          }
-        >
+      <div className={styles.formCard}>
           <Form
             form={form}
             layout='vertical'
@@ -157,15 +148,6 @@ export default function UserCreatePage() {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label={<TextWithDevTooltip text='Внутренний номер' />}
-                  name='internal_phone'
-                  rules={[{ pattern: /^\d{3,8}$/, message: 'Введите от 3 до 8 цифр' }]}
-                >
-                  <Input disabled placeholder='nnn' maxLength={8} />
-                </Form.Item>
-              </Col>
             </Row>
 
             {/* Организационная информация */}
@@ -220,18 +202,6 @@ export default function UserCreatePage() {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={8}>
-                <Form.Item label={<TextWithDevTooltip text='Рабочее место' />} name='workplace_id'>
-                  <Select placeholder='Выберите номер места' allowClear disabled suffixIcon={<DesktopOutlined />}>
-                    {/* todo: Доработать выбор рабочих мест */}
-                    {referenceBooks?.positions?.map(position => (
-                      <Option key={position.id} value={position.id}>
-                        {position.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
             </Row>
 
             {/* Права доступа */}
@@ -265,19 +235,16 @@ export default function UserCreatePage() {
             </Row>
 
             {/* Кнопки действий */}
-            <Form.Item>
-              <Space>
-                <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading} size='large'>
-                  Создать пользователя
-                </Button>
-                <Button onClick={() => form.resetFields()} size='large' disabled={isCreateLoading}>
-                  Очистить форму
-                </Button>
-              </Space>
-            </Form.Item>
+            <div className={styles.formActions}>
+              <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
+                Очистить форму
+              </Button>
+              <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading}>
+                Создать пользователя
+              </Button>
+            </div>
           </Form>
-        </Card>
-      </Space>
+      </div>
     </div>
   );
 }

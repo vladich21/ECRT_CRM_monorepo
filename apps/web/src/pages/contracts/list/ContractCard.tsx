@@ -1,3 +1,10 @@
+import { Tag, Tooltip } from 'antd';
+import {
+  CalendarOutlined,
+  DollarOutlined,
+  RightOutlined,
+  TeamOutlined,
+} from '@ant-design/icons';
 import { Contract } from '../../../types/contract';
 import { getNameById } from '../../../helpers/getNameById';
 import { getEntityById } from '../../../helpers/getEntityById';
@@ -8,27 +15,11 @@ import styles from './ContractsListPage.module.scss';
 type Refs = Pick<ReferenceData, 'partners' | 'contractStates' | 'contractCategories'> | null;
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('ru-RU');
+  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
 
-function getCardData(contract: Contract, refs: Refs) {
-  const partnerName = refs?.partners?.find((p) => p.id === contract.partner_id)?.name ?? '—';
-  const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
-  const stateEntity = getEntityById(contract.state_id, refs?.contractStates);
-  const periodStr =
-    contract.start_date || contract.end_date
-      ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' — ')
-      : '—';
-  const signedDateStr = contract.date_signed ? formatDate(contract.date_signed) : '—';
-  return {
-    partnerName,
-    categoryName,
-    stateEntity,
-    stateTagClass: getContractStateTagClass(stateEntity?.code),
-    periodStr,
-    signedDateStr,
-  };
-}
+const ACTIVE_STYLE = { color: '#52c41a', label: 'Действует' };
+const INACTIVE_STYLE = { color: '#ff4d4f', label: 'Не действует' };
 
 type Props = {
   contract: Contract;
@@ -37,7 +28,16 @@ type Props = {
 };
 
 export function ContractCard({ contract, refs, onClick }: Props) {
-  const card = getCardData(contract, refs);
+  const partnerName = refs?.partners?.find((p) => p.id === contract.partner_id)?.name ?? '—';
+  const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
+  const stateEntity = getEntityById(contract.state_id, refs?.contractStates);
+  const st = contract.is_active ? ACTIVE_STYLE : INACTIVE_STYLE;
+
+  const periodStr =
+    contract.start_date || contract.end_date
+      ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' — ')
+      : '—';
+
   const amountStr =
     contract.amount_incl_vat != null
       ? `${contract.amount_incl_vat.toLocaleString('ru-RU')} ₽`
@@ -45,50 +45,58 @@ export function ContractCard({ contract, refs, onClick }: Props) {
 
   return (
     <div
-      className={styles.contractCard}
-      role="button"
-      tabIndex={0}
+      className={styles.card}
+      style={{ '--status-color': st.color } as React.CSSProperties}
       onClick={() => onClick(contract)}
-      onKeyDown={(e) => e.key === 'Enter' && onClick(contract)}
     >
-      <div className={styles.contractCardBody}>
-        <div className={styles.cardMain}>
-          <span className={styles.cardNum}>{contract.number || '—'}</span>
-          {card.categoryName && (
-            <span className={styles.cardCategory}>{card.categoryName}</span>
+      {/* Основная информация */}
+      <div className={styles.mainInfo}>
+        <div className={styles.nameRow}>
+          <Tooltip title={contract.name}>
+            <span className={styles.name}>№ {contract.number || '—'}</span>
+          </Tooltip>
+          {contract.cipher && (
+            <span className={styles.metaText}>Шифр: {contract.cipher}</span>
           )}
-          <span className={styles.cardPartner}>{card.partnerName}</span>
         </div>
-        <div className={styles.cardRight}>
-          <span className={styles.cardAmountWrap}>
-            <span className={styles.cardAmount}>{amountStr}</span>
-            <span className={styles.cardAmountLabel}> с НДС</span>
+        <div className={styles.metaRow}>
+          <Tag color={st.color}>{st.label}</Tag>
+          {stateEntity && (
+            <Tag>{stateEntity.name}</Tag>
+          )}
+        </div>
+        <div className={styles.metaRow} style={{ marginTop: 2 }}>
+          <span className={styles.metaText}>
+            <TeamOutlined style={{ fontSize: 11 }} />
+            {partnerName}
           </span>
-          <div className={styles.cardStatusRow}>
-            <span
-              className={
-                contract.is_active ? styles.tagStatusActive : styles.tagStatusInactive
-              }
-            >
-              {contract.is_active ? 'Активен' : 'Неактивен'}
-            </span>
-            <span className={styles[card.stateTagClass]}>
-              {card.stateEntity?.name ?? '—'}
-            </span>
+        </div>
+        {categoryName && (
+          <div className={styles.metaRow} style={{ marginTop: 2 }}>
+            <span className={styles.tag}>{categoryName}</span>
           </div>
+        )}
+      </div>
+
+      {/* Сумма + период */}
+      <div className={styles.metricsCol}>
+        <div className={styles.statsBlock}>
+          <div className={styles.statValue}>
+            <DollarOutlined style={{ fontSize: 11, marginRight: 4 }} />
+            {amountStr}
+          </div>
+          <div className={styles.statLabel}>Сумма с НДС</div>
+        </div>
+        <div className={styles.periodInfo}>
+          <CalendarOutlined style={{ fontSize: 11 }} />
+          {periodStr}
         </div>
       </div>
-      <span className={styles.cardMeta}>
-        {contract.cipher && (
-          <>
-            <span className={styles.cardMetaDot}>Шифр: {contract.cipher}</span>
-            <span className={styles.cardMetaSep}>·</span>
-          </>
-        )}
-        <span className={styles.cardMetaDot}>Дата: {card.signedDateStr}</span>
-        <span className={styles.cardMetaSep}>·</span>
-        <span className={styles.cardMetaDot}>Период: {card.periodStr}</span>
-      </span>
+
+      {/* Стрелка */}
+      <div className={styles.activityCol}>
+        <RightOutlined className={styles.arrow} />
+      </div>
     </div>
   );
 }

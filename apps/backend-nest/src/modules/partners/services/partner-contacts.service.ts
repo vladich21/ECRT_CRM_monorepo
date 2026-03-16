@@ -30,7 +30,7 @@ export class PartnerContactsService {
     return this.toResponse(row);
   }
 
-  async create(partnerId: string, data: Record<string, unknown>) {
+  async create(partnerId: string, data: Record<string, unknown>, userId?: string) {
     const isPrimary = data.is_primary === true || data.is_primary === 'true';
     if (isPrimary) {
       await this.db.db
@@ -45,12 +45,13 @@ export class PartnerContactsService {
       phone: data.phone != null ? String(data.phone) : null,
       email: data.email != null ? String(data.email) : null,
       isPrimary,
+      ...(userId ? { createdBy: userId, updatedBy: userId } : {}),
     };
     const [row] = await this.db.db.insert(partnerContacts).values(insertData).returning();
     return row ? this.toResponse(row) : null;
   }
 
-  async update(partnerId: string, contactId: string, data: Record<string, unknown>) {
+  async update(partnerId: string, contactId: string, data: Record<string, unknown>, userId?: string) {
     const isPrimary = data.is_primary === true || data.is_primary === 'true';
     if (isPrimary) {
       await this.db.db
@@ -66,6 +67,7 @@ export class PartnerContactsService {
       is_primary: 'isPrimary',
     };
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
+    if (userId) updateObj.updatedBy = userId;
     for (const [snake, camel] of Object.entries(map)) {
       if (data[snake] !== undefined) {
         if (snake === 'is_primary') updateObj[camel] = isPrimary;

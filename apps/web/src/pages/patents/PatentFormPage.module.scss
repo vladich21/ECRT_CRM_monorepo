@@ -1,0 +1,13 @@
+@use '../../components/pageLayout/formPageShared' as fp;
+
+.wrap {
+  @include fp.formPageWrap;
+}
+
+.formCard {
+  @include fp.formContainer;
+}
+
+.formActions {
+  @include fp.formActions;
+}

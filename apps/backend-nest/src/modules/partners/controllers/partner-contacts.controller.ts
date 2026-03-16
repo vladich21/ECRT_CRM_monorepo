@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Req,
 } from '@nestjs/common';
 import { PartnerContactsService } from '../services/partner-contacts.service';
 
@@ -26,8 +27,13 @@ export class PartnerContactsController {
   }
 
   @Post()
-  async create(@Param('partnerId') partnerId: string, @Body('body') body?: Record<string, unknown>) {
-    const row = await this.service.create(partnerId, body ?? {});
+  async create(
+    @Param('partnerId') partnerId: string,
+    @Body('body') body?: Record<string, unknown>,
+    @Req() req?: Request & { user?: { user_id?: string } },
+  ) {
+    const userId = req?.user?.user_id;
+    const row = await this.service.create(partnerId, body ?? {}, userId);
     return row ? [row] : [];
   }
 
@@ -36,8 +42,10 @@ export class PartnerContactsController {
     @Param('partnerId') partnerId: string,
     @Param('contactId') contactId: string,
     @Body('body') body?: Record<string, unknown>,
+    @Req() req?: Request & { user?: { user_id?: string } },
   ) {
-    const row = await this.service.update(partnerId, contactId, body ?? {});
+    const userId = req?.user?.user_id;
+    const row = await this.service.update(partnerId, contactId, body ?? {}, userId);
     if (!row) throw new NotFoundException(`Контакт ${contactId} не найден`);
     return [row];
   }

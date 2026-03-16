@@ -1,0 +1,178 @@
+.header {
+  background: linear-gradient(135deg, #0a1628 0%, #1a2e52 60%, rgba(22, 119, 255, 0.13) 100%);
+  padding: 28px 32px 0;
+  position: relative;
+  overflow: hidden;
+  margin: -24px -24px 0;
+}
+
+// ─── Decorative circles ─────────────────────────────────────────────────────
+
+.circleOuter {
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.circleInner {
+  position: absolute;
+  right: 80px;
+  top: 20px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+// ─── Back button ────────────────────────────────────────────────────────────
+
+.backBtn {
+  color: rgba(255, 255, 255, 0.7) !important;
+  margin-bottom: 20px;
+  padding: 0 !important;
+
+  &:hover {
+    color: #fff !important;
+  }
+}
+
+// ─── Company header row ─────────────────────────────────────────────────────
+
+.companyRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.avatar {
+  flex-shrink: 0;
+}
+
+.companyInfo {
+  flex: 1;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.companyName {
+  margin: 0;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.badge {
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badgeKey {
+  composes: badge;
+  background: rgba(250, 173, 20, 0.13);
+  border: 1px solid rgba(250, 173, 20, 0.31);
+  color: #faad14;
+}
+
+.badgeTarget {
+  composes: badge;
+  background: rgba(22, 119, 255, 0.13);
+  border: 1px solid rgba(22, 119, 255, 0.31);
+  color: #69b1ff;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metaInn {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+.metaType {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.metaCity {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// ─── Action buttons ─────────────────────────────────────────────────────────
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
+// ─── Tabs ───────────────────────────────────────────────────────────────────
+
+.tabs {
+  display: flex;
+  gap: 0;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  user-select: none;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.tabActive {
+  composes: tab;
+  color: #fff;
+  font-weight: 600;
+  border-bottom-color: #1677ff;
+}

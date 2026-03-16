@@ -1,91 +1,47 @@
-import { useRef, useMemo, useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, Input, Pagination } from 'antd';
-import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useDeletePartner, usePartners } from '../../api/partners/partnerApiHooks';
-import BasicTable from '../../components/basicTable/BasicTable';
-import { Partner } from '../../types/partner';
-import { NotFound } from '../../components/notFound/NotFound';
-import { useNotification } from '../../customhooks/useNotification';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
-import { useServerTablePagination } from '../../hooks/useServerTablePagination';
-import { getColumnsData } from './data';
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { BackButton } from '../../components/backButton/BackButton';
-import { PartnerFiltersModal, PartnerFilters, EMPTY_FILTERS } from './PartnerFiltersModal';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
+import { Loader } from '../../components/loader/Loader';
+import { useReferenceData } from '../../api/hooks/useReferences';
+import { usePartners } from '../../api/partners/partnerApiHooks';
+import SupplierCard from './registry/SupplierCard';
+import { PartnerFiltersModal, type PartnerFilters, EMPTY_FILTERS } from './PartnerFiltersModal';
+import type { Partner } from '../../types/partner';
 import styles from './PartnersListPage.module.scss';
+
+const PAGE_SIZE = 20;
 
 export default function PartnersListPage() {
   const navigate = useNavigate();
 
-  // ─── фильтры ─────────────────────────────────────────────────────────────────
+  // ─── поиск и пагинация ────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+
+  // ─── расширенные фильтры (модалка) ────────────────────────────────────────
   const [appliedFilters, setAppliedFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [draftFilters, setDraftFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  // ─── пагинация ───────────────────────────────────────────────────────────────
-  const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
-    useServerTablePagination({ defaultPageSize: 20 });
+  const { data: references } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies']);
 
-  const handlePageChange = (newPage: number, newPageSize?: number) =>
-    handleTableChange({ current: newPage, pageSize: newPageSize ?? pageSize } as never);
+  // ─── API запрос с серверными фильтрами ────────────────────────────────────
+  const apiFilters = useMemo(() => ({
+    search: search || undefined,
+    typeIds: appliedFilters.typeIds.length > 0 ? appliedFilters.typeIds : undefined,
+    statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
+    competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
+  }), [search, appliedFilters]);
 
-  // сброс на первую страницу при изменении фильтров/поиска
-  useEffect(() => { resetPage(); }, [search, appliedFilters]);
+  const { data: partnersData, isLoading } = usePartners(apiFilters, page, PAGE_SIZE);
 
-  // ─── данные (серверная пагинация + фильтрация) ────────────────────────────────
-  const serverFilters = useMemo(
-    () => ({
-      search:        search || undefined,
-      typeIds:       appliedFilters.typeIds.length       ? appliedFilters.typeIds       : undefined,
-      statusIds:     appliedFilters.statusIds.length     ? appliedFilters.statusIds     : undefined,
-      competenceIds: appliedFilters.competenceIds.length ? appliedFilters.competenceIds : undefined,
-    }),
-    [search, appliedFilters],
-  );
+  const partners = partnersData?.data ?? [];
+  const total = partnersData?.total ?? 0;
 
-  const { data, isLoading, isError } = usePartners(serverFilters, page, pageSize);
-  const partners = data?.data ?? [];
-  const totalCount = data?.total ?? 0;
-
-  const {
-    data: references,
-    isLoading: isRefsLoading,
-    isError: isRefsError,
-  } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies']);
-
-  // ─── уведомления ─────────────────────────────────────────────────────────────
-  const { contextHolder, showNotification } = useNotification();
-
-  // ─── удаление ────────────────────────────────────────────────────────────────
-  const deleteIdRef = useRef('');
-  const deleteMutation = useDeletePartner();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteMutation,
-    successMessage: 'Контрагент успешно удалён',
-    errorMessage: 'Не удалось удалить контрагента',
-    getMutationProps: () => deleteIdRef.current,
-    showNotification,
-  });
-
-  const handleDeleteClick = ({ id }: { id: string }) => {
-    deleteIdRef.current = id;
-    openDeleteModal();
-  };
-
-  // ─── активные фильтры ────────────────────────────────────────────────────────
-  const activeFiltersCount =
-    (appliedFilters.typeIds.length > 0 ? 1 : 0) +
-    (appliedFilters.statusIds.length > 0 ? 1 : 0) +
-    (appliedFilters.competenceIds.length > 0 ? 1 : 0);
-
-  const openFiltersModal = () => { setDraftFilters(appliedFilters); setIsFiltersOpen(true); };
-  const applyFilters     = () => { setAppliedFilters(draftFilters); setIsFiltersOpen(false); };
-  const resetFilters     = () => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setIsFiltersOpen(false); };
-
-  // ─── опции для модала ────────────────────────────────────────────────────────
+  // ─── опции для модалки фильтров ───────────────────────────────────────────
   const filterOptions = useMemo(
     () => ({
       types:        (references?.partnerTypes    ?? []).map((t) => ({ label: t.name, value: String(t.id) })),
@@ -95,23 +51,33 @@ export default function PartnersListPage() {
     [references],
   );
 
-  const paginationConfig = getPaginationConfig(totalCount);
+  const activeFiltersCount =
+    (appliedFilters.typeIds.length > 0 ? 1 : 0) +
+    (appliedFilters.statusIds.length > 0 ? 1 : 0) +
+    (appliedFilters.competenceIds.length > 0 ? 1 : 0);
 
-  if (isError || isRefsError) {
-    return <NotFound errorMessage="Не удалось выполнить запрос" />;
-  }
+  const openFiltersModal = () => { setDraftFilters(appliedFilters); setIsFiltersOpen(true); };
+  const applyFilters     = () => { setAppliedFilters(draftFilters); setIsFiltersOpen(false); setPage(1); };
+  const resetFilters     = () => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setIsFiltersOpen(false); setPage(1); };
+
+  const handleCardClick = (partner: Partner) => {
+    navigate(`/partners/${partner.id}`, { state: { from: 'partners-list' } });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   return (
     <div className={styles.wrap}>
-      {contextHolder}
-
       <div className={styles.backRow}>
         <BackButton path="/" />
       </div>
 
       <PageHeader
-        title="Контрагенты"
-        subtitle="Реестр контрагентов организации"
+        title="Реестр контрагентов"
+        subtitle="Управление поставщиками и подрядчиками"
         actions={
           <>
             <Button
@@ -124,8 +90,8 @@ export default function PartnersListPage() {
                 <span className={styles.filtersBadge}>{activeFiltersCount}</span>
               )}
             </Button>
-            <Button type="primary" onClick={() => navigate('/partners/create')}>
-              Новый контрагент
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/partners/create')}>
+              Добавить контрагента
             </Button>
           </>
         }
@@ -135,14 +101,14 @@ export default function PartnersListPage() {
               <div className={styles.filterTabsRight}>
                 <Input
                   className={styles.searchInTabsRow}
-                  placeholder="Поиск по наименованию, ИНН..."
                   prefix={<SearchOutlined className={styles.searchIcon} />}
+                  placeholder="Поиск по названию или ИНН..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   allowClear
                 />
                 <span className={styles.resultCount}>
-                  Всего: <strong>{totalCount}</strong>
+                  Показано: <strong>{partners.length}</strong> из <strong>{total}</strong>
                 </span>
               </div>
             </div>
@@ -150,36 +116,34 @@ export default function PartnersListPage() {
         }
       />
 
-      <BasicTable<Partner>
-        data={partners}
-        loading={isLoading || isRefsLoading}
-        columns={getColumnsData({
-          competencies:    references?.competencies    ?? [],
-          partnerTypes:    references?.partnerTypes    ?? [],
-          partnerStatuses: references?.partnerStatuses ?? [],
-        })}
-        onRowClick={(record) =>
-          navigate(`/partners/${record.id}`, { state: { partner: record, from: 'partners-list' } })
-        }
-        enableContextMenu
-        showActions
-        onEdit={(record) => navigate(`/partners/${record.id}/edit`)}
-        onDelete={handleDeleteClick}
-        actionsColumnTitle="Действия"
-        actionsColumnWidth={100}
-      />
+      {/* Cards list */}
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <div className={styles.cardsList}>
+          {partners.length === 0 ? (
+            <div className={styles.emptyState}>Контрагенты не найдены</div>
+          ) : (
+            partners.map((partner) => (
+              <SupplierCard
+                key={partner.id}
+                partner={partner}
+                references={references}
+                onClick={handleCardClick}
+              />
+            ))
+          )}
+        </div>
+      )}
 
-      {(paginationConfig.total ?? 0) > 0 && (
-        <div className={styles.pagination}>
+      {total > PAGE_SIZE && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
           <Pagination
-            current={paginationConfig.current}
-            pageSize={paginationConfig.pageSize}
-            total={paginationConfig.total}
-            showSizeChanger
-            pageSizeOptions={[20, 50, 100]}
-            showTotal={(total, range) => `${range[0]}–${range[1]} из ${total}`}
-            onChange={handlePageChange}
-            onShowSizeChange={(_, size) => handlePageChange(1, size)}
+            current={page}
+            total={total}
+            pageSize={PAGE_SIZE}
+            onChange={setPage}
+            showSizeChanger={false}
           />
         </div>
       )}

@@ -1,0 +1,40 @@
+.wrapper {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  border: 1px solid #f0f0f0;
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #141414;
+}
+
+.row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.label {
+  color: #8c8c8c;
+}
+
+.valueDone {
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.valuePending {
+  font-weight: 600;
+  color: #ff4d4f;
+}

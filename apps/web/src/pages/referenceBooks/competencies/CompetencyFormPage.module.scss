@@ -1,0 +1,19 @@
+@use '../../../components/pageLayout/formPageShared' as fp;
+
+.wrap {
+  @include fp.formPageWrap;
+}
+
+.formCard {
+  @include fp.formContainer;
+}
+
+.formActions {
+  @include fp.formActions;
+}
+
+.tagPreview {
+  font-weight: bold;
+  font-size: 14px;
+  padding: 4px 8px;
+}

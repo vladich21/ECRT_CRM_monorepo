@@ -1,0 +1,22 @@
+@use '../../../components/pageLayout/listPageShared' as lp;
+
+.wrap {
+  padding: 0;
+}
+
+.filterSection {
+  @include lp.filterSection;
+}
+
+.filterTabsRow {
+  @include lp.filterTabsRow;
+  justify-content: space-between;
+}
+
+.filterTabsRight {
+  @include lp.filterTabsRight;
+}
+
+.resultCount {
+  @include lp.resultCount;
+}

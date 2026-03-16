@@ -28,7 +28,7 @@ export const DEFAULT_ADVANCED_FILTERS: AdvancedFilters = {
 
 export const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: 'all', label: 'Все' },
-  { key: 'active', label: 'Активные' },
+  { key: 'active', label: 'Действующие' },
   { key: 'draft', label: 'Черновики' },
-  { key: 'inactive', label: 'Неактивные' },
+  { key: 'inactive', label: 'Не действующие' },
 ];

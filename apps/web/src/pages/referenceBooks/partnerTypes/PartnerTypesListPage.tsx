@@ -1,5 +1,5 @@
-import { Button } from 'antd';
 import BasicTable from '../../../components/basicTable/BasicTable';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PartnerType } from '../../../types/partner';
 
 import { useEffect, useState } from 'react';
@@ -78,13 +78,7 @@ const PartnerTypesListPage: React.FC = () => {
   };
 
   return (
-    <div>
-      {contextHolder}
-      <h1>Типы контрагентов</h1>
-      <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить тип контрагента
-      </Button>
-
+    <ReferenceBookListPage title="Типы контрагентов" addButtonLabel="Добавить тип контрагента" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <BasicTable<PartnerType>
         data={data}
         loading={loading}
@@ -95,7 +89,7 @@ const PartnerTypesListPage: React.FC = () => {
         actionsColumnTitle='Действия'
         actionsColumnWidth={100}
       />
-    </div>
+    </ReferenceBookListPage>
   );
 };
 

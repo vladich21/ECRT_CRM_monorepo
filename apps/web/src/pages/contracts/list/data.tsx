@@ -78,7 +78,7 @@ export const getColumnsData = (
     dataIndex: 'is_active',
     key: 'is_active',
     width: 100,
-    render: (isActive: boolean) => <Tag color={isActive ? 'green' : 'red'}>{isActive ? 'Активен' : 'Неактивен'}</Tag>,
+    render: (isActive: boolean) => <Tag color={isActive ? 'green' : 'red'}>{isActive ? 'Действует' : 'Не действует'}</Tag>,
   },
   {
     title: 'Состояние',

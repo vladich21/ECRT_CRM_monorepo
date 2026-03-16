@@ -1,28 +1,31 @@
-.pageRoot {
-  padding: 0;
+// ── Partner Details — page-specific styles ──
+// Header and content wrap styles are in DetailPageHeader shared component
+
+.badge {
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
-
-.pageTabs {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 0 24px;
-
-  :global(.ant-tabs-tab) {
-    color: #64748b;
-    font-size: 14px;
-  }
-
-  :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
-    color: #1e293b !important;
-  }
-
-  :global(.ant-tabs-ink-bar) {
-    background: #002f55;
-  }
+.badgeKey {
+  composes: badge;
+  background: rgba(250, 173, 20, 0.13);
+  border: 1px solid rgba(250, 173, 20, 0.31);
+  color: #faad14;
 }
 
-.contentWrap {
-  margin-top: 0;
+.badgeTarget {
+  composes: badge;
+  background: rgba(22, 119, 255, 0.13);
+  border: 1px solid rgba(22, 119, 255, 0.31);
+  color: #69b1ff;
+}
+
+.metaType {
+  font-size: 13px;
+  font-weight: 500;
 }

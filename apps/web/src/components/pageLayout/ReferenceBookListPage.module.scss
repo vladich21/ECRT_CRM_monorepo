@@ -1,0 +1,15 @@
+// ── ReferenceBookListPage shared wrapper ──
+
+.wrap {
+  padding: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tableContainer {
+  margin-top: 16px;
+}

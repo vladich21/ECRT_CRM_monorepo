@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MyFile } from '../../types/files';
 import { fileApi } from '../../api/files/fileApi';
+import { isValidUuid } from '../../helpers/isValidUuid';
 
 interface FileWithId {
   id: string;
@@ -16,7 +17,7 @@ export const useFilesByEntity = (entityType: string, entityId: string) => {
   return useQuery({
     queryKey: ['files', entityType, entityId],
     queryFn: () => fileApi.getFilesByEntity(entityType, entityId),
-    enabled: !!entityType && !!entityId,
+    enabled: !!entityType && isValidUuid(entityId),
   });
 };
 

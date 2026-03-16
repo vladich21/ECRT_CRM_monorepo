@@ -20,12 +20,13 @@ export const WithDescriptionFormModal: React.FC<ModalState> = ({
 }) => {
   const [form] = Form.useForm();
   const nameLabel: string = modalData.nameLabel ?? 'название';
+  const showCode: boolean = modalData.showCode ?? false;
 
   useEffect(() => {
     if (layoutProps.open) {
       form.setFieldsValue(modalData);
     } else {
-      form.setFieldsValue({ name: '', description: '' });
+      form.setFieldsValue({ name: '', description: '', code: '' });
     }
   }, [layoutProps.open]);
 
@@ -60,6 +61,12 @@ export const WithDescriptionFormModal: React.FC<ModalState> = ({
             }}
           />
         </Form.Item>
+
+        {showCode && (
+          <Form.Item label='Код' name='code'>
+            <Input placeholder='Введите код' allowClear />
+          </Form.Item>
+        )}
 
         <Form.Item label='Описание' name='description'>
           <TextArea placeholder='Введите описание' allowClear rows={3} />

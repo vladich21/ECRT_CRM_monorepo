@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { Partner } from '../../types/partner';
 import { partnerApi, PartnerListParams, PartnersListResponse } from './partnerApi';
+import { isValidUuid } from '../../helpers/isValidUuid';
 
 export interface PartnersListResult {
   data: Partner[];
@@ -24,7 +25,7 @@ export const usePartnerById = (partnerId: string): UseQueryResult<Partner, Error
   return useQuery<Partner, Error>({
     queryKey: ['partners', partnerId],
     queryFn: () => partnerApi.getPartnerById(partnerId),
-    enabled: !!partnerId,
+    enabled: isValidUuid(partnerId),
   });
 };
 

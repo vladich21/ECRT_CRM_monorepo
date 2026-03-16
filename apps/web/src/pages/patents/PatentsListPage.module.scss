@@ -1,10 +1,225 @@
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+@use '../../styles/variables' as v;
+@use '../../components/pageLayout/listPageShared' as lp;
+
+.wrap {
+  padding: 0;
 }
 
-.title {
-  margin: 0;
+// ─── Кнопка «Фильтры» ─────────────────────────────────────────────────────
+.filtersBtnActive { @include lp.filtersBtnActive; }
+.filtersBadge     { @include lp.filtersBadge; }
+
+// ─── Модальное окно фильтров ──────────────────────────────────────────────
+.filtersModalGrid    { @include lp.filtersModalGrid; }
+.filtersModalField   { @include lp.filtersModalField; }
+.filtersModalLabel   { @include lp.filtersModalLabel; }
+.filtersModalControl { @include lp.filtersModalControl; }
+
+// ─── Filter section ─────────────────────────────────────────────────────────
+.filterSection   { @include lp.filterSection; }
+.filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
+.filterTabsRight { @include lp.filterTabsRight; }
+.searchInTabsRow { @include lp.searchInput; }
+.searchIcon      { @include lp.searchIcon; }
+.resultCount     { @include lp.resultCount; }
+
+// ─── Filter tabs ────────────────────────────────────────────────────────────
+.filterTabs      { @include lp.filterTabs; }
+.filterTab       { @include lp.filterTab; }
+.filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
+.filterTabCount  { @include lp.filterTabCount; }
+
+// ─── Card list ──────────────────────────────────────────────────────────────
+.cardList {
+  margin-top: 16px;
+}
+
+// ─── Patent card (Partners SupplierCard style) ──────────────────────────────
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  border-left: 4px solid var(--status-color);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(22, 119, 255, 0.12);
+    border-color: #d0e4ff;
+    border-left-color: var(--status-color);
+  }
+}
+
+// ─── Main info column ───────────────────────────────────────────────────────
+.mainInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #141414;
+  white-space: nowrap;
+}
+
+.metaInn {
+  color: #8c8c8c;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.metaText {
+  color: #8c8c8c;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.metaDot {
+  color: #d9d9d9;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+// ─── Category column (IP type) ──────────────────────────────────────────────
+.categoryCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.categoryName {
+  font-size: 13px;
+  color: #262626;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagsRow {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 11px;
+  background: #f5f5f5;
+  color: #595959;
+  border-radius: 4px;
+  padding: 1px 7px;
+  border: 1px solid #e8e8e8;
+}
+
+// ─── Metrics column ─────────────────────────────────────────────────────────
+.metricsCol {
+  flex: 0 0 180px;
+  margin-left: auto;
+}
+
+.periodInfo {
+  font-size: 12px;
+  color: #595959;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metricsTop {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.statsBlock {
+  text-align: left;
+}
+
+.statValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: #141414;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+.authorsCount {
+  font-size: 12px;
+  color: #595959;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// ─── Activity column ────────────────────────────────────────────────────────
+.activityCol {
+  flex: 0 0 120px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.activityDate {
+  font-size: 11px;
+  color: #8c8c8c;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arrow {
+  color: #d9d9d9;
+}
+
+// ─── Pagination ─────────────────────────────────────────────────────────────
+.pagination { @include lp.pagination; }
+
+// ─── Loading / Empty ────────────────────────────────────────────────────────
+.loading {
+  padding: v.$spacing-4xl;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.empty {
+  text-align: center;
+  padding: 60px 0;
+  color: #8c8c8c;
+  font-size: 14px;
 }

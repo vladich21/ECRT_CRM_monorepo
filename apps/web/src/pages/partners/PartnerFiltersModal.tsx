@@ -95,6 +95,7 @@ export function PartnerFiltersModal({
             onChange={(value) => onUpdateDraftFilter({ competenceIds: value })}
           />
         </FilterField>
+
       </div>
     </Modal>
   );

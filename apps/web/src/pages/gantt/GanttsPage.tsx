@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Divider, Tabs } from 'antd';
+import { Divider, Tabs } from 'antd';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { NotFound } from '../../components/notFound/NotFound';
 import { useNotification } from '../../customhooks/useNotification';
 import { useProjects } from '../../api/projects/projectApiHooks';
 import { GanttField } from './GanttField';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
 import styles from './GanttsPage.module.scss';
 
 export interface CounterType {
@@ -43,20 +44,9 @@ export default function GanttsPage() {
   return (
     <div className={styles.pageContainer}>
       {contextHolder}
-      <Card
-        className={styles.gantCard}
-        bodyStyle={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Заголовок и кнопки - занимает только необходимую высоту */}
-        <div className={styles.headerContainer}>
-          <h2 className={styles.title}>Диаграммы ганта по проектам</h2>
-        </div>
+      <PageHeader title='Диаграммы Ганта по проектам' />
 
-        {/* Tabs - занимает всё оставшееся пространство */}
+      <div className={styles.gantCard}>
         <Tabs
           activeKey={activeProjectTab}
           onChange={key => setActiveProjectTab(key)}
@@ -84,7 +74,7 @@ export default function GanttsPage() {
             </TabPane>
           ))}
         </Tabs>
-      </Card>
+      </div>
     </div>
   );
 }

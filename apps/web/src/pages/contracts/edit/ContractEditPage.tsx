@@ -24,6 +24,8 @@ import { useContractById, useUpdateContract } from '../../../api/contracts/contr
 import { contractUpdateFormMapper } from '../../../helpers/mappers/contractUpdateFormMapper';
 import { numberFormatter, numberParser } from '../../../helpers/numberFormatters';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import styles from '../create/ContractCreatePage.module.scss';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -129,18 +131,15 @@ export default function ContractEditPage() {
   }
 
   return (
-    <div>
+    <div className={styles.wrap}>
       {contextHolder}
-      <Space direction='vertical' size='middle' style={{ width: '100%' }}>
-        <BackButton />
-        <Card
-          title={
-            <span>
-              <FileTextOutlined style={{ marginRight: 8 }} />
-              Редактирование договора: {contract.number}
-            </span>
-          }
-        >
+      <BackButton />
+      <PageHeader
+        title={`Редактирование договора: ${contract.number}`}
+        subtitle="Внесите изменения в данные договора"
+      />
+
+      <div className={styles.formCard}>
           <Form
             form={form}
             layout='vertical'
@@ -436,28 +435,22 @@ export default function ContractEditPage() {
             </Row>
 
             {/* Кнопки действий */}
-            <Divider />
-            <Form.Item>
-              <Space>
-                <Button
-                  type='primary'
-                  htmlType='submit'
-                  icon={<SaveOutlined />}
-                  loading={isUpdateLoading}
-                  disabled={!isFormChanged}
-                  size='large'
-                >
-                  Сохранить изменения
-                </Button>
-
-                <Button onClick={handleBack} size='large'>
-                  Отмена
-                </Button>
-              </Space>
-            </Form.Item>
+            <div className={styles.formActions}>
+              <Button onClick={handleBack}>
+                Отмена
+              </Button>
+              <Button
+                type='primary'
+                htmlType='submit'
+                icon={<SaveOutlined />}
+                loading={isUpdateLoading}
+                disabled={!isFormChanged}
+              >
+                Сохранить изменения
+              </Button>
+            </div>
           </Form>
-        </Card>
-      </Space>
+      </div>
     </div>
   );
 }

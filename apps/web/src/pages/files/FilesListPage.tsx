@@ -1,4 +1,4 @@
-import { Button, Space } from 'antd';
+import { Button } from 'antd';
 
 import { useNotification } from '../../customhooks/useNotification';
 import { useDeleteFile, useFilesByEntity, useUploadFiles } from '../../api/files/fileApiHooks';
@@ -12,6 +12,9 @@ import { getColumnsData } from './data';
 import { useParams } from 'react-router-dom';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import NotFound from '../NotFound';
+import { BackButton } from '../../components/backButton/BackButton';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
+import styles from './FilesListPage.module.scss';
 
 type ActionType = 'edit' | 'delete' | 'add' | 'view' | '';
 
@@ -72,14 +75,19 @@ const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', 
   if (isReferencesError) return <NotFound />;
 
   return (
-    <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+    <div>
       {contextHolder}
-      {label && <h3>{label}</h3>}
-      <Button type='primary' onClick={() => openAddModal()} style={{ marginBottom: 16 }}>
-        Добавить файл
-      </Button>
+      <BackButton />
+      <PageHeader
+        title={label || 'Файлы'}
+        actions={
+          <Button type='primary' onClick={() => openAddModal()}>
+            Добавить файл
+          </Button>
+        }
+      />
 
-      <div>
+      <div className={styles.tableCard}>
         <BasicTable<MyFile>
           data={data}
           loading={loading && isReferencesLoading}
@@ -91,7 +99,7 @@ const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', 
           actionsColumnWidth={60}
         />
       </div>
-    </Space>
+    </div>
   );
 };
 
