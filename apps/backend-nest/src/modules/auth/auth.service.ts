@@ -137,7 +137,7 @@ export class AuthService {
     const token = await this.signJwt(userId);
     res.cookie(JWT_COOKIE, token, {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: false,
       sameSite: 'lax',
       maxAge: JWT_TTL_SECONDS * 1000,
       path: '/',

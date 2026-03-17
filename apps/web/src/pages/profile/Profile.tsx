@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { App, Avatar, Button, Form, Input, Select, Row, Col } from "antd";
+import { App, Avatar, Button, Form, Input, Select } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -236,63 +236,58 @@ const ProfilePage = () => {
               <div className={styles.sidebar} />
             </div>
           ) : (
-            <div className={styles.card}>
+            <div className={`${styles.card} ${styles.editCard}`}>
               <h3 className={styles.cardTitle}>Редактирование профиля</h3>
-              <Row gutter={16}>
-                <Col xs={24} md={12}>
-                  <Form.Item label="Должность" name="position_id">
-                    <Select
-                      showSearch
-                      optionFilterProp="children"
-                      filterOption={(input, option) =>
-                        String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                      }
-                      placeholder="Выберите должность"
-                      allowClear
-                      suffixIcon={<IdcardOutlined />}
-                    >
-                      {referenceBooks?.positions?.map(position => (
-                        <Option key={position.id} value={position.id}>{position.name}</Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item label="Отдел" name="department_id">
-                    <Select
-                      showSearch
-                      optionFilterProp="children"
-                      filterOption={(input, option) =>
-                        String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                      }
-                      placeholder="Выберите отдел"
-                      allowClear
-                      suffixIcon={<TeamOutlined />}
-                    >
-                      {referenceBooks?.departments?.map(dept => (
-                        <Option key={dept.id} value={dept.id}>{dept.name}</Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Введите корректный email' }]}>
-                    <Input prefix={<MailOutlined />} placeholder="email@example.com" type="email" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Телефон"
-                    name="phone"
-                    rules={[
-                      { pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/, message: 'Введите корректный номер' },
-                      { max: 25, message: 'Максимум 25 символов' },
-                    ]}
+              <div className={styles.editGrid}>
+                <Form.Item label="Должность" name="position_id">
+                  <Select
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    placeholder="Выберите должность"
+                    allowClear
+                    suffixIcon={<IdcardOutlined />}
                   >
-                    <Input prefix={<PhoneOutlined />} placeholder="+7 (999) 123-45-67" />
-                  </Form.Item>
-                </Col>
-              </Row>
+                    {referenceBooks?.positions?.map(position => (
+                      <Option key={position.id} value={position.id}>{position.name}</Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item label="Отдел" name="department_id">
+                  <Select
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    placeholder="Выберите отдел"
+                    allowClear
+                    suffixIcon={<TeamOutlined />}
+                  >
+                    {referenceBooks?.departments?.map(dept => (
+                      <Option key={dept.id} value={dept.id}>{dept.name}</Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Введите корректный email' }]}>
+                  <Input prefix={<MailOutlined />} placeholder="email@example.com" type="email" />
+                </Form.Item>
+
+                <Form.Item
+                  label="Телефон"
+                  name="phone"
+                  rules={[
+                    { pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/, message: 'Введите корректный номер' },
+                    { max: 25, message: 'Максимум 25 символов' },
+                  ]}
+                >
+                  <Input prefix={<PhoneOutlined />} placeholder="+7 (999) 123-45-67" />
+                </Form.Item>
+              </div>
             </div>
           )}
         </Form>

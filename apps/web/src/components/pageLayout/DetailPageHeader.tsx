@@ -26,6 +26,7 @@ interface DetailPageHeaderProps {
   activeTab: string;
   onTabChange: (key: string) => void;
   extraContent?: ReactNode;
+  stickyHeader?: boolean;
   children?: ReactNode;
   contextHolder?: ReactNode;
 }
@@ -42,6 +43,7 @@ export default function DetailPageHeader({
   activeTab,
   onTabChange,
   extraContent,
+  stickyHeader,
   children,
   contextHolder,
 }: DetailPageHeaderProps) {
@@ -49,7 +51,7 @@ export default function DetailPageHeader({
     <div className={styles.pageRoot}>
       {contextHolder}
 
-      <div className={styles.header}>
+      <div className={`${styles.header} ${stickyHeader ? styles.headerSticky : ''}`}>
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}

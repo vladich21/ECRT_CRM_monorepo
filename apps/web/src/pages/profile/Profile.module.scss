@@ -2,16 +2,18 @@
 
 .pageRoot {
   padding: 0;
-  overflow-x: hidden;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
 }
 
 // ─── Dark gradient header ───────────────────────────────────────────────────
 .header {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1a3a6b 100%);
   padding: 32px 32px 28px;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   overflow: hidden;
-  margin: -24px -24px 0;
 }
 
 .headerContent {
@@ -110,6 +112,17 @@
   padding: 24px 32px;
   background: #f5f7fa;
   min-height: calc(100vh - 300px);
+}
+
+.editCard {
+  max-width: 920px;
+}
+
+.editGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+  gap: 16px 24px;
+  align-items: start;
 }
 
 .layout {

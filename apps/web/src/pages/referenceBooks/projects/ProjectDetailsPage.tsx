@@ -6,7 +6,6 @@ import {
   EditOutlined,
   NumberOutlined,
   ProjectOutlined,
-  UserOutlined,
 } from '@ant-design/icons';
 import { useDeleteProject, useProjectById } from '../../../api/projects/projectApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -67,14 +66,11 @@ export default function ProjectDetailsPage() {
       onBack={() => navigate('/projects')}
       statusBadge={{ label: st.label, color: st.color }}
       metaItems={[
-        <span key="code" className={hStyles.metaText}>Код: {project.code || '—'}</span>,
-        project.short_name && (
-          <span key="short" className={hStyles.metaText}>{project.short_name}</span>
+        project.code && (
+          <span key="code" className={hStyles.metaText}>Код: {project.code}</span>
         ),
-        managerName && (
-          <span key="manager" className={hStyles.metaText}>
-            <UserOutlined /> {managerName}
-          </span>
+        project.short_name && project.short_name !== project.name && (
+          <span key="short" className={hStyles.metaText}>{project.short_name}</span>
         ),
       ].filter(Boolean)}
       actions={
@@ -96,13 +92,13 @@ export default function ProjectDetailsPage() {
       <div className={styles.layout}>
         {/* Left column */}
         <div className={styles.leftColumn}>
-          {/* KPI tiles */}
+          {/* Код и сроки */}
           <div className={styles.kpiRow}>
             <div className={styles.kpiTile}>
               <div className={styles.kpiContent}>
                 <div>
-                  <div className={styles.kpiValue}>{String(project.code) || '—'}</div>
-                  <div className={styles.kpiLabel}>Код проекта</div>
+                  <div className={styles.kpiValue}>{project.code || '—'}</div>
+                  <div className={styles.kpiLabel}>Код</div>
                 </div>
                 <div className={styles.kpiIcon}>
                   <NumberOutlined />
@@ -113,7 +109,7 @@ export default function ProjectDetailsPage() {
               <div className={styles.kpiContent}>
                 <div>
                   <div className={styles.kpiValue}>{formatDate(project.start_date)}</div>
-                  <div className={styles.kpiLabel}>Дата начала</div>
+                  <div className={styles.kpiLabel}>Начало</div>
                 </div>
                 <div className={styles.kpiIcon}>
                   <CalendarOutlined />
@@ -124,7 +120,7 @@ export default function ProjectDetailsPage() {
               <div className={styles.kpiContent}>
                 <div>
                   <div className={styles.kpiValue}>{formatDate(project.end_date)}</div>
-                  <div className={styles.kpiLabel}>Дата окончания</div>
+                  <div className={styles.kpiLabel}>Окончание</div>
                 </div>
                 <div className={styles.kpiIcon}>
                   <CalendarOutlined />
@@ -133,24 +129,17 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
 
-          {/* Основная информация */}
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Основная информация</h3>
-            <div className={styles.infoRows}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Название</span>
-                <span className={project.name ? styles.infoValue : styles.infoValueMuted}>
-                  {project.name || 'Не указано'}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Короткое название</span>
-                <span className={project.short_name ? styles.infoValue : styles.infoValueMuted}>
-                  {project.short_name || 'Не указано'}
-                </span>
+          {/* Короткое название — только если есть и отличается от названия */}
+          {project.short_name && project.short_name !== project.name && (
+            <div className={styles.card}>
+              <div className={styles.infoRows}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Короткое название</span>
+                  <span className={styles.infoValue}>{project.short_name}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Описание */}
           {project.description && (
@@ -163,43 +152,11 @@ export default function ProjectDetailsPage() {
 
         {/* Right sidebar */}
         <div className={styles.sidebar}>
-          {/* Классификация */}
           <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Классификация</h3>
-            <div className={styles.infoRows}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Статус</span>
-                <span className={styles[tagClass]}>{st.label}</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Код</span>
-                <span className={styles.infoValue}>{String(project.code) || '—'}</span>
-              </div>
-            </div>
+            <h3 className={styles.cardTitle}>Статус</h3>
+            <span className={styles[tagClass]}>{st.label}</span>
           </div>
 
-          {/* Сроки */}
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Сроки</h3>
-            <div className={styles.infoRows}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Дата начала</span>
-                <span className={styles.infoValue}>{formatDate(project.start_date)}</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Дата окончания</span>
-                <span className={project.end_date ? styles.infoValue : styles.infoValueMuted}>
-                  {formatDate(project.end_date)}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Статус</span>
-                <span className={styles[tagClass]}>{st.label}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Руководитель */}
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>
               <ProjectOutlined style={{ marginRight: 6 }} />

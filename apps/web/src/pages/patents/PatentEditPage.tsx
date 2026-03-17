@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Form, Input, Button, Select, Row, Col, Divider, DatePicker } from 'antd';
 import {
+  CloseOutlined,
   SaveOutlined,
   FileTextOutlined,
   TeamOutlined,
@@ -15,16 +16,22 @@ import {
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePatentById, useUpdatePatent } from '../../api/patents/patentApiHooks';
 import { useNotification } from '../../customhooks/useNotification';
-import { BackButton } from '../../components/backButton/BackButton';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
+import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import { getEntityById } from '../../helpers/getEntityById';
+import { getNameById } from '../../helpers/getNameById';
 import { patentUpdateFormMapper } from '../../helpers/mappers/patentUpdateFormMapper';
 import styles from './PatentFormPage.module.scss';
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+const STATUS_STYLE = {
+  active: { color: '#52c41a', label: 'Активен' },
+  deleted: { color: '#ff4d4f', label: 'Удалён' },
+} as const;
 
 export default function PatentEditPage() {
   const { patentId } = useParams();
@@ -107,16 +114,78 @@ export default function PatentEditPage() {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
 
-  return (
-    <div className={styles.wrap}>
-      {contextHolder}
-      <BackButton />
-      <PageHeader title="Редактирование РИД" subtitle="Внесите изменения в данные объекта интеллектуальной собственности" />
+  if (!patent) return <NotFound errorMessage='РИД не найден' />;
 
+  const st = patent.is_deleted ? STATUS_STYLE.deleted : STATUS_STYLE.active;
+
+  // Dynamic header meta — updates as user edits fields
+  const wName = Form.useWatch('name', form) as string | undefined;
+  const wIntellectPropId = Form.useWatch('intellectprop_id', form) as string | undefined;
+  const wStatusId = Form.useWatch('status_id', form) as string | undefined;
+  const wDepartmentId = Form.useWatch('department_id', form) as string | undefined;
+  const wRegNumber = Form.useWatch('registration_number', form) as string | undefined;
+
+  const headerName = (wName ?? patent.name) || '';
+  const headerRegNumber = (wRegNumber ?? patent.registration_number) || '';
+  const ipTypeName = getNameById(wIntellectPropId ?? patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
+  const statusName = getNameById(wStatusId ?? patent.status_id, referenceBooks?.patentStatuses) || '';
+  const deptName = getNameById(wDepartmentId ?? patent.department_id, referenceBooks?.departments) || '';
+
+  return (
+    <DetailPageHeader
+      title={`Редактирование: РИД ${headerRegNumber || '—'}`}
+      backLabel="Реестр РИД"
+      onBack={() => navigate(-1)}
+      statusBadge={{ label: st.label, color: st.color }}
+      metaItems={[
+        headerName ? (
+          <span key="name" className={hStyles.metaText}>
+            {headerName}
+          </span>
+        ) : null,
+        ipTypeName ? (
+          <span key="ipType" className={hStyles.metaType}>
+            {ipTypeName}
+          </span>
+        ) : null,
+        statusName ? (
+          <span key="status" className={hStyles.metaType}>
+            {statusName}
+          </span>
+        ) : null,
+        deptName ? (
+          <span key="dept" className={hStyles.metaText}>
+            <TeamOutlined /> {deptName}
+          </span>
+        ) : null,
+      ].filter(Boolean)}
+      actions={
+        <>
+          <Button icon={<CloseOutlined />} onClick={() => navigate(-1)} disabled={isUpdateLoading}>
+            Отмена
+          </Button>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={() => form.submit()}
+            loading={isUpdateLoading}
+            disabled={!isFormChanged}
+          >
+            Сохранить
+          </Button>
+        </>
+      }
+      tabs={[{ key: 'main', label: 'Редактирование' }]}
+      activeTab="main"
+      onTabChange={() => {}}
+      contextHolder={contextHolder}
+      stickyHeader
+    >
       <div className={styles.formCard}>
         <Form
           form={form}
           layout='vertical'
+          size="small"
           onFieldsChange={() => setIsFormChanged(true)}
           onFinish={handleUpdate}
           onKeyPress={e => {
@@ -129,7 +198,7 @@ export default function PatentEditPage() {
             <FileTextOutlined /> Идентификация РИД
           </Divider>
 
-          <Row gutter={16}>
+          <Row gutter={12}>
             <Col xs={24}>
               <Form.Item
                 label='Наименование РИД'
@@ -138,7 +207,7 @@ export default function PatentEditPage() {
               >
                 <TextArea
                   placeholder='Введите наименование объекта интеллектуальной собственности'
-                  rows={3}
+                  rows={2}
                   showCount
                   maxLength={500}
                 />
@@ -146,7 +215,7 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={16}>
+          <Row gutter={12}>
             <Col xs={24} md={8}>
               <Form.Item
                 label='Объект собственности'
@@ -198,6 +267,7 @@ export default function PatentEditPage() {
                 <Select
                   mode='multiple'
                   showSearch
+                  maxTagCount="responsive"
                   optionFilterProp='children'
                   filterOption={(input, option) =>
                     String(option?.children ?? '')
@@ -222,7 +292,7 @@ export default function PatentEditPage() {
             <BankOutlined /> Регистрационные данные
           </Divider>
 
-          <Row gutter={16}>
+          <Row gutter={12}>
             <Col xs={24} md={8}>
               <Form.Item
                 label='Номер АО "ИЦ ЖТ"'
@@ -255,7 +325,7 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={16}>
+          <Row gutter={12}>
             <Col xs={24} md={8}>
               <Form.Item label='Номер ЦИР' name='registration_number_cir'>
                 <Input placeholder='Номер регистрации в ЦИР' />
@@ -285,7 +355,7 @@ export default function PatentEditPage() {
             <TeamOutlined /> Организация и ответственные
           </Divider>
 
-          <Row gutter={16}>
+          <Row gutter={12}>
             <Col xs={24} md={12}>
               <Form.Item label='Отдел' name='department_id' rules={[{ required: true, message: 'Выберите отдел' }]}>
                 <Select
@@ -331,12 +401,13 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={16}>
+          <Row gutter={12}>
             <Col xs={24}>
               <Form.Item label='Авторы (Исполнители)' name='author_ids'>
                 <Select
                   mode='multiple'
                   showSearch
+                  maxTagCount="responsive"
                   optionFilterProp='label'
                   optionLabelProp='label'
                   filterOption={(input, option) =>
@@ -355,7 +426,7 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={16}>
+          <Row gutter={12}>
             <Col xs={24} md={8}>
               <Form.Item label='Проект' name='project_id'>
                 <Select
@@ -409,23 +480,8 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          {/* Кнопки действий */}
-          <div className={styles.formActions}>
-            <Button onClick={() => navigate(-1)}>
-              Отмена
-            </Button>
-            <Button
-              type='primary'
-              htmlType='submit'
-              icon={<SaveOutlined />}
-              loading={isUpdateLoading}
-              disabled={!isFormChanged}
-            >
-              Сохранить изменения
-            </Button>
-          </div>
         </Form>
       </div>
-    </div>
+    </DetailPageHeader>
   );
 }

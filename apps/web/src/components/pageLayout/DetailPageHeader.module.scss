@@ -11,6 +11,12 @@
   overflow: hidden;
 }
 
+.headerSticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .backBtn {
   color: rgba(255, 255, 255, 0.7) !important;
   margin-bottom: 20px;
