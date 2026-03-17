@@ -66,6 +66,8 @@ prod:deploy:
   script:
     - |
       set -e
+      echo "DATABASE_URL is set: $([ -n "$DATABASE_URL" ] && echo YES || echo NO)"
+      echo "JWT_SECRET is set: $([ -n "$JWT_SECRET" ] && echo YES || echo NO)"
       export WEB_PORT=3001
       export DATABASE_URL="${DATABASE_URL}"
       export JWT_SECRET="${JWT_SECRET}"
