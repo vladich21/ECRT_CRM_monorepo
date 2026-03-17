@@ -1,0 +1,39 @@
+# Stage 1: Install dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+COPY apps/backend-nest/package.json apps/backend-nest/
+# Stub web package.json so npm workspaces doesn't fail
+RUN mkdir -p apps/web && echo '{"name":"web","version":"0.0.0","private":true}' > apps/web/package.json
+RUN npm ci --ignore-scripts
+# argon2 needs rebuild on alpine
+RUN cd apps/backend-nest && npm rebuild argon2
+
+# Stage 2: Build
+FROM deps AS builder
+WORKDIR /app
+COPY apps/backend-nest/ apps/backend-nest/
+COPY tsconfig.json ./
+RUN cd apps/backend-nest && npx nest build
+
+# Stage 3: Production
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+RUN adduser -D -u 1003 appuser
+
+COPY --from=deps /app/node_modules/ ./node_modules/
+COPY --from=deps /app/apps/backend-nest/node_modules/ ./apps/backend-nest/node_modules/
+COPY --from=builder /app/apps/backend-nest/dist/ ./apps/backend-nest/dist/
+COPY --from=builder /app/apps/backend-nest/package.json ./apps/backend-nest/
+
+RUN mkdir -p /app/apps/backend-nest/uploads && chown appuser:appuser /app/apps/backend-nest/uploads
+
+USER appuser
+EXPOSE 9001
+
+ENV NODE_ENV=production
+ENV PORT=9001
+
+WORKDIR /app/apps/backend-nest
+CMD ["node", "dist/main.js"]

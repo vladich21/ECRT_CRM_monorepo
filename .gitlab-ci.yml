@@ -1,0 +1,87 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DEPLOY_HOST: "192.0.2.12"
+  GIT_SSL_NO_VERIFY: "true"
+  # Секреты берутся из GitLab CI/CD Variables:
+  # DATABASE_URL, JWT_SECRET, SMTP_PASSWORD
+
+# =====================================================
+# PRODUCTION (branch release/v1, port 3001)
+# =====================================================
+
+prod:build:api:
+  stage: build
+  image: docker:25.0.5-git
+  timeout: 20m
+  tags:
+    - docker
+    - nextjs
+  script:
+    - docker compose build api
+  only:
+    - release/v1
+
+prod:build:web-assets:
+  stage: build
+  image: node:20-alpine
+  timeout: 20m
+  tags:
+    - docker
+    - nextjs
+  script:
+    - npm ci
+    - cd apps/web && npx vite build
+  artifacts:
+    paths:
+      - apps/web/dist/
+    expire_in: 1 hour
+  only:
+    - release/v1
+
+prod:build:web:
+  stage: build
+  image: docker:25.0.5-git
+  tags:
+    - docker
+    - nextjs
+  needs:
+    - prod:build:web-assets
+  script:
+    - docker compose build web
+  only:
+    - release/v1
+
+prod:deploy:
+  stage: deploy
+  image: docker:25.0.5-git
+  tags:
+    - docker
+    - nextjs
+  needs:
+    - prod:build:api
+    - prod:build:web
+  script:
+    - |
+      set -e
+      export WEB_PORT=3001
+      export DATABASE_URL="${DATABASE_URL}"
+      export JWT_SECRET="${JWT_SECRET}"
+      export FRONTEND_URL="${FRONTEND_URL}"
+      export FILE_UPLOAD_URL="${FILE_UPLOAD_URL}"
+      export SMTP_HOST="${SMTP_HOST}"
+      export SMTP_PORT="${SMTP_PORT}"
+      export SMTP_SECURE="${SMTP_SECURE}"
+      export SMTP_USER="${SMTP_USER}"
+      export SMTP_PASSWORD="${SMTP_PASSWORD}"
+      export SMTP_FROM="${SMTP_FROM}"
+      docker compose down || true
+      docker compose up -d
+      docker image prune -f
+  environment:
+    name: production
+    url: http://$DEPLOY_HOST:3001
+  only:
+    - release/v1

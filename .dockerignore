@@ -1,0 +1,17 @@
+node_modules
+apps/*/node_modules
+apps/backend-nest/dist
+.git
+.gitignore
+.env
+.env.*
+*.md
+.vscode
+.idea
+.claude
+*.swp
+*.swo
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+.gitlab-ci.yml
