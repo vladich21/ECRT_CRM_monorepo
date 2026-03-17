@@ -88,5 +88,3 @@ export interface PartnerEconomicCategory {
   created_at: string;
   updated_at: string;
 }
-
-// Типы для SupplierRatingRecord были удалены вместе с функциональностью /supplier_ratings

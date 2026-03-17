@@ -1,4 +1,3 @@
-// prettier-ignore
 import { Routes, Route } from "react-router-dom";
 import NotFound from "../pages/NotFound";
 import LoginPage from "../pages/auth/LoginPage";
@@ -6,7 +5,6 @@ import MainLayout from "../layouts/MainLayout";
 import PrivateRoute from "./PrivateRoute";
 import HomePage from "../pages/home/HomePage";
 import ProfilePage from "../pages/profile/Profile";
-import OrgChart from "../pages/orgChart/orgChart";
 import UsersListPage from "../pages/referenceBooks/users/UsersListPage";
 import UserCreatePage from "../pages/referenceBooks/users/UserCreatePage";
 import UserEditPage from "../pages/referenceBooks/users/UserEditPage";
@@ -60,17 +58,12 @@ const Private = ({ children }: { children: React.ReactNode }) => (
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Public routes */}
       <Route path="/auth" element={<LoginPage />} />
 
-      {/* Protected routes with layout */}
       <Route path="/" element={<Private><MainLayout /></Private>}>
         <Route index element={<HomePage />} />
         <Route path="home" element={<HomePage />} />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="orgchart" element={<OrgChart />} />
-
-        {/* Users */}
         <Route path="users">
           <Route index element={<UsersListPage />} />
           <Route path="create" element={<UserCreatePage />} />
@@ -168,7 +161,6 @@ export default function AppRoutes() {
 
       </Route>
 
-      {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

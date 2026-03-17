@@ -9,7 +9,6 @@ export const usePartnerFilters = () => {
     isError: isReferencesError,
   } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies']);
 
-  // Конфигурация фильтров для договоров
   const filterConfig: FilterFieldConfig[] = [
     {
       key: 'search',

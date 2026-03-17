@@ -15,7 +15,6 @@ export interface ModalState {
   modalData?: any;
   loading?: boolean;
 
-  // Actions
   openModal: (config: ModalConfig) => void;
   closeModal: () => void;
   setLoading: (loading: boolean) => void;

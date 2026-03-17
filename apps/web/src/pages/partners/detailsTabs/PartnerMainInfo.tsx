@@ -16,7 +16,6 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
 
   return (
     <Space direction='vertical' size='middle' className={styles.container}>
-      {/* Общая информация */}
       <Descriptions
         title='Общая информация'
         column={1}

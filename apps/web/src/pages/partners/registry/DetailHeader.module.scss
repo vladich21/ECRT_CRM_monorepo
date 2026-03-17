@@ -1,12 +1,9 @@
 .header {
-  // background: linear-gradient(135deg, #0066ff 0%, #bbc2cf 60%, rgba(5, 75, 172, 0.13) 100%);
   padding: 28px 32px 0;
   position: relative;
   overflow: hidden;
   margin: -24px -24px 0;
 }
-
-// ─── Back button ────────────────────────────────────────────────────────────
 
 .backBtn {
   color: rgba(255, 255, 255, 0.7) !important;
@@ -17,8 +14,6 @@
     color: #fff !important;
   }
 }
-
-// ─── Company header row ─────────────────────────────────────────────────────
 
 .companyRow {
   display: flex;
@@ -110,8 +105,6 @@
   gap: 4px;
 }
 
-// ─── Action buttons ─────────────────────────────────────────────────────────
-
 .actions {
   display: flex;
   gap: 8px;
@@ -127,8 +120,6 @@
     background: rgba(255, 255, 255, 0.2) !important;
   }
 }
-
-// ─── Tabs ───────────────────────────────────────────────────────────────────
 
 .tabs {
   display: flex;

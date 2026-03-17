@@ -11,7 +11,6 @@ import {
   BellOutlined,
   EditOutlined,
   DeleteOutlined,
-  EllipsisOutlined,
 } from '@ant-design/icons';
 import type { PartnerDetailExtras, PartnerRegistryStatus } from '../../../types/partnerRegistry';
 import { STATUS_CONFIG, TYPE_CONFIG } from '../mockData';
@@ -55,7 +54,6 @@ export default function DetailHeader({
 
   return (
     <div className={styles.header}>
-      {/* Back button */}
       <Button
         type="text"
         icon={<ArrowLeftOutlined />}
@@ -65,7 +63,6 @@ export default function DetailHeader({
         Реестр контрагентов
       </Button>
 
-      {/* Company header */}
       <div className={styles.companyRow}>
         <div className={styles.companyInfo}>
           <div className={styles.nameRow}>
@@ -108,7 +105,6 @@ export default function DetailHeader({
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className={styles.actions}>
           <Button icon={<BellOutlined />} className={styles.actionBtn} />
           <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
@@ -120,7 +116,6 @@ export default function DetailHeader({
         </div>
       </div>
 
-      {/* Tabs */}
       <div className={styles.tabs}>
         {tabs.map((tab) => (
           <div
