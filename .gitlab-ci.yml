@@ -69,14 +69,14 @@ prod:deploy:
       export WEB_PORT=3001
       export DATABASE_URL="${DATABASE_URL}"
       export JWT_SECRET="${JWT_SECRET}"
-      export FRONTEND_URL="http://192.0.2.12:3001"
-      export FILE_UPLOAD_URL="http://192.0.2.12:3001/api"
-      export SMTP_HOST="192.0.2.12"
-      export SMTP_PORT="1025"
-      export SMTP_SECURE="false"
-      export SMTP_USER=""
+      export FRONTEND_URL="${FRONTEND_URL}"
+      export FILE_UPLOAD_URL="${FILE_UPLOAD_URL}"
+      export SMTP_HOST="${SMTP_HOST}"
+      export SMTP_PORT="${SMTP_PORT}"
+      export SMTP_SECURE="${SMTP_SECURE}"
+      export SMTP_USER="${SMTP_USER}"
       export SMTP_PASSWORD="${SMTP_PASSWORD}"
-      export SMTP_FROM="pmdb@test.local"
+      export SMTP_FROM="${SMTP_FROM}"
       docker compose down || true
       docker compose up -d
       docker image prune -f
