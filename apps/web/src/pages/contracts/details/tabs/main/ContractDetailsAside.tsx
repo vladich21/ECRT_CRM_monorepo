@@ -34,6 +34,23 @@ function formatAmount(amount: number | null | undefined): string {
   return `${amount.toLocaleString('ru-RU')} ₽`;
 }
 
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function calcVatAmount(contract: Contract): number {
+  const rate = Number(contract.vat_rate) || 0;
+  if (rate <= 0) return 0;
+
+  const excl = Number(contract.amount_excl_vat) || 0;
+  if (excl > 0) return roundMoney(excl * (rate / 100));
+
+  const incl = Number(contract.amount_incl_vat) || 0;
+  if (incl > 0) return roundMoney(incl - incl / (1 + rate / 100));
+
+  return 0;
+}
+
 function getDaysUntilDate(dateValue: string | null | undefined): number | null {
   if (!dateValue) return null;
   const target = new Date(dateValue);
@@ -77,6 +94,7 @@ export function ContractDetailsAside({
     daysUntilEnd !== null && daysUntilEnd >= 0 && daysUntilEnd <= 30;
 
   const detailItems = buildDetailItems(contract, references ?? {});
+  const vatSum = contract.amount_vat > 0 ? contract.amount_vat : calcVatAmount(contract);
 
   return (
     <div className={styles.asideWrap}>
@@ -105,7 +123,7 @@ export function ContractDetailsAside({
             {
               key: 'vat_sum',
               label: 'Сумма НДС',
-              children: <Text strong>{formatAmount(contract.amount_vat)}</Text>,
+              children: <Text strong>{formatAmount(vatSum)}</Text>,
             },
             {
               key: 'vat_rate',

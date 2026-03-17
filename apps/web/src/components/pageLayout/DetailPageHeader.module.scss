@@ -116,6 +116,22 @@
   border-bottom-color: #1677ff;
 }
 
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
 .contentWrap {
   padding: 24px 32px;
   background: #f5f7fa;

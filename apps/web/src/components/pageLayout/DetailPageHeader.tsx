@@ -5,7 +5,7 @@ import styles from './DetailPageHeader.module.scss';
 
 interface TabItem {
   key: string;
-  label: string;
+  label: ReactNode;
 }
 
 interface StatusBadge {

@@ -17,7 +17,9 @@ import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
 import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
-import styles from './PartnerDetailsPage.module.scss';
+import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
+import { useFilesByEntity } from '../../api/files/fileApiHooks';
+import { useContracts } from '../../api/contracts/contractApiHooks';
 
 const STATUS_COLORS: Record<string, string> = {
   'Активный': '#52c41a',
@@ -25,14 +27,6 @@ const STATUS_COLORS: Record<string, string> = {
   'Заблокирован': '#ff4d4f',
   'Архив': '#8c8c8c',
 };
-
-const TAB_ITEMS = [
-  { key: 'main', label: 'Основное' },
-  { key: 'contacts', label: 'Контактные лица' },
-  { key: 'contracts', label: 'Договоры' },
-  { key: 'comments', label: 'Комментарии' },
-  { key: 'files', label: 'Файлы' },
-];
 
 export default function PartnerDetailsPage() {
   const { partnerId } = useParams();
@@ -43,6 +37,10 @@ export default function PartnerDetailsPage() {
   const { data: partner, isLoading, isError } = usePartnerById(partnerId!);
   const { data: references } = useReferenceData(['partnerStatuses', 'partnerTypes']);
   const mutation = useDeletePartner();
+
+  const { data: contacts = [] } = usePartnerContacts(partnerId);
+  const { data: files = [] } = useFilesByEntity('partner', partnerId!);
+  const { data: contractsList } = useContracts({ partner_id: partnerId } as any, 1, 1);
 
   const getActiveTabFromPath = () => {
     const path = location.pathname;
@@ -83,6 +81,38 @@ export default function PartnerDetailsPage() {
   const typeNames = (partner.type_ids ?? [])
     .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
     .filter(Boolean);
+
+  const tabItemsWithCounts = [
+    { key: 'main', label: 'Основное' },
+    {
+      key: 'contacts',
+      label: (
+        <>
+          Контактные лица
+          <span className={hStyles.tabCount}>{contacts.length}</span>
+        </>
+      ),
+    },
+    {
+      key: 'contracts',
+      label: (
+        <>
+          Договоры
+          <span className={hStyles.tabCount}>{contractsList?.total ?? 0}</span>
+        </>
+      ),
+    },
+    { key: 'comments', label: 'Комментарии' },
+    {
+      key: 'files',
+      label: (
+        <>
+          Файлы
+          <span className={hStyles.tabCount}>{files.length}</span>
+        </>
+      ),
+    },
+  ];
 
   return (
     <DetailPageHeader
@@ -140,7 +170,7 @@ export default function PartnerDetailsPage() {
           </Button>
         </>
       }
-      tabs={TAB_ITEMS}
+      tabs={tabItemsWithCounts}
       activeTab={activeTab}
       onTabChange={handleTabChange}
       contextHolder={contextHolder}
