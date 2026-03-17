@@ -1,6 +1,6 @@
 services:
   web:
-    container_name: srn-web
+    container_name: pmdb-web-prod
     build:
       context: .
       dockerfile: Dockerfile.web
@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
   api:
-    container_name: srn-api
+    container_name: pmdb-api-prod
     build:
       context: .
       dockerfile: Dockerfile.api
