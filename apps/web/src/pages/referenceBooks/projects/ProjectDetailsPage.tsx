@@ -104,7 +104,7 @@ export default function ProjectDetailsPage() {
                   <div className={styles.kpiValue}>{String(project.code) || '—'}</div>
                   <div className={styles.kpiLabel}>Код проекта</div>
                 </div>
-                <div className={styles.kpiIcon} style={{ background: '#e6f4ff', color: '#1677ff' }}>
+                <div className={styles.kpiIcon}>
                   <NumberOutlined />
                 </div>
               </div>
@@ -115,7 +115,7 @@ export default function ProjectDetailsPage() {
                   <div className={styles.kpiValue}>{formatDate(project.start_date)}</div>
                   <div className={styles.kpiLabel}>Дата начала</div>
                 </div>
-                <div className={styles.kpiIcon} style={{ background: '#f6ffed', color: '#52c41a' }}>
+                <div className={styles.kpiIcon}>
                   <CalendarOutlined />
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function ProjectDetailsPage() {
                   <div className={styles.kpiValue}>{formatDate(project.end_date)}</div>
                   <div className={styles.kpiLabel}>Дата окончания</div>
                 </div>
-                <div className={styles.kpiIcon} style={{ background: '#fff7e6', color: '#d48806' }}>
+                <div className={styles.kpiIcon}>
                   <CalendarOutlined />
                 </div>
               </div>
@@ -159,6 +159,24 @@ export default function ProjectDetailsPage() {
               <div className={styles.descriptionText}>{project.description}</div>
             </div>
           )}
+        </div>
+
+        {/* Right sidebar */}
+        <div className={styles.sidebar}>
+          {/* Классификация */}
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Классификация</h3>
+            <div className={styles.infoRows}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Статус</span>
+                <span className={styles[tagClass]}>{st.label}</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Код</span>
+                <span className={styles.infoValue}>{String(project.code) || '—'}</span>
+              </div>
+            </div>
+          </div>
 
           {/* Сроки */}
           <div className={styles.card}>
@@ -177,24 +195,6 @@ export default function ProjectDetailsPage() {
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Статус</span>
                 <span className={styles[tagClass]}>{st.label}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right sidebar */}
-        <div className={styles.sidebar}>
-          {/* Классификация */}
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Классификация</h3>
-            <div className={styles.infoRows}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Статус</span>
-                <span className={styles[tagClass]}>{st.label}</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Код</span>
-                <span className={styles.infoValue}>{String(project.code) || '—'}</span>
               </div>
             </div>
           </div>

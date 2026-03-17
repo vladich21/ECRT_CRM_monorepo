@@ -38,18 +38,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
     [files],
   );
 
-  // Удаление файла из списка
   const removeFile = (fileId: string) => {
     setFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  // Очистка всех файлов
   const clearAllFiles = () => {
     setFiles([]);
     message.info('Список файлов очищен');
   };
 
-  // Отправка файлов на сервер
   const handleUpload = async () => {
     if (files.length === 0) {
       message.warning('Добавьте хотя бы один файл');
@@ -58,7 +55,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
     await onConfirm(files);
   };
 
-  // Форматирование размера файла
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -69,7 +65,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
 
   return (
     <Space direction='vertical' style={{ width: '100%' }} size='middle'>
-      {/* Drag and Drop область */}
       <Dragger multiple showUploadList={false} customRequest={handleDragDrop} accept={ACCEPT_FILE_TYPES} disabled={isLoading}>
         <p className='ant-upload-drag-icon'>
           <InboxOutlined />
@@ -78,7 +73,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
         <p className='ant-upload-hint'>Поддерживается загрузка нескольких файлов</p>
       </Dragger>
 
-      {/* Список добавленных файлов */}
       {files.length > 0 && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -113,7 +107,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
         </div>
       )}
 
-      {/* Кнопки отправки и очистки */}
       <Space>
         <Button
           type='primary'

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNotification } from '../../../../customhooks/useNotification';
-import { Button } from 'antd';
+import { Button, Spin } from 'antd';
 import { useConfirmByModal } from '../../../../customhooks/useConfirmByModal';
 import { useMutateByModal } from '../../../../customhooks/useMutateByModal';
 import { useModalStore } from '../../../../store/ModalStore';
-import BasicTable from '../../../../components/basicTable/BasicTable';
 import { getEntityById } from '../../../../helpers/getEntityById';
-import { PartnerContact } from '../../../../types/partner';
+import type { PartnerContact } from '../../../../types/partner';
 import { initialPartnerContactValues } from './data';
 import {
   useCreatePartnerContact,
@@ -14,8 +13,9 @@ import {
   usePartnerContacts,
   useUpdatePartnerContact,
 } from '../../../../api/partners/partnerContactApiHooks';
-import { getColumnsData } from './data';
+import ContactCard from './ContactCard';
 import { useParams } from 'react-router-dom';
+import styles from './ContactsListPage.module.scss';
 
 type ActionType = 'edit' | 'delete' | 'add' | '';
 
@@ -76,35 +76,46 @@ const PartnerContactsListPage: React.FC = () => {
     setCurrentContactId('');
   };
 
-  const onDelete = ({ id }: { id: string }) => {
+  const onDelete = (contact: PartnerContact) => {
     setAction('delete');
-    setCurrentContactId(id.toString());
+    setCurrentContactId(contact.id);
   };
 
-  const onEdit = ({ id }: { id: string }) => {
-    console.log('onEdit', id);
+  const onEdit = (contact: PartnerContact) => {
     setAction('edit');
-    setCurrentContactId(id.toString());
+    setCurrentContactId(contact.id);
   };
 
   return (
-    <div>
+    <div className={styles.wrapper}>
       {contextHolder}
-      <h1>Контакты поставщиков</h1>
-      <Button type='primary' onClick={handleOpenAddModal} style={{ marginBottom: 16 }}>
-        Добавить контакт
-      </Button>
+      <div className={styles.header}>
+        <h3 className={styles.title}>Контактные лица</h3>
+        <Button type="primary" onClick={handleOpenAddModal}>
+          Добавить контакт
+        </Button>
+      </div>
 
-      <BasicTable<PartnerContact>
-        data={data}
-        loading={loading}
-        columns={getColumnsData()}
-        showActions={true}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-      />
+      {loading ? (
+        <div className={styles.loading}>
+          <Spin size="large" />
+        </div>
+      ) : data.length === 0 ? (
+        <div className={styles.empty}>
+          Контактные лица не добавлены
+        </div>
+      ) : (
+        <div className={styles.list}>
+          {data.map((contact) => (
+            <ContactCard
+              key={contact.id}
+              contact={contact}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

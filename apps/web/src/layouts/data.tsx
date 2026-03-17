@@ -13,11 +13,6 @@ export const items = [
     icon: <HomeOutlined />,
     label: <Link to='/'>Главная</Link>,
   },
-  // {
-  //   key: 'orgchart',
-  //   icon: <MergeOutlined />,
-  //   label: <Link to='/orgchart'>Орг структура</Link>,
-  // },
   {
     key: 'supply_management',
     icon: <TruckOutlined />,
@@ -116,10 +111,6 @@ export const items = [
         key: 'position',
         label: <Link to='/positions'>Должности</Link>,
       },
-      // {
-      //   key: 'projects',
-      //   label: <Link to='/projects'>Проекты</Link>,
-      // },
     ],
   },
 ];

@@ -124,12 +124,17 @@ $tag-default-text: #1d4ed8;
   width: 280px;
   flex-shrink: 0;
   border-radius: 8px;
+  overflow: hidden;
+
   :global(.ant-input-group-addon) {
     display: none;
   }
-  :global(.ant-input-affix-wrapper),
+  :global(.ant-input-affix-wrapper) {
+    border-radius: 8px !important;
+    overflow: hidden;
+  }
   :global(.ant-input) {
-    border-radius: 8px;
+    border-radius: 8px !important;
   }
 }
 
@@ -184,12 +189,10 @@ $tag-default-text: #1d4ed8;
   margin-left: 6px;
 }
 
-// ─── Card list ──────────────────────────────────────────────────────────────
 .cardList {
   margin-top: 16px;
 }
 
-// ─── Contract card (4-column layout like Patents/Partners) ──────────────────
 .card {
   background: #fff;
   border-radius: 12px;
@@ -211,7 +214,6 @@ $tag-default-text: #1d4ed8;
   }
 }
 
-// ─── Main info column ───────────────────────────────────────────────────────
 .mainInfo {
   flex: 1;
   min-width: 0;
@@ -240,7 +242,6 @@ $tag-default-text: #1d4ed8;
 }
 
 .metaText {
-  color: #8c8c8c;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -260,7 +261,6 @@ $tag-default-text: #1d4ed8;
   font-weight: 500;
 }
 
-// ─── Category column (partner + category tag) ───────────────────────────────
 .categoryCol {
   flex: 1;
   min-width: 0;
@@ -290,7 +290,6 @@ $tag-default-text: #1d4ed8;
   border: 1px solid #e8e8e8;
 }
 
-// ─── Metrics column (amount + period) ───────────────────────────────────────
 .metricsCol {
   flex: 0 0 180px;
   margin-left: auto;
@@ -307,7 +306,7 @@ $tag-default-text: #1d4ed8;
 }
 
 .statValue {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #141414;
 }
@@ -326,7 +325,6 @@ $tag-default-text: #1d4ed8;
   gap: 4px;
 }
 
-// ─── Activity column ────────────────────────────────────────────────────────
 .activityCol {
   flex: 0 0 120px;
   display: flex;
@@ -347,7 +345,6 @@ $tag-default-text: #1d4ed8;
   color: #d9d9d9;
 }
 
-// ─── Legacy card styles kept for detail page tag references ─────────────────
 .cardCategory {
   font-size: 14px;
   color: $portal-secondary-muted;

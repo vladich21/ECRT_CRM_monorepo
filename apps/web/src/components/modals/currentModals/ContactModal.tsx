@@ -1,4 +1,3 @@
-// components/Modal/PartnerContactFormModal.tsx
 import { Button, Form, FormInstance, Input, Switch, Space, Row, Col } from 'antd';
 import { BaseModal, BaseModalProps } from '../BaseModal';
 import { useEffect } from 'react';
@@ -103,10 +102,19 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
             <Form.Item
               name='phone'
               label='Телефон'
+              normalize={(v) => (typeof v === 'string' ? v.trim() : v)}
               rules={[
                 {
-                  pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/,
-                  message: 'Введите корректный номер (например: +7 (999) 999-99-99)',
+                  validator: (_, value) => {
+                    if (!value || !value.trim()) return Promise.resolve();
+                    const digits = value.replace(/\D/g, '');
+                    const valid =
+                      digits.length === 10 && digits.startsWith('9') ||
+                      (digits.length === 11 && (digits.startsWith('79') || digits.startsWith('89')));
+                    return valid
+                      ? Promise.resolve()
+                      : Promise.reject(new Error('Введите корректный номер, например: +7 (999) 999-99-99'));
+                  },
                 },
                 { max: 25, message: 'Телефон не должен превышать 25 символов' },
               ]}

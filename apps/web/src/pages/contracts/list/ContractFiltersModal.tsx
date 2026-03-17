@@ -37,7 +37,6 @@ export function ContractFiltersModal({
       okText="Применить"
       cancelText="Отмена"
       width={900}
-      destroyOnClose
       footer={[
         <Button key="reset" onClick={onReset}>
           Сбросить

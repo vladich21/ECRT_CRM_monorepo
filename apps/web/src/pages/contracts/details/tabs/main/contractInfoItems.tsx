@@ -17,7 +17,6 @@ type AsideRefs = Partial<
   Pick<ReferenceData, 'partners' | 'users' | 'contractStates' | 'contractCategories'>
 >;
 
-/** Items for the main info Descriptions table in ContractMainInfoTab */
 export function buildMainInfoItems(
   contract: Contract,
   refs: MainInfoRefs,
@@ -27,7 +26,6 @@ export function buildMainInfoItems(
   const typeName     = getNameById(contract.contract_type_id, refs?.contractTypes ?? []);
 
   return [
-    // ── Стороны ──────────────────────────────────────────────────────────────
     {
       key: 'partner',
       label: 'Партнёр',
@@ -43,7 +41,6 @@ export function buildMainInfoItems(
       label: 'Проект',
       children: getNameById(contract.project_id, refs?.projects ?? []) || '-',
     },
-    // ── Классификация ─────────────────────────────────────────────────────────
     {
       key: 'category',
       label: 'Категория',
@@ -56,7 +53,6 @@ export function buildMainInfoItems(
       label: 'Тип',
       children: typeName || '-',
     },
-    // ── Условия ───────────────────────────────────────────────────────────────
     {
       key: 'date_signed',
       label: 'Дата подписания',
@@ -65,7 +61,6 @@ export function buildMainInfoItems(
   ];
 }
 
-/** Items for the contract details Descriptions table in ContractDetailsAside */
 export function buildDetailItems(contract: Contract, refs: AsideRefs) {
   const state = getEntityById(contract.state_id, refs?.contractStates);
   const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
@@ -79,7 +74,7 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
     {
       key: 'cipher',
       label: 'Шифр',
-      children: <Text code>{contract.cipher || '—'}</Text>,
+      children: <Text >{contract.cipher || '—'}</Text>,
     },
     {
       key: 'category',

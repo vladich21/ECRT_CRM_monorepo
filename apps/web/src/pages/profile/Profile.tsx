@@ -10,6 +10,7 @@ import {
   LogoutOutlined,
   TeamOutlined,
   IdcardOutlined,
+  CameraOutlined,
 } from "@ant-design/icons";
 import useAuthStore, { useAuthStore as useAuthStoreFull } from "../../store/AuthStore";
 import { UseLogout } from "../../customhooks/useLogout";
@@ -104,16 +105,23 @@ const ProfilePage = () => {
 
       {/* Dark gradient header */}
       <div className={styles.header}>
-        <div className={styles.circleOuter} />
-        <div className={styles.circleInner} />
-
         <div className={styles.headerContent}>
-          <Avatar
-            size={80}
-            icon={<UserOutlined />}
-            className={styles.avatar}
-            style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
-          />
+          <div className={styles.avatarWrap}>
+            <Avatar
+              size={96}
+              icon={<UserOutlined />}
+              className={styles.avatar}
+              style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
+            />
+            <button
+              type="button"
+              className={styles.photoUploadBtn}
+              onClick={() => showNotification('info', 'Фото', 'Загрузка фото (в разработке)')}
+              aria-label="Изменить фото"
+            >
+              <CameraOutlined />
+            </button>
+          </div>
           <div className={styles.headerInfo}>
             <h1 className={styles.userName}>{fullName}</h1>
             <div>
@@ -183,6 +191,23 @@ const ProfilePage = () => {
             <div className={styles.layout}>
               <div className={styles.leftColumn}>
                 <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>Организация</h3>
+                  <div className={styles.infoRows}>
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Должность</span>
+                      <span className={user?.position?.name ? styles.infoValue : styles.infoValueMuted}>
+                        {user?.position?.name || 'Не указано'}
+                      </span>
+                    </div>
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Отдел</span>
+                      <span className={user?.department?.name ? styles.infoValue : styles.infoValueMuted}>
+                        {user?.department?.name || 'Не указано'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.card}>
                   <h3 className={styles.cardTitle}>Контактная информация</h3>
                   <div className={styles.infoRows}>
                     <div className={styles.infoRow}>
@@ -208,26 +233,7 @@ const ProfilePage = () => {
                   </div>
                 </div>
               </div>
-
-              <div className={styles.sidebar}>
-                <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>Организация</h3>
-                  <div className={styles.infoRows}>
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Должность</span>
-                      <span className={user?.position?.name ? styles.infoValue : styles.infoValueMuted}>
-                        {user?.position?.name || 'Не указано'}
-                      </span>
-                    </div>
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Отдел</span>
-                      <span className={user?.department?.name ? styles.infoValue : styles.infoValueMuted}>
-                        {user?.department?.name || 'Не указано'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div className={styles.sidebar} />
             </div>
           ) : (
             <div className={styles.card}>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Card, Form, Input, Button, Select, Switch, Space, Row, Col, Divider, InputNumber, DatePicker } from 'antd';
+import { Form, Input, Button, Select, Switch, Row, Col, Divider, InputNumber, DatePicker } from 'antd';
 import {
   SaveOutlined,
   FileTextOutlined,
@@ -64,7 +64,6 @@ export default function ContractEditPage() {
     }
   }, [isUpdateError, isUpdateSuccess, navigate, contractId, showNotification]);
 
-  // Расчет НДС и итоговой суммы
   const calculateAmounts = (amountExclVal: number, vatRate: number) => {
     const amountVat = amountExclVal * (vatRate / 100);
     const amountInclVat = amountExclVal + amountVat;
@@ -97,7 +96,6 @@ export default function ContractEditPage() {
 
     const payload = getChangedFields(values, contractUpdateFormMapper(contract!));
 
-    // Преобразование дат обратно в строки
     if (payload.date_signed && dayjs.isDayjs(payload.date_signed)) {
       payload.date_signed = payload.date_signed.format('YYYY-MM-DD');
     }
@@ -153,7 +151,6 @@ export default function ContractEditPage() {
             }}
             scrollToFirstError
           >
-            {/* Основные реквизиты */}
             <Divider orientation='left'>
               <FileTextOutlined /> Основные реквизиты
             </Divider>
@@ -272,7 +269,6 @@ export default function ContractEditPage() {
               </Col>
             </Row>
 
-            {/* Классификация */}
             <Divider orientation='left'>
               <UnorderedListOutlined /> Классификация
             </Divider>
@@ -312,7 +308,6 @@ export default function ContractEditPage() {
               </Col>
             </Row>
 
-            {/* Финансовые условия */}
             <Divider orientation='left'>
               <CalculatorOutlined /> Финансовые условия
             </Divider>
@@ -372,7 +367,6 @@ export default function ContractEditPage() {
               </Col>
             </Row>
 
-            {/* Сроки действия */}
             <Divider orientation='left'>
               <CalendarOutlined /> Сроки действия
             </Divider>
@@ -434,7 +428,6 @@ export default function ContractEditPage() {
               </Col>
             </Row>
 
-            {/* Кнопки действий */}
             <div className={styles.formActions}>
               <Button onClick={handleBack}>
                 Отмена

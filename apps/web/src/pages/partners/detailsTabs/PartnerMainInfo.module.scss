@@ -3,6 +3,12 @@
 }
 
 .descriptions {
+  :global(.ant-descriptions-view table),
+  :global(.ant-descriptions-item-label),
+  :global(.ant-descriptions-item-content) {
+    background: #fff;
+  }
+
   :global(.ant-descriptions-item-label) {
     max-width: 250px;
     width: 250px;

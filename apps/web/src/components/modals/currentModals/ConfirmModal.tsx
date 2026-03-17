@@ -1,4 +1,3 @@
-// components/Modal/ConfirmModal.tsx
 import { Button, Space } from 'antd';
 import { ReactNode } from 'react';
 import { BaseModal, BaseModalProps } from '../BaseModal';

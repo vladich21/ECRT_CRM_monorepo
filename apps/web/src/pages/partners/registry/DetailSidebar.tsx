@@ -46,17 +46,17 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
           <div className={styles.contactItems}>
             {partner.phone && (
               <div className={styles.contactItem}>
-                <PhoneOutlined style={{ color: '#1677ff' }} /> {partner.phone}
+                <PhoneOutlined className={styles.contactIcon} /> {partner.phone}
               </div>
             )}
             {partner.email && (
               <div className={styles.contactItem}>
-                <MailOutlined style={{ color: '#1677ff' }} /> {partner.email}
+                <MailOutlined className={styles.contactIcon} /> {partner.email}
               </div>
             )}
             {partner.website && (
               <div className={styles.contactItem}>
-                <GlobalOutlined style={{ color: '#1677ff' }} /> {partner.website}
+                <GlobalOutlined className={styles.contactIcon} /> {partner.website}
               </div>
             )}
           </div>
@@ -75,11 +75,11 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Статус</span>
-            <Tag color={statusColor}>{statusName}</Tag>
+            <Tag color={statusColor} style={{ fontSize: 14 }}>{statusName}</Tag>
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Утверждён</span>
-            <Tag color={partner.is_approved ? '#52c41a' : '#ff4d4f'}>
+            <Tag color={partner.is_approved ? '#52c41a' : '#ff4d4f'} style={{ fontSize: 14 }}>
               {partner.is_approved ? 'Да' : 'Нет'}
             </Tag>
           </div>
@@ -118,7 +118,7 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
         <div className={styles.contactItems}>
           {partner.legal_address ? (
             <div className={styles.contactItem}>
-              <EnvironmentOutlined style={{ color: '#1677ff' }} />
+              <EnvironmentOutlined className={styles.contactIcon} />
               <div>
                 <div style={{ fontSize: 14, color: '#8c8c8c' }}>Юридический</div>
                 {partner.legal_address}
@@ -127,7 +127,7 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
           ) : null}
           {partner.actual_address ? (
             <div className={styles.contactItem}>
-              <EnvironmentOutlined style={{ color: '#52c41a' }} />
+              <EnvironmentOutlined className={styles.contactIcon} />
               <div>
                 <div style={{ fontSize: 14, color: '#8c8c8c' }}>Фактический</div>
                 {partner.actual_address}

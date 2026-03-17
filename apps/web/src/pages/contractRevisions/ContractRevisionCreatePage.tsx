@@ -26,7 +26,7 @@ import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { ContractStage } from '../../types/contract';
 import BasicTable from '../../components/basicTable/BasicTable';
-import { getStageColumnsData } from '../contracts/detailsTabs/data';
+import { getStageColumnsData } from '../contracts/details/tabs/stages/data';
 import { ContractRevision } from '../../types/contract';
 import { getEntityById } from '../../helpers/getEntityById';
 import { useNotification } from '../../customhooks/useNotification';
@@ -51,7 +51,15 @@ export default function CreateContractRevisionPage() {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData(['contractStates', 'contractCategories', 'partners', 'users', 'contractTypes']);
+  } = useReferenceData([
+    'contractStates',
+    'contractCategories',
+    'partners',
+    'users',
+    'contractTypes',
+    'contractStageStates',
+    'contracts',
+  ]);
 
   const {
     mutate,
@@ -80,7 +88,7 @@ export default function CreateContractRevisionPage() {
         project_id: contract.project_id,
         responsible_id: contract.responsible_id,
         category_id: contract.category_id,
-        type_id: contract.type_id,
+        contract_type_id: contract.contract_type_id,
         amount_excl_vat: contract.amount_excl_vat,
         vat_rate: contract.vat_rate,
         amount_vat: contract.amount_vat,
@@ -126,11 +134,12 @@ export default function CreateContractRevisionPage() {
     });
   };
 
-  const handleSubmit = async (values: Omit<ContractRevision, 'stages'>) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     const data = {
       ...values,
+      contract_type_id: (values.contract_type_id as string) || contract!.contract_type_id,
       stages,
-    };
+    } as Omit<ContractRevision, 'contract_id' | 'revision_number'>;
     if (contractId) mutate({ contractId, data });
   };
 

@@ -1,0 +1,76 @@
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(22, 119, 255, 0.08);
+    border-color: #e8e8e8;
+  }
+}
+
+.mainInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 16px;
+  color: #141414;
+}
+
+.primaryTag {
+  flex-shrink: 0;
+}
+
+.metaRow {
+  margin-bottom: 6px;
+}
+
+.position {
+  font-size: 14px;
+  color: #595959;
+}
+
+.contactRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  font-size: 14px;
+}
+
+.contactItem {
+  color: #8c8c8c;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .anticon {
+    color: #bfbfbf;
+    font-size: 13px;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+
+  .ant-btn {
+    padding: 4px;
+  }
+}

@@ -1,4 +1,4 @@
-import { Card, Col, Row, Statistic, List, Typography, Space, Tag } from 'antd';
+import { Card, Col, Row, Statistic, List, Typography, Space } from 'antd';
 import {
   FileTextOutlined,
   CopyrightOutlined,
@@ -24,55 +24,42 @@ function HomePage() {
   };
 
   const recentActivities = [
-    { id: 1, type: 'contract', title: 'Новый договор с ООО "Поставщик"', date: '2026-01-20', status: 'new' },
-    { id: 2, type: 'patent', title: 'Зарегистрирован патент №123456', date: '2026-01-19', status: 'success' },
-    { id: 3, type: 'project', title: 'Завершен этап проекта "Модернизация"', date: '2026-01-18', status: 'completed' },
-    { id: 4, type: 'partner', title: 'Добавлен новый контрагент', date: '2026-01-17', status: 'new' },
+    { id: 1, title: 'Новый договор с ООО "Поставщик"', date: '2026-01-20', label: 'Договор' },
+    { id: 2, title: 'Зарегистрирован патент №123456', date: '2026-01-19', label: 'РИД' },
+    { id: 3, title: 'Завершен этап проекта "Модернизация"', date: '2026-01-18', label: 'Проект' },
+    { id: 4, title: 'Добавлен новый контрагент', date: '2026-01-17', label: 'Контрагент' },
   ];
 
   const quickLinks = [
-    { title: 'Создать договор', icon: <FileTextOutlined />, path: '/contracts/create', color: '#1890ff' },
-    { title: 'Добавить контрагента', icon: <TeamOutlined />, path: '/partners/create', color: '#52c41a' },
-    { title: 'Новый патент', icon: <CopyrightOutlined />, path: '/patents/create', color: '#722ed1' },
-    { title: 'Создать проект', icon: <ProjectOutlined />, path: '/projects/create', color: '#fa8c16' },
+    { title: 'Создать договор', icon: <FileTextOutlined />, path: '/contracts/create' },
+    { title: 'Добавить контрагента', icon: <TeamOutlined />, path: '/partners/create' },
+    { title: 'Новый РИД', icon: <CopyrightOutlined />, path: '/patents/create' },
+    { title: 'Создать проект', icon: <ProjectOutlined />, path: '/projects/create' },
   ];
 
   const upcomingTasks = [
-    { id: 1, title: 'Продление договора №45', deadline: '2026-01-25', priority: 'high' },
-    { id: 2, title: 'Проверка документов по патенту', deadline: '2026-01-28', priority: 'medium' },
-    { id: 3, title: 'Встреча с новым поставщиком', deadline: '2026-02-01', priority: 'low' },
+    { id: 1, title: 'Продление договора №45', deadline: '2026-01-25', priority: 'high', priorityLabel: 'Высокий' },
+    { id: 2, title: 'Проверка документов по патенту', deadline: '2026-01-28', priority: 'medium', priorityLabel: 'Средний' },
+    { id: 3, title: 'Встреча с новым поставщиком', deadline: '2026-02-01', priority: 'low', priorityLabel: 'Низкий' },
   ];
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = { new: 'blue', success: 'green', completed: 'default' };
-    return colors[status] || 'default';
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const colors: Record<string, string> = { high: 'red', medium: 'orange', low: 'default' };
-    return colors[priority] || 'default';
-  };
 
   const GrowthIndicator = ({ value }: { value: number }) => (
     <span className={styles.growth}>
-      {value > 0 ? <ArrowUpOutlined style={{ color: '#52c41a' }} /> : <ArrowDownOutlined style={{ color: '#ff4d4f' }} />}
+      {value > 0
+        ? <ArrowUpOutlined style={{ color: '#52c41a' }} />
+        : <ArrowDownOutlined style={{ color: '#ff4d4f' }} />}
       {Math.abs(value)}%
     </span>
   );
 
   return (
     <div className={styles.homePage}>
-      {/* Dark gradient hero */}
       <div className={styles.heroBanner}>
-        <div className={styles.circleOuter} />
-        <div className={styles.circleInner} />
         <h1 className={styles.heroTitle}>Система управления закупками и проектами</h1>
         <p className={styles.heroSubtitle}>Добро пожаловать! Вот краткий обзор текущей ситуации.</p>
       </div>
 
-      {/* Content */}
       <div className={styles.content}>
-        {/* Statistics */}
         <Row gutter={[16, 16]} className={styles.statistics}>
           <Col xs={24} sm={12} lg={6}>
             <div className={styles.statCard}>
@@ -96,17 +83,14 @@ function HomePage() {
           </Col>
         </Row>
 
-        {/* Quick actions */}
         <Card title="Быстрые действия" className={`${styles.section} ${styles.sectionCard}`}>
           <Row gutter={[16, 16]}>
             {quickLinks.map((link, index) => (
               <Col xs={24} sm={12} md={6} key={index}>
-                <Card hoverable className={styles.quickLinkCard} onClick={() => navigate(link.path)} style={{ borderColor: link.color }}>
-                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
-                    <div className={styles.quickLinkIcon} style={{ color: link.color }}>{link.icon}</div>
-                    <Text strong>{link.title}</Text>
-                  </Space>
-                </Card>
+                <div className={styles.quickLinkCard} onClick={() => navigate(link.path)}>
+                  <div className={styles.quickLinkIcon}>{link.icon}</div>
+                  <Text strong style={{ fontSize: 14 }}>{link.title}</Text>
+                </div>
               </Col>
             ))}
           </Row>
@@ -120,8 +104,18 @@ function HomePage() {
                 renderItem={(item) => (
                   <List.Item>
                     <List.Item.Meta
-                      title={<Space>{item.title}<Tag color={getStatusColor(item.status)}>{item.status === 'new' ? 'Новое' : item.status === 'success' ? 'Успешно' : 'Завершено'}</Tag></Space>}
-                      description={<Space><CalendarOutlined />{item.date}</Space>}
+                      title={
+                        <div className={styles.listItemTitle}>
+                          <span>{item.title}</span>
+                          <span className={styles.listLabel}>{item.label}</span>
+                        </div>
+                      }
+                      description={
+                        <Space size={4}>
+                          <CalendarOutlined style={{ fontSize: 12 }} />
+                          <Text type="secondary" style={{ fontSize: 13 }}>{item.date}</Text>
+                        </Space>
+                      }
                     />
                   </List.Item>
                 )}
@@ -136,8 +130,19 @@ function HomePage() {
                 renderItem={(item) => (
                   <List.Item>
                     <List.Item.Meta
-                      title={<Space>{item.title}<Tag color={getPriorityColor(item.priority)}>{item.priority === 'high' ? 'Высокий' : item.priority === 'medium' ? 'Средний' : 'Низкий'}</Tag></Space>}
-                      description={<Space><CalendarOutlined />Срок: {item.deadline}</Space>}
+                      title={
+                        <div className={styles.listItemTitle}>
+                          <span>{item.title}</span>
+                          <span className={`${styles.priorityDot} ${styles[`priority_${item.priority}`]}`} />
+                        </div>
+                      }
+                      description={
+                        <Space size={4}>
+                          <CalendarOutlined style={{ fontSize: 12 }} />
+                          <Text type="secondary" style={{ fontSize: 13 }}>Срок: {item.deadline}</Text>
+                          <Text type="secondary" style={{ fontSize: 13 }}>· {item.priorityLabel}</Text>
+                        </Space>
+                      }
                     />
                   </List.Item>
                 )}

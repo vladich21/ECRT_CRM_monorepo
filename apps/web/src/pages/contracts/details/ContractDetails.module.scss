@@ -22,8 +22,6 @@ $shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02);
 $radius: 6px;
 $radius-lg: 8px;
 
-// Header styles now provided by DetailPageHeader shared component
-
 .pageBackRow {
   margin-bottom: 8px;
 }
@@ -35,7 +33,6 @@ $radius-lg: 8px;
   margin-left: 8px;
 }
 
-// ── Legacy standalone header (kept for backward compat) ──
 .pageHeader {
   background: #fff;
   border-bottom: 1px solid $border-light;
@@ -154,10 +151,6 @@ $radius-lg: 8px;
   color: $warning-dark;
 }
 
-// Tab bar colours match the /contracts filter-tabs exactly:
-// active text  → #1e293b  ($portal-secondary)
-// ink-bar      → #002f55  ($portal-accent)
-// inactive     → #64748b  ($portal-secondary-muted)
 .pageTabs {
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
@@ -220,7 +213,6 @@ $radius-lg: 8px;
   align-items: start;
 }
 
-// Full-width variant — used on all tabs except "main"
 .contentWrapFull {
   display: block;
 }
@@ -513,7 +505,6 @@ $radius-lg: 8px;
   border-radius: 3px;
 }
 
-// ── Legacy / stages ──
 .stagesButton {
   background-color: #001529 !important;
   border-color: #001529 !important;
@@ -665,11 +656,11 @@ $radius-lg: 8px;
 }
 
 .statusActive {
-  color: #52c41a; // Стандартный зеленый Ant Design для green tag
+  color: #52c41a;
 }
 
 .statusInactive {
-  color: #ff4d4f; // Стандартный красный Ant Design для red tag
+  color: #ff4d4f;
 }
 
 .detailsSection {
@@ -741,17 +732,17 @@ $radius-lg: 8px;
 }
 
 .stageInfoTextSecondary {
-  font-size: 16px;
+  font-size: 14px;
   color: #A6A6A6;
 }
 
 .stageInfoText {
-  font-size: 16px;
+  font-size: 14px;
   color: #525252;
 }
 
 .stageInfoTextStrong {
-  font-size: 16px;
+  font-size: 14px;
   color: #001529;
 }
 
@@ -760,7 +751,7 @@ $radius-lg: 8px;
 }
 
 .stageInfoTextEmpty {
-  font-size: 16px;
+  font-size: 14px;
   color: #A6A6A6;
 }
 
@@ -830,7 +821,6 @@ $radius-lg: 8px;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0;
-  padding: 20px 24px;
   border-bottom: 1px solid #D9D9D9;
   transition: all 0.2s ease;
 
@@ -867,7 +857,7 @@ $radius-lg: 8px;
 }
 
 .stageNumber {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #002F55;
   margin-right: 12px;
@@ -875,7 +865,7 @@ $radius-lg: 8px;
 
 .stageName {
   display: block;
-  font-size: 16px;
+  font-size: 14px;
   color: #525252;
   line-height: 1.6;
 }
@@ -900,7 +890,7 @@ $radius-lg: 8px;
 
 .toggleStageButton {
   color: #002F55;
-  font-size: 16px;
+  font-size: 14px;
 
   &:hover {
     color: #002F55;
@@ -944,11 +934,11 @@ $radius-lg: 8px;
 
 .stageInfoIcon {
   color: #001529;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .stageInfoLabel {
-  font-size: 16px;
+  font-size: 14px;
   color: #525252;
   font-weight: 500;
 }

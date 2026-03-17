@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Descriptions, Button, Tag, Space, Divider } from 'antd';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Descriptions, Button, Tag } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import { useContractRevisionById } from '../../api/contractRevisions/contractRevisionsApiHooks';
 import { NotFound } from '../../components/notFound/NotFound';
@@ -10,7 +10,7 @@ import { useReferenceData } from '../../api/hooks/useReferences';
 import { getNameById } from '../../helpers/getNameById';
 import BasicTable from '../../components/basicTable/BasicTable';
 import { ContractStage } from '../../types/contract';
-import { getStageColumnsData } from '../contracts/detailsTabs/data';
+import { getStageColumnsData } from '../contracts/details/tabs/stages/data';
 import { useContractStages } from '../../api/contractStages/contractStagesApiHooks';
 import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
 import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
@@ -34,7 +34,15 @@ export default function ContractRevisionDetailsPage() {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData(['contractStates', 'contractCategories', 'partners', 'users', 'contractTypes']);
+  } = useReferenceData([
+    'contractStates',
+    'contractCategories',
+    'partners',
+    'users',
+    'contractTypes',
+    'contractStageStates',
+    'contracts',
+  ]);
 
   if (isLoading || isReferencesLoading || isStagesLoading) {
     return <Loader />;
@@ -66,7 +74,6 @@ export default function ContractRevisionDetailsPage() {
       ]}
       actions={
         <Button
-          className={hStyles.actionBtn}
           icon={<HistoryOutlined />}
           onClick={() => navigate(`/contracts/${contractId}/revisions`)}
         >
@@ -101,15 +108,15 @@ export default function ContractRevisionDetailsPage() {
             </Descriptions.Item>
 
             <Descriptions.Item label='Тип'>
-              {getNameById(revision.type_id, referenceBooks?.contractTypes)}
+              {getNameById(revision.contract_type_id, referenceBooks?.contractTypes)}
             </Descriptions.Item>
 
             <Descriptions.Item label='Партнёр'>
-              {getNameById(revision.partner_id, referenceBooks?.contractCategories)}
+              {getNameById(revision.partner_id, referenceBooks?.partners)}
             </Descriptions.Item>
 
             <Descriptions.Item label='Состояние'>
-              {getNameById(revision.category_id, referenceBooks?.contractCategories)}
+              {getNameById(revision.state_id, referenceBooks?.contractStates)}
             </Descriptions.Item>
 
             <Descriptions.Item label='Дата подписания'>

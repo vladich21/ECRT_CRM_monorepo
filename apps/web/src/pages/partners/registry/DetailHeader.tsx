@@ -55,22 +55,6 @@ export default function DetailHeader({
 
   return (
     <div className={styles.header}>
-      {/* Decorative circles */}
-      <div
-        className={styles.circleOuter}
-        style={{
-          background: `${extras.avatar_color}15`,
-          border: `1px solid ${extras.avatar_color}30`,
-        }}
-      />
-      <div
-        className={styles.circleInner}
-        style={{
-          background: `${extras.avatar_color}08`,
-          border: `1px solid ${extras.avatar_color}20`,
-        }}
-      />
-
       {/* Back button */}
       <Button
         type="text"
@@ -116,9 +100,7 @@ export default function DetailHeader({
               {STATUS_ICONS[extras.status]} {st.label}
             </div>
             <span className={styles.metaInn}>ИНН {extras.city ? '' : ''}</span>
-            <span className={styles.metaType} style={{ color: `${tp.color}cc` }}>
-              {tp.label}
-            </span>
+            <span className={styles.metaType}>{tp.label}</span>
             <span className={styles.metaCity}>
               <EnvironmentOutlined />
               {extras.city}

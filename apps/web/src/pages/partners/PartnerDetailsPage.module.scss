@@ -12,14 +12,12 @@
 }
 
 .badgeKey {
-  composes: badge;
   background: rgba(250, 173, 20, 0.13);
   border: 1px solid rgba(250, 173, 20, 0.31);
   color: #faad14;
 }
 
 .badgeTarget {
-  composes: badge;
   background: rgba(22, 119, 255, 0.13);
   border: 1px solid rgba(22, 119, 255, 0.31);
   color: #69b1ff;
@@ -28,4 +26,5 @@
 .metaType {
   font-size: 14px;
   font-weight: 500;
+  color: #fff;
 }

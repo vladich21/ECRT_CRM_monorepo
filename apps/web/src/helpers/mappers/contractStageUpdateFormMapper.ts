@@ -13,7 +13,7 @@ export const contractStageUpdateFormMapper = (stageData: ContractStage) => {
     planned_budget: stageData.planned_budget || 0,
     forecasted_budget: stageData.forecasted_budget || 0,
     actual_budget: stageData.actual_budget || 0,
-    state_id: stageData.state_id || 1, // по умолчанию черновик
+    state_id: stageData.state_id || 1,
     is_archived: stageData.is_archived || false,
   };
 

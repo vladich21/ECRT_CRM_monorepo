@@ -16,8 +16,6 @@ import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import styles from './FilesListPage.module.scss';
 
-type ActionType = 'edit' | 'delete' | 'add' | 'view' | '';
-
 interface FilesListPageProps {
   entityType?: string;
   label?: string;

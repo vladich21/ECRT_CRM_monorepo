@@ -1,19 +1,10 @@
-// Shared mixins for list pages (contracts, partners, patents…)
-//
-// Usage:
-//   @use '…/components/pageLayout/listPageShared' as lp;
-//   .myClass { @include lp.filterSection; }
-
 @use '../../styles/variables' as v;
 
-// Design tokens for the portal UI
 $color-accent:  #002f55;
 $color-text:    #1e293b;
 $color-muted:   #64748b;
 $color-border:  #e2e8f0;
 $color-surface: #f8fafc;
-
-// ─── Кнопка «Фильтры» ─────────────────────────────────────────────────────────
 
 @mixin filtersBtnActive {
   border-color: $color-accent !important;
@@ -34,8 +25,6 @@ $color-surface: #f8fafc;
   font-weight: 700;
   margin-left: 6px;
 }
-
-// ─── Строка поиска / фильтров под шапкой ─────────────────────────────────────
 
 @mixin filterSection {
   border-top: 1px solid $color-border;
@@ -61,10 +50,16 @@ $color-surface: #f8fafc;
   width: 280px;
   flex-shrink: 0;
   border-radius: v.$radius-lg;
+  overflow: hidden;
 
-  :global(.ant-input-group-addon)  { display: none; }
-  :global(.ant-input-affix-wrapper),
-  :global(.ant-input)              { border-radius: v.$radius-lg; }
+  :global(.ant-input-group-addon) { display: none; }
+  :global(.ant-input-affix-wrapper) {
+    border-radius: v.$radius-lg !important;
+    overflow: hidden;
+  }
+  :global(.ant-input) {
+    border-radius: v.$radius-lg !important;
+  }
 }
 
 @mixin searchIcon {
@@ -80,8 +75,6 @@ $color-surface: #f8fafc;
   strong { color: $color-text; }
 }
 
-// ─── Пагинация ────────────────────────────────────────────────────────────────
-
 @mixin pagination {
   margin-top: v.$spacing-xl;
   padding-bottom: v.$spacing-2xl;
@@ -91,8 +84,6 @@ $color-surface: #f8fafc;
   :global(.ant-pagination)             { font-size: v.$font-base; }
   :global(.ant-pagination-total-text)  { margin-right: 12px; color: $color-muted; }
 }
-
-// ─── Filter tabs (status/type tabs under header) ────────────────────────────
 
 @mixin filterTabs {
   display: flex;
@@ -135,8 +126,6 @@ $color-surface: #f8fafc;
   color: $color-accent;
   margin-left: 6px;
 }
-
-// ─── Модальное окно фильтров ──────────────────────────────────────────────────
 
 @mixin filtersModalGrid {
   display: grid;

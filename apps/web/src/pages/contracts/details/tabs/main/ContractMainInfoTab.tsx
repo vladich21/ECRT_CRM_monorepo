@@ -26,8 +26,10 @@ const { Text } = Typography;
 const formatDateValue = (date: string | null | undefined): string =>
   date ? formatDate(date) : '-';
 
+type OutletContext = { contract: Contract; stages: ContractStage[] };
+
 export function ContractMainInfoTab() {
-  const contract = useOutletContext<Contract>();
+  const { contract, stages = [] } = useOutletContext<OutletContext>();
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedStageIds, setExpandedStageIds] = useState<Record<string, boolean>>({});
 
@@ -38,8 +40,6 @@ export function ContractMainInfoTab() {
   } = useReferenceData([
     'users', 'projects', 'partners', 'contractStates', 'contractCategories', 'contractTypes',
   ]);
-
-  const stages: ContractStage[] = useMemo(() => [], [contract?.id]);
 
   const sortedStages = useMemo(
     () => [...stages].sort((a, b) => a.stage_number - b.stage_number),
@@ -71,7 +71,7 @@ export function ContractMainInfoTab() {
               <Text strong>{sortedStages.length || 1}</Text>
             </Text>
           </div>
-          <Progress percent={Math.round(totalProgress)} strokeColor="#1677ff" size="small" />
+          <Progress percent={Math.round(totalProgress)} strokeColor="#1677ff" />
         </div>
 
         <div
@@ -97,6 +97,7 @@ export function ContractMainInfoTab() {
               column={3}
               size="small"
               layout="vertical"
+              colon={false}
               classNames={{
                 label: tabStyles.descLabel,
                 content: tabStyles.descContent,

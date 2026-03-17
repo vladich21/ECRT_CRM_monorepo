@@ -1,0 +1,39 @@
+.wrapper {
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #141414;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.empty {
+  padding: 32px;
+  text-align: center;
+  font-size: 14px;
+  color: #8c8c8c;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+}

@@ -18,7 +18,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
   renderFilterField,
   setIsAdvancedOpen,
   clearAllFilters,
-  excludeTypes = ['search'], // По умолчанию исключаем поиск
+  excludeTypes = ['search'],
   ...layoutProps
 }) => {
   const footer = [
@@ -33,7 +33,6 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
     </Button>,
   ];
 
-  // Фильтрация полей для модалки
   const modalFilterConfig = filterConfig.filter(field => !excludeTypes.includes(field.type));
 
   return (

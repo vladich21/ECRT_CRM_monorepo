@@ -4,7 +4,6 @@ import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types
 import type { ContractListReferences } from '../list/ContractsListPage.types';
 import { isContractDraft } from '../utils/contractStateUtils';
 
-/** Фильтрация по вкладке (все / активные / черновики / неактивные) */
 export function filterByTab(
   contracts: Contract[],
   tab: FilterTab,
@@ -24,7 +23,6 @@ export function filterByTab(
   }
 }
 
-/** Фильтрация по расширенным фильтрам (партнёр, категория, состояние, даты, сумма) */
 export function filterByAdvanced(
   contracts: Contract[],
   filters: AdvancedFilters
@@ -65,7 +63,6 @@ export function filterByAdvanced(
   return result;
 }
 
-/** Фильтрация по поисковому запросу (номер, шифр, название, партнёр) */
 export function filterBySearch(
   contracts: Contract[],
   searchQuery: string,
@@ -87,7 +84,6 @@ export function filterBySearch(
   });
 }
 
-/** Подсчёт количества активных расширенных фильтров */
 export function countActiveFilters(filters: AdvancedFilters): number {
   const hasPartner = filters.partnerId != null;
   const hasCategory = filters.categoryId != null;

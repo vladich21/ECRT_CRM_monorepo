@@ -34,7 +34,6 @@
   align-items: center;
 }
 
-// Descriptions — label left, content right
 .descLabel {
   color: rgba(0, 0, 0, 0.45);
   font-size: 14px;
@@ -47,12 +46,10 @@
   justify-content: flex-end;
 }
 
-// Deadline alert
 .deadlineAlert {
   margin-top: 10px;
 }
 
-// Team card
 .avatar {
   background: #e6f4ff;
   color: #1677ff;

@@ -26,21 +26,19 @@
   background: transparent;
   border-bottom: none;
 
-  // Убираем правый отступ у последнего элемента меню
   :global(.ant-menu-overflow-item:last-child) {
     margin-right: 0;
   }
 }
 
 .content {
-  margin: 16px;
   padding: 24px;
   overflow: visible;
   min-height: calc(100vh - 64px - 32px);
 }
 
 .contentInner {
-  overflow-x: auto;
+  overflow: visible;
   min-height: calc(100vh - 64px - 32px - 48px);
 }
 

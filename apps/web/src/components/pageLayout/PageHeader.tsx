@@ -4,9 +4,7 @@ import styles from './PageHeader.module.scss';
 interface PageHeaderProps {
   title: ReactNode;
   subtitle?: ReactNode;
-  /** Кнопки в правой части шапки */
   actions?: ReactNode;
-  /** Контент под шапкой (вкладки, строка поиска и т.п.) */
   filters?: ReactNode;
 }
 

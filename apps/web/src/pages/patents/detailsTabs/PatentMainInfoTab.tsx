@@ -72,7 +72,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                 <div className={styles.kpiValue}>{patent.registration_number || '—'}</div>
                 <div className={styles.kpiLabel}>Рег. номер (ИЦ ЖТ)</div>
               </div>
-              <div className={styles.kpiIcon} style={{ background: '#e6f4ff', color: '#1677ff' }}>
+              <div className={styles.kpiIcon}>
                 <NumberOutlined />
               </div>
             </div>
@@ -84,7 +84,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                 <div className={styles.kpiValue}>{formatDate(patent.registration_date)}</div>
                 <div className={styles.kpiLabel}>Дата регистрации</div>
               </div>
-              <div className={styles.kpiIcon} style={{ background: '#f6ffed', color: '#52c41a' }}>
+              <div className={styles.kpiIcon}>
                 <CalendarOutlined />
               </div>
             </div>
@@ -96,7 +96,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                 <div className={styles.kpiValue}>{patent.registration_number_cir || '—'}</div>
                 <div className={styles.kpiLabel}>Рег. номер (ЦИР)</div>
               </div>
-              <div className={styles.kpiIcon} style={{ background: '#f9f0ff', color: '#722ed1' }}>
+              <div className={styles.kpiIcon}>
                 <SafetyCertificateOutlined />
               </div>
             </div>
@@ -108,7 +108,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                 <div className={styles.kpiValue}>{patent.kd_number || '—'}</div>
                 <div className={styles.kpiLabel}>Номер КД</div>
               </div>
-              <div className={styles.kpiIcon} style={{ background: '#fff7e6', color: '#d48806' }}>
+              <div className={styles.kpiIcon}>
                 <FileTextOutlined />
               </div>
             </div>

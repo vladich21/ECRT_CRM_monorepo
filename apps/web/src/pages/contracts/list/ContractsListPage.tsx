@@ -155,7 +155,6 @@ export default function ContractsListPage() {
   return (
     <div className={styles.wrap}>
       {contextHolder}
-      {/* Показываем «Назад» только на отдельной странице /contracts, не внутри карточки партнёра */}
       {!partnerId && <BackButton path="/" />}
 
       <PageHeader

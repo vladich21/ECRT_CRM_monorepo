@@ -80,7 +80,6 @@ export function ContractDetailsAside({
 
   return (
     <div className={styles.asideWrap}>
-      {/* ── Финансы ─────────────────────────────────── */}
       <Card size="small" title="Финансы">
         <Statistic
           value={contract.amount_incl_vat ?? 0}
@@ -142,7 +141,7 @@ export function ContractDetailsAside({
                   <Divider style={{ margin: '4px 0' }} />
                   <div className={styles.deviationRow}>
                     <Text type="secondary">Отклонение</Text>
-                    <Tag color={budgetDeviationPercent >= 0 ? 'success' : 'error'}>
+                    <Tag style={{ fontSize: 14 }} color={budgetDeviationPercent >= 0 ? 'success' : 'error'}>
                       {budgetDeviationPercent >= 0 ? '+' : ''}
                       {budgetDeviationPercent.toFixed(1)}%
                     </Tag>
@@ -154,7 +153,6 @@ export function ContractDetailsAside({
         )}
       </Card>
 
-      {/* ── Детали договора ──────────────────────────── */}
       <Card size="small" title="Детали договора">
         <Descriptions
           column={1}
@@ -174,7 +172,6 @@ export function ContractDetailsAside({
         )}
       </Card>
 
-      {/* ── Команда ──────────────────────────────────── */}
       <Card size="small" title="Команда">
         <Space align="center">
           <Avatar className={styles.avatar}>{getInitials(responsibleName)}</Avatar>

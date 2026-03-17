@@ -2,7 +2,7 @@
 // Header and content wrap styles are in DetailPageHeader shared component
 
 .metaText {
-  color: rgba(255, 255, 255, 0.5);
+  color: #fff;
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -12,4 +12,5 @@
 .metaType {
   font-size: 14px;
   font-weight: 500;
+  color: #fff;
 }

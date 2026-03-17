@@ -15,33 +15,18 @@ interface StatusBadge {
 }
 
 interface DetailPageHeaderProps {
-  /** Page title (h1) */
   title: string;
-  /** Text for the back button */
   backLabel: string;
-  /** Back navigation handler */
   onBack: () => void;
-  /** Status badge with color */
   statusBadge?: StatusBadge;
-  /** Meta items displayed under the title (spans, tags, etc.) */
   metaItems?: ReactNode[];
-  /** Badges displayed next to the title (key supplier, targeted, etc.) */
   badges?: ReactNode[];
-  /** Action buttons (edit, delete, etc.) */
   actions?: ReactNode;
-  /** Tab items */
   tabs: TabItem[];
-  /** Currently active tab key */
   activeTab: string;
-  /** Tab change handler */
   onTabChange: (key: string) => void;
-  /** Custom decorative circle colors (defaults to blue) */
-  circleColor?: string;
-  /** Extra content to render inside the header (e.g., between meta and tabs) */
   extraContent?: ReactNode;
-  /** Content below the header */
   children?: ReactNode;
-  /** Additional context holder for notifications */
   contextHolder?: ReactNode;
 }
 
@@ -56,32 +41,15 @@ export default function DetailPageHeader({
   tabs,
   activeTab,
   onTabChange,
-  circleColor,
   extraContent,
   children,
   contextHolder,
 }: DetailPageHeaderProps) {
-  const circleStyles = circleColor
-    ? {
-        outer: {
-          background: `${circleColor}15`,
-          border: `1px solid ${circleColor}30`,
-        },
-        inner: {
-          background: `${circleColor}08`,
-          border: `1px solid ${circleColor}20`,
-        },
-      }
-    : undefined;
-
   return (
     <div className={styles.pageRoot}>
       {contextHolder}
 
       <div className={styles.header}>
-        <div className={styles.circleOuter} style={circleStyles?.outer} />
-        <div className={styles.circleInner} style={circleStyles?.inner} />
-
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}

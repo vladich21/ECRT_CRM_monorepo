@@ -8,7 +8,6 @@ import {
 import { Contract } from '../../../types/contract';
 import { getNameById } from '../../../helpers/getNameById';
 import { getEntityById } from '../../../helpers/getEntityById';
-import { getContractStateTagClass } from '../utils/contractStateUtils';
 import type { ReferenceData } from '../../../api/hooks/useReferences';
 import styles from './ContractsListPage.module.scss';
 
@@ -49,7 +48,6 @@ export function ContractCard({ contract, refs, onClick }: Props) {
       style={{ '--status-color': st.color } as React.CSSProperties}
       onClick={() => onClick(contract)}
     >
-      {/* Основная информация */}
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
           <Tooltip title={contract.name}>
@@ -67,7 +65,7 @@ export function ContractCard({ contract, refs, onClick }: Props) {
         </div>
         <div className={styles.metaRow} style={{ marginTop: 2 }}>
           <span className={styles.metaText}>
-            <TeamOutlined style={{ fontSize: 11 }} />
+            <TeamOutlined style={{ fontSize: 14 }} />
             {partnerName}
           </span>
         </div>
@@ -78,7 +76,6 @@ export function ContractCard({ contract, refs, onClick }: Props) {
         )}
       </div>
 
-      {/* Сумма + период */}
       <div className={styles.metricsCol}>
         <div className={styles.statsBlock}>
           <div className={styles.statValue}>
@@ -93,7 +90,6 @@ export function ContractCard({ contract, refs, onClick }: Props) {
         </div>
       </div>
 
-      {/* Стрелка */}
       <div className={styles.activityCol}>
         <RightOutlined className={styles.arrow} />
       </div>

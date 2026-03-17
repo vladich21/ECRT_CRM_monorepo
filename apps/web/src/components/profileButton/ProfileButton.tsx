@@ -27,7 +27,6 @@ const ProfileButton = ({ name = "Пользователь", collapsed, onClick }
   );
 };
 
-// Добавляем пропс по умолчанию
 ProfileButton.defaultProps = {
   onClick: () => {},
   user: {

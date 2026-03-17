@@ -1,11 +1,3 @@
-// Shared mixins for create/edit form pages
-//
-// Usage:
-//   @use '…/components/pageLayout/formPageShared' as fp;
-//   .myClass { @include fp.formContainer; }
-
-// ─── Form container (white card) ────────────────────────────────────────────
-
 @mixin formPageWrap {
   padding: 0;
   background: #f5f7fa;
@@ -20,8 +12,6 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   margin-top: 16px;
 }
-
-// ─── Form actions (save / cancel buttons) ───────────────────────────────────
 
 @mixin formActions {
   display: flex;

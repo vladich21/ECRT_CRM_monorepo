@@ -1,6 +1,5 @@
 import { ContractState } from '../../../types/contract';
 
-/** Договор в статусе черновик — удалять нельзя */
 export function isContractDraft(
   stateId: string | undefined,
   contractStates: ContractState[] | undefined
@@ -13,7 +12,6 @@ export function isContractDraft(
   return code === 'draft' || name.includes('чернов');
 }
 
-/** Класс тега состояния договора для списка (совпадает с именами в ContractsListPage.module.scss) */
 export function getContractStateTagClass(code: string | undefined): string {
   if (!code) return 'tagStateDefault';
   const c = code.toUpperCase();

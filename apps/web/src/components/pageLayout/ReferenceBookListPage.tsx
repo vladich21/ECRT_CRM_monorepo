@@ -11,9 +11,7 @@ interface ReferenceBookListPageProps {
   addButtonLabel: string;
   onAdd: () => void;
   children: ReactNode;
-  /** Optional context holder for notifications */
   contextHolder?: ReactNode;
-  /** Optional extra actions (besides add button) */
   extraActions?: ReactNode;
 }
 

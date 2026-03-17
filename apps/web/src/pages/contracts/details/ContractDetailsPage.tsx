@@ -24,6 +24,7 @@ import {
   type ContractDetailsTabKey,
 } from '../utils/contractDetailsUtils';
 import tagStyles from '../list/ContractsListPage.module.scss';
+import { getMockStagesForContract } from '../utils/mockStages';
 
 export default function ContractDetailsPage() {
   const { contractId } = useParams();
@@ -78,6 +79,9 @@ export default function ContractDetailsPage() {
   if (isLoading) return <Loader />;
   if (isError || !contract) return <NotFound errorMessage="Договор не найден" />;
 
+  const stages = getMockStagesForContract(contractId!, contract.responsible_id);
+  const outletContext = { contract, stages };
+
   const contractState = getEntityById(contract.state_id, referenceBooks?.contractStates);
   const contractCategoryName =
     getNameById(contract.category_id, referenceBooks?.contractCategories ?? []) ?? '';
@@ -91,7 +95,6 @@ export default function ContractDetailsPage() {
 
   const title = `Договор №${contract.number}${contract.cipher ? ` (${contract.cipher})` : ''}`;
 
-  // Map tabs with count labels
   const headerTabs = tabsWithCounts.map(({ key, label, count }) => ({
     key,
     label: count !== undefined ? `${label} (${count})` : label,
@@ -151,11 +154,11 @@ export default function ContractDetailsPage() {
     >
       <div className={activeTab === 'main' ? styles.contentWrap : styles.contentWrapFull}>
         <div className={styles.contentMain}>
-          <Outlet context={contract} />
+          <Outlet context={outletContext} />
         </div>
 
         {activeTab === 'main' && (
-          <ContractDetailsAside contract={contract} references={referenceBooks ?? null} />
+          <ContractDetailsAside contract={contract} stages={stages} references={referenceBooks ?? null} />
         )}
       </div>
     </DetailPageHeader>

@@ -1,4 +1,3 @@
-// components/Modal/PositionFormModal.tsx
 import { Button, Form, Input, Space } from 'antd';
 import { BaseModal, BaseModalProps } from '../BaseModal';
 import { useEffect } from 'react';

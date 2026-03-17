@@ -1,6 +1,6 @@
 import { ColumnType } from 'antd/es/table';
 import { ContractRevision, ContractStage } from '../../../../../types/contract';
-import { Tag, Progress, Space, Tooltip } from 'antd';
+import { Tag, Progress, Tooltip } from 'antd';
 import { ReferenceData } from '../../../../../api/hooks/useReferences';
 import { CalendarOutlined, DollarOutlined, NumberOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { getTagColorByData } from '../../../../../helpers/getTagColorByData';
@@ -183,7 +183,6 @@ export const getStageColumnsData = (
   },
 ];
 
-// Вспомогательные функции форматирования (если их нет, создайте)
 export const formatCurrency = (amount: number | null | undefined): string => {
   if (!amount && amount !== 0) return '-';
   return `${amount.toLocaleString('ru-RU', {

@@ -7,35 +7,11 @@
 
 // ─── Dark gradient header ───────────────────────────────────────────────────
 .header {
-  // background: linear-gradient(135deg, #0066ff 0%, #bbc2cf 60%, rgba(5, 75, 172, 0.13) 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1a3a6b 100%);
   padding: 32px 32px 28px;
   position: relative;
   overflow: hidden;
   margin: -24px -24px 0;
-}
-
-.circleOuter {
-  position: absolute;
-  right: -60px;
-  top: -60px;
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  pointer-events: none;
-  background: rgba(22, 119, 255, 0.08);
-  border: 1px solid rgba(22, 119, 255, 0.15);
-}
-
-.circleInner {
-  position: absolute;
-  right: 80px;
-  top: 20px;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  pointer-events: none;
-  background: rgba(22, 119, 255, 0.05);
-  border: 1px solid rgba(22, 119, 255, 0.12);
 }
 
 .headerContent {
@@ -44,8 +20,37 @@
   gap: 20px;
 }
 
-.avatar {
+.avatarWrap {
+  position: relative;
   flex-shrink: 0;
+
+  &:hover .photoUploadBtn {
+    opacity: 1;
+  }
+}
+
+.avatar {
+  display: block;
+}
+
+.photoUploadBtn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: #fff;
+  font-size: 20px;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 .headerInfo {
@@ -71,14 +76,14 @@
 }
 
 .roleTagAdmin {
-  composes: roleTag;
+  @extend .roleTag;
   background: rgba(255, 77, 79, 0.15);
   border: 1px solid rgba(255, 77, 79, 0.3);
   color: #ff7875;
 }
 
 .roleTagDefault {
-  composes: roleTag;
+  @extend .roleTag;
   background: rgba(22, 119, 255, 0.15);
   border: 1px solid rgba(22, 119, 255, 0.3);
   color: #69b1ff;
@@ -109,20 +114,107 @@
 
 .layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
 .leftColumn {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profileCard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.profileSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profileSectionTitle {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #595959;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 768px) {
+  .profileCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profileInfoList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profileInfoItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.profileLabel {
+  color: #8c8c8c;
+  flex-shrink: 0;
+}
+
+.profileValue {
+  font-weight: 500;
+  color: #262626;
+  text-align: right;
+  word-break: break-word;
+}
+
+.profileMuted {
+  font-weight: 400;
+  color: #bfbfbf;
+  text-align: right;
+}
+
+.profileLink {
+  font-weight: 500;
+  color: #1677ff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  &:hover { color: #4096ff; }
+}
+
+@media (max-width: 768px) {
+  .profileCard {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card {
@@ -169,7 +261,7 @@
 }
 
 .infoValueMuted {
-  composes: infoValue;
+  @extend .infoValue;
   color: #bfbfbf;
   font-weight: 400;
 }

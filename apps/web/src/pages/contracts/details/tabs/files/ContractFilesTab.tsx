@@ -35,7 +35,6 @@ import styles from './ContractFilesTab.module.scss';
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getFileIcon(filename: string): React.ReactNode {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
@@ -59,8 +58,6 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export function ContractFilesTab() {
   const { contractId } = useParams();
   const queryClient = useQueryClient();
@@ -73,7 +70,6 @@ export function ContractFilesTab() {
   const { data: referenceBooks } = useReferenceData(['users']);
   const deleteFileMutation = useDeleteFile();
 
-  // ── Delete — app-standard pattern (same as FilesListPage) ─────────────────
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteFileMutation,
     successMessage: 'Файл успешно удалён',
@@ -90,13 +86,19 @@ export function ContractFilesTab() {
     if (currentFileId) openDeleteModal();
   }, [currentFileId]);
 
-  // ── Upload ────────────────────────────────────────────────────────────────
   const handleUpload = async (options: UploadRequestOption) => {
     const { file, onSuccess, onError } = options;
+    const uploadFile = file as File;
+    const sizeStr = String(uploadFile.size);
+    if (files.some(f => f.name === uploadFile.name && String(f.size) === sizeStr)) {
+      showNotification('warning', 'Внимание', 'Файл с таким именем и размером уже загружен');
+      onError?.(new Error('Duplicate file'));
+      return;
+    }
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file1', file as File);
+      formData.append('file1', uploadFile);
       formData.append('entityType', 'contract');
       formData.append('entityId', contractId!);
       await fileApi.uploadFiles(formData);
@@ -129,7 +131,6 @@ export function ContractFilesTab() {
     <div className={styles.pageWrap}>
       {contextHolder}
 
-      {/* ── Upload zone ──────────────────────────────────── */}
       {!hasFiles ? (
         <Dragger {...draggerProps} className={styles.draggerEmpty} disabled={uploading}>
           <div className={styles.emptyWrap}>
@@ -150,7 +151,6 @@ export function ContractFilesTab() {
         </Dragger>
       )}
 
-      {/* ── File count ───────────────────────────────────── */}
       {hasFiles && (
         <div className={styles.sectionHeader}>
           <Text type="secondary" style={{ fontSize: 13 }}>
@@ -160,7 +160,6 @@ export function ContractFilesTab() {
         </div>
       )}
 
-      {/* ── File grid ────────────────────────────────────── */}
       <Spin spinning={isLoading || uploading}>
         {hasFiles && (
           <div className={styles.fileGrid}>
@@ -206,7 +205,7 @@ export function ContractFilesTab() {
                         icon={<DeleteOutlined />}
                         loading={deleteFileMutation.isPending && currentFileId === file.id}
                         onClick={(e) => {
-                          e.stopPropagation(); // не открывать превью при клике на удалить
+                          e.stopPropagation();
                           setCurrentFileId(file.id);
                         }}
                       />
