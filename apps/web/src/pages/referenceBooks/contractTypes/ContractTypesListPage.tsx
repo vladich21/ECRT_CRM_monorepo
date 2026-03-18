@@ -1,4 +1,3 @@
-import BasicTable from '../../../components/basicTable/BasicTable';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ContractType } from '../../../types/contract';
 
@@ -7,6 +6,8 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
 import {
   useCreateContractType,
   useDeleteContractType,
@@ -15,7 +16,6 @@ import {
 } from '../../../api/contracts/contractTypeApiHooks';
 import { getNameById } from '../../../helpers/getNameById';
 import { getEntityById } from '../../../helpers/getEntityById';
-import { columns } from './data';
 
 type ActionType = 'edit' | 'delete' | 'add' | '';
 
@@ -84,16 +84,17 @@ const ContractTypesListPage: React.FC = () => {
 
   return (
     <ReferenceBookListPage title="Типы договоров" addButtonLabel="Добавить тип договора" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
-      <BasicTable<ContractType>
-        data={data}
-        loading={loading}
-        columns={columns}
-        showActions={true}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-      />
+      <ReferenceBookCardList>
+        {data.map((t) => (
+          <ReferenceBookItemCard
+            key={t.id}
+            title={t.name}
+            description={t.description || undefined}
+            onEdit={() => onEdit({ id: t.id })}
+            onDelete={() => onDelete({ id: t.id })}
+          />
+        ))}
+      </ReferenceBookCardList>
     </ReferenceBookListPage>
   );
 };

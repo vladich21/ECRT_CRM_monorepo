@@ -14,7 +14,7 @@ type MainInfoRefs = Partial<
 >;
 
 type AsideRefs = Partial<
-  Pick<ReferenceData, 'partners' | 'users' | 'contractStates' | 'contractCategories'>
+  Pick<ReferenceData, 'partners' | 'users' | 'contractStates' | 'contractCategories' | 'contractTypes'>
 >;
 
 export function buildMainInfoItems(
@@ -23,12 +23,11 @@ export function buildMainInfoItems(
   formatDateValue: (d: string | null | undefined) => string
 ) {
   const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
-  const typeName     = getNameById(contract.contract_type_id, refs?.contractTypes ?? []);
 
   return [
     {
       key: 'partner',
-      label: 'Партнёр',
+      label: 'Контрагент',
       children: getNameById(contract.partner_id, refs?.partners ?? []) || '-',
     },
     {
@@ -41,29 +40,13 @@ export function buildMainInfoItems(
       label: 'Проект',
       children: getNameById(contract.project_id, refs?.projects ?? []) || '-',
     },
-    {
-      key: 'category',
-      label: 'Категория',
-      children: categoryName
-        ? <span className={listStyles.cardCategory}>{categoryName}</span>
-        : '-',
-    },
-    {
-      key: 'type',
-      label: 'Тип',
-      children: typeName || '-',
-    },
-    {
-      key: 'date_signed',
-      label: 'Дата подписания',
-      children: formatDateValue(contract.date_signed),
-    },
   ];
 }
 
 export function buildDetailItems(contract: Contract, refs: AsideRefs) {
   const state = getEntityById(contract.state_id, refs?.contractStates);
   const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
+  const typeName = getNameById(contract.contract_type_id, refs?.contractTypes ?? []);
 
   return [
     {
@@ -75,6 +58,11 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
       key: 'cipher',
       label: 'Шифр',
       children: <Text >{contract.cipher || '—'}</Text>,
+    },
+    {
+      key: 'type',
+      label: 'Тип',
+      children: typeName || '—',
     },
     {
       key: 'category',

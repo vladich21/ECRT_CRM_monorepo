@@ -1,4 +1,3 @@
-import BasicTable from '../../../components/basicTable/BasicTable';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PartnerEconomicCategory } from '../../../types/partner';
 
@@ -7,6 +6,8 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
 import {
   useCreatePartnerEconomicCategory,
   useDeletePartnerEconomicCategory,
@@ -14,7 +15,6 @@ import {
   useUpdatePartnerEconomicCategory,
 } from '../../../api/partners/partnerEconomicCategoryApiHooks';
 import { getNameById } from '../../../helpers/getNameById';
-import { columns } from './data';
 import { getEntityById } from '../../../helpers/getEntityById';
 
 type ActionType = 'edit' | 'delete' | 'add' | '';
@@ -86,16 +86,18 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
 
   return (
     <ReferenceBookListPage title="Экономические категории контрагентов" addButtonLabel="Добавить экономическую категорию" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
-      <BasicTable<PartnerEconomicCategory>
-        data={data}
-        loading={loading}
-        columns={columns}
-        showActions={true}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-      />
+      <ReferenceBookCardList>
+        {data.map((c) => (
+          <ReferenceBookItemCard
+            key={c.id}
+            title={c.name}
+            metaText={c.code ? `Код: ${c.code}` : undefined}
+            description={c.description || undefined}
+            onEdit={() => onEdit({ id: c.id })}
+            onDelete={() => onDelete({ id: c.id })}
+          />
+        ))}
+      </ReferenceBookCardList>
     </ReferenceBookListPage>
   );
 };

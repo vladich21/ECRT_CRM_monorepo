@@ -18,31 +18,35 @@ ul {
 }
 
 .ant-input-disabled {
-  background-color: #f8f8f8 !important;
-  color: black !important;
-  cursor: text !important;
+  background-color: #f8f8f8;
+  color: black;
+  cursor: text;
 }
 
 .ant-select-selector {
-  background-color: #f8f8f8 !important;
-  color: black !important;
-  cursor: pointer !important;
+  background-color: #f8f8f8;
+  color: black;
+  cursor: pointer;
 }
 
 .ant-select-disabled .ant-select-selector {
-  background-color: #f8f8f8 !important;
-  color: rgb(155, 155, 155) !important;
-  cursor: not-allowed !important;
+  background-color: #f8f8f8;
+  color: rgb(155, 155, 155);
+  cursor: not-allowed;
 }
 
-/* Убирает hover-эффект у кнопки поиска */
+.ant-btn-variant-solid:disabled,
+.ant-btn-variant-solid.ant-btn-disabled {
+  color: #fff;
+}
+
 .ant-input-search-button {
   visibility: hidden;
 }
 
 .ant-layout-sider-children {
-  display: flex !important;
-  flex-direction: column !important;
+  display: flex;
+  flex-direction: column;
 }
 
 .user-mention {
@@ -60,5 +64,5 @@ ul {
 
 .ant-collapse-header,
 .ant-collapse-content-box {
-  padding: 0 !important;
+  padding: 0;
 }

@@ -1,4 +1,3 @@
-import BasicTable from '../../../components/basicTable/BasicTable';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PartnerType } from '../../../types/partner';
 
@@ -7,7 +6,8 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { columns } from './data';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
 import {
   useCreatePartnerType,
   useDeletePartnerType,
@@ -79,16 +79,16 @@ const PartnerTypesListPage: React.FC = () => {
 
   return (
     <ReferenceBookListPage title="Типы контрагентов" addButtonLabel="Добавить тип контрагента" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
-      <BasicTable<PartnerType>
-        data={data}
-        loading={loading}
-        columns={columns}
-        showActions={true}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-      />
+      <ReferenceBookCardList>
+        {data.map((t) => (
+          <ReferenceBookItemCard
+            key={t.id}
+            title={t.name}
+            onEdit={() => onEdit({ id: t.id })}
+            onDelete={() => onDelete({ id: t.id })}
+          />
+        ))}
+      </ReferenceBookCardList>
     </ReferenceBookListPage>
   );
 };

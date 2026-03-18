@@ -1,7 +1,9 @@
 import { asc, eq } from 'drizzle-orm';
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { projects } from '../../../database/schema';
+
+const REQUIRED_CREATE_FIELDS = ['code', 'name', 'short_name', 'start_date', 'status'] as const;
 
 @Injectable()
 export class ProjectsService {
@@ -23,13 +25,28 @@ export class ProjectsService {
 
   async create(data: Record<string, unknown>) {
     this.logger.debug('Создание проекта');
+    this.logger.debug(`Полученные данные create: ${JSON.stringify(data)}`);
+
+    const missing = REQUIRED_CREATE_FIELDS.filter((f) => {
+      const v = data[f];
+      return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+    });
+    if (missing.length > 0) {
+      this.logger.warn(`Создание проекта: не заполнены обязательные поля: ${missing.join(', ')}`);
+      throw new BadRequestException(
+        `Обязательные поля не заполнены: ${missing.join(', ')}. Требуются: код, название, короткое название, дата начала, статус.`,
+      );
+    }
+
     const insertData = this.mapToDb(data);
+    this.logger.debug(`Данные для вставки в БД: ${JSON.stringify(insertData)}`);
     const [row] = await this.db.db.insert(projects).values(insertData).returning();
     return row ? this.toResponse(row) : null;
   }
 
   async update(id: string, data: Record<string, unknown>) {
     this.logger.debug(`Обновление проекта id: ${id}`);
+    this.logger.debug(`Полученные данные update: ${JSON.stringify(data)}`);
     const map: Record<string, string> = {
       code: 'code',
       name: 'name',
@@ -62,15 +79,21 @@ export class ProjectsService {
     const toUuid = (v: unknown): string | null =>
       v == null || v === '' ? null : typeof v === 'string' ? v : null;
 
+    const code = data.code != null ? String(data.code) : null;
+    const name = data.name != null ? String(data.name) : null;
+    const shortName = data.short_name != null ? String(data.short_name) : null;
+    const startDate = toDate(data.start_date);
+    const status = data.status != null ? String(data.status) : null;
+
     return {
-      code: data.code != null ? String(data.code) : null,
-      name: data.name != null ? String(data.name) : null,
-      shortName: data.short_name != null ? String(data.short_name) : null,
+      code,
+      name,
+      shortName,
       description: data.description != null ? String(data.description) : null,
-      startDate: toDate(data.start_date),
+      startDate,
       endDate: toDate(data.end_date),
       managerId: toUuid(data.manager_id),
-      status: data.status != null ? String(data.status) : null,
+      status,
     };
   }
 

@@ -45,14 +45,19 @@ export default function ProjectCreatePage() {
   }, [isCreateError, isCreateSuccess, navigate, showNotification]);
 
   const handleCreate = async (values: any) => {
-    const payload = {
-      ...values,
-      manager_id: values.manager_id,
-      start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : '',
-      end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : '',
-    };
+    const start_date = values.start_date ? values.start_date.format('YYYY-MM-DD') : '';
+    const end_date = values.end_date ? values.end_date.format('YYYY-MM-DD') : '';
 
-    mutate(payload);
+    mutate({
+      code: values.code != null ? String(values.code) : '',
+      name: values.name ?? '',
+      short_name: values.short_name ?? '',
+      description: values.description ?? undefined,
+      start_date,
+      end_date: end_date || undefined,
+      manager_id: values.manager_id ?? undefined,
+      status: values.status ?? 'active',
+    } as Parameters<typeof mutate>[0]);
   };
 
   if (isReferencesLoading) {

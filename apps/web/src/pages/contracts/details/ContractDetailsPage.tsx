@@ -15,6 +15,7 @@ import { ContractDetailsAside } from './tabs/main/ContractDetailsAside';
 import styles from './ContractDetails.module.scss';
 import { isContractDraft, getContractStateTagClass } from '../utils/contractStateUtils';
 import { useFilesByEntity } from '../../../api/files/fileApiHooks';
+import { formatDate } from './tabs/stages/data';
 import {
   CONTRACT_DETAILS_TABS,
   getActiveContractDetailsTab,
@@ -32,10 +33,20 @@ export default function ContractDetailsPage() {
   const location = useLocation();
   const { contextHolder, showNotification } = useNotification();
 
+  const from = (location.state as any)?.from as string | undefined;
+  const handleBack = () => {
+    if (typeof from === 'string' && from.length > 0) {
+      navigate(from);
+      return;
+    }
+    navigate('/contracts');
+  };
+
   const { data: contract, isLoading, isError } = useContractById(contractId!);
   const { data: referenceBooks } = useReferenceData([
     'contractStates',
     'contractCategories',
+    'contractTypes',
     'partners',
     'users',
   ]);
@@ -60,7 +71,7 @@ export default function ContractDetailsPage() {
   );
 
   const handleEdit = () => {
-    navigate(`/contracts/${contractId}/edit`);
+    navigate(`/contracts/${contractId}/edit`, { state: { from } });
   };
 
   const handleDelete = () => {
@@ -85,6 +96,8 @@ export default function ContractDetailsPage() {
   const contractState = getEntityById(contract.state_id, referenceBooks?.contractStates);
   const contractCategoryName =
     getNameById(contract.category_id, referenceBooks?.contractCategories ?? []) ?? '';
+  const contractTypeName =
+    getNameById(contract.contract_type_id, referenceBooks?.contractTypes ?? []) ?? '';
   const partnerName = getNameById(contract.partner_id, referenceBooks?.partners ?? []) ?? '';
 
   const daysUntilEnd = getDaysUntilDate(contract.end_date);
@@ -103,10 +116,18 @@ export default function ContractDetailsPage() {
   return (
     <DetailPageHeader
       title={title}
+      titleSuffix={
+        <>
+          {contractTypeName ? <span className={hStyles.metaText}>{contractTypeName}</span> : null}
+          {contract.date_signed ? (
+            <span className={hStyles.metaText}>Подписан: {formatDate(contract.date_signed)}</span>
+          ) : null}
+        </>
+      }
       backLabel="Договоры"
-      onBack={() => navigate('/contracts')}
+      onBack={handleBack}
       statusBadge={{
-        label: contract.is_active ? 'Активен' : 'Неактивен',
+        label: contract.is_active ? 'Действует' : 'Не действует',
         color: contract.is_active ? '#52c41a' : '#ff4d4f',
       }}
       metaItems={[

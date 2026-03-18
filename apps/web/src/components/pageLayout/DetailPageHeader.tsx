@@ -16,6 +16,7 @@ interface StatusBadge {
 
 interface DetailPageHeaderProps {
   title: string;
+  titleSuffix?: ReactNode;
   backLabel: string;
   onBack: () => void;
   statusBadge?: StatusBadge;
@@ -33,6 +34,7 @@ interface DetailPageHeaderProps {
 
 export default function DetailPageHeader({
   title,
+  titleSuffix,
   backLabel,
   onBack,
   statusBadge,
@@ -65,6 +67,7 @@ export default function DetailPageHeader({
           <div className={styles.companyInfo}>
             <div className={styles.nameRow}>
               <h1 className={styles.companyName}>{title}</h1>
+              {titleSuffix && <div className={styles.titleSuffix}>{titleSuffix}</div>}
               {badges}
             </div>
 

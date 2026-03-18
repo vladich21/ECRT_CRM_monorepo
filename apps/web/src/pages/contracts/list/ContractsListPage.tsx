@@ -1,5 +1,5 @@
 import { Button, Input, Pagination, Spin } from 'antd';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMemo, useEffect } from 'react';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
@@ -58,6 +58,7 @@ function buildSelectOptions(references: ContractListReferences) {
 
 export default function ContractsListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { partnerId } = useParams();
   const { contextHolder, showNotification } = useNotification();
 
@@ -136,7 +137,8 @@ export default function ContractsListPage() {
 
   const handleContractClick = (contract: Contract) =>
     navigate(`/contracts/${contract.id}`, {
-      state: { contract, from: 'contracts-list' },
+      // preserve current list route (including /partners/:id/contracts)
+      state: { contract, from: location.pathname },
     });
 
   const handlePageChange = (newPage: number, newPageSize?: number) =>

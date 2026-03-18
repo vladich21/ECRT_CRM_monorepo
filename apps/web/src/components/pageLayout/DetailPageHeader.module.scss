@@ -2,6 +2,9 @@
   padding: 0;
   border-radius: 16px 16px 0 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .header {
@@ -18,9 +21,9 @@
 }
 
 .backBtn {
-  color: rgba(255, 255, 255, 0.7) !important;
+  color: rgba(255, 255, 255, 0.7);
   margin-bottom: 20px;
-  padding: 0 !important;
+  padding: 0;
 
   &:hover {
     color: #fff !important;
@@ -50,6 +53,16 @@
   color: #fff;
   font-size: 20px;
   font-weight: 700;
+}
+
+.titleSuffix {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .metaRow {
@@ -135,5 +148,6 @@
 .contentWrap {
   padding: 24px 32px;
   background: #f5f7fa;
-  min-height: calc(100vh - 300px);
+  flex: 1;
+  min-height: 0;
 }

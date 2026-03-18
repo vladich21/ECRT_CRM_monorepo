@@ -11,3 +11,48 @@
 .formActions {
   @include fp.formActions;
 }
+
+.twoColSections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.threeColSections {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .twoColSections {
+    grid-template-columns: 1fr;
+  }
+
+  .threeColSections {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1400px) {
+  .threeColSections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1600px) {
+  .threeColSections {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sectionBox {
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 14px 14px 2px;
+  background: #fff;
+  overflow: hidden;
+}
+

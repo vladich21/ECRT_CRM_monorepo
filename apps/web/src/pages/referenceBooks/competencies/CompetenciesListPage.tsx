@@ -1,6 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { getColumnsData } from './data';
-import BasicTable from '../../../components/basicTable/BasicTable';
 import { PartnerCompetence } from '../../../types/partner';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { useNotification } from '../../../customhooks/useNotification';
@@ -8,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useDeletePartnerCompetence, usePartnerCompetencies } from '../../../api/partners/partnerCompetenceApiHooks';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
 
 export default function PartnerCompetencesListPage() {
   const navigate = useNavigate();
@@ -48,17 +48,20 @@ export default function PartnerCompetencesListPage() {
       onAdd={() => navigate('/competencies/create')}
       contextHolder={contextHolder}
     >
-      <BasicTable<PartnerCompetence>
-        data={partnerCompetences}
-        loading={isLoading}
-        columns={getColumnsData()}
-        enableContextMenu={true}
-        showActions
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-      />
+      <ReferenceBookCardList>
+        {partnerCompetences.map((c) => (
+          <ReferenceBookItemCard
+            key={c.id}
+            title={c.name}
+            previewBgColor={c.color_bg || undefined}
+            previewTextColor={c.color_text || undefined}
+            previewBorderColor={c.color_border || undefined}
+            previewText={c.name}
+            onEdit={() => onEdit(c)}
+            onDelete={() => onDelete({ id: Number(c.id) })}
+          />
+        ))}
+      </ReferenceBookCardList>
     </ReferenceBookListPage>
   );
 }

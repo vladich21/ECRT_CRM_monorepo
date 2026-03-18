@@ -84,34 +84,10 @@ export default function PartnerDetailsPage() {
 
   const tabItemsWithCounts = [
     { key: 'main', label: 'Основное' },
-    {
-      key: 'contacts',
-      label: (
-        <>
-          Контактные лица
-          <span className={hStyles.tabCount}>{contacts.length}</span>
-        </>
-      ),
-    },
-    {
-      key: 'contracts',
-      label: (
-        <>
-          Договоры
-          <span className={hStyles.tabCount}>{contractsList?.total ?? 0}</span>
-        </>
-      ),
-    },
+    { key: 'contacts', label: `Контактные лица (${contacts.length})` },
+    { key: 'contracts', label: `Договоры (${contractsList?.total ?? 0})` },
     { key: 'comments', label: 'Комментарии' },
-    {
-      key: 'files',
-      label: (
-        <>
-          Файлы
-          <span className={hStyles.tabCount}>{files.length}</span>
-        </>
-      ),
-    },
+    { key: 'files', label: `Файлы (${files.length})` },
   ];
 
   return (

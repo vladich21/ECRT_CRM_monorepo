@@ -185,7 +185,7 @@ export default function PatentEditPage() {
         <Form
           form={form}
           layout='vertical'
-          size="small"
+          size="middle"
           onFieldsChange={() => setIsFormChanged(true)}
           onFinish={handleUpdate}
           onKeyPress={e => {
@@ -198,7 +198,7 @@ export default function PatentEditPage() {
             <FileTextOutlined /> Идентификация РИД
           </Divider>
 
-          <Row gutter={12}>
+          <Row gutter={16}>
             <Col xs={24}>
               <Form.Item
                 label='Наименование РИД'
@@ -207,7 +207,7 @@ export default function PatentEditPage() {
               >
                 <TextArea
                   placeholder='Введите наименование объекта интеллектуальной собственности'
-                  rows={2}
+                  rows={3}
                   showCount
                   maxLength={500}
                 />
@@ -215,7 +215,7 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={12}>
+          <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item
                 label='Объект собственности'
@@ -292,7 +292,7 @@ export default function PatentEditPage() {
             <BankOutlined /> Регистрационные данные
           </Divider>
 
-          <Row gutter={12}>
+          <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item
                 label='Номер АО "ИЦ ЖТ"'
@@ -325,7 +325,7 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={12}>
+          <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label='Номер ЦИР' name='registration_number_cir'>
                 <Input placeholder='Номер регистрации в ЦИР' />
@@ -355,7 +355,7 @@ export default function PatentEditPage() {
             <TeamOutlined /> Организация и ответственные
           </Divider>
 
-          <Row gutter={12}>
+          <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label='Отдел' name='department_id' rules={[{ required: true, message: 'Выберите отдел' }]}>
                 <Select
@@ -401,7 +401,7 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={12}>
+          <Row gutter={16}>
             <Col xs={24}>
               <Form.Item label='Авторы (Исполнители)' name='author_ids'>
                 <Select
@@ -426,7 +426,7 @@ export default function PatentEditPage() {
             </Col>
           </Row>
 
-          <Row gutter={12}>
+          <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label='Проект' name='project_id'>
                 <Select

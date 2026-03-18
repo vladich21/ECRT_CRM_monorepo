@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Row, Col, Divider, ColorPicker, Tag } from 'antd';
-import { SaveOutlined, PlusOutlined, TagOutlined, HighlightOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Row, Col, Divider, ColorPicker, Tag, Modal } from 'antd';
+import { SaveOutlined, TagOutlined, HighlightOutlined } from '@ant-design/icons';
 import { useNotification } from '../../../customhooks/useNotification';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { initialColors, initialFormValues } from './data';
 import { useCreatePartnerCompetence } from '../../../api/partners/partnerCompetenceApiHooks';
 import { getHexColor } from '../../../helpers/getHexColor';
@@ -79,49 +77,52 @@ export default function PartnerCompetenceCreatePage() {
   };
 
   return (
-    <div className={styles.wrap}>
+    <>
       {contextHolder}
-      <BackButton />
-      <PageHeader title="Создание новой компетенции партнера" subtitle="Заполните данные для создания компетенции" />
-
-      <div className={styles.formCard}>
+      <Modal
+        open
+        title="Создание компетенции партнёра"
+        centered
+        width={720}
+        onCancel={() => navigate(-1)}
+        footer={null}
+        destroyOnClose
+      >
         <Form
           form={form}
-          layout='vertical'
+          layout="vertical"
           initialValues={initialFormValues}
           onFinish={handleCreate}
-          onKeyPress={e => {
+          onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
             }
           }}
           scrollToFirstError
         >
-          {/* Основная информация */}
-          <Divider orientation='left'>
+          <Divider orientation="left">
             <TagOutlined /> Основная информация
           </Divider>
 
           <Row gutter={16}>
-            <Col xs={24} md={12}>
+            <Col xs={24}>
               <Form.Item
-                label='Название компетенции'
-                name='name'
+                label="Название компетенции"
+                name="name"
                 rules={[{ required: true, message: 'Введите название компетенции' }]}
               >
-                <Input placeholder='Введите название компетенции' prefix={<TagOutlined />} />
+                <Input placeholder="Введите название компетенции" prefix={<TagOutlined />} />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* Цветовая схема */}
-          <Divider orientation='left'>
+          <Divider orientation="left">
             <HighlightOutlined /> Цветовая схема
           </Divider>
 
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item label='Цвет фона' name='color_bg'>
+              <Form.Item label="Цвет фона" name="color_bg">
                 <ColorPicker
                   format='hex'
                   showText
@@ -146,7 +147,7 @@ export default function PartnerCompetenceCreatePage() {
             </Col>
 
             <Col xs={24} md={8}>
-              <Form.Item label='Цвет текста' name='color_text'>
+              <Form.Item label="Цвет текста" name="color_text">
                 <ColorPicker
                   format='hex'
                   showText
@@ -162,7 +163,7 @@ export default function PartnerCompetenceCreatePage() {
             </Col>
 
             <Col xs={24} md={8}>
-              <Form.Item label='Цвет границы' name='color_border'>
+              <Form.Item label="Цвет границы" name="color_border">
                 <ColorPicker
                   format='hex'
                   showText
@@ -180,28 +181,26 @@ export default function PartnerCompetenceCreatePage() {
             </Col>
           </Row>
 
-          {/* Предпросмотр */}
-          <Divider orientation='left'>
+          <Divider orientation="left">
             <HighlightOutlined /> Предпросмотр
           </Divider>
 
           <Row gutter={16}>
             <Col xs={24}>
-              <Form.Item label='Пример отображения'>{renderTagPreview()}</Form.Item>
+              <Form.Item label="Пример отображения">{renderTagPreview()}</Form.Item>
             </Col>
           </Row>
 
-          {/* Кнопки действий */}
           <div className={styles.formActions}>
             <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
               Очистить форму
             </Button>
-            <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading}>
+            <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={isCreateLoading}>
               Создать компетенцию
             </Button>
           </div>
         </Form>
-      </div>
-    </div>
+      </Modal>
+    </>
   );
 }

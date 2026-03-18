@@ -10,8 +10,7 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import { useNotification } from '../../../customhooks/useNotification';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { getChangedFields } from '../../../helpers/getChangedFields';
 import { NotFound } from '../../../components/notFound/NotFound';
@@ -19,6 +18,7 @@ import dayjs from 'dayjs';
 import { projectUpdateFormMapper } from '../../../helpers/mappers/projectUpdateFormMapper';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useProjectById, useUpdateProject } from '../../../api/projects/projectApiHooks';
+import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 import styles from './ProjectFormPage.module.scss';
 
 const { Option } = Select;
@@ -34,6 +34,11 @@ export default function ProjectEditPage() {
   const { mutate, isPending: isUpdateLoading, isError: isUpdateError, isSuccess: isUpdateSuccess } = useUpdateProject();
 
   const { data: referenceBooks, isLoading, isError } = useReferenceData(['users']);
+
+  const wCode = Form.useWatch('code', form) as string | number | undefined;
+  const wName = Form.useWatch('name', form) as string | undefined;
+  const wShortName = Form.useWatch('short_name', form) as string | undefined;
+  const wStatus = Form.useWatch('status', form) as string | undefined;
 
   useEffect(() => {
     if (project) {
@@ -76,24 +81,60 @@ export default function ProjectEditPage() {
     mutate({ id: projectId!, data: payload });
   };
 
-  return (
-    <div className={styles.wrap}>
-      {contextHolder}
-      <BackButton />
-      <PageHeader title={`Редактирование проекта: ${project.name}`} subtitle="Внесите изменения в данные проекта" />
+  const statusBadge = (() => {
+    const s = (wStatus ?? (project as any)?.status) as string | undefined;
+    if (!s) return undefined;
+    const st = (PROJECT_STATUS_CONFIG as any)[s] ?? PROJECT_STATUS_CONFIG.active;
+    return { label: st.label, color: st.color };
+  })();
 
+  const headerName = (wName ?? project.name ?? '').trim();
+  const headerTitle = headerName || '—';
+  const headerCode = (wCode ?? (project as any)?.code) ? String(wCode ?? (project as any)?.code) : '';
+  const headerShortRaw = (wShortName ?? (project as any)?.short_name) ? String(wShortName ?? (project as any)?.short_name) : '';
+  const headerShort = headerShortRaw && headerShortRaw !== headerTitle ? headerShortRaw : '';
+
+  return (
+    <DetailPageHeader
+      title={headerTitle}
+      backLabel="Проекты"
+      onBack={() => navigate('/projects')}
+      statusBadge={statusBadge}
+      metaItems={[
+        headerCode ? <span key="code" className={hStyles.metaText}>Код: {headerCode}</span> : null,
+        headerShort ? <span key="short" className={hStyles.metaText}>{headerShort}</span> : null,
+      ].filter(Boolean)}
+      actions={
+        <>
+          <Button onClick={() => navigate(-1)}>Отмена</Button>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            disabled={!isFormChanged}
+            loading={isUpdateLoading}
+            onClick={() => form.submit()}
+          >
+            Сохранить
+          </Button>
+        </>
+      }
+      tabs={[{ key: 'main', label: 'Редактирование' }]}
+      activeTab="main"
+      onTabChange={() => {}}
+      contextHolder={contextHolder}
+      stickyHeader
+    >
       <div className={styles.formCard}>
         <Form
           form={form}
-          layout='vertical'
+          layout="vertical"
           onFieldsChange={() => setIsFormChanged(true)}
           onFinish={handleSave}
-          onKeyPress={e => {
+          onKeyPress={(e) => {
             if (e.key === 'Enter') e.preventDefault();
           }}
           scrollToFirstError
         >
-          {/* Идентификация проекта */}
           <Divider orientation='left'>
             <ProjectOutlined /> Идентификация проекта
           </Divider>
@@ -105,7 +146,7 @@ export default function ProjectEditPage() {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={9}>
+            <Col xs={24} md={13}>
               <Form.Item
                 label='Название'
                 name='name'
@@ -115,7 +156,7 @@ export default function ProjectEditPage() {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={9}>
+            <Col xs={24} md={5}>
               <Form.Item
                 label='Короткое название'
                 name='short_name'
@@ -134,91 +175,79 @@ export default function ProjectEditPage() {
             </Col>
           </Row>
 
-          {/* Сроки и статус */}
-          <Divider orientation='left'>
-            <CalendarOutlined /> Сроки и статус
-          </Divider>
+          <div className={styles.twoColSections}>
+            <div className={styles.sectionBox}>
+              <Divider orientation="left" style={{ marginTop: 0 }}>
+                <CalendarOutlined /> Сроки и статус
+              </Divider>
 
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Form.Item
-                label='Дата начала'
-                name='start_date'
-                rules={[{ required: true, message: 'Выберите дату начала' }]}
-              >
-                <DatePicker style={{ width: '100%' }} placeholder='Выберите дату начала' format='DD.MM.YYYY' />
-              </Form.Item>
-            </Col>
+              <Row gutter={16}>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    label="Дата начала"
+                    name="start_date"
+                    rules={[{ required: true, message: 'Выберите дату начала' }]}
+                  >
+                    <DatePicker style={{ width: '100%' }} placeholder="Выберите дату начала" format="DD.MM.YYYY" />
+                  </Form.Item>
+                </Col>
 
-            <Col xs={24} md={8}>
-              <Form.Item label='Дата окончания' name='end_date'>
-                <DatePicker style={{ width: '100%' }} placeholder='Выберите дату окончания' format='DD.MM.YYYY' />
-              </Form.Item>
-            </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item label="Дата окончания" name="end_date">
+                    <DatePicker style={{ width: '100%' }} placeholder="Выберите дату окончания" format="DD.MM.YYYY" />
+                  </Form.Item>
+                </Col>
 
-            <Col xs={24} md={8}>
-              <Form.Item
-                label='Статус'
-                name='status'
-                rules={[{ required: true, message: 'Выберите статус проекта' }]}
-              >
-                <Select placeholder='Выберите статус' suffixIcon={<EditOutlined />}>
-                  <Option value='active'>Активный</Option>
-                  <Option value='pending'>В ожидании</Option>
-                  <Option value='paused'>Приостановлен</Option>
-                  <Option value='completed'>Завершен</Option>
-                  <Option value='cancelled'>Отменен</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    label="Статус"
+                    name="status"
+                    rules={[{ required: true, message: 'Выберите статус проекта' }]}
+                  >
+                    <Select placeholder="Выберите статус" suffixIcon={<EditOutlined />}>
+                      <Option value="active">Активный</Option>
+                      <Option value="pending">В ожидании</Option>
+                      <Option value="paused">Приостановлен</Option>
+                      <Option value="completed">Завершен</Option>
+                      <Option value="cancelled">Отменен</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
 
-          {/* Управление */}
-          <Divider orientation='left'>
-            <UserOutlined /> Управление
-          </Divider>
+            <div className={styles.sectionBox}>
+              <Divider orientation="left" style={{ marginTop: 0 }}>
+                <UserOutlined /> Управление
+              </Divider>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label='Руководитель' name='manager_id'>
-                <Select
-                  placeholder='Выберите руководителя'
-                  allowClear
-                  showSearch
-                  optionFilterProp='label'
-                  optionLabelProp='label'
-                  filterOption={(input, option) =>
-                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  suffixIcon={<UserOutlined />}
-                >
-                  {referenceBooks?.users?.map(user => (
-                    <Option key={user.id} value={user.id} label={user.name}>
-                      {user.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          {/* Кнопки действий */}
-          <div className={styles.formActions}>
-            <Button onClick={() => navigate(-1)}>
-              Отмена
-            </Button>
-            <Button
-              type='primary'
-              htmlType='submit'
-              icon={<SaveOutlined />}
-              disabled={!isFormChanged}
-              loading={isUpdateLoading}
-            >
-              Сохранить изменения
-            </Button>
+              <Row gutter={16}>
+                <Col xs={24}>
+                  <Form.Item label="Руководитель" name="manager_id">
+                    <Select
+                      placeholder="Выберите руководителя"
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      optionLabelProp="label"
+                      filterOption={(input, option) =>
+                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                      }
+                      suffixIcon={<UserOutlined />}
+                    >
+                      {referenceBooks?.users?.map((user) => (
+                        <Option key={user.id} value={user.id} label={user.name}>
+                          {user.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
           </div>
         </Form>
       </div>
-    </div>
+    </DetailPageHeader>
   );
 }

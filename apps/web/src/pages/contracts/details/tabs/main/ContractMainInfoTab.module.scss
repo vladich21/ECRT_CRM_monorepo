@@ -73,3 +73,64 @@
   font-weight: 500 !important;
   color: rgba(0, 0, 0, 0.88) !important;
 }
+
+.stagesToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stagesToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filtersBtnActive {
+  border-color: #1677ff !important;
+  color: #1677ff !important;
+}
+
+.filtersBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  background: rgba(22, 119, 255, 0.12);
+  color: #1677ff;
+}
+
+.stagesToolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stagesToolbarRightWide {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.toolbarInput {
+  width: 320px;
+}
+
+@media (max-width: 768px) {
+  .toolbarInput {
+    width: 100%;
+  }
+}

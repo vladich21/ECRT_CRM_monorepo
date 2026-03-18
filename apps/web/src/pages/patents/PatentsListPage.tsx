@@ -79,7 +79,11 @@ export default function PatentsListPage() {
       case 'deleted':
         return deletedPatents;
       default:
-        return [...activePatents, ...deletedPatents];
+        return Array.from(
+          new Map(
+            [...activePatents, ...deletedPatents].map((p) => [p.id, p]),
+          ).values(),
+        );
     }
   }, [activeTab, activePatents, deletedPatents]);
 

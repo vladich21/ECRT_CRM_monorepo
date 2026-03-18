@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Form, Input, Button, Select, Switch, Space, Row, Col, Divider, Tag, Tooltip, DatePicker } from 'antd';
 import {
+  CloseOutlined,
   SaveOutlined,
   PhoneOutlined,
   MailOutlined,
@@ -16,8 +17,8 @@ import {
 } from '@ant-design/icons';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useNotification } from '../../customhooks/useNotification';
-import { BackButton } from '../../components/backButton/BackButton';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
+import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../components/loader/Loader';
 import { getChangedFields } from '../../helpers/getChangedFields';
 import { usePartnerById, usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
@@ -47,6 +48,13 @@ export default function PartnerEditPage() {
     useUpdatePartner();
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
   const isSubmittingRef = useRef(false);
+
+  // IMPORTANT: keep all hooks (including Form.useWatch) unconditional
+  const wName = Form.useWatch('name', form) as string | undefined;
+  const wShortName = Form.useWatch('short_name', form) as string | undefined;
+  const wInn = Form.useWatch('inn', form) as string | undefined;
+  const wStatusId = Form.useWatch('status_id', form) as string | undefined;
+  const wTypeIds = Form.useWatch('type_ids', form) as string[] | undefined;
 
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses) {
@@ -84,6 +92,16 @@ export default function PartnerEditPage() {
     return <NotFound errorMessage='Контрагент не найден' />;
   }
 
+  const headerTitle =
+    (wShortName ?? partner?.short_name) ||
+    (wName ?? partner?.name) ||
+    'Контрагент';
+  const statusName =
+    referenceBooks?.partnerStatuses?.find((s) => String(s.id) === String(wStatusId ?? partner?.status_id))?.name;
+  const typeNames = (wTypeIds ?? partner?.type_ids ?? [])
+    .map((id) => referenceBooks?.partnerTypes?.find((t) => String(t.id) === String(id))?.name)
+    .filter(Boolean);
+
   const handleSave = async (values: any) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
@@ -102,17 +120,54 @@ export default function PartnerEditPage() {
   };
 
   return (
-    <div className={styles.wrap}>
-      {contextHolder}
-      <BackButton />
-      <PageHeader
-        title={`Редактирование контрагента: ${partner?.short_name || partner?.name}`}
-      />
-
+    <DetailPageHeader
+      title={`Редактирование: ${headerTitle}`}
+      backLabel="Контрагенты"
+      onBack={() => navigate(-1)}
+      statusBadge={
+        statusName
+          ? { label: statusName, color: statusName === 'Активный' ? '#52c41a' : '#1677ff' }
+          : undefined
+      }
+      metaItems={[
+        (wInn ?? partner?.inn) && (
+          <span key="inn" className={hStyles.metaText}>
+            <BankOutlined /> ИНН {wInn ?? partner?.inn}
+          </span>
+        ),
+        typeNames.length > 0 && (
+          <span key="types" className={hStyles.metaText}>
+            {typeNames.join(', ')}
+          </span>
+        ),
+      ].filter(Boolean)}
+      actions={
+        <>
+          <Button icon={<CloseOutlined />} onClick={() => navigate(-1)} disabled={isUpdateLoading}>
+            Отмена
+          </Button>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={() => form.submit()}
+            loading={isUpdateLoading}
+            disabled={!isFormChanged}
+          >
+            Сохранить
+          </Button>
+        </>
+      }
+      tabs={[{ key: 'main', label: 'Редактирование' }]}
+      activeTab="main"
+      onTabChange={() => {}}
+      contextHolder={contextHolder}
+      stickyHeader
+    >
       <div className={styles.formCard}>
         <Form
           form={form}
           layout='vertical'
+          size="middle"
           onFieldsChange={() => setIsFormChanged(true)}
           onFinish={handleSave}
           disabled={isUpdateLoading}
@@ -386,23 +441,8 @@ export default function PartnerEditPage() {
             </Col>
           </Row>
 
-          {/* Кнопки действий */}
-          <div className={styles.formActions}>
-            <Button onClick={() => navigate(-1)}>
-              Отмена
-            </Button>
-            <Button
-              type='primary'
-              htmlType='submit'
-              icon={<SaveOutlined />}
-              loading={isUpdateLoading}
-              disabled={!isFormChanged}
-            >
-              Сохранить изменения
-            </Button>
-          </div>
         </Form>
       </div>
-    </div>
+    </DetailPageHeader>
   );
 }
