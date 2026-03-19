@@ -85,13 +85,13 @@ const ContractTypesListPage: React.FC = () => {
   return (
     <ReferenceBookListPage title="Типы договоров" addButtonLabel="Добавить тип договора" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <ReferenceBookCardList>
-        {data.map((t) => (
+        {data.map((contractType) => (
           <ReferenceBookItemCard
-            key={t.id}
-            title={t.name}
-            description={t.description || undefined}
-            onEdit={() => onEdit({ id: t.id })}
-            onDelete={() => onDelete({ id: t.id })}
+            key={contractType.id}
+            title={contractType.name}
+            description={contractType.description || undefined}
+            onEdit={() => onEdit({ id: contractType.id })}
+            onDelete={() => onDelete({ id: contractType.id })}
           />
         ))}
       </ReferenceBookCardList>

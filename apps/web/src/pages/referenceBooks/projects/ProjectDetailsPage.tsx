@@ -24,7 +24,7 @@ function formatDate(dateStr: string) {
 }
 
 function getInitials(name: string) {
-  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  return name.split(' ').slice(0, 2).map((word) => word[0]).join('').toUpperCase();
 }
 
 const STATUS_TAG_CLASS: Record<string, string> = {

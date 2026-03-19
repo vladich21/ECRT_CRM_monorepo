@@ -87,14 +87,14 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
   return (
     <ReferenceBookListPage title="Экономические категории контрагентов" addButtonLabel="Добавить экономическую категорию" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <ReferenceBookCardList>
-        {data.map((c) => (
+        {data.map((category) => (
           <ReferenceBookItemCard
-            key={c.id}
-            title={c.name}
-            metaText={c.code ? `Код: ${c.code}` : undefined}
-            description={c.description || undefined}
-            onEdit={() => onEdit({ id: c.id })}
-            onDelete={() => onDelete({ id: c.id })}
+            key={category.id}
+            title={category.name}
+            metaText={category.code ? `Код: ${category.code}` : undefined}
+            description={category.description || undefined}
+            onEdit={() => onEdit({ id: category.id })}
+            onDelete={() => onDelete({ id: category.id })}
           />
         ))}
       </ReferenceBookCardList>

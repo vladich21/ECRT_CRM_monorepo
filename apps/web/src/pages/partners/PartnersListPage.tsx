@@ -44,9 +44,9 @@ export default function PartnersListPage() {
   // ─── опции для модалки фильтров ───────────────────────────────────────────
   const filterOptions = useMemo(
     () => ({
-      types:        (references?.partnerTypes    ?? []).map((t) => ({ label: t.name, value: String(t.id) })),
-      statuses:     (references?.partnerStatuses ?? []).map((s) => ({ label: s.name, value: String(s.id) })),
-      competencies: (references?.competencies    ?? []).map((c) => ({ label: c.name, value: String(c.id) })),
+      types:        (references?.partnerTypes    ?? []).map((type) => ({ label: type.name, value: String(type.id) })),
+      statuses:     (references?.partnerStatuses ?? []).map((status) => ({ label: status.name, value: String(status.id) })),
+      competencies: (references?.competencies    ?? []).map((competence) => ({ label: competence.name, value: String(competence.id) })),
     }),
     [references],
   );
@@ -57,8 +57,8 @@ export default function PartnersListPage() {
     (appliedFilters.competenceIds.length > 0 ? 1 : 0);
 
   const openFiltersModal = () => { setDraftFilters(appliedFilters); setIsFiltersOpen(true); };
-  const applyFilters     = () => { setAppliedFilters(draftFilters); setIsFiltersOpen(false); setPage(1); };
-  const resetFilters     = () => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setIsFiltersOpen(false); setPage(1); };
+  const applyFilters = () => { setAppliedFilters(draftFilters); setIsFiltersOpen(false); setPage(1); };
+  const resetFilters = () => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setIsFiltersOpen(false); setPage(1); };
 
   const handleCardClick = (partner: Partner) => {
     navigate(`/partners/${partner.id}`, { state: { from: 'partners-list' } });

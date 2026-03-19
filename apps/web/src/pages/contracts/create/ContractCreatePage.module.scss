@@ -2,6 +2,7 @@
 
 .wrap {
   @include fp.formPageWrap;
+  background: transparent;
 }
 
 .formCard {

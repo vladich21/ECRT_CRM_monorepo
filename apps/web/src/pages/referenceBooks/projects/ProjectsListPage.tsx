@@ -31,11 +31,11 @@ export default function ProjectsListPage() {
 
   const tabCounts = useMemo(() => ({
     all: projects.length,
-    active: projects.filter((p) => p.status === 'active').length,
-    completed: projects.filter((p) => p.status === 'completed').length,
-    pending: projects.filter((p) => p.status === 'pending').length,
-    paused: projects.filter((p) => p.status === 'paused').length,
-    cancelled: projects.filter((p) => p.status === 'cancelled').length,
+    active: projects.filter((project) => project.status === 'active').length,
+    completed: projects.filter((project) => project.status === 'completed').length,
+    pending: projects.filter((project) => project.status === 'pending').length,
+    paused: projects.filter((project) => project.status === 'paused').length,
+    cancelled: projects.filter((project) => project.status === 'cancelled').length,
   }), [projects]);
 
   const filteredProjects = useMemo(() => {
@@ -45,7 +45,7 @@ export default function ProjectsListPage() {
   }, [projects, activeTab, appliedFilters, searchQuery]);
 
   const selectOptions = useMemo(() => ({
-    managers: (referenceBooks?.users ?? []).map((u) => ({ label: u.name, value: u.id })),
+    managers: (referenceBooks?.users ?? []).map((user) => ({ label: user.name, value: user.id })),
   }), [referenceBooks]);
 
   const handleProjectClick = (project: Project) =>

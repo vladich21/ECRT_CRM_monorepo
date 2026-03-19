@@ -15,9 +15,9 @@ export class ContractCategoriesService {
       .select()
       .from(refContractCategories)
       .orderBy(asc(refContractCategories.name));
-    return rows.map((r) => ({
-      id: String(r.id),
-      name: r.name ?? '',
+    return rows.map((row) => ({
+      id: String(row.id),
+      name: row.name ?? '',
     }));
   }
 }

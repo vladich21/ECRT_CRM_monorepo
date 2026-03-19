@@ -67,8 +67,8 @@ function LoginPage() {
         }
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      set({ error: e.response?.data?.message ?? 'Ошибка подключения к серверу' });
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      set({ error: axiosError.response?.data?.message ?? 'Ошибка подключения к серверу' });
     } finally {
       set({ loading: false });
     }

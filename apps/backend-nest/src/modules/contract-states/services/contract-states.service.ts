@@ -15,10 +15,10 @@ export class ContractStatesService {
       .select()
       .from(refContractStates)
       .orderBy(asc(refContractStates.name));
-    return rows.map((r) => ({
-      id: String(r.id),
-      name: r.name ?? '',
-      code: r.code ?? '',
+    return rows.map((row) => ({
+      id: String(row.id),
+      name: row.name ?? '',
+      code: row.code ?? '',
     }));
   }
 }

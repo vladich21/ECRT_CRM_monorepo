@@ -14,11 +14,11 @@ export function isContractDraft(
 
 export function getContractStateTagClass(code: string | undefined): string {
   if (!code) return 'tagStateDefault';
-  const c = code.toUpperCase();
-  if (c === 'DRAFT') return 'tagStateDraft';
-  if (c === 'ON_APPROVAL') return 'tagStateOnApproval';
-  if (c === 'APPROVED' || c === 'SIGNED') return 'tagStateSigned';
-  if (c === 'REJECTED') return 'tagStateRejected';
-  if (c === 'CLOZED' || c === 'CLOSED') return 'tagStateClosed';
+  const codeUpper = code.toUpperCase();
+  if (codeUpper === 'DRAFT') return 'tagStateDraft';
+  if (codeUpper === 'ON_APPROVAL') return 'tagStateOnApproval';
+  if (codeUpper === 'APPROVED' || codeUpper === 'SIGNED') return 'tagStateSigned';
+  if (codeUpper === 'REJECTED') return 'tagStateRejected';
+  if (codeUpper === 'CLOZED' || codeUpper === 'CLOSED') return 'tagStateClosed';
   return 'tagStateDefault';
 }

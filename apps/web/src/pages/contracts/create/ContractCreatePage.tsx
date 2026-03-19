@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Form, Input, Button, Select, Switch, Row, Col, Divider, InputNumber, DatePicker } from 'antd';
+import { Form, Input, Button, Select, Switch, Space, Row, Col, Divider, InputNumber, DatePicker } from 'antd';
 import {
   SaveOutlined,
   FileTextOutlined,
@@ -18,7 +18,7 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useCreateContract } from '../../../api/contracts/contractApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
 import { BackButton } from '../../../components/backButton/BackButton';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { initialFormValues } from '../list/data';
@@ -135,15 +135,32 @@ export default function ContractCreatePage() {
   }
 
   return (
-    <div className={styles.wrap}>
-      {contextHolder}
-      <BackButton />
-      <PageHeader title="Создание нового договора" subtitle="Заполните данные для создания договора" />
-
+    <DetailPageHeader
+      title="Создание нового договора"
+      titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания договора</span>}
+      backLabel="Договоры"
+      onBack={() => navigate(-1)}
+      actions={
+        <>
+          <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
+            Очистить форму
+          </Button>
+          <Button type="primary" icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
+            Создать договор
+          </Button>
+        </>
+      }
+      tabs={[{ key: 'main', label: 'Создание' }]}
+      activeTab="main"
+      onTabChange={() => {}}
+      contextHolder={contextHolder}
+      stickyHeader
+    >
       <div className={styles.formCard}>
           <Form
             form={form}
             layout='vertical'
+            size="middle"
             initialValues={initialFormValues}
             onFinish={handleCreate}
             disabled={isCreateLoading}
@@ -160,7 +177,7 @@ export default function ContractCreatePage() {
             </Divider>
 
             <Row gutter={16}>
-              <Col xs={24} md={8}>
+              <Col xs={24} md={4}>
                 <Form.Item
                   label='Номер договора'
                   name='number'
@@ -170,13 +187,13 @@ export default function ContractCreatePage() {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={8}>
+              <Col xs={24} md={4}>
                 <Form.Item label='Шифр договора' name='cipher'>
                   <Input placeholder='ДГ-2024-001' />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={8}>
+              <Col xs={24} md={16}>
                 <Form.Item
                   label='Название'
                   name='name'
@@ -271,179 +288,166 @@ export default function ContractCreatePage() {
               </Col>
             </Row>
 
-            {/* Классификация */}
-            <Divider orientation='left'>
-              <UnorderedListOutlined /> Классификация
-            </Divider>
+            <div className={styles.threeColSections}>
+              <div className={styles.sectionBox}>
+                <Divider orientation="left" style={{ marginTop: 0 }}>
+                  <CalculatorOutlined /> Финансовые условия
+                </Divider>
+                <Row gutter={16}>
+                  <Col xs={24}>
+                    <Form.Item
+                      label='Сумма без НДС'
+                      name='amount_excl_vat'
+                      rules={[{ required: true, message: 'Введите сумму без НДС' }]}
+                    >
+                      <InputNumber
+                        placeholder='0.00'
+                        style={{ width: '100%' }}
+                        min={0}
+                        step={0.01}
+                        precision={2}
+                        onChange={handleAmountChange}
+                        formatter={value => numberFormatter(value)}
+                        parser={value => numberParser(value) as any}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item
+                      label='Ставка НДС (%)'
+                      name='vat_rate'
+                      rules={[{ required: true, message: 'Введите ставку НДС' }]}
+                    >
+                      <InputNumber
+                        placeholder='0'
+                        style={{ width: '100%' }}
+                        min={0}
+                        max={100}
+                        step={1}
+                        precision={0}
+                        onChange={handleVatRateChange}
+                        addonAfter='%'
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item label='Сумма с НДС' name='amount_incl_vat'>
+                      <InputNumber
+                        placeholder='0.00'
+                        style={{ width: '100%' }}
+                        min={0}
+                        step={0.01}
+                        precision={2}
+                        disabled
+                        formatter={value => numberFormatter(value)}
+                        parser={value => numberParser(value) as any}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
 
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label='Категория'
-                  name='category_id'
-                  rules={[{ required: true, message: 'Выберите категорию' }]}
-                >
-                  <Select placeholder='Выберите категорию' suffixIcon={<TagOutlined />}>
-                    {referenceBooks?.contractCategories?.map(category => (
-                      <Option key={category.id} value={category.id}>
-                        {category.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+              <div className={styles.sectionBox}>
+                <Divider orientation="left" style={{ marginTop: 0 }}>
+                  <CalendarOutlined /> Сроки действия
+                </Divider>
+                <Row gutter={16}>
+                  <Col xs={24}>
+                    <Form.Item
+                      label='Дата начала'
+                      name='start_date'
+                      rules={[{ required: true, message: 'Выберите дату начала' }]}
+                    >
+                      <DatePicker placeholder='Выберите дату начала' style={{ width: '100%' }} format='DD.MM.YYYY' />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item label='Дата окончания' name='end_date'>
+                      <DatePicker placeholder='Выберите дату окончания' style={{ width: '100%' }} format='DD.MM.YYYY' />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item
+                      label='Дата подписания'
+                      name='date_signed'
+                      rules={[{ required: true, message: 'Выберите дату подписания' }]}
+                    >
+                      <DatePicker placeholder='Выберите дату подписания' style={{ width: '100%' }} format='DD.MM.YYYY' />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
 
-              <Col xs={24} md={12}>
-                <Form.Item label='Тип' name='contract_type_id'>
-                  <Select
-                    placeholder='Выберите тип'
-                    suffixIcon={<TagOutlined />}
-                    optionLabelProp='label'
-                    allowClear
-                  >
-                    {referenceBooks?.contractTypes?.map(type => (
-                      <Option key={type.id} value={type.id} label={type.name}>
-                        {type.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+              <div className={styles.sectionBox}>
+                <Divider orientation="left" style={{ marginTop: 0 }}>
+                  <UnorderedListOutlined /> Классификация
+                </Divider>
+                <Row gutter={16}>
+                  <Col xs={24}>
+                    <Form.Item
+                      label='Категория'
+                      name='category_id'
+                      rules={[{ required: true, message: 'Выберите категорию' }]}
+                    >
+                      <Select placeholder='Выберите категорию' suffixIcon={<TagOutlined />}>
+                        {referenceBooks?.contractCategories?.map(category => (
+                          <Option key={category.id} value={category.id}>
+                            {category.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item label='Тип' name='contract_type_id'>
+                      <Select
+                        placeholder='Выберите тип'
+                        suffixIcon={<TagOutlined />}
+                        optionLabelProp='label'
+                        allowClear
+                      >
+                        {referenceBooks?.contractTypes?.map(type => (
+                          <Option key={type.id} value={type.id} label={type.name}>
+                            {type.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
 
-            {/* Финансовые условия */}
-            <Divider orientation='left'>
-              <CalculatorOutlined /> Финансовые условия
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label='Сумма без НДС'
-                  name='amount_excl_vat'
-                  rules={[{ required: true, message: 'Введите сумму без НДС' }]}
-                >
-                  <InputNumber
-                    placeholder='0.00'
-                    style={{ width: '100%' }}
-                    min={0}
-                    step={0.01}
-                    precision={2}
-                    onChange={handleAmountChange}
-                    formatter={value => numberFormatter(value)}
-                    parser={value => numberParser(value) as any}
-                  />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label='Ставка НДС (%)'
-                  name='vat_rate'
-                  rules={[{ required: true, message: 'Введите ставку НДС' }]}
-                >
-                  <InputNumber
-                    placeholder='0'
-                    style={{ width: '100%' }}
-                    min={0}
-                    max={100}
-                    step={1}
-                    precision={0}
-                    onChange={handleVatRateChange}
-                    addonAfter='%'
-                  />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item label='Сумма с НДС' name='amount_incl_vat'>
-                  <InputNumber
-                    placeholder='0.00'
-                    style={{ width: '100%' }}
-                    min={0}
-                    step={0.01}
-                    precision={2}
-                    disabled
-                    formatter={value => numberFormatter(value)}
-                    parser={value => numberParser(value) as any}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* Сроки действия */}
-            <Divider orientation='left'>
-              <CalendarOutlined /> Сроки действия
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label='Дата начала'
-                  name='start_date'
-                  rules={[{ required: true, message: 'Выберите дату начала' }]}
-                >
-                  <DatePicker placeholder='Выберите дату начала' style={{ width: '100%' }} format='DD.MM.YYYY' />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item label='Дата окончания' name='end_date'>
-                  <DatePicker placeholder='Выберите дату окончания' style={{ width: '100%' }} format='DD.MM.YYYY' />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label='Дата подписания'
-                  name='date_signed'
-                  rules={[{ required: true, message: 'Выберите дату подписания' }]}
-                >
-                  <DatePicker placeholder='Выберите дату подписания' style={{ width: '100%' }} format='DD.MM.YYYY' />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* Состояние и статус */}
-            <Divider orientation='left'>
-              <CheckCircleOutlined /> Состояние и статус
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item label='Состояние' name='state_id'>
-                  <Select
-                    placeholder='Черновик'
-                    disabled
-                    style={{ cursor: 'not-allowed' }}
-                  >
-                    {referenceBooks?.contractStates?.map(state => (
-                      <Option key={state.id} value={state.id}>
-                        {state.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item label='Активен' name='is_active' valuePropName='checked' initialValue={true}>
-                  <Switch checkedChildren='Активен' unCheckedChildren='Не активен' defaultChecked />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* Кнопки действий */}
-            <div className={styles.formActions}>
-              <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
-                Очистить форму
-              </Button>
-              <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading}>
-                Создать договор
-              </Button>
+              <div className={styles.sectionBox}>
+                <Divider orientation="left" style={{ marginTop: 0 }}>
+                  <CheckCircleOutlined /> Состояние и статус
+                </Divider>
+                <Row gutter={16}>
+                  <Col xs={24}>
+                    <Form.Item label='Состояние' name='state_id'>
+                      <Select
+                        placeholder='Черновик'
+                        disabled
+                        style={{ cursor: 'not-allowed' }}
+                      >
+                        {referenceBooks?.contractStates?.map(state => (
+                          <Option key={state.id} value={state.id}>
+                            {state.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item label='Активен' name='is_active' valuePropName='checked' initialValue={true}>
+                      <Switch checkedChildren='Активен' unCheckedChildren='Не активен' defaultChecked />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
             </div>
+
           </Form>
       </div>
-    </div>
+    </DetailPageHeader>
   );
 }

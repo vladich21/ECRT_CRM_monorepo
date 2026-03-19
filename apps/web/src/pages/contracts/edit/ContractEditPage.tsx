@@ -28,9 +28,9 @@ import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
+import { formatDate } from '../details/tabs/stages/data';
 import { getContractStateTagClass } from '../utils/contractStateUtils';
 import tagStyles from '../list/ContractsListPage.module.scss';
-import { formatDate } from '../details/tabs/stages/data';
 import styles from '../create/ContractCreatePage.module.scss';
 
 const { Option } = Select;
@@ -56,7 +56,6 @@ export default function ContractEditPage() {
     isSuccess: isUpdateSuccess,
   } = useUpdateContract();
 
-  // IMPORTANT: keep all hooks (including Form.useWatch) unconditional
   const wNumber = Form.useWatch('number', form) as string | undefined;
   const wCipher = Form.useWatch('cipher', form) as string | undefined;
   const wName = Form.useWatch('name', form) as string | undefined;
@@ -67,13 +66,8 @@ export default function ContractEditPage() {
   const wIsActive = Form.useWatch('is_active', form) as boolean | undefined;
   const wDateSigned = Form.useWatch('date_signed', form) as unknown;
 
-  const from = (location.state as any)?.from as string | undefined;
   const handleBack = () => {
-    if (typeof from === 'string' && from.length > 0) {
-      navigate(from);
-      return;
-    }
-    navigate(-1);
+    navigate(`/contracts/${contractId}`);
   };
 
   useEffect(() => {
@@ -154,7 +148,6 @@ export default function ContractEditPage() {
   const headerNumber = wNumber ?? contract.number ?? '';
   const headerCipher = wCipher ?? contract.cipher ?? '';
   const title = `Договор №${headerNumber || '—'}${headerCipher ? ` (${headerCipher})` : ''}`;
-
   const contractState = getEntityById(wStateId ?? contract.state_id, referenceBooks?.contractStates);
   const contractCategoryName =
     getNameById(wCategoryId ?? contract.category_id, referenceBooks?.contractCategories ?? []) ?? '';
@@ -163,7 +156,6 @@ export default function ContractEditPage() {
   const partnerName = getNameById(wPartnerId ?? contract.partner_id, referenceBooks?.partners ?? []) ?? '';
   const headerName = (wName ?? contract.name) || '';
   const isActive = (wIsActive ?? contract.is_active) ?? false;
-
   const signedText = (() => {
     const v = wDateSigned ?? contract.date_signed;
     if (!v) return '';
@@ -188,9 +180,7 @@ export default function ContractEditPage() {
         color: isActive ? '#52c41a' : '#ff4d4f',
       }}
       metaItems={[
-        headerName ? (
-          <span key="name" className={hStyles.metaText}>{headerName}</span>
-        ) : null,
+        headerName ? <span key="name" className={hStyles.metaText}>{headerName}</span> : null,
         contractState ? (
           <span
             key="state"
@@ -202,11 +192,7 @@ export default function ContractEditPage() {
         contractCategoryName ? (
           <span key="category" className={tagStyles.cardCategory}>{contractCategoryName}</span>
         ) : null,
-        partnerName ? (
-          <span key="partner" className={hStyles.metaText}>
-            {partnerName}
-          </span>
-        ) : null,
+        partnerName ? <span key="partner" className={hStyles.metaText}>{partnerName}</span> : null,
       ].filter(Boolean)}
       actions={
         <>
@@ -277,8 +263,6 @@ export default function ContractEditPage() {
               </Col>
             </Row>
 
-            <Row gutter={16}></Row>
-
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item label='Описание' name='description'>
@@ -289,9 +273,9 @@ export default function ContractEditPage() {
 
             <Row gutter={16}>
               <Col xs={24} md={8}>
-                <Form.Item label='Контрагент' name='partner_id' rules={[{ required: true, message: 'Выберите контрагент' }]}>
+                <Form.Item label='Партнёр' name='partner_id' rules={[{ required: true, message: 'Выберите партнёра' }]}>
                   <Select
-                    placeholder='Выберите контрагента'
+                    placeholder='Выберите партнёра'
                     allowClear
                     showSearch
                     optionFilterProp='children'
@@ -473,7 +457,6 @@ export default function ContractEditPage() {
                       </Select>
                     </Form.Item>
                   </Col>
-
                   <Col xs={24}>
                     <Form.Item label='Тип' name='contract_type_id'>
                       <Select
@@ -513,10 +496,9 @@ export default function ContractEditPage() {
                       </Select>
                     </Form.Item>
                   </Col>
-
                   <Col xs={24}>
-                    <Form.Item label='Действует' name='is_active' valuePropName='checked'>
-                      <Switch checkedChildren='Действует' unCheckedChildren='Не действует' />
+                    <Form.Item label='Активен' name='is_active' valuePropName='checked'>
+                      <Switch checkedChildren='Активен' unCheckedChildren='Не активен' />
                     </Form.Item>
                   </Col>
                 </Row>

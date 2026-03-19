@@ -95,7 +95,7 @@ const referenceApiMethods = {
   departments: () => departmentApi.getDepartments(1),
   roles: () =>
     roleApi.getRoles().then((list) =>
-      list.map((r) => ({ id: r.id, name: r.role_name ?? (r as { name?: string }).name ?? r.id })),
+      list.map((role) => ({ id: role.id, name: role.role_name ?? (role as { name?: string }).name ?? role.id })),
     ),
   positions: () => positionApi.getPositions(1),
   projects: () => projectApi.getProjects(1),

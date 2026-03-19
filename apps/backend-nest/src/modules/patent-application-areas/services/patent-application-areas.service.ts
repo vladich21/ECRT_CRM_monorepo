@@ -15,7 +15,7 @@ export class PatentApplicationAreasService {
       .select()
       .from(refPatentApplicationAreas)
       .orderBy(asc(refPatentApplicationAreas.name));
-    return rows.map((r) => this.toResponse(r));
+    return rows.map((row) => this.toResponse(row));
   }
 
   async findOne(id: string) {
@@ -79,14 +79,14 @@ export class PatentApplicationAreasService {
     }
   }
 
-  private toResponse(r: (typeof refPatentApplicationAreas.$inferSelect)) {
+  private toResponse(row: (typeof refPatentApplicationAreas.$inferSelect)) {
     return {
-      id: String(r.id),
-      name: r.name ?? '',
-      code: r.code ?? '',
-      description: r.description ?? '',
-      created_at: r.createdAt ? r.createdAt.toISOString() : '',
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
+      id: String(row.id),
+      name: row.name ?? '',
+      code: row.code ?? '',
+      description: row.description ?? '',
+      created_at: row.createdAt ? row.createdAt.toISOString() : '',
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     };
   }
 }

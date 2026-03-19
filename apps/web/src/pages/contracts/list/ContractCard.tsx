@@ -27,7 +27,7 @@ type Props = {
 };
 
 export function ContractCard({ contract, refs, onClick }: Props) {
-  const partnerName = refs?.partners?.find((p) => p.id === contract.partner_id)?.name ?? '—';
+  const partnerName = refs?.partners?.find((partner) => partner.id === contract.partner_id)?.name ?? '—';
   const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
   const stateEntity = getEntityById(contract.state_id, refs?.contractStates);
   const st = contract.is_active ? ACTIVE_STYLE : INACTIVE_STYLE;

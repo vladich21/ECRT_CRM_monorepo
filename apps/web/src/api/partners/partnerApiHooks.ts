@@ -41,7 +41,7 @@ export const useCreatePartner = (): UseMutationResult<Partner, Error, Partner> =
     mutationFn: (data: Partner) => partnerApi.addPartner(data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey.some((k) => typeof k === 'string' && k === 'partners'),
+        predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
       });
     },
   });
@@ -53,7 +53,7 @@ export const useUpdatePartner = (): UseMutationResult<Partner, Error, { id: stri
     mutationFn: ({ id, data }) => partnerApi.editPartner(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey.some((k) => typeof k === 'string' && k === 'partners'),
+        predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
       });
     },
   });
@@ -65,7 +65,7 @@ export const useDeletePartner = (): UseMutationResult<Partner, Error, string, un
     mutationFn: (partnerId: string) => partnerApi.deletePartner(partnerId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey.some((k) => typeof k === 'string' && k === 'partners'),
+        predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
       });
     },
   });

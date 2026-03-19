@@ -22,7 +22,7 @@ function getInitials(name: string) {
   return name
     .split(' ')
     .slice(0, 2)
-    .map((w) => w[0])
+    .map((word) => word[0])
     .join('')
     .toUpperCase();
 }
@@ -54,10 +54,10 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
   const contract = referenceBooks.contracts?.find((el) => el.id === patent.contract_id);
   const authorNames = (patent.author_ids ?? [])
-    .map((id) => referenceBooks?.users?.find((u) => u.id === id)?.name)
+    .map((id) => referenceBooks?.users?.find((user) => user.id === id)?.name)
     .filter(Boolean) as string[];
   const areaNames = (patent.area_ids ?? [])
-    .map((id) => referenceBooks?.patentAreas?.find((a) => a.id === id)?.name)
+    .map((id) => referenceBooks?.patentAreas?.find((area) => area.id === id)?.name)
     .filter(Boolean) as string[];
 
   return (

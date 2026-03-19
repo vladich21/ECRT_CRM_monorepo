@@ -2,7 +2,6 @@ import type { Patent } from '../../../types/patent';
 import type { PatentAdvancedFilters } from '../PatentsListPage.types';
 import type { ReferenceDataForPatents } from '../data';
 
-/** Фильтрация по расширенным фильтрам (подразделение, состояние, авторы, ответственный) */
 export function filterByAdvanced(
   patents: Patent[],
   filters: PatentAdvancedFilters
@@ -10,41 +9,39 @@ export function filterByAdvanced(
   let result = patents;
 
   if (filters.departmentId != null) {
-    result = result.filter((p) => p.department_id === filters.departmentId);
+    result = result.filter((patent) => patent.department_id === filters.departmentId);
   }
   if (filters.statusId != null) {
-    result = result.filter((p) => p.status_id === filters.statusId);
+    result = result.filter((patent) => patent.status_id === filters.statusId);
   }
   if (filters.authorIds.length > 0) {
-    result = result.filter((p) =>
-      p.author_ids?.some((id) => filters.authorIds.includes(id))
+    result = result.filter((patent) =>
+      patent.author_ids?.some((id) => filters.authorIds.includes(id))
     );
   }
   if (filters.responsibleId != null) {
-    result = result.filter((p) => String(p.created_by) === filters.responsibleId);
+    result = result.filter((patent) => String(patent.created_by) === filters.responsibleId);
   }
 
   return result;
 }
 
-/** Фильтрация по поисковому запросу (наименование, номер регистрации, номер КД) */
 export function filterBySearch(
   patents: Patent[],
   searchQuery: string,
   _refs?: ReferenceDataForPatents
 ): Patent[] {
-  const q = searchQuery.trim().toLowerCase();
-  if (!q) return patents;
+  const queryLower = searchQuery.trim().toLowerCase();
+  if (!queryLower) return patents;
 
   return patents.filter(
-    (p) =>
-      p.name?.toLowerCase().includes(q) ||
-      p.registration_number?.toLowerCase().includes(q) ||
-      p.kd_number?.toLowerCase().includes(q)
+    (patent) =>
+      patent.name?.toLowerCase().includes(queryLower) ||
+      patent.registration_number?.toLowerCase().includes(queryLower) ||
+      patent.kd_number?.toLowerCase().includes(queryLower)
   );
 }
 
-/** Подсчёт количества активных расширенных фильтров */
 export function countActivePatentFilters(filters: PatentAdvancedFilters): number {
   return [
     filters.departmentId != null,

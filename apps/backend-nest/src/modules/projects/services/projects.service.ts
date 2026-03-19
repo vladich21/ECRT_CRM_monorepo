@@ -27,9 +27,9 @@ export class ProjectsService {
     this.logger.debug('Создание проекта');
     this.logger.debug(`Полученные данные create: ${JSON.stringify(data)}`);
 
-    const missing = REQUIRED_CREATE_FIELDS.filter((f) => {
-      const v = data[f];
-      return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+    const missing = REQUIRED_CREATE_FIELDS.filter((field) => {
+      const fieldValue = data[field];
+      return fieldValue === undefined || fieldValue === null || (typeof fieldValue === 'string' && fieldValue.trim() === '');
     });
     if (missing.length > 0) {
       this.logger.warn(`Создание проекта: не заполнены обязательные поля: ${missing.join(', ')}`);
@@ -74,10 +74,10 @@ export class ProjectsService {
   }
 
   private mapToDb(data: Record<string, unknown>) {
-    const toDate = (v: unknown): string | null =>
-      v == null || v === '' ? null : typeof v === 'string' ? v : null;
-    const toUuid = (v: unknown): string | null =>
-      v == null || v === '' ? null : typeof v === 'string' ? v : null;
+    const toDate = (value: unknown): string | null =>
+      value == null || value === '' ? null : typeof value === 'string' ? value : null;
+    const toUuid = (value: unknown): string | null =>
+      value == null || value === '' ? null : typeof value === 'string' ? value : null;
 
     const code = data.code != null ? String(data.code) : null;
     const name = data.name != null ? String(data.name) : null;
@@ -104,32 +104,32 @@ export class ProjectsService {
         .select({ id: projects.id, name: projects.name, code: projects.code })
         .from(projects)
         .orderBy(asc(projects.name));
-      return rows.map((r) => ({
-        id: String(r.id),
-        name: String(r.name ?? ''),
-        code: String(r.code ?? ''),
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: String(row.name ?? ''),
+        code: String(row.code ?? ''),
       }));
     }
     const rows = await this.db.db
       .select()
       .from(projects)
       .orderBy(asc(projects.name));
-    return rows.map((r) => this.toResponse(r));
+    return rows.map((row) => this.toResponse(row));
   }
 
-  private toResponse(r: (typeof projects.$inferSelect)) {
+  private toResponse(row: (typeof projects.$inferSelect)) {
     return {
-      id: String(r.id),
-      code: r.code ?? '',
-      name: r.name ?? '',
-      short_name: r.shortName ?? '',
-      description: r.description ?? '',
-      start_date: r.startDate ? String(r.startDate) : null,
-      end_date: r.endDate ? String(r.endDate) : null,
-      manager_id: r.managerId ? String(r.managerId) : null,
-      status: r.status ?? '',
-      created_at: r.createdAt ? r.createdAt.toISOString() : null,
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : null,
+      id: String(row.id),
+      code: row.code ?? '',
+      name: row.name ?? '',
+      short_name: row.shortName ?? '',
+      description: row.description ?? '',
+      start_date: row.startDate ? String(row.startDate) : null,
+      end_date: row.endDate ? String(row.endDate) : null,
+      manager_id: row.managerId ? String(row.managerId) : null,
+      status: row.status ?? '',
+      created_at: row.createdAt ? row.createdAt.toISOString() : null,
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
     };
   }
 }

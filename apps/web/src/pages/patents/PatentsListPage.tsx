@@ -81,7 +81,7 @@ export default function PatentsListPage() {
       default:
         return Array.from(
           new Map(
-            [...activePatents, ...deletedPatents].map((p) => [p.id, p]),
+            [...activePatents, ...deletedPatents].map((patent) => [patent.id, patent]),
           ).values(),
         );
     }
@@ -114,17 +114,17 @@ export default function PatentsListPage() {
 
   const selectOptions = useMemo(
     () => ({
-      departments: (refs?.departments ?? []).map((d) => ({
-        label: d.name,
-        value: d.id,
+      departments: (refs?.departments ?? []).map((department) => ({
+        label: department.name,
+        value: department.id,
       })),
-      statuses: (refs?.patentStatuses ?? []).map((s) => ({
-        label: s.name,
-        value: s.id,
+      statuses: (refs?.patentStatuses ?? []).map((status) => ({
+        label: status.name,
+        value: status.id,
       })),
-      users: (refs?.users ?? []).map((u) => ({
-        label: u.name,
-        value: u.id,
+      users: (refs?.users ?? []).map((user) => ({
+        label: user.name,
+        value: user.id,
       })),
     }),
     [refs]

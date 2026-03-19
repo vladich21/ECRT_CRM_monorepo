@@ -6,8 +6,7 @@ export const useContractStages = (contractId: string): UseQueryResult<ContractSt
   return useQuery<ContractStage[], Error>({
     queryKey: ['contract-stages', contractId],
     queryFn: () => contractStageApi.getContractStages(contractId),
-    enabled: false, // Эндпоинт не готов, отключаем запрос
-    retry: false,
+    enabled: !!contractId,
   });
 };
 

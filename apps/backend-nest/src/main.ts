@@ -15,7 +15,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: config.get<string>('FRONTEND_URL', 'http://localhost:3000').split(',').map((u) => u.trim()),
+    origin: config.get<string>('FRONTEND_URL', 'http://localhost:3000').split(',').map((url) => url.trim()),
     credentials: true,
   });
 

@@ -17,21 +17,21 @@ export class RolesService {
         .select({ id: refGroups.id, name: refGroups.name })
         .from(refGroups)
         .orderBy(asc(refGroups.name));
-      return rows.map((r) => ({
-        id: String(r.id),
-        role_name: String(r.name ?? ''),
+      return rows.map((row) => ({
+        id: String(row.id),
+        role_name: String(row.name ?? ''),
       }));
     }
     const rows = await this.db.db
       .select()
       .from(refGroups)
       .orderBy(asc(refGroups.name));
-    return rows.map((r) => ({
-      id: String(r.id),
-      role_name: String(r.name ?? ''),
-      name: String(r.name ?? ''),
-      created_at: r.createdAt,
-      updated_at: r.updatedAt,
+    return rows.map((role) => ({
+      id: String(role.id),
+      role_name: String(role.name ?? ''),
+      name: String(role.name ?? ''),
+      created_at: role.createdAt,
+      updated_at: role.updatedAt,
     }));
   }
 
@@ -42,14 +42,14 @@ export class RolesService {
       .from(refGroups)
       .where(eq(refGroups.id, id))
       .limit(1);
-    const r = rows[0];
-    if (!r) return null;
+    const row = rows[0];
+    if (!row) return null;
     return {
-      id: String(r.id),
-      role_name: String(r.name ?? ''),
-      name: String(r.name ?? ''),
-      created_at: r.createdAt,
-      updated_at: r.updatedAt,
+      id: String(row.id),
+      role_name: String(row.name ?? ''),
+      name: String(row.name ?? ''),
+      created_at: row.createdAt,
+      updated_at: row.updatedAt,
     };
   }
 }

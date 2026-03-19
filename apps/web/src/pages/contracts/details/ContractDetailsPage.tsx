@@ -25,7 +25,7 @@ import {
   type ContractDetailsTabKey,
 } from '../utils/contractDetailsUtils';
 import tagStyles from '../list/ContractsListPage.module.scss';
-import { getMockStagesForContract } from '../utils/mockStages';
+import { useContractStages } from '../../../api/contractStages/contractStagesApiHooks';
 
 export default function ContractDetailsPage() {
   const { contractId } = useParams();
@@ -52,6 +52,7 @@ export default function ContractDetailsPage() {
   ]);
 
   const { data: contractFiles = [] } = useFilesByEntity('contract', contractId!);
+  const { data: stagesData } = useContractStages(contractId ?? '');
 
   const deleteContractMutation = useDeleteContract();
 
@@ -90,7 +91,7 @@ export default function ContractDetailsPage() {
   if (isLoading) return <Loader />;
   if (isError || !contract) return <NotFound errorMessage="Договор не найден" />;
 
-  const stages = getMockStagesForContract(contractId!, contract.responsible_id);
+  const stages = stagesData ?? [];
   const outletContext = { contract, stages };
 
   const contractState = getEntityById(contract.state_id, referenceBooks?.contractStates);

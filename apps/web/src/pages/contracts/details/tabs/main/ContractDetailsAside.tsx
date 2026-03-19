@@ -65,7 +65,7 @@ function getInitials(fullName: string | undefined): string {
   return fullName
     .split(/\s+/)
     .filter(Boolean)
-    .map((p) => p[0])
+    .map((word) => word[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
@@ -78,8 +78,8 @@ export function ContractDetailsAside({
 }: ContractDetailsAsideProps) {
   const responsibleName = getNameById(contract.responsible_id, references?.users ?? []);
 
-  const totalPlannedBudget = stages.reduce((s, st) => s + (st.planned_budget || 0), 0);
-  const totalActualBudget  = stages.reduce((s, st) => s + (st.actual_budget  || 0), 0);
+  const totalPlannedBudget = stages.reduce((sum, stage) => sum + (stage.planned_budget || 0), 0);
+  const totalActualBudget  = stages.reduce((sum, stage) => sum + (stage.actual_budget  || 0), 0);
   const budgetProgressPercent =
     totalPlannedBudget > 0
       ? Math.min((totalActualBudget / totalPlannedBudget) * 100, 100)

@@ -16,13 +16,13 @@ export class PartnerCompetenciesService {
         .select({ id: refPartnerCompetencies.id, name: refPartnerCompetencies.name })
         .from(refPartnerCompetencies)
         .orderBy(asc(refPartnerCompetencies.name));
-      return rows.map((r) => ({ id: String(r.id), name: r.name ?? '' }));
+      return rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
     }
     const rows = await this.db.db
       .select()
       .from(refPartnerCompetencies)
       .orderBy(asc(refPartnerCompetencies.name));
-    return rows.map((r) => this.toResponse(r));
+    return rows.map((row) => this.toResponse(row));
   }
 
   async findOne(id: string) {
@@ -73,15 +73,15 @@ export class PartnerCompetenciesService {
     return row;
   }
 
-  private toResponse(r: (typeof refPartnerCompetencies.$inferSelect)) {
+  private toResponse(row: (typeof refPartnerCompetencies.$inferSelect)) {
     return {
-      id: String(r.id),
-      name: r.name ?? '',
-      color_bg: r.colorBg ?? '',
-      color_text: r.colorText ?? '',
-      color_border: r.colorBorder ?? '',
-      created_at: r.createdAt ? r.createdAt.toISOString() : '',
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
+      id: String(row.id),
+      name: row.name ?? '',
+      color_bg: row.colorBg ?? '',
+      color_text: row.colorText ?? '',
+      color_border: row.colorBorder ?? '',
+      created_at: row.createdAt ? row.createdAt.toISOString() : '',
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     };
   }
 }

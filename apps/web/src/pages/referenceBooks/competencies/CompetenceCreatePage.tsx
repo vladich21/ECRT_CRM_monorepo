@@ -56,7 +56,6 @@ export default function PartnerCompetenceCreatePage() {
     mutate(payload);
   };
 
-  // Функция для предпросмотра тега
   const renderTagPreview = () => {
     const bgColor = getHexColor(tagPreview?.color_bg);
     const textColor = getHexColor(tagPreview?.color_text);

@@ -98,8 +98,8 @@ export function ContractMainInfoTab() {
     setStagesState(stages);
     setStageCategories((prev) => {
       const next = { ...prev };
-      for (const s of stages) {
-        if (!next[s.id]) next[s.id] = guessStageCategory(s.name);
+      for (const stage of stages) {
+        if (!next[stage.id]) next[stage.id] = guessStageCategory(stage.name);
       }
       return next;
     });
@@ -107,48 +107,48 @@ export function ContractMainInfoTab() {
 
   // IMPORTANT: keep all hooks (including useMemo) unconditional
   const filteredStages = useMemo(() => {
-    const q = ui.stageSearch.trim().toLowerCase();
-    const bySearch = q
-      ? stagesState.filter((s) => (s.name || '').toLowerCase().includes(q))
+    const queryLower = ui.stageSearch.trim().toLowerCase();
+    const bySearch = queryLower
+      ? stagesState.filter((stage) => (stage.name || '').toLowerCase().includes(queryLower))
       : stagesState;
     const byCategory =
       filters.category === 'all'
         ? bySearch
-        : bySearch.filter((s) => stageCategories[s.id] === filters.category);
+        : bySearch.filter((stage) => stageCategories[stage.id] === filters.category);
 
     const byStatus =
       filters.status === 'all'
         ? byCategory
-        : byCategory.filter((s) => getStageStatus(s, referenceBooks?.contractStageStates).status === filters.status);
+        : byCategory.filter((stage) => getStageStatus(stage, referenceBooks?.contractStageStates).status === filters.status);
 
     const byResponsible =
       filters.responsible === 'all'
         ? byStatus
-        : byStatus.filter((s) => String(s.responsible_id || '') === String(filters.responsible));
+        : byStatus.filter((stage) => String(stage.responsible_id || '') === String(filters.responsible));
 
     const byDeadline =
       filters.deadline === 'all'
         ? byResponsible
-        : byResponsible.filter((s) => {
-            const st = getStageStatus(s, referenceBooks?.contractStageStates);
-            const days = calculateDaysUntilDeadline(s.planned_end_date || null);
-            if (filters.deadline === 'overdue') return st.status === 'overdue';
+        : byResponsible.filter((stage) => {
+            const stageStatus = getStageStatus(stage, referenceBooks?.contractStageStates);
+            const days = calculateDaysUntilDeadline(stage.planned_end_date || null);
+            if (filters.deadline === 'overdue') return stageStatus.status === 'overdue';
             // urgent: in progress and <= 7 days left (not overdue)
-            return st.status === 'in_progress' && days <= 7 && days >= 0;
+            return stageStatus.status === 'in_progress' && days <= 7 && days >= 0;
           });
 
     const byBudget =
       filters.budget === 'all'
         ? byDeadline
-        : byDeadline.filter((s) => {
-            const dev = calculateBudgetDeviation(s.planned_budget ?? null, s.actual_budget ?? null);
+        : byDeadline.filter((stage) => {
+            const dev = calculateBudgetDeviation(stage.planned_budget ?? null, stage.actual_budget ?? null);
             if (dev == null) return false;
             if (filters.budget === 'hasDeviation') return true;
             if (filters.budget === 'overBudget') return dev > 0;
             return dev < 0;
           });
 
-    return [...byBudget].sort((a, b) => a.stage_number - b.stage_number);
+    return [...byBudget].sort((stageA, stageB) => stageA.stage_number - stageB.stage_number);
   }, [
     stagesState,
     ui.stageSearch,
@@ -173,7 +173,7 @@ export function ContractMainInfoTab() {
     return <NotFound errorMessage="Договор не найден" />;
   }
 
-  const completedStagesCount = stagesState.filter((s) => Boolean(s.actual_end_date)).length;
+  const completedStagesCount = stagesState.filter((stage) => Boolean(stage.actual_end_date)).length;
   const totalProgress =
     stagesState.length > 0 ? (completedStagesCount / stagesState.length) * 100 : 0;
   const currentStageIndex = completedStagesCount + 1;
@@ -192,15 +192,15 @@ export function ContractMainInfoTab() {
   };
 
   const applyFilters = async () => {
-    const v = await filtersForm.validateFields();
+    const validatedValues = await filtersForm.validateFields();
     setFilters({
-      category: v.category,
-      status: v.status,
-      responsible: v.responsible,
-      deadline: v.deadline,
-      budget: v.budget,
+      category: validatedValues.category,
+      status: validatedValues.status,
+      responsible: validatedValues.responsible,
+      deadline: validatedValues.deadline,
+      budget: validatedValues.budget,
     });
-    setUi((prev) => ({ ...prev, isFiltersOpen: false }));
+    setUi((prevState) => ({ ...prevState, isFiltersOpen: false }));
   };
 
   const resetFilters = () => {
@@ -392,7 +392,7 @@ export function ContractMainInfoTab() {
             <Select
               options={[
                 { value: 'all', label: 'Все категории' },
-                ...STAGE_CATEGORIES.map((c) => ({ value: c, label: c })),
+                ...STAGE_CATEGORIES.map((category) => ({ value: category, label: category })),
               ]}
             />
           </Form.Item>
@@ -462,7 +462,7 @@ export function ContractMainInfoTab() {
           </Form.Item>
 
           <Form.Item name="category" label="Категория" initialValue="Прочее" rules={[{ required: true }]}>
-            <Select options={STAGE_CATEGORIES.map((c) => ({ value: c, label: c }))} />
+            <Select options={STAGE_CATEGORIES.map((category) => ({ value: category, label: category }))} />
           </Form.Item>
 
           <Row gutter={12}>

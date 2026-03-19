@@ -45,7 +45,7 @@ export class PatentsService {
       .select({ areaId: relPatentsApplicationAreas.areaId })
       .from(relPatentsApplicationAreas)
       .where(eq(relPatentsApplicationAreas.patentId, patentId));
-    return relRows.filter((r) => r.areaId != null).map((r) => String(r.areaId));
+    return relRows.filter((relRow) => relRow.areaId != null).map((relRow) => String(relRow.areaId));
   }
 
   private async getAuthorIdsForPatent(patentId: string): Promise<string[]> {
@@ -54,7 +54,7 @@ export class PatentsService {
         .select({ userId: relPatentAuthors.userId })
         .from(relPatentAuthors)
         .where(eq(relPatentAuthors.patentId, patentId));
-      return relRows.filter((r) => r.userId != null).map((r) => String(r.userId));
+      return relRows.filter((relRow) => relRow.userId != null).map((relRow) => String(relRow.userId));
     } catch {
       return [];
     }
@@ -67,11 +67,11 @@ export class PatentsService {
       .from(relPatentsApplicationAreas)
       .where(inArray(relPatentsApplicationAreas.patentId, patentIds));
     const map: Record<string, string[]> = {};
-    for (const r of relRows) {
-      if (r.patentId) {
-        const pid = String(r.patentId);
+    for (const relRow of relRows) {
+      if (relRow.patentId) {
+        const pid = String(relRow.patentId);
         if (!map[pid]) map[pid] = [];
-        if (r.areaId) map[pid].push(String(r.areaId));
+        if (relRow.areaId) map[pid].push(String(relRow.areaId));
       }
     }
     return map;
@@ -85,11 +85,11 @@ export class PatentsService {
         .from(relPatentAuthors)
         .where(inArray(relPatentAuthors.patentId, patentIds));
       const map: Record<string, string[]> = {};
-      for (const r of relRows) {
-        if (r.patentId) {
-          const pid = String(r.patentId);
+      for (const relRow of relRows) {
+        if (relRow.patentId) {
+          const pid = String(relRow.patentId);
           if (!map[pid]) map[pid] = [];
-          if (r.userId) map[pid].push(String(r.userId));
+          if (relRow.userId) map[pid].push(String(relRow.userId));
         }
       }
       return map;
@@ -115,9 +115,9 @@ export class PatentsService {
         .orderBy(asc(patents.name))
         .limit(limit)
         .offset(offset);
-      return rows.map((r) => ({
-        id: String(r.id),
-        name: String(r.name ?? ''),
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: String(row.name ?? ''),
       }));
     }
 
@@ -138,43 +138,43 @@ export class PatentsService {
         .limit(limit)
         .offset(offset),
     ]);
-    const patentIds = rows.map((r) => String(r.id));
+    const patentIds = rows.map((row) => String(row.id));
     const [areaIdsMap, authorIdsMap] = await Promise.all([
       this.getAreaIdsMap(patentIds),
       this.getAuthorIdsMap(patentIds),
     ]);
-    const data = rows.map((r) =>
-      this.toResponse(r, areaIdsMap[String(r.id)] ?? [], authorIdsMap[String(r.id)] ?? []),
+    const data = rows.map((row) =>
+      this.toResponse(row, areaIdsMap[String(row.id)] ?? [], authorIdsMap[String(row.id)] ?? []),
     );
     return { data, total };
   }
 
   private toResponse(
-    r: (typeof patents.$inferSelect),
+    row: (typeof patents.$inferSelect),
     areaIds: string[] = [],
     authorIds: string[] = [],
   ) {
     return {
-      id: String(r.id),
-      registration_number: r.registrationNumber ?? '',
-      registration_date: r.registrationDate ? String(r.registrationDate) : '',
-      registration_number_cir: r.registrationNumberCir ?? '',
-      registration_date_cir: r.registrationDateCir ? String(r.registrationDateCir) : '',
-      application_number: r.applicationNumber ?? '',
-      name: r.name ?? '',
-      department_id: String(r.departmentId ?? ''),
-      contract_id: r.contractId ? String(r.contractId) : '',
-      project_id: r.projectId ? String(r.projectId) : '',
-      responsible_for_patenting_id: r.responsibleForPatentId ? String(r.responsibleForPatentId) : '',
-      kd_number: r.kdNumber ?? '',
-      intellectprop_id: (r.intellectpropId ?? r.intellectualPropertyTypeId) ? String(r.intellectpropId ?? r.intellectualPropertyTypeId) : '',
-      status_id: r.statusId ? String(r.statusId) : '',
-      is_deleted: r.isDeleted ?? false,
+      id: String(row.id),
+      registration_number: row.registrationNumber ?? '',
+      registration_date: row.registrationDate ? String(row.registrationDate) : '',
+      registration_number_cir: row.registrationNumberCir ?? '',
+      registration_date_cir: row.registrationDateCir ? String(row.registrationDateCir) : '',
+      application_number: row.applicationNumber ?? '',
+      name: row.name ?? '',
+      department_id: String(row.departmentId ?? ''),
+      contract_id: row.contractId ? String(row.contractId) : '',
+      project_id: row.projectId ? String(row.projectId) : '',
+      responsible_for_patenting_id: row.responsibleForPatentId ? String(row.responsibleForPatentId) : '',
+      kd_number: row.kdNumber ?? '',
+      intellectprop_id: (row.intellectpropId ?? row.intellectualPropertyTypeId) ? String(row.intellectpropId ?? row.intellectualPropertyTypeId) : '',
+      status_id: row.statusId ? String(row.statusId) : '',
+      is_deleted: row.isDeleted ?? false,
       author_ids: authorIds,
       area_ids: areaIds,
-      created_at: r.createdAt ? r.createdAt.toISOString() : '',
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
-      created_by: r.createdBy ? String(r.createdBy) : '',
+      created_at: row.createdAt ? row.createdAt.toISOString() : '',
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
+      created_by: row.createdBy ? String(row.createdBy) : '',
     };
   }
 
@@ -278,8 +278,8 @@ export class PatentsService {
   private async syncAuthorIds(patentId: string, data: Record<string, unknown>) {
     const rawIds = Array.isArray(data.author_ids) ? data.author_ids : [];
     const authorIds = rawIds
-      .map((x) => (x != null && x !== '' ? String(x) : null))
-      .filter((x): x is string => typeof x === 'string' && x.length > 0);
+      .map((value) => (value != null && value !== '' ? String(value) : null))
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
     if (authorIds.length === 0) {
       await this.db.db.delete(relPatentAuthors).where(eq(relPatentAuthors.patentId, patentId));
       return;
@@ -305,17 +305,17 @@ export class PatentsService {
         .from(patentGrants)
         .where(eq(patentGrants.patentId, patentId))
         .orderBy(asc(patentGrants.grantDate));
-      return rows.map((r) => ({
-        id: String(r.id),
-        patent_id: r.patentId ? String(r.patentId) : '',
-        grant_number: r.grantNumber ?? '',
-        grant_date: r.grantDate ? String(r.grantDate) : '',
-        office: r.office ?? '',
-        status: r.status ?? '',
-        renewal_date: r.renewalDate ? String(r.renewalDate) : '',
-        notes: r.notes ?? '',
-        created_at: r.createdAt ? r.createdAt.toISOString() : '',
-        updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
+      return rows.map((row) => ({
+        id: String(row.id),
+        patent_id: row.patentId ? String(row.patentId) : '',
+        grant_number: row.grantNumber ?? '',
+        grant_date: row.grantDate ? String(row.grantDate) : '',
+        office: row.office ?? '',
+        status: row.status ?? '',
+        renewal_date: row.renewalDate ? String(row.renewalDate) : '',
+        notes: row.notes ?? '',
+        created_at: row.createdAt ? row.createdAt.toISOString() : '',
+        updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
       }));
     } catch {
       return [];

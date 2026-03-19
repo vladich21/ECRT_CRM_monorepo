@@ -67,7 +67,7 @@ export default function PatentCreatePage() {
         const currentValues: (string | number)[] = form.getFieldValue('area_ids') || [];
         const newId = String(addAreaResult.id);
         if (!newId || newId === 'NaN') return;
-        const currentStr = currentValues.map((v) => String(v)).filter((v) => v && v !== 'NaN');
+        const currentStr = currentValues.map((value) => String(value)).filter((value) => value && value !== 'NaN');
         if (!currentStr.includes(newId)) {
           form.setFieldValue('area_ids', [...currentStr, newId]);
         }

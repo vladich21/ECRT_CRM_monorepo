@@ -17,13 +17,13 @@ export class DepartmentsService {
         .select({ id: departments.id, name: departments.name })
         .from(departments)
         .orderBy(asc(departments.name));
-      return rows.map((r) => ({ id: String(r.id), name: String(r.name ?? '') }));
+      return rows.map((row) => ({ id: String(row.id), name: String(row.name ?? '') }));
     }
     const rows = await this.db.db
       .select()
       .from(departments)
       .orderBy(asc(departments.name));
-    return rows.map((r) => this.toResponse(r));
+    return rows.map((row) => this.toResponse(row));
   }
 
   async findOne(id: string): Promise<DepartmentResponseDto | Record<string, unknown> | null> {
@@ -33,22 +33,22 @@ export class DepartmentsService {
       .from(departments)
       .where(eq(departments.id, id))
       .limit(1);
-    const r = rows[0];
-    if (!r) return null;
-    return this.toResponse(r);
+    const row = rows[0];
+    if (!row) return null;
+    return this.toResponse(row);
   }
 
   /** Формат ответа для фронтенда (snake_case) */
-  private toResponse(r: (typeof departments.$inferSelect)) {
+  private toResponse(row: (typeof departments.$inferSelect)) {
     return {
-      id: String(r.id),
-      name: String(r.name ?? ''),
-      short_name: r.shortName ?? '',
-      parent_id: r.parentId ? String(r.parentId) : null,
-      manager_id: r.managerId ? String(r.managerId) : null,
-      is_active: r.isActive ?? false,
-      created_at: r.createdAt ? r.createdAt.toISOString() : null,
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : null,
+      id: String(row.id),
+      name: String(row.name ?? ''),
+      short_name: row.shortName ?? '',
+      parent_id: row.parentId ? String(row.parentId) : null,
+      manager_id: row.managerId ? String(row.managerId) : null,
+      is_active: row.isActive ?? false,
+      created_at: row.createdAt ? row.createdAt.toISOString() : null,
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
     };
   }
 }

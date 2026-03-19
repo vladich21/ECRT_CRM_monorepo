@@ -34,7 +34,7 @@ export class CommentsService {
       .leftJoin(users, eq(comments.createdBy, users.id))
       .where(and(eq(comments.entityType, entityType), eq(comments.entityId, entityId)))
       .orderBy(asc(comments.createdAt));
-    const commentIds = rows.map((r) => r.comment.id).filter(Boolean) as string[];
+    const commentIds = rows.map((row) => row.comment.id).filter(Boolean) as string[];
     const fileRows =
       commentIds.length > 0
         ? await this.db.db
@@ -48,7 +48,7 @@ export class CommentsService {
       if (!filesByCommentId.has(tid)) filesByCommentId.set(tid, []);
       filesByCommentId.get(tid)!.push(f);
     }
-    return rows.map((r) => this.toResponse(r.comment, r, filesByCommentId));
+    return rows.map((row) => this.toResponse(row.comment, row, filesByCommentId));
   }
 
   async findOne(id: string) {
@@ -135,7 +135,7 @@ export class CommentsService {
   }
 
   private toResponse(
-    c: (typeof comments.$inferSelect),
+    comment: (typeof comments.$inferSelect),
     userRow?: { createdByFio: string | null; createdByFirstName: string | null; createdByMiddleName: string | null },
     filesByCommentId?: Map<string, (typeof files.$inferSelect)[]>,
     filesOverride?: Array<{ id: string; name: string; url: string; size: string }>,
@@ -144,22 +144,22 @@ export class CommentsService {
       userRow && userRow.createdByFio != null
         ? [userRow.createdByFio, userRow.createdByFirstName, userRow.createdByMiddleName].filter(Boolean).join(' ')
         : '';
-    const rawFiles = filesByCommentId?.get(String(c.id)) ?? [];
+    const rawFiles = filesByCommentId?.get(String(comment.id)) ?? [];
     const files = filesOverride ?? rawFiles.map((file) => this.toFileDto(file));
     return {
-      id: String(c.id),
-      parent_id: c.parentId ? String(c.parentId) : null,
-      entity_type: c.entityType ?? '',
-      entity_id: c.entityId ? String(c.entityId) : '',
-      message: c.message ?? '',
-      html: c.html ?? '',
+      id: String(comment.id),
+      parent_id: comment.parentId ? String(comment.parentId) : null,
+      entity_type: comment.entityType ?? '',
+      entity_id: comment.entityId ? String(comment.entityId) : '',
+      message: comment.message ?? '',
+      html: comment.html ?? '',
       mention_ids: [] as string[],
       files,
-      created_by: c.createdBy ? String(c.createdBy) : '',
+      created_by: comment.createdBy ? String(comment.createdBy) : '',
       created_by_fio: fio,
-      user_id: c.userId ? String(c.userId) : '',
-      created_at: c.createdAt ? c.createdAt.toISOString() : '',
-      updated_at: c.updatedAt ? c.updatedAt.toISOString() : '',
+      user_id: comment.userId ? String(comment.userId) : '',
+      created_at: comment.createdAt ? comment.createdAt.toISOString() : '',
+      updated_at: comment.updatedAt ? comment.updatedAt.toISOString() : '',
     };
   }
 }

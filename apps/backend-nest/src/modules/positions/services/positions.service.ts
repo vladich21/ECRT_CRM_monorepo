@@ -17,17 +17,17 @@ export class PositionsService {
         .select({ id: positions.id, name: positions.name })
         .from(positions)
         .orderBy(asc(positions.name));
-      return rows.map((r) => ({ id: String(r.id), name: String(r.name ?? '') }));
+      return rows.map((position) => ({ id: String(position.id), name: String(position.name ?? '') }));
     }
     const rows = await this.db.db
       .select()
       .from(positions)
       .orderBy(asc(positions.name));
-    return rows.map((r) => ({
-      id: String(r.id),
-      name: String(r.name ?? ''),
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+    return rows.map((position) => ({
+      id: String(position.id),
+      name: String(position.name ?? ''),
+      createdAt: position.createdAt,
+      updatedAt: position.updatedAt,
     }));
   }
 
@@ -38,13 +38,13 @@ export class PositionsService {
       .from(positions)
       .where(eq(positions.id, id))
       .limit(1);
-    const r = rows[0];
-    if (!r) return null;
+    const row = rows[0];
+    if (!row) return null;
     return {
-      id: String(r.id),
-      name: String(r.name ?? ''),
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+      id: String(row.id),
+      name: String(row.name ?? ''),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     };
   }
 }

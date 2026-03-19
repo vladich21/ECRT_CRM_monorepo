@@ -1,13 +1,13 @@
 import styles from './FilePreviewModal.module.scss';
 
 export function triggerFileDownload(url: string, filename: string): void {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename || 'download';
-  a.rel = 'noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const anchorEl = document.createElement('a');
+  anchorEl.href = url;
+  anchorEl.download = filename || 'download';
+  anchorEl.rel = 'noreferrer';
+  document.body.appendChild(anchorEl);
+  anchorEl.click();
+  document.body.removeChild(anchorEl);
 }
 
 interface FilePreviewLinkProps {

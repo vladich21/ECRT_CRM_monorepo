@@ -13,7 +13,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import type { PartnerDetailExtras, PartnerRegistryStatus } from '../../../types/partnerRegistry';
-import { STATUS_CONFIG, TYPE_CONFIG } from '../mockData';
+import { STATUS_CONFIG, TYPE_CONFIG } from '../partnerRegistryConfig';
 import styles from './DetailHeader.module.scss';
 
 const STATUS_ICONS: Record<PartnerRegistryStatus, React.ReactNode> = {

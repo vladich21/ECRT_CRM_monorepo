@@ -49,16 +49,16 @@ export default function PartnerCompetencesListPage() {
       contextHolder={contextHolder}
     >
       <ReferenceBookCardList>
-        {partnerCompetences.map((c) => (
+        {partnerCompetences.map((competence) => (
           <ReferenceBookItemCard
-            key={c.id}
-            title={c.name}
-            previewBgColor={c.color_bg || undefined}
-            previewTextColor={c.color_text || undefined}
-            previewBorderColor={c.color_border || undefined}
-            previewText={c.name}
-            onEdit={() => onEdit(c)}
-            onDelete={() => onDelete({ id: Number(c.id) })}
+            key={competence.id}
+            title={competence.name}
+            previewBgColor={competence.color_bg || undefined}
+            previewTextColor={competence.color_text || undefined}
+            previewBorderColor={competence.color_border || undefined}
+            previewText={competence.name}
+            onEdit={() => onEdit(competence)}
+            onDelete={() => onDelete({ id: Number(competence.id) })}
           />
         ))}
       </ReferenceBookCardList>

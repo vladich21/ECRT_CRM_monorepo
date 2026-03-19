@@ -188,7 +188,7 @@ export class AuthService {
       }
     }
 
-    const hasExpired = rows.some((r) => r.expiresAt < now);
+    const hasExpired = rows.some((row) => row.expiresAt < now);
     if (hasExpired) throw new UnauthorizedException('Код истёк, запросите новый');
     throw new UnauthorizedException('Неверный код');
   }

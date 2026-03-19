@@ -7,10 +7,6 @@ import { PaginationParams } from '../../../common/pagination';
 /** TTL кэша списка договоров для справочников */
 const CONTRACTS_LIST_CACHE_TTL_MS = 10 * 60 * 1000; // 10 мин
 
-// Мок договора для демо (закомментирован). Раскомментировать при необходимости.
-// const MOCK_CONTRACT_ID = '9a75a367-5856-4aa3-a93f-224485f5372b';
-// const getMockContract = (): any => ({ ... });
-
 interface CachedList {
   data: unknown[];
   total: number;

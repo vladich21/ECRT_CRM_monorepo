@@ -16,13 +16,13 @@ export class PartnerStatusesService {
         .select({ id: refPartnerStatuses.id, name: refPartnerStatuses.name })
         .from(refPartnerStatuses)
         .orderBy(asc(refPartnerStatuses.name));
-      return rows.map((r) => ({ id: String(r.id), name: r.name ?? '' }));
+      return rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
     }
     const rows = await this.db.db
       .select()
       .from(refPartnerStatuses)
       .orderBy(asc(refPartnerStatuses.name));
-    return rows.map((r) => this.toResponse(r));
+    return rows.map((row) => this.toResponse(row));
   }
 
   async findOne(id: string) {
@@ -56,12 +56,12 @@ export class PartnerStatusesService {
     return row;
   }
 
-  private toResponse(r: (typeof refPartnerStatuses.$inferSelect)) {
+  private toResponse(row: (typeof refPartnerStatuses.$inferSelect)) {
     return {
-      id: String(r.id),
-      name: r.name ?? '',
-      created_at: r.createdAt ? r.createdAt.toISOString() : '',
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
+      id: String(row.id),
+      name: row.name ?? '',
+      created_at: row.createdAt ? row.createdAt.toISOString() : '',
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     };
   }
 }

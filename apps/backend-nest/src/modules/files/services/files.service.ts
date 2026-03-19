@@ -91,7 +91,7 @@ export class FilesService {
       .from(files)
       .where(and(eq(files.entityType, entityType), eq(files.tableId, entityId)))
       .orderBy(desc(files.uploadedAt));
-    return rows.map((r) => this.toResponse(r, entityType, entityId));
+    return rows.map((row) => this.toResponse(row, entityType, entityId));
   }
 
   async findById(fileId: string): Promise<FileResponseDto | null> {

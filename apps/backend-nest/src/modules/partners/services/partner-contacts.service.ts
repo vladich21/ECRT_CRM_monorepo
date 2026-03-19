@@ -16,7 +16,7 @@ export class PartnerContactsService {
       .from(partnerContacts)
       .where(eq(partnerContacts.partnerId, partnerId))
       .orderBy(asc(partnerContacts.fullName));
-    return rows.map((r) => this.toResponse(r));
+    return rows.map((row) => this.toResponse(row));
   }
 
   async findOne(partnerId: string, contactId: string) {
@@ -90,17 +90,17 @@ export class PartnerContactsService {
     return row;
   }
 
-  private toResponse(r: (typeof partnerContacts.$inferSelect)) {
+  private toResponse(row: (typeof partnerContacts.$inferSelect)) {
     return {
-      id: String(r.id),
-      partner_id: r.partnerId ? String(r.partnerId) : '',
-      full_name: r.fullName ?? '',
-      position: r.position ?? '',
-      phone: r.phone ?? '',
-      email: r.email ?? '',
-      is_primary: r.isPrimary ?? false,
-      created_at: r.createdAt ? r.createdAt.toISOString() : '',
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
+      id: String(row.id),
+      partner_id: row.partnerId ? String(row.partnerId) : '',
+      full_name: row.fullName ?? '',
+      position: row.position ?? '',
+      phone: row.phone ?? '',
+      email: row.email ?? '',
+      is_primary: row.isPrimary ?? false,
+      created_at: row.createdAt ? row.createdAt.toISOString() : '',
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     };
   }
 }

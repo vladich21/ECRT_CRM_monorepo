@@ -25,10 +25,10 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
 
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
-    const k = 1024;
+    const bytesBase = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const unitIndex = Math.floor(Math.log(bytes) / Math.log(bytesBase));
+    return parseFloat((bytes / Math.pow(bytesBase, unitIndex)).toFixed(2)) + ' ' + sizes[unitIndex];
   }, []);
 
   const handleFileChange = useCallback(
@@ -40,7 +40,7 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const isDuplicate = attachedFiles.some(
-          f => f.file.name === file.name && f.file.size === file.size,
+          existingFile => existingFile.file.name === file.name && existingFile.file.size === file.size,
         );
         if (!isDuplicate) {
           newFiles.push({ id: `${Date.now()}-${i}`, file });
@@ -49,7 +49,7 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
 
       if (newFiles.length > 0) {
         setAttachedFiles(prev => [...prev, ...newFiles]);
-        newFiles.forEach(f => onAttachFile?.(f.file));
+        newFiles.forEach(attachedFile => onAttachFile?.(attachedFile.file));
         message.success(`Добавлено: ${newFiles.length}`);
       } else if (files.length > 0) {
         message.warning('Файлы уже добавлены');

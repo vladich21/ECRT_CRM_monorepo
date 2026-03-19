@@ -80,12 +80,12 @@ const PartnerTypesListPage: React.FC = () => {
   return (
     <ReferenceBookListPage title="Типы контрагентов" addButtonLabel="Добавить тип контрагента" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
       <ReferenceBookCardList>
-        {data.map((t) => (
+        {data.map((partnerType) => (
           <ReferenceBookItemCard
-            key={t.id}
-            title={t.name}
-            onEdit={() => onEdit({ id: t.id })}
-            onDelete={() => onDelete({ id: t.id })}
+            key={partnerType.id}
+            title={partnerType.name}
+            onEdit={() => onEdit({ id: partnerType.id })}
+            onDelete={() => onDelete({ id: partnerType.id })}
           />
         ))}
       </ReferenceBookCardList>

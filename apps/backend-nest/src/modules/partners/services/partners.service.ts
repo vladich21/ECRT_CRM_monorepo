@@ -42,7 +42,7 @@ export class PartnersService {
         .select({ id: partners.id, name: partners.name })
         .from(partners)
         .orderBy(asc(partners.name));
-      const data = rows.map((r) => ({ id: String(r.id), name: r.name ?? '' }));
+      const data = rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
       return { data, total: data.length };
     }
 
@@ -66,7 +66,7 @@ export class PartnersService {
         .select({ partnerId: relPartnersTypes.partnerId })
         .from(relPartnersTypes)
         .where(inArray(relPartnersTypes.typeId, filters.typeIds));
-      const matchedIds = [...new Set(typeRows.map((r) => r.partnerId).filter(Boolean))] as string[];
+      const matchedIds = [...new Set(typeRows.map((relRow) => relRow.partnerId).filter(Boolean))] as string[];
       if (matchedIds.length === 0) return { data: [], total: 0 };
       conditions.push(inArray(partners.id, matchedIds) as ReturnType<typeof eq>);
     }
@@ -76,7 +76,7 @@ export class PartnersService {
         .select({ partnerId: relPartnersCompetencies.partnerId })
         .from(relPartnersCompetencies)
         .where(inArray(relPartnersCompetencies.competenceId, filters.competenceIds));
-      const matchedIds = [...new Set(compRows.map((r) => r.partnerId).filter(Boolean))] as string[];
+      const matchedIds = [...new Set(compRows.map((relRow) => relRow.partnerId).filter(Boolean))] as string[];
       if (matchedIds.length === 0) return { data: [], total: 0 };
       conditions.push(inArray(partners.id, matchedIds) as ReturnType<typeof eq>);
     }
@@ -97,7 +97,7 @@ export class PartnersService {
     ]);
 
     const total = totalResult[0]?.value ?? 0;
-    const ids = rows.map((r) => r.id).filter(Boolean) as string[];
+    const ids = rows.map((row) => row.id).filter(Boolean) as string[];
 
     const [typeRows, compRows] = ids.length
       ? await Promise.all([
@@ -130,10 +130,10 @@ export class PartnersService {
       }
     }
 
-    const data = rows.map((r) => ({
-      ...this.toResponse(r),
-      type_ids: typeMap.get(String(r.id)) ?? [],
-      competence_ids: compMap.get(String(r.id)) ?? [],
+    const data = rows.map((row) => ({
+      ...this.toResponse(row),
+      type_ids: typeMap.get(String(row.id)) ?? [],
+      competence_ids: compMap.get(String(row.id)) ?? [],
     }));
 
     return { data, total };
@@ -160,8 +160,8 @@ export class PartnersService {
     ]);
     return {
       ...this.toResponse(row),
-      type_ids: typeRows.map((t) => String(t.typeId)).filter(Boolean),
-      competence_ids: compRows.map((c) => String(c.competenceId)).filter(Boolean),
+      type_ids: typeRows.map((typeRow) => String(typeRow.typeId)).filter(Boolean),
+      competence_ids: compRows.map((compRow) => String(compRow.competenceId)).filter(Boolean),
     };
   }
 
