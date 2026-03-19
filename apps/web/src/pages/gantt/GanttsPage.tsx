@@ -14,8 +14,6 @@ export interface CounterType {
   deleted?: number;
 }
 
-const { TabPane } = Tabs;
-
 export default function GanttsPage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
@@ -41,6 +39,21 @@ export default function GanttsPage() {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
 
+  const tabItems = data?.map(el => ({
+    key: el.id.toString(),
+    label: <span>{el.name}</span>,
+    children: (
+      <div
+        className={
+          activeProjectTab === el.id.toString() ? styles.tabContent : styles.tabContentHidden
+        }
+      >
+        <Divider className={styles.divider} />
+        <GanttField />
+      </div>
+    ),
+  })) ?? [];
+
   return (
     <div className={styles.pageContainer}>
       {contextHolder}
@@ -50,6 +63,7 @@ export default function GanttsPage() {
         <Tabs
           activeKey={activeProjectTab}
           onChange={key => setActiveProjectTab(key)}
+          items={tabItems}
           style={{
             height: '100%',
             flex: '1 1 auto',
@@ -57,23 +71,7 @@ export default function GanttsPage() {
             flexDirection: 'column',
             minHeight: 0,
           }}
-        >
-          {data?.map(el => (
-            <TabPane
-              tab={<span>{el.name}</span>}
-              key={el.id.toString()}
-            >
-              <div
-                className={
-                  activeProjectTab === el.id.toString() ? styles.tabContent : styles.tabContentHidden
-                }
-              >
-                <Divider className={styles.divider} />
-                <GanttField />
-              </div>
-            </TabPane>
-          ))}
-        </Tabs>
+        />
       </div>
     </div>
   );

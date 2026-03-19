@@ -115,72 +115,73 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           </div>
         </div>
 
-        {/* Основные сведения */}
-        <div className={styles.card}>
-          <h3 className={styles.cardTitle}>Основные сведения</h3>
-          <div className={styles.infoRows}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Наименование РИД</span>
-              <span className={patent.name ? styles.infoValue : styles.infoValueMuted}>
-                {patent.name || 'Не указано'}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Проект</span>
-              <span className={projectName ? styles.infoValueWide : styles.infoValueMuted}>
-                {projectName || 'Не указан'}
-              </span>
-            </div>
-            {projectCode && (
+        {/* Основные сведения и Регистрационные данные — в один ряд, два столбца */}
+        <div className={styles.twoColCards}>
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Основные сведения</h3>
+            <div className={styles.infoRows}>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Номер проекта</span>
-                <span className={styles.infoValue}>{projectCode}</span>
+                <span className={styles.infoLabel}>Наименование РИД</span>
+                <span className={patent.name ? styles.infoValue : styles.infoValueMuted}>
+                  {patent.name || 'Не указано'}
+                </span>
               </div>
-            )}
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Область применения</span>
-              {areaNames.length > 0 ? (
-                <div className={styles.tagsWrap}>
-                  {areaNames.map((name) => (
-                    <span key={name} className={styles.areaTag}>{name}</span>
-                  ))}
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Проект</span>
+                <span className={projectName ? styles.infoValueWide : styles.infoValueMuted}>
+                  {projectName || 'Не указан'}
+                </span>
+              </div>
+              {projectCode && (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Номер проекта</span>
+                  <span className={styles.infoValue}>{projectCode}</span>
                 </div>
-              ) : (
-                <span className={styles.infoValueMuted}>Не указано</span>
               )}
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Область применения</span>
+                {areaNames.length > 0 ? (
+                  <div className={styles.tagsWrap}>
+                    {areaNames.map((name) => (
+                      <span key={name} className={styles.areaTag}>{name}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className={styles.infoValueMuted}>Не указано</span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Регистрационные данные */}
-        <div className={styles.card}>
-          <h3 className={styles.cardTitle}>Регистрационные данные</h3>
-          <div className={styles.infoRows}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Номер регистрации (ИЦ ЖТ)</span>
-              <span className={patent.registration_number ? styles.infoValue : styles.infoValueMuted}>
-                {patent.registration_number || 'Не указан'}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Дата регистрации (ИЦ ЖТ)</span>
-              <span className={styles.infoValue}>{formatDate(patent.registration_date)}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Номер регистрации (ЦИР)</span>
-              <span className={patent.registration_number_cir ? styles.infoValue : styles.infoValueMuted}>
-                {patent.registration_number_cir || 'Не указан'}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Дата регистрации (ЦИР)</span>
-              <span className={styles.infoValue}>{formatDate(patent.registration_date_cir)}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Номер патентной заявки</span>
-              <span className={patent.application_number ? styles.infoValue : styles.infoValueMuted}>
-                {patent.application_number || 'Не указан'}
-              </span>
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Регистрационные данные</h3>
+            <div className={styles.infoRows}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Номер регистрации (ИЦ ЖТ)</span>
+                <span className={patent.registration_number ? styles.infoValue : styles.infoValueMuted}>
+                  {patent.registration_number || 'Не указан'}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Дата регистрации (ИЦ ЖТ)</span>
+                <span className={styles.infoValue}>{formatDate(patent.registration_date)}</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Номер регистрации (ЦИР)</span>
+                <span className={patent.registration_number_cir ? styles.infoValue : styles.infoValueMuted}>
+                  {patent.registration_number_cir || 'Не указан'}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Дата регистрации (ЦИР)</span>
+                <span className={styles.infoValue}>{formatDate(patent.registration_date_cir)}</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Номер патентной заявки</span>
+                <span className={patent.application_number ? styles.infoValue : styles.infoValueMuted}>
+                  {patent.application_number || 'Не указан'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

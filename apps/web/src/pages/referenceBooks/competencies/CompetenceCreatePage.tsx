@@ -85,7 +85,7 @@ export default function PartnerCompetenceCreatePage() {
         width={720}
         onCancel={() => navigate(-1)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

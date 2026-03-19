@@ -26,7 +26,7 @@ export function ProjectFiltersModal({
       okText="Применить"
       cancelText="Отмена"
       width={640}
-      destroyOnClose
+      destroyOnHidden
       footer={[
         <Button key="reset" onClick={onReset}>Сбросить</Button>,
         <Button key="cancel" onClick={onClose}>Отмена</Button>,

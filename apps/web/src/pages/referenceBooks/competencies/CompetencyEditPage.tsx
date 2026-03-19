@@ -109,7 +109,7 @@ export default function PartnerCompetenceEditPage() {
         width={720}
         onCancel={handleBack}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
             form={form}

@@ -1,0 +1,14 @@
+@use '../../../styles/variables' as v;
+
+.loading {
+  padding: v.$spacing-4xl;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.empty {
+  text-align: center;
+  padding: 60px 0;
+  color: #8c8c8c;
+  font-size: 14px;
+}

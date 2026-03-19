@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button, Select, Row, Col, Divider, DatePicker } from 'antd';
-import { SaveOutlined, FileTextOutlined, NumberOutlined, CalendarOutlined, CopyrightOutlined } from '@ant-design/icons';
+import { Form, Button } from 'antd';
+import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useNotification } from '../../../customhooks/useNotification';
 import { Loader } from '../../../components/loader/Loader';
@@ -9,12 +9,9 @@ import { getChangedFields } from '../../../helpers/getChangedFields';
 import { NotFound } from '../../../components/notFound/NotFound';
 import dayjs from 'dayjs';
 import { usePatentGrantById, useUpdatePatentGrant } from '../../../api/patents/patentGrantsApiHooks';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
+import { PatentGrantFormFields } from './PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
-
-const { Option } = Select;
-const { TextArea } = Input;
 
 export default function PatentGrantEditPage() {
   const { grantId } = useParams();
@@ -86,129 +83,52 @@ export default function PatentGrantEditPage() {
   }
 
   return (
-    <div className={styles.wrap}>
-      {contextHolder}
-      <BackButton />
-      <PageHeader title={`Редактирование патентного гранта: ${patentGrant.grant_number}`} subtitle="Измените данные гранта" />
-
+    <DetailPageHeader
+      title={`Редактирование: ${patentGrant.grant_number}`}
+      backLabel="Патентные гранты"
+      onBack={handleBack}
+      actions={
+        <>
+          <Button icon={<CloseOutlined />} onClick={handleBack} disabled={isUpdateLoading}>
+            Отмена
+          </Button>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={() => form.submit()}
+            loading={isUpdateLoading}
+            disabled={!isFormChanged}
+          >
+            Сохранить
+          </Button>
+        </>
+      }
+      tabs={[{ key: 'main', label: 'Редактирование' }]}
+      activeTab="main"
+      onTabChange={() => {}}
+      contextHolder={contextHolder}
+      stickyHeader
+    >
       <div className={styles.formCard}>
         <Form
           form={form}
-          layout='vertical'
+          layout="vertical"
+          size="middle"
           onFieldsChange={handleFormChange}
           onFinish={handleSave}
+          disabled={isUpdateLoading}
           onKeyPress={e => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-            }
+            if (e.key === 'Enter') e.preventDefault();
           }}
           scrollToFirstError
         >
-          {/* Основная информация о гранте */}
-          <Divider orientation='left'>
-            <CopyrightOutlined /> Основная информация
-          </Divider>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label='Номер гранта'
-                name='grant_number'
-                rules={[{ required: true, message: 'Введите номер гранта' }]}
-              >
-                <Input placeholder='GR-2024-001' prefix={<NumberOutlined />} />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item label='Патент' name='patent_id' rules={[{ required: true, message: 'Выберите патент' }]}>
-                <Select
-                  placeholder='Выберите патент'
-                  allowClear
-                  showSearch
-                  optionFilterProp='children'
-                  filterOption={(input, option) =>
-                    String(option?.children ?? '')
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  suffixIcon={<CopyrightOutlined />}
-                >
-                  {referenceBooks?.patents?.map(patent => (
-                    <Option key={patent.id} value={patent.id}>
-                      {patent.name || `Патенг ${patent.id}`}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          {/* Статус и даты */}
-          <Divider orientation='left'>
-            <CalendarOutlined /> Статус и даты
-          </Divider>
-
-          <Row gutter={16}>
-            <Col xs={24} md={6}>
-              <Form.Item label='Статус' name='status' rules={[{ required: true, message: 'Выберите статус' }]}>
-                <Select placeholder='Выберите статус'>
-                  <Option value='Активный'>Активный</Option>
-                  <Option value='Истек'>Истек</Option>
-                  <Option value='Отозван'>Отозван</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={6}>
-              <Form.Item label='Дата выдачи гранта' name='grant_date'>
-                <DatePicker placeholder='Выберите дату выдачи' style={{ width: '100%' }} format='DD.MM.YYYY' />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={6}>
-              <Form.Item label='Дата продления' name='renewal_date'>
-                <DatePicker placeholder='Выберите дату продления' style={{ width: '100%' }} format='DD.MM.YYYY' />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={6}>
-              <Form.Item label='Ведомство' name='office'>
-                <Input placeholder='Введите название ведомства' />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          {/* Дополнительная информация */}
-          <Divider orientation='left'>
-            <FileTextOutlined /> Дополнительная информация
-          </Divider>
-
-          <Row gutter={16}>
-            <Col xs={24}>
-              <Form.Item label='Примечания' name='notes'>
-                <TextArea placeholder='Введите дополнительные сведения о гранте' rows={3} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          {/* Кнопки действий */}
-          <div className={styles.formActions}>
-            <Button onClick={handleBack}>
-              Отмена
-            </Button>
-            <Button
-              type='primary'
-              htmlType='submit'
-              icon={<SaveOutlined />}
-              loading={isUpdateLoading}
-              disabled={!isFormChanged}
-            >
-              Сохранить изменения
-            </Button>
-          </div>
+          <PatentGrantFormFields
+            form={form}
+            referenceBooks={referenceBooks}
+            patentIdFromState={null}
+          />
         </Form>
       </div>
-    </div>
+    </DetailPageHeader>
   );
 }

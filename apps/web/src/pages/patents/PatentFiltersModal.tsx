@@ -36,7 +36,7 @@ export function PatentFiltersModal({
       okText="Применить"
       cancelText="Отмена"
       width={640}
-      destroyOnClose
+      destroyOnHidden
       footer={[
         <Button key="reset" onClick={onReset}>
           Сбросить

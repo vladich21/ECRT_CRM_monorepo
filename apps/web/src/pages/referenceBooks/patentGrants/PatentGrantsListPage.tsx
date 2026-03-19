@@ -1,13 +1,19 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import BasicTable from '../../../components/basicTable/BasicTable';
+import { Spin } from 'antd';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useEffect, useState } from 'react';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { PatentGrant } from '../../../types/patent';
 import { usePatentGrants, useDeletePatentGrant } from '../../../api/patents/patentGrantsApiHooks';
-import { columns } from './data';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import styles from './PatentGrantsListPage.module.scss';
+
+function formatDate(dateStr?: string) {
+  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '';
+}
 
 export default function PatentGrantsListPage() {
   const navigate = useNavigate();
@@ -31,7 +37,7 @@ export default function PatentGrantsListPage() {
     if (currentGrantId) openDeleteModal();
   }, [currentGrantId]);
 
-  const handleRowClick = (record: PatentGrant) => {
+  const handleCardClick = (record: PatentGrant) => {
     navigate(`/patent-grants/${record.id}`, {
       state: { from: patentId },
     });
@@ -41,13 +47,21 @@ export default function PatentGrantsListPage() {
     navigate(`/patent-grants/${record.id}/edit`, {});
   };
 
-  const onDelete = ({ id }: { id: string }) => {
-    setCurrentGrantId(id.toString());
+  const onDelete = (record: PatentGrant) => {
+    setCurrentGrantId(record.id);
   };
 
   if (isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
+
+  const subtitleParts = (g: PatentGrant) => {
+    const parts: string[] = [];
+    if (g.grant_date) parts.push(`Выдан: ${formatDate(g.grant_date)}`);
+    if (g.renewal_date) parts.push(`Продление: ${formatDate(g.renewal_date)}`);
+    if (g.office) parts.push(g.office);
+    return parts.join(' • ');
+  };
 
   return (
     <ReferenceBookListPage
@@ -56,18 +70,27 @@ export default function PatentGrantsListPage() {
       onAdd={() => navigate('/patent-grants/create', { state: { patentId } })}
       contextHolder={contextHolder}
     >
-      <BasicTable<PatentGrant>
-        data={patentGrants}
-        loading={isLoading}
-        columns={columns}
-        onRowClick={handleRowClick}
-        enableContextMenu={true}
-        showActions
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-      />
+      {isLoading ? (
+        <div className={styles.loading}>
+          <Spin size="large" />
+        </div>
+      ) : patentGrants.length === 0 ? (
+        <div className={styles.empty}>Патентные гранты не найдены</div>
+      ) : (
+        <ReferenceBookCardList>
+          {patentGrants.map((grant) => (
+            <ReferenceBookItemCard
+              key={grant.id}
+              title={grant.grant_number || '—'}
+              metaText={grant.status}
+              subtitle={subtitleParts(grant)}
+              onClick={() => handleCardClick(grant)}
+              onEdit={() => onEdit(grant)}
+              onDelete={() => onDelete(grant)}
+            />
+          ))}
+        </ReferenceBookCardList>
+      )}
     </ReferenceBookListPage>
   );
 }

@@ -364,7 +364,7 @@ export function ContractMainInfoTab() {
         title="Фильтры этапов"
         open={ui.isFiltersOpen}
         onCancel={() => setUi((prev) => ({ ...prev, isFiltersOpen: false }))}
-        destroyOnClose
+        destroyOnHidden
         footer={[
           <Button key="reset" onClick={resetFilters}>
             Сбросить
@@ -450,7 +450,7 @@ export function ContractMainInfoTab() {
         onOk={handleAddStage}
         okText="Добавить"
         cancelText="Отмена"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={addStageForm} layout="vertical">
           <Form.Item

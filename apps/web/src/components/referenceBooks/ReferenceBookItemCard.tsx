@@ -12,6 +12,7 @@ type Props = {
   previewTextColor?: string;
   previewBorderColor?: string;
   previewText?: string;
+  onClick?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 };
@@ -25,12 +26,29 @@ export function ReferenceBookItemCard({
   previewTextColor,
   previewBorderColor,
   previewText,
+  onClick,
   onEdit,
   onDelete,
 }: Props) {
   return (
     <div className={styles.card}>
-      <div className={styles.left}>
+      <div
+        className={styles.left}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onClick={onClick}
+        onKeyDown={
+          onClick
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onClick();
+                }
+              }
+            : undefined
+        }
+        style={onClick ? { cursor: 'pointer' } : undefined}
+      >
         <div className={styles.titleRow}>
           <div className={styles.title} title={title}>
             {title || '—'}
@@ -58,13 +76,28 @@ export function ReferenceBookItemCard({
 
       <div className={styles.actions}>
         {onEdit ? (
-          <Tooltip title="Редактировать">
-            <Button className={styles.actionBtn} icon={<EditOutlined />} onClick={onEdit} />
+          <Tooltip>
+            <Button
+              className={styles.actionBtn}
+              icon={<EditOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            />
           </Tooltip>
         ) : null}
         {onDelete ? (
-          <Tooltip title="Удалить">
-            <Button danger className={styles.actionBtn} icon={<DeleteOutlined />} onClick={onDelete} />
+          <Tooltip>
+            <Button
+              danger
+              className={styles.actionBtn}
+              icon={<DeleteOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+            />
           </Tooltip>
         ) : null}
       </div>

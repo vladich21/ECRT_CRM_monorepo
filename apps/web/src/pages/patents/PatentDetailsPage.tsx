@@ -7,6 +7,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useDeletePatent, usePatentById, useRestorePatent } from '../../api/patents/patentApiHooks';
+import { usePatentGrants } from '../../api/patents/patentGrantsApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { NotFound } from '../../components/notFound/NotFound';
 import { Loader } from '../../components/loader/Loader';
@@ -18,13 +19,6 @@ import type { ActionType } from './PatentsListPage';
 import styles from './PatentDetails.module.scss';
 
 type PatentTab = 'main' | 'files' | 'comments' | 'grants';
-
-const TAB_ITEMS: { key: PatentTab; label: string }[] = [
-  { key: 'main', label: 'Основная информация' },
-  { key: 'files', label: 'Файлы' },
-  { key: 'comments', label: 'Комментарии' },
-  { key: 'grants', label: 'Выданные патенты' },
-];
 
 function getActiveTabFromPath(pathname: string): PatentTab {
   if (pathname.includes('/files')) return 'files';
@@ -46,6 +40,7 @@ export default function PatentDetailsPage() {
 
   const { contextHolder, showNotification } = useNotification();
   const { data: patent, isLoading, isError } = usePatentById(patentId!);
+  const { data: patentGrants = [] } = usePatentGrants(patentId!);
   const { data: referenceBooks } = useReferenceData([
     'patentStatuses',
     'patentIntellectProps',
@@ -141,7 +136,12 @@ export default function PatentDetailsPage() {
           )}
         </>
       }
-      tabs={TAB_ITEMS}
+      tabs={[
+        { key: 'main', label: 'Основная информация' },
+        { key: 'files', label: 'Файлы' },
+        { key: 'comments', label: 'Комментарии' },
+        { key: 'grants', label: `Выданные патенты (${patentGrants.length})` },
+      ]}
       activeTab={activeTab}
       onTabChange={handleTabChange}
       contextHolder={contextHolder}
