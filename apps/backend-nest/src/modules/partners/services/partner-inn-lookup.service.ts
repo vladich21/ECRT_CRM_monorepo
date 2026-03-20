@@ -17,7 +17,10 @@ export class PartnerInnLookupService {
   constructor(private readonly config: ConfigService) {}
 
   async lookupByInn(innRaw: string): Promise<unknown> {
-    const apiKey = this.config.get<string>('DATANEWTON_API_KEY')?.trim();
+    // В Docker ключ приходит из process.env; ConfigService обычно тоже видит, но оставляем fallback
+    const apiKey = (
+      this.config.get<string>('DATANEWTON_API_KEY') ?? process.env.DATANEWTON_API_KEY
+    )?.trim();
     if (!apiKey) {
       throw new ServiceUnavailableException(
         'Поиск контрагента по ИНН не настроен (DATANEWTON_API_KEY на сервере).',
