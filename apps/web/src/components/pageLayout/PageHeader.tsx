@@ -6,11 +6,13 @@ interface PageHeaderProps {
   subtitle?: ReactNode;
   actions?: ReactNode;
   filters?: ReactNode;
+  /** Убрать белый фон у блока заголовка */
+  transparentBlock?: boolean;
 }
 
-export function PageHeader({ title, subtitle, actions, filters }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, filters, transparentBlock }: PageHeaderProps) {
   return (
-    <div className={styles.pageBlock}>
+    <div className={`${styles.pageBlock} ${transparentBlock ? styles.pageBlockTransparent : ''}`}>
       <header className={styles.pageHeader}>
         <div className={styles.pageHeaderContainer}>
           <div className={styles.pageHeaderLeft}>

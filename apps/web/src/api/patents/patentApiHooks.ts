@@ -1,30 +1,57 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { patentApi, PatentsListResponse } from './patentApi';
+import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
 import { Patent } from '../../types/patent';
 
-export const useActivePatents = (
-  page?: number,
-  pageSize?: number,
-): UseQueryResult<PatentsListResponse, Error> => {
-  const limit = pageSize ?? 50;
-  const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
-  return useQuery<PatentsListResponse, Error>({
-    queryKey: ['patents', page, pageSize],
-    queryFn: () => patentApi.getPatents(false, false, limit, offset) as Promise<PatentsListResponse>,
-  });
+export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
+
+/** Поля фильтров, уходящие в query API (без привязки к UI-модалке). */
+export type PatentsListServerFilters = {
+  search: string;
+  departmentId?: string | null;
+  statusId?: string | null;
+  authorIds: string[];
+  responsibleId?: string | null;
 };
 
-export const useDeletedPatents = (
-  page?: number,
-  pageSize?: number,
-): UseQueryResult<PatentsListResponse, Error> => {
-  const limit = pageSize ?? 50;
-  const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
+function buildListQuery(
+  deletedScope: PatentsDeletedScope,
+  page: number,
+  pageSize: number,
+  filters: PatentsListServerFilters,
+): PatentListQuery {
+  return {
+    preview: false,
+    deletedScope,
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+    search: filters.search.trim() || undefined,
+    department_id: filters.departmentId ?? undefined,
+    status_id: filters.statusId ?? undefined,
+    author_ids: filters.authorIds.length > 0 ? filters.authorIds : undefined,
+    created_by: filters.responsibleId ?? undefined,
+  };
+}
+
+/** Список РИД с серверными фильтрами, пагинацией и счётчиками вкладок. */
+export function usePatentsList(
+  deletedScope: PatentsDeletedScope,
+  page: number,
+  pageSize: number,
+  filters: PatentsListServerFilters,
+): UseQueryResult<PatentsListResponse, Error> {
+  const listQuery = buildListQuery(deletedScope, page, pageSize, filters);
   return useQuery<PatentsListResponse, Error>({
-    queryKey: ['patents', 'deleted', page, pageSize],
-    queryFn: () => patentApi.getPatents(true, false, limit, offset) as Promise<PatentsListResponse>,
+    queryKey: ['patents', 'list', listQuery],
+    queryFn: async () => {
+      const res = await patentApi.getPatents(listQuery);
+      if (Array.isArray(res)) {
+        throw new Error('Ожидался полный список патентов, пришёл preview');
+      }
+      return res;
+    },
+    placeholderData: (previousData) => previousData,
   });
-};
+}
 
 export const usePatentById = (patentId: string): UseQueryResult<Patent, Error> => {
   return useQuery<Patent, Error>({

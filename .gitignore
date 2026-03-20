@@ -30,9 +30,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local env files
+# Local env files (секреты не коммитить; шаблоны — .env.example)
 .env*.local
 .env
+.env.development
+.env.production
 
 # Vercel
 .vercel

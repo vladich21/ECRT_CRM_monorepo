@@ -1,21 +1,28 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { useActivePatents, useDeletedPatents } from '../../api/patents/patentApiHooks';
+import { usePatentsList, type PatentsDeletedScope } from '../../api/patents/patentApiHooks';
 import { NotFound } from '../../components/notFound/NotFound';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { usePatentListFilters } from './hooks/usePatentListFilters';
-import { filterByAdvanced, filterBySearch } from './filters/patentListFilters';
 import { PatentCard } from './PatentCard';
 import { PatentFiltersModal } from './PatentFiltersModal';
-import { PATENT_FILTER_TABS } from './PatentsListPage.types';
+import { PATENT_FILTER_TABS, type PatentFilterTab } from './PatentsListPage.types';
 import type { ReferenceDataForPatents } from './data';
 import type { Patent } from '../../types/patent';
 import styles from './PatentsListPage.module.scss';
+
+const SEARCH_DEBOUNCE_MS = 350;
+
+function tabToDeletedScope(tab: PatentFilterTab): PatentsDeletedScope {
+  if (tab === 'deleted') return 'deleted';
+  if (tab === 'active') return 'active';
+  return 'all';
+}
 
 export interface CounterType {
   active?: number;
@@ -43,13 +50,35 @@ export default function PatentsListPage() {
     activeFiltersCount,
   } = usePatentListFilters();
 
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
   const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
-  const { data: activeData, isLoading: isActiveLoading, isError: isActiveError } =
-    useActivePatents(page, pageSize);
-  const { data: deletedData, isLoading: isDeletedLoading, isError: isDeletedError } =
-    useDeletedPatents(page, pageSize);
+  const deletedScope = tabToDeletedScope(activeTab);
+
+  const serverFilters = useMemo(
+    () => ({
+      search: debouncedSearch,
+      departmentId: appliedFilters.departmentId,
+      statusId: appliedFilters.statusId,
+      authorIds: appliedFilters.authorIds,
+      responsibleId: appliedFilters.responsibleId,
+    }),
+    [debouncedSearch, appliedFilters],
+  );
+
+  const {
+    data: listData,
+    isLoading,
+    isError,
+    isFetching,
+  } = usePatentsList(deletedScope, page, pageSize, serverFilters);
 
   const {
     data: referenceBooks,
@@ -67,50 +96,22 @@ export default function PatentsListPage() {
 
   const refs = referenceBooks as ReferenceDataForPatents;
 
-  const activePatents = activeData?.data ?? [];
-  const deletedPatents = deletedData?.data ?? [];
-  const activeTotal = activeData?.total ?? 0;
-  const deletedTotal = deletedData?.total ?? 0;
+  const patents = listData?.data ?? [];
+  const total = listData?.total ?? 0;
+  const tabCounts = listData?.tab_counts ?? { all: 0, active: 0, deleted: 0 };
 
-  const currentPatents = useMemo(() => {
-    switch (activeTab) {
-      case 'active':
-        return activePatents;
-      case 'deleted':
-        return deletedPatents;
-      default:
-        return Array.from(
-          new Map(
-            [...activePatents, ...deletedPatents].map((patent) => [patent.id, patent]),
-          ).values(),
-        );
+  useEffect(() => {
+    resetPage();
+  }, [debouncedSearch, activeTab, appliedFilters, resetPage]);
+
+  /** Если total стал меньше (фильтр, удаление, invalidate), а номер страницы больше возможного — поджимаем. */
+  useEffect(() => {
+    if (isRefsError || isError) return;
+    const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
+    if (page > maxPage) {
+      handleTableChange({ current: maxPage, pageSize } as never);
     }
-  }, [activeTab, activePatents, deletedPatents]);
-
-  const currentTotal = useMemo(() => {
-    switch (activeTab) {
-      case 'active':
-        return activeTotal;
-      case 'deleted':
-        return deletedTotal;
-      default:
-        return activeTotal + deletedTotal;
-    }
-  }, [activeTab, activeTotal, deletedTotal]);
-
-  const tabCounts = useMemo(
-    () => ({
-      all: activePatents.length + deletedPatents.length,
-      active: activePatents.length,
-      deleted: deletedPatents.length,
-    }),
-    [activePatents, deletedPatents]
-  );
-
-  const filteredPatents = useMemo(() => {
-    const afterAdvanced = filterByAdvanced(currentPatents, appliedFilters);
-    return filterBySearch(afterAdvanced, searchQuery, refs);
-  }, [currentPatents, appliedFilters, searchQuery, refs]);
+  }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
 
   const selectOptions = useMemo(
     () => ({
@@ -127,12 +128,8 @@ export default function PatentsListPage() {
         value: user.id,
       })),
     }),
-    [refs]
+    [refs],
   );
-
-  useEffect(() => {
-    resetPage();
-  }, [searchQuery, activeTab, appliedFilters, resetPage]);
 
   const handlePatentClick = (patent: Patent) =>
     navigate(`/patents/${patent.id}`, {
@@ -145,12 +142,12 @@ export default function PatentsListPage() {
       pageSize: newPageSize ?? pageSize,
     } as never);
 
-  if (isRefsError || isActiveError || isDeletedError) {
+  if (isRefsError || isError) {
     return <NotFound errorMessage="Не удалось выполнить запрос" />;
   }
 
-  const isPageLoading = isRefsLoading || isActiveLoading || isDeletedLoading;
-  const paginationConfig = getPaginationConfig(currentTotal);
+  const isInitialLoad = isRefsLoading || (isLoading && !listData);
+  const paginationConfig = getPaginationConfig(total);
 
   return (
     <div className={styles.wrap}>
@@ -185,7 +182,7 @@ export default function PatentsListPage() {
           </>
         }
         filters={
-          !isPageLoading ? (
+          !isInitialLoad ? (
             <div className={styles.filterSection}>
               <div className={styles.filterTabsRow}>
                 <div className={styles.filterTabs}>
@@ -214,8 +211,7 @@ export default function PatentsListPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   <span className={styles.resultCount}>
-                    Показано: <strong>{filteredPatents.length}</strong> из{' '}
-                    <strong>{currentTotal}</strong>
+                    Показано: <strong>{patents.length}</strong> из <strong>{total}</strong>
                   </span>
                 </div>
               </div>
@@ -234,16 +230,16 @@ export default function PatentsListPage() {
         selectOptions={selectOptions}
       />
 
-      {isPageLoading ? (
+      {isInitialLoad ? (
         <div className={styles.loading}>
           <Spin size="large" />
         </div>
-      ) : filteredPatents.length === 0 ? (
+      ) : patents.length === 0 ? (
         <div className={styles.empty}>Нет результатов интеллектуальной деятельности</div>
       ) : (
         <>
-          <div className={styles.cardList}>
-            {filteredPatents.map((patent) => (
+          <div className={`${styles.cardList}${isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''}`}>
+            {patents.map((patent) => (
               <PatentCard
                 key={patent.id}
                 patent={patent}
@@ -260,7 +256,7 @@ export default function PatentsListPage() {
                 total={paginationConfig.total}
                 showSizeChanger
                 pageSizeOptions={[20, 50, 100]}
-                showTotal={(total) => `Всего: ${total}`}
+                showTotal={(t, range) => `${range[0]}-${range[1]} из ${t}`}
                 onChange={handlePageChange}
                 onShowSizeChange={(_, size) => handlePageChange(1, size)}
               />

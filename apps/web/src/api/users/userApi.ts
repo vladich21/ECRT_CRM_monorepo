@@ -7,13 +7,11 @@ export interface UsersListResponse {
 }
 
 export const userApi = {
-  getUsers: async (
-    preview = 2,
-    full = false,
-    limit = 50,
-    offset = 0,
-  ): Promise<UsersListResponse> => {
-    const params: Record<string, number | string> = { preview, limit: String(limit), offset: String(offset) };
+  getUsers: async (preview = 2, full = false): Promise<UsersListResponse> => {
+    const params: Record<string, string> = {
+      preview: String(preview),
+      all: '1',
+    };
     if (full) params.full = '1';
     const response = await apiClient.get<UsersListResponse>('/users', { params });
     return response.data;

@@ -21,7 +21,6 @@ export class UsersService {
     useFullFormat?: boolean,
     pagination?: PaginationParams,
   ): Promise<{ data: UserResponseDto[] | UserPreviewDto[]; total: number }> {
-    const { limit = 50, offset = 0 } = pagination ?? { limit: 50, offset: 0 };
     const activeFilter = preview === 'active' ? eq(users.isActive, true) : undefined;
     const usePreviewFormat = !useFullFormat && (preview === 'active' || preview === 'all');
 
@@ -43,9 +42,12 @@ export class UsersService {
         })
         .from(users);
       if (activeFilter) baseSelect = baseSelect.where(activeFilter) as typeof baseSelect;
+      const orderedPreview = baseSelect.orderBy(asc(users.lastName));
       const [total, rows] = await Promise.all([
         runCount(),
-        baseSelect.orderBy(asc(users.lastName)).limit(limit).offset(offset),
+        pagination != null
+          ? orderedPreview.limit(pagination.limit).offset(pagination.offset)
+          : orderedPreview,
       ]);
       const data = rows.map((row) => ({
         id: String(row.id),
@@ -68,9 +70,12 @@ export class UsersService {
       .leftJoin(positions, eq(users.positionId, positions.id));
     if (activeFilter) baseQuery = baseQuery.where(activeFilter) as typeof baseQuery;
 
+    const orderedFull = baseQuery.orderBy(asc(users.lastName));
     const [total, userRows] = await Promise.all([
       runCount(),
-      baseQuery.orderBy(asc(users.lastName)).limit(limit).offset(offset),
+      pagination != null
+        ? orderedFull.limit(pagination.limit).offset(pagination.offset)
+        : orderedFull,
     ]);
 
     const userIds = userRows.map((row) => row.user.id).filter(Boolean);

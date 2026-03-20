@@ -1,4 +1,5 @@
-import { asc, count, eq, inArray, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, asc, count, eq, exists, ilike, inArray, or, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
@@ -8,6 +9,30 @@ import {
   relPatentAuthors,
 } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Таб «Все» = active + deleted с теми же фильтрами поиска/модалки. */
+export type PatentDeletedScope = 'active' | 'deleted' | 'all';
+
+export interface PatentFindAllParams {
+  preview: boolean;
+  deletedScope: PatentDeletedScope;
+  pagination: PaginationParams;
+  search?: string;
+  departmentId?: string;
+  statusId?: string;
+  authorIds: string[];
+  /** Создатель записи (в UI — «Ответственный»). */
+  createdBy?: string;
+}
+
+export interface PatentsListPayload {
+  data: unknown[];
+  total: number;
+  tab_counts: { active: number; deleted: number; all: number };
+}
 
 @Injectable()
 export class PatentsService {
@@ -98,20 +123,109 @@ export class PatentsService {
     }
   }
 
-  async findAll(
-    preview?: boolean,
-    isDeleted?: boolean,
-    pagination?: PaginationParams,
-  ): Promise<{ data: unknown[]; total: number } | unknown[]> {
-    this.logger.debug(`Получение патентов (preview=${preview}, is_deleted=${isDeleted})`);
-    const { limit = 50, offset = 0 } = pagination ?? { limit: 50, offset: 0 };
-    const where = isDeleted !== undefined ? eq(patents.isDeleted, isDeleted) : undefined;
+  /** Условия без учёта is_deleted (для поиска и счётчиков вкладок). */
+  private buildPatentFilterParts(params: {
+    search?: string;
+    departmentId?: string;
+    statusId?: string;
+    authorIds: string[];
+    createdBy?: string;
+  }): SQL[] {
+    const parts: SQL[] = [];
+
+    const rawSearch = params.search?.trim();
+    if (rawSearch) {
+      const safe = rawSearch.replace(/[%_]/g, '');
+      if (safe.length > 0) {
+        const pattern = `%${safe}%`;
+        parts.push(
+          or(
+            ilike(patents.name, pattern),
+            ilike(patents.registrationNumber, pattern),
+            ilike(patents.kdNumber, pattern),
+            ilike(patents.applicationNumber, pattern),
+          )!,
+        );
+      }
+    }
+
+    if (params.departmentId && UUID_RE.test(params.departmentId)) {
+      parts.push(eq(patents.departmentId, params.departmentId));
+    }
+    if (params.statusId && UUID_RE.test(params.statusId)) {
+      parts.push(eq(patents.statusId, params.statusId));
+    }
+    if (params.createdBy && UUID_RE.test(params.createdBy)) {
+      parts.push(eq(patents.createdBy, params.createdBy));
+    }
+
+    const validAuthorIds = params.authorIds.filter((id) => UUID_RE.test(id));
+    if (validAuthorIds.length > 0) {
+      parts.push(
+        exists(
+          this.db.db
+            .select({ one: sql`1` })
+            .from(relPatentAuthors)
+            .where(
+              and(
+                eq(relPatentAuthors.patentId, patents.id),
+                inArray(relPatentAuthors.userId, validAuthorIds),
+              ),
+            ),
+        ),
+      );
+    }
+
+    return parts;
+  }
+
+  private whereForListScope(baseParts: SQL[], deletedScope: PatentDeletedScope): SQL {
+    const deletedPart =
+      deletedScope === 'active'
+        ? eq(patents.isDeleted, false)
+        : deletedScope === 'deleted'
+          ? eq(patents.isDeleted, true)
+          : undefined;
+    const allParts = deletedPart ? [...baseParts, deletedPart] : [...baseParts];
+    return allParts.length > 0 ? and(...allParts)! : sql`true`;
+  }
+
+  private async countPatentsWhere(where: SQL): Promise<number> {
+    const rows = await this.db.db.select({ value: count() }).from(patents).where(where);
+    return Number(rows[0]?.value ?? 0);
+  }
+
+  async findAll(params: PatentFindAllParams): Promise<PatentsListPayload | unknown[]> {
+    const {
+      preview,
+      deletedScope,
+      pagination,
+      search,
+      departmentId,
+      statusId,
+      authorIds,
+      createdBy,
+    } = params;
+    const { limit = 50, offset = 0 } = pagination;
+
+    this.logger.debug(
+      `Получение патентов (preview=${preview}, deleted_scope=${deletedScope}, search=${Boolean(search)})`,
+    );
+
+    const baseParts = this.buildPatentFilterParts({
+      search,
+      departmentId,
+      statusId,
+      authorIds,
+      createdBy,
+    });
+    const listWhere = this.whereForListScope(baseParts, deletedScope);
 
     if (preview) {
       const rows = await this.db.db
         .select({ id: patents.id, name: patents.name })
         .from(patents)
-        .where(where ?? sql`true`)
+        .where(listWhere)
         .orderBy(asc(patents.name))
         .limit(limit)
         .offset(offset);
@@ -121,23 +235,26 @@ export class PatentsService {
       }));
     }
 
-    const runCount = async (): Promise<number> => {
-      let q = this.db.db.select({ value: count() }).from(patents);
-      if (where) q = q.where(where) as typeof q;
-      const result = await q;
-      return Number(result[0]?.value ?? 0);
-    };
+    const whereActive = this.whereForListScope(baseParts, 'active');
+    const whereDeleted = this.whereForListScope(baseParts, 'deleted');
+    const whereAll = this.whereForListScope(baseParts, 'all');
 
-    const [total, rows] = await Promise.all([
-      runCount(),
+    const [tabActive, tabDeleted, tabAll, rows] = await Promise.all([
+      this.countPatentsWhere(whereActive),
+      this.countPatentsWhere(whereDeleted),
+      this.countPatentsWhere(whereAll),
       this.db.db
         .select()
         .from(patents)
-        .where(where ?? sql`true`)
+        .where(listWhere)
         .orderBy(asc(patents.name))
         .limit(limit)
         .offset(offset),
     ]);
+
+    const total =
+      deletedScope === 'active' ? tabActive : deletedScope === 'deleted' ? tabDeleted : tabAll;
+
     const patentIds = rows.map((row) => String(row.id));
     const [areaIdsMap, authorIdsMap] = await Promise.all([
       this.getAreaIdsMap(patentIds),
@@ -146,7 +263,12 @@ export class PatentsService {
     const data = rows.map((row) =>
       this.toResponse(row, areaIdsMap[String(row.id)] ?? [], authorIdsMap[String(row.id)] ?? []),
     );
-    return { data, total };
+
+    return {
+      data,
+      total,
+      tab_counts: { active: tabActive, deleted: tabDeleted, all: tabAll },
+    };
   }
 
   private toResponse(

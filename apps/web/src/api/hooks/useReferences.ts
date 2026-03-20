@@ -73,24 +73,9 @@ export interface ReferenceData {
 }
 
 const referenceApiMethods = {
-  // preview=2 — все пользователи (включая неактивных); для справочника подтягиваем все страницы
   users: async () => {
-    const pageSize = 100; // на бэке cap=100
-    const maxTotal = 10_000; // защита от случайной загрузки “всего мира”
-    const all: Array<{ id: string; name: string }> = [];
-    let offset = 0;
-
-    while (true) {
-      const { data, total } = await userApi.getUsers(2, false, pageSize, offset);
-      all.push(...((data as unknown) as Array<{ id: string; name: string }>));
-      offset += data.length;
-
-      if (data.length === 0) break;
-      if (all.length >= total) break;
-      if (all.length >= maxTotal) break;
-    }
-
-    return all;
+    const { data } = await userApi.getUsers(2, false);
+    return (data as unknown) as Array<{ id: string; name: string }>;
   },
   departments: () => departmentApi.getDepartments(1),
   roles: () =>
@@ -107,7 +92,6 @@ const referenceApiMethods = {
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,
 
-  // Все договоры для выпадающих списков (for_reference=1, без лимита). Ответ кэшируется на бэкенде (п. 3.2 STACK_AND_LOAD_ANALYSIS.md).
   contracts: () => contractApi.getContractsForReference().then((r) => r.data),
   contractStates: contractApi.getContractsStates,
   contractCategories: contractApi.getContractsCategories,
@@ -116,7 +100,9 @@ const referenceApiMethods = {
   contractStageStates: contractStageStateApi.getContractStageStates,
 
   patents: () =>
-    patentApi.getPatents(false, true).then((r) => (Array.isArray(r) ? r : r.data)),
+    patentApi.getPatents({ preview: true, deletedScope: 'active' }).then((r) =>
+      Array.isArray(r) ? r : r.data,
+    ),
   patentStatuses: patentStatusesApi.getPatentStatuses,
   patentIntellectProps: patentIntellectPropsApi.getPatentIntellectProps,
   patentAreas: patentAreasApi.getPatentAreas,

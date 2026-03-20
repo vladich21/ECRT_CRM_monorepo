@@ -1,52 +1,96 @@
-import { useMemo, useState } from 'react';
-import { Button, Input, Pagination } from 'antd';
+import { useMemo, useState, useEffect } from 'react';
+import { Button, Input, Pagination, Spin } from 'antd';
 import { PlusOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { Loader } from '../../components/loader/Loader';
+import { NotFound } from '../../components/notFound/NotFound';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePartners } from '../../api/partners/partnerApiHooks';
 import SupplierCard from './registry/SupplierCard';
 import { PartnerFiltersModal, type PartnerFilters, EMPTY_FILTERS } from './PartnerFiltersModal';
 import type { Partner } from '../../types/partner';
+import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
+import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import styles from './PartnersListPage.module.scss';
 
-const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 350;
 
 export default function PartnersListPage() {
   const navigate = useNavigate();
 
-  // ─── поиск и пагинация ────────────────────────────────────────────────────
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<PartnerListTab>('all');
 
-  // ─── расширенные фильтры (модалка) ────────────────────────────────────────
   const [appliedFilters, setAppliedFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [draftFilters, setDraftFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  const { data: references } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies']);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
 
-  // ─── API запрос с серверными фильтрами ────────────────────────────────────
-  const apiFilters = useMemo(() => ({
-    search: search || undefined,
-    typeIds: appliedFilters.typeIds.length > 0 ? appliedFilters.typeIds : undefined,
-    statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
-    competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
-  }), [search, appliedFilters]);
+  const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
+    useServerTablePagination({ defaultPageSize: 20 });
 
-  const { data: partnersData, isLoading } = usePartners(apiFilters, page, PAGE_SIZE);
+  const apiFilters = useMemo(
+    () => ({
+      search: debouncedSearch.trim() || undefined,
+      typeIds: appliedFilters.typeIds.length > 0 ? appliedFilters.typeIds : undefined,
+      statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
+      competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
+      readiness: activeTab,
+    }),
+    [debouncedSearch, appliedFilters, activeTab],
+  );
+
+  const {
+    data: partnersData,
+    isLoading,
+    isError,
+    isFetching,
+  } = usePartners(apiFilters, page, pageSize);
+
+  const { data: references, isError: isRefsError, isLoading: isRefsLoading } = useReferenceData([
+    'partnerTypes',
+    'partnerStatuses',
+    'competencies',
+  ]);
 
   const partners = partnersData?.data ?? [];
   const total = partnersData?.total ?? 0;
+  const tabCounts = partnersData?.tab_counts ?? {
+    all: 0,
+    ready: 0,
+    in_progress: 0,
+    key_supplier: 0,
+  };
 
-  // ─── опции для модалки фильтров ───────────────────────────────────────────
+  useEffect(() => {
+    resetPage();
+  }, [debouncedSearch, activeTab, appliedFilters, resetPage]);
+
+  useEffect(() => {
+    if (isRefsError || isError) return;
+    const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
+    if (page > maxPage) {
+      handleTableChange({ current: maxPage, pageSize } as never);
+    }
+  }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
+
   const filterOptions = useMemo(
     () => ({
-      types:        (references?.partnerTypes    ?? []).map((type) => ({ label: type.name, value: String(type.id) })),
-      statuses:     (references?.partnerStatuses ?? []).map((status) => ({ label: status.name, value: String(status.id) })),
-      competencies: (references?.competencies    ?? []).map((competence) => ({ label: competence.name, value: String(competence.id) })),
+      types: (references?.partnerTypes ?? []).map((type) => ({ label: type.name, value: String(type.id) })),
+      statuses: (references?.partnerStatuses ?? []).map((status) => ({
+        label: status.name,
+        value: String(status.id),
+      })),
+      competencies: (references?.competencies ?? []).map((competence) => ({
+        label: competence.name,
+        value: String(competence.id),
+      })),
     }),
     [references],
   );
@@ -56,18 +100,38 @@ export default function PartnersListPage() {
     (appliedFilters.statusIds.length > 0 ? 1 : 0) +
     (appliedFilters.competenceIds.length > 0 ? 1 : 0);
 
-  const openFiltersModal = () => { setDraftFilters(appliedFilters); setIsFiltersOpen(true); };
-  const applyFilters = () => { setAppliedFilters(draftFilters); setIsFiltersOpen(false); setPage(1); };
-  const resetFilters = () => { setDraftFilters(EMPTY_FILTERS); setAppliedFilters(EMPTY_FILTERS); setIsFiltersOpen(false); setPage(1); };
+  const openFiltersModal = () => {
+    setDraftFilters(appliedFilters);
+    setIsFiltersOpen(true);
+  };
+  const applyFilters = () => {
+    setAppliedFilters(draftFilters);
+    setIsFiltersOpen(false);
+    resetPage();
+  };
+  const resetFilters = () => {
+    setDraftFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+    setIsFiltersOpen(false);
+    resetPage();
+  };
 
   const handleCardClick = (partner: Partner) => {
     navigate(`/partners/${partner.id}`, { state: { from: 'partners-list' } });
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
+  const handlePageChange = (newPage: number, newPageSize?: number) =>
+    handleTableChange({
+      current: newPage,
+      pageSize: newPageSize ?? pageSize,
+    } as never);
+
+  if (isRefsError || isError) {
+    return <NotFound errorMessage="Не удалось выполнить запрос" />;
+  }
+
+  const isInitialLoad = isRefsLoading || (isLoading && !partnersData);
+  const paginationConfig = getPaginationConfig(total);
 
   return (
     <div className={styles.wrap}>
@@ -96,31 +160,52 @@ export default function PartnersListPage() {
           </>
         }
         filters={
-          <div className={styles.filterSection}>
-            <div className={styles.filterTabsRow}>
-              <div className={styles.filterTabsRight}>
-                <Input
-                  className={styles.searchInTabsRow}
-                  prefix={<SearchOutlined className={styles.searchIcon} />}
-                  placeholder="Поиск по названию или ИНН..."
-                  value={search}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  allowClear
-                />
-                <span className={styles.resultCount}>
-                  Показано: <strong>{partners.length}</strong> из <strong>{total}</strong>
-                </span>
+          !isInitialLoad ? (
+            <div className={styles.filterSection}>
+              <div className={styles.filterTabsRow}>
+                <div className={styles.filterTabs}>
+                  {PARTNER_FILTER_TABS.map(({ key, label, hint }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      title={hint}
+                      className={`${styles.filterTab}${
+                        activeTab === key ? ` ${styles.filterTabActive}` : ''
+                      }`}
+                      onClick={() => setActiveTab(key)}
+                    >
+                      {label}{' '}
+                      <span className={styles.filterTabCount}>{tabCounts[key]}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.filterTabsRight}>
+                  <Input
+                    className={styles.searchInTabsRow}
+                    prefix={<SearchOutlined className={styles.searchIcon} />}
+                    placeholder="Поиск по названию или ИНН..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    allowClear
+                  />
+                  <span className={styles.resultCount}>
+                    Показано: <strong>{partners.length}</strong> из <strong>{total}</strong>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : undefined
         }
       />
 
-      {/* Cards list */}
-      {isLoading ? (
-        <Loader />
+      {isInitialLoad ? (
+        <div className={styles.loading}>
+          <Spin size="large" />
+        </div>
       ) : (
-        <div className={styles.cardsList}>
+        <div
+          className={`${styles.cardsList}${isFetching && !isLoading ? ` ${styles.cardsListDimmed}` : ''}`}
+        >
           {partners.length === 0 ? (
             <div className={styles.emptyState}>Контрагенты не найдены</div>
           ) : (
@@ -136,14 +221,17 @@ export default function PartnersListPage() {
         </div>
       )}
 
-      {total > PAGE_SIZE && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+      {(paginationConfig.total ?? 0) > 0 && (
+        <div className={styles.pagination}>
           <Pagination
-            current={page}
-            total={total}
-            pageSize={PAGE_SIZE}
-            onChange={setPage}
-            showSizeChanger={false}
+            current={paginationConfig.current}
+            pageSize={paginationConfig.pageSize}
+            total={paginationConfig.total}
+            showSizeChanger
+            pageSizeOptions={[20, 50, 100]}
+            showTotal={(t, range) => `${range[0]}-${range[1]} из ${t}`}
+            onChange={handlePageChange}
+            onShowSizeChange={(_, size) => handlePageChange(1, size)}
           />
         </div>
       )}

@@ -1,7 +1,8 @@
-import BasicTable from '../../../components/basicTable/BasicTable';
+import { Spin } from 'antd';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
 import { PatentArea } from '../../../types/patent';
-
 import { useEffect, useState } from 'react';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
@@ -14,8 +15,8 @@ import {
   useUpdatePatentArea,
 } from '../../../api/patents/patentAreasApiHooks';
 import { getNameById } from '../../../helpers/getNameById';
-import { columns } from './data';
 import { getEntityById } from '../../../helpers/getEntityById';
+import styles from './PatentAreasListPage.module.scss';
 
 type ActionType = 'edit' | 'delete' | 'add' | '';
 
@@ -83,17 +84,32 @@ const PatentAreasListPage: React.FC = () => {
   };
 
   return (
-    <ReferenceBookListPage title="Области патентных заявок" addButtonLabel="Добавить область патентных заявок" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
-      <BasicTable<PatentArea>
-        data={data}
-        loading={loading}
-        columns={columns}
-        showActions={true}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-      />
+    <ReferenceBookListPage
+      title="Области патентных заявок"
+      addButtonLabel="Добавить область патентных заявок"
+      onAdd={handleOpenAddModal}
+      contextHolder={contextHolder}
+    >
+      {loading ? (
+        <div className={styles.loading}>
+          <Spin size="large" />
+        </div>
+      ) : data.length === 0 ? (
+        <div className={styles.empty}>Области патентных заявок не найдены</div>
+      ) : (
+        <ReferenceBookCardList>
+          {data.map((area) => (
+            <ReferenceBookItemCard
+              key={area.id}
+              title={area.name || '—'}
+              metaText={area.code}
+              description={area.description}
+              onEdit={() => onEdit({ id: area.id })}
+              onDelete={() => onDelete({ id: area.id })}
+            />
+          ))}
+        </ReferenceBookCardList>
+      )}
     </ReferenceBookListPage>
   );
 };

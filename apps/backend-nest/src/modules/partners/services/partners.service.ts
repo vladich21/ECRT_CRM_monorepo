@@ -1,5 +1,5 @@
-import { and, asc, count, eq, ilike, inArray, ne, or } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
@@ -16,11 +16,25 @@ import {
 } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
 
+export type PartnerListTabScope = 'all' | 'ready' | 'in_progress' | 'key_supplier';
+
 export interface PartnerQueryFilters {
   search?: string;
   typeIds?: string[];
   statusIds?: string[];
   competenceIds?: string[];
+  readiness?: PartnerListTabScope;
+}
+
+export interface PartnersListPayload {
+  data: unknown[];
+  total: number;
+  tab_counts: {
+    all: number;
+    ready: number;
+    in_progress: number;
+    key_supplier: number;
+  };
 }
 
 @Injectable()
@@ -29,74 +43,134 @@ export class PartnersService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  async findAll(
-    preview?: boolean,
-    pagination?: PaginationParams,
-    filters?: PartnerQueryFilters,
-  ): Promise<{ data: unknown[]; total: number }> {
-    this.logger.debug(`Получение партнёров (preview=${preview})`);
-
-    // ── preview-режим (справочник, без пагинации) ────────────────────────────
-    if (preview) {
-      const rows = await this.db.db
-        .select({ id: partners.id, name: partners.name })
-        .from(partners)
-        .orderBy(asc(partners.name));
-      const data = rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
-      return { data, total: data.length };
+  private listTabSql(tab: PartnerListTabScope): SQL | undefined {
+    switch (tab) {
+      case 'all':
+        return undefined;
+      case 'ready':
+        return and(
+          eq(partners.legalCheckPassed, true),
+          eq(partners.questionnaireFilled, true),
+          eq(partners.initialAssessmentDone, true),
+        );
+      case 'in_progress':
+        return or(
+          eq(partners.legalCheckPassed, false),
+          eq(partners.questionnaireFilled, false),
+          eq(partners.initialAssessmentDone, false),
+        );
+      case 'key_supplier':
+        return eq(partners.isKeySupplier, true);
     }
+  }
 
-    // ── собираем условия фильтрации ──────────────────────────────────────────
-    const conditions: ReturnType<typeof eq>[] = [];
+  private mergeWhere(baseParts: SQL[], extra?: SQL): SQL | undefined {
+    const parts = extra ? [...baseParts, extra] : [...baseParts];
+    return parts.length ? and(...parts) : undefined;
+  }
 
-    if (filters?.search) {
-      const term = `%${filters.search}%`;
-      conditions.push(
-        or(ilike(partners.name, term), ilike(partners.inn, term)) as ReturnType<typeof eq>,
-      );
+  private async countPartners(where: SQL | undefined): Promise<number> {
+    const base = this.db.db.select({ value: count() }).from(partners);
+    const rows = where != null ? await base.where(where) : await base;
+    return Number(rows[0]?.value ?? 0);
+  }
+
+  private async buildPartnerBaseParts(filters?: PartnerQueryFilters): Promise<SQL[] | null> {
+    const parts: SQL[] = [];
+    const raw = filters?.search?.trim();
+    if (raw) {
+      const safe = raw.replace(/[%_]/g, '');
+      if (safe.length > 0) {
+        const term = `%${safe}%`;
+        parts.push(or(ilike(partners.name, term), ilike(partners.inn, term))!);
+      }
     }
-
     if (filters?.statusIds?.length) {
-      conditions.push(inArray(partners.statusId, filters.statusIds) as ReturnType<typeof eq>);
+      parts.push(inArray(partners.statusId, filters.statusIds));
     }
-
-    // Для many-to-many: сначала находим id партнёров, у которых есть нужные типы
     if (filters?.typeIds?.length) {
       const typeRows = await this.db.db
         .select({ partnerId: relPartnersTypes.partnerId })
         .from(relPartnersTypes)
         .where(inArray(relPartnersTypes.typeId, filters.typeIds));
       const matchedIds = [...new Set(typeRows.map((relRow) => relRow.partnerId).filter(Boolean))] as string[];
-      if (matchedIds.length === 0) return { data: [], total: 0 };
-      conditions.push(inArray(partners.id, matchedIds) as ReturnType<typeof eq>);
+      if (matchedIds.length === 0) return null;
+      parts.push(inArray(partners.id, matchedIds));
     }
-
     if (filters?.competenceIds?.length) {
       const compRows = await this.db.db
         .select({ partnerId: relPartnersCompetencies.partnerId })
         .from(relPartnersCompetencies)
         .where(inArray(relPartnersCompetencies.competenceId, filters.competenceIds));
       const matchedIds = [...new Set(compRows.map((relRow) => relRow.partnerId).filter(Boolean))] as string[];
-      if (matchedIds.length === 0) return { data: [], total: 0 };
-      conditions.push(inArray(partners.id, matchedIds) as ReturnType<typeof eq>);
+      if (matchedIds.length === 0) return null;
+      parts.push(inArray(partners.id, matchedIds));
+    }
+    return parts;
+  }
+
+  async findAll(
+    preview?: boolean,
+    pagination?: PaginationParams,
+    filters?: PartnerQueryFilters,
+  ): Promise<PartnersListPayload> {
+    this.logger.debug(`Получение партнёров (preview=${preview})`);
+
+    if (preview) {
+      const rows = await this.db.db
+        .select({ id: partners.id, name: partners.name })
+        .from(partners)
+        .orderBy(asc(partners.name));
+      const data = rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
+      const n = data.length;
+      return {
+        data,
+        total: n,
+        tab_counts: { all: n, ready: 0, in_progress: 0, key_supplier: 0 },
+      };
     }
 
-    const where = conditions.length ? and(...conditions) : undefined;
+    const baseParts = await this.buildPartnerBaseParts(filters);
+    if (baseParts === null) {
+      return {
+        data: [],
+        total: 0,
+        tab_counts: { all: 0, ready: 0, in_progress: 0, key_supplier: 0 },
+      };
+    }
+
+    const tab = filters?.readiness ?? 'all';
+    const whereAll = this.mergeWhere(baseParts, this.listTabSql('all'));
+    const whereReady = this.mergeWhere(baseParts, this.listTabSql('ready'));
+    const whereInProgress = this.mergeWhere(baseParts, this.listTabSql('in_progress'));
+    const whereKeySupplier = this.mergeWhere(baseParts, this.listTabSql('key_supplier'));
+    const listWhere = this.mergeWhere(baseParts, this.listTabSql(tab));
+
     const { limit = 20, offset = 0 } = pagination ?? {};
 
-    // ── count + данные параллельно ───────────────────────────────────────────
-    const [totalResult, rows] = await Promise.all([
-      this.db.db.select({ value: count() }).from(partners).where(where),
+    const [tabAll, tabReady, tabInProgress, tabKeySupplier, rows] = await Promise.all([
+      this.countPartners(whereAll),
+      this.countPartners(whereReady),
+      this.countPartners(whereInProgress),
+      this.countPartners(whereKeySupplier),
       this.db.db
         .select()
         .from(partners)
-        .where(where)
+        .where(listWhere ?? sql`true`)
         .orderBy(asc(partners.name))
         .limit(limit)
         .offset(offset),
     ]);
 
-    const total = totalResult[0]?.value ?? 0;
+    const total =
+      tab === 'ready'
+        ? tabReady
+        : tab === 'in_progress'
+          ? tabInProgress
+          : tab === 'key_supplier'
+            ? tabKeySupplier
+            : tabAll;
+
     const ids = rows.map((row) => row.id).filter(Boolean) as string[];
 
     const [typeRows, compRows] = ids.length
@@ -136,7 +210,16 @@ export class PartnersService {
       competence_ids: compMap.get(String(row.id)) ?? [],
     }));
 
-    return { data, total };
+    return {
+      data,
+      total,
+      tab_counts: {
+        all: tabAll,
+        ready: tabReady,
+        in_progress: tabInProgress,
+        key_supplier: tabKeySupplier,
+      },
+    };
   }
 
   async findOne(id: string) {

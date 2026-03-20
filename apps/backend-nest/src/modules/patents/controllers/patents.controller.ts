@@ -1,6 +1,22 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
-import { PatentsService } from '../services/patents.service';
+import { PatentsService, type PatentDeletedScope, type PatentFindAllParams } from '../services/patents.service';
 import { parsePagination } from '../../../common/pagination';
+
+function parseAuthorIds(raw?: string): string[] {
+  if (!raw?.trim()) return [];
+  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function parseDeletedScope(
+  deletedScopeRaw?: string,
+  legacyIsDeleted?: string,
+): PatentDeletedScope {
+  if (deletedScopeRaw === 'all' || deletedScopeRaw === 'deleted' || deletedScopeRaw === 'active') {
+    return deletedScopeRaw;
+  }
+  if (legacyIsDeleted === 'true') return 'deleted';
+  return 'active';
+}
 
 @Controller('patents')
 export class PatentsController {
@@ -16,23 +32,51 @@ export class PatentsController {
   @Get()
   findAll(
     @Query('preview') preview?: string,
-    @Query('is_deleted') isDeleted?: string,
+    @Query('deleted_scope') deletedScopeRaw?: string,
+    @Query('is_deleted') legacyIsDeleted?: string,
+    @Query('search') search?: string,
+    @Query('department_id') departmentId?: string,
+    @Query('status_id') statusId?: string,
+    @Query('author_ids') authorIdsRaw?: string,
+    @Query('created_by') createdBy?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    const isDeletedBool = isDeleted === 'true' ? true : isDeleted === 'false' ? false : false;
-    const pagination = parsePagination(limit, offset);
-    return this.service.findAll(preview === '1', isDeletedBool, pagination);
+    const params: PatentFindAllParams = {
+      preview: preview === '1',
+      deletedScope: parseDeletedScope(deletedScopeRaw, legacyIsDeleted),
+      pagination: parsePagination(limit, offset),
+      search: search?.trim() || undefined,
+      departmentId: departmentId?.trim() || undefined,
+      statusId: statusId?.trim() || undefined,
+      authorIds: parseAuthorIds(authorIdsRaw),
+      createdBy: createdBy?.trim() || undefined,
+    };
+    return this.service.findAll(params);
   }
 
   @Get('deleted')
   findDeleted(
     @Query('preview') preview?: string,
+    @Query('search') search?: string,
+    @Query('department_id') departmentId?: string,
+    @Query('status_id') statusId?: string,
+    @Query('author_ids') authorIdsRaw?: string,
+    @Query('created_by') createdBy?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    const pagination = parsePagination(limit, offset);
-    return this.service.findAll(preview === '1', true, pagination);
+    const params: PatentFindAllParams = {
+      preview: preview === '1',
+      deletedScope: 'deleted',
+      pagination: parsePagination(limit, offset),
+      search: search?.trim() || undefined,
+      departmentId: departmentId?.trim() || undefined,
+      statusId: statusId?.trim() || undefined,
+      authorIds: parseAuthorIds(authorIdsRaw),
+      createdBy: createdBy?.trim() || undefined,
+    };
+    return this.service.findAll(params);
   }
 
   @Get(':id/grants')

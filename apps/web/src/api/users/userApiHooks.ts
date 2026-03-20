@@ -6,12 +6,10 @@ type UpdateUserInput = { id: string; data: Partial<User> };
 
 const usersQueryKey = ['users'] as const;
 
-/** Список с серверной пагинацией. page 1-based, pageSize — размер страницы. */
-export function useUsers(preview = 2, full = false, page = 1, pageSize = 50) {
-  const offset = (page - 1) * pageSize;
+export function useUsers(preview = 2, full = true) {
   return useQuery({
-    queryKey: [...usersQueryKey, preview, full, page, pageSize],
-    queryFn: () => userApi.getUsers(preview, full, pageSize, offset),
+    queryKey: [...usersQueryKey, 'full-list', preview, full],
+    queryFn: () => userApi.getUsers(preview, full),
   });
 }
 

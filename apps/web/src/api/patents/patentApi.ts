@@ -1,24 +1,58 @@
 import { Patent } from '../../types/patent';
 import { apiClient } from '../clients';
 
+export type PatentsTabCounts = {
+  active: number;
+  deleted: number;
+  all: number;
+};
+
 export interface PatentsListResponse {
   data: Patent[];
   total: number;
+  tab_counts: PatentsTabCounts;
+}
+
+/** Параметры списка РИД (серверная фильтрация + пагинация). */
+export interface PatentListQuery {
+  /** Краткий список { id, name } — ответ массив, без `tab_counts`. */
+  preview?: boolean;
+  /** Вкладка: активные / удалённые / все. */
+  deletedScope?: 'active' | 'deleted' | 'all';
+  limit?: number;
+  offset?: number;
+  search?: string;
+  department_id?: string;
+  status_id?: string;
+  author_ids?: string[];
+  /** Создатель записи (в UI — «Ответственный»). */
+  created_by?: string;
+}
+
+function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | number> {
+  const params: Record<string, string | number> = {};
+  if (q.preview) params.preview = '1';
+  params.deleted_scope = q.deletedScope ?? 'active';
+  if (q.limit != null) params.limit = q.limit;
+  if (q.offset != null) params.offset = q.offset;
+  if (q.search?.trim()) params.search = q.search.trim();
+  if (q.department_id) params.department_id = q.department_id;
+  if (q.status_id) params.status_id = q.status_id;
+  if (q.author_ids?.length) params.author_ids = q.author_ids.join(',');
+  if (q.created_by) params.created_by = q.created_by;
+  return params;
 }
 
 export const patentApi = {
-  getPatents: async (
-    is_deleted?: boolean,
-    preview?: boolean,
-    limit?: number,
-    offset?: number,
-  ): Promise<Patent[] | PatentsListResponse> => {
-    const path = is_deleted ? '/patents/deleted' : '/patents';
-    const params: Record<string, string | number> = {};
-    if (preview) params.preview = '1';
-    if (limit != null) params.limit = limit;
-    if (offset != null) params.offset = offset;
-    const response = await apiClient.get(path, { params });
+  /**
+   * Список патентов. В режиме `preview` — массив; иначе `{ data, total, tab_counts }`.
+   */
+  getPatents: async (query: PatentListQuery = {}): Promise<Patent[] | PatentsListResponse> => {
+    const params = buildPatentsQueryParams({
+      ...query,
+      deletedScope: query.deletedScope ?? 'active',
+    });
+    const response = await apiClient.get<Patent[] | PatentsListResponse>('/patents', { params });
     return response.data;
   },
 

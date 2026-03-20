@@ -1,16 +1,17 @@
-import axios from 'axios';
 import { Partner } from '../../types/partner';
 import { apiClient } from '../clients';
 
-const GLOBAL_INN_URL = 'https://api.datanewton.ru/v1/counterparty';
-const INN_PARAMS = {
-  key: '***REDACTED***',
-  filters: 'OKVED_BLOCK,NEGATIVE_LISTS_BLOCK,ADDRESS_BLOCK',
+export type PartnersTabCounts = {
+  all: number;
+  ready: number;
+  in_progress: number;
+  key_supplier: number;
 };
 
 export interface PartnersListResponse {
   data: Partner[];
   total: number;
+  tab_counts: PartnersTabCounts;
 }
 
 export interface PartnerListParams {
@@ -18,6 +19,7 @@ export interface PartnerListParams {
   typeIds?: string[];
   statusIds?: string[];
   competenceIds?: string[];
+  readiness?: 'all' | 'ready' | 'in_progress' | 'key_supplier';
 }
 
 export const partnerApi = {
@@ -30,17 +32,17 @@ export const partnerApi = {
       params: {
         limit,
         offset,
-        search:         filters?.search || undefined,
-        // comma-separated — backend splits them
-        type_ids:        filters?.typeIds?.length        ? filters.typeIds.join(',')        : undefined,
-        status_ids:      filters?.statusIds?.length      ? filters.statusIds.join(',')      : undefined,
-        competence_ids:  filters?.competenceIds?.length  ? filters.competenceIds.join(',')  : undefined,
+        search: filters?.search || undefined,
+        type_ids: filters?.typeIds?.length ? filters.typeIds.join(',') : undefined,
+        status_ids: filters?.statusIds?.length ? filters.statusIds.join(',') : undefined,
+        competence_ids: filters?.competenceIds?.length ? filters.competenceIds.join(',') : undefined,
+        readiness:
+          filters?.readiness && filters.readiness !== 'all' ? filters.readiness : undefined,
       },
     });
     return response.data;
   },
 
-  /** Все партнёры для справочников (выпадающие списки) */
   getPartnersForReference: async (): Promise<Partner[]> => {
     const response = await apiClient.get('/partners', { params: { preview: 1 } });
     return response.data.data ?? response.data;
@@ -51,9 +53,10 @@ export const partnerApi = {
     return response.data[0];
   },
 
+  /** Данные контрагента по ИНН через бэкенд-прокси (секрет DataNewton только на сервере). */
   getPartnerDataByInn: async (partnerInn: string): Promise<Partner> => {
-    const response = await axios.get(GLOBAL_INN_URL, {
-      params: { inn: partnerInn, ...INN_PARAMS },
+    const response = await apiClient.get('/partners/inn-lookup', {
+      params: { inn: partnerInn },
     });
     return response.data;
   },

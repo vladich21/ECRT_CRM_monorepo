@@ -6,6 +6,7 @@ import { isValidUuid } from '../../helpers/isValidUuid';
 export interface PartnersListResult {
   data: Partner[];
   total: number;
+  tab_counts: { all: number; ready: number; in_progress: number; key_supplier: number };
 }
 
 export function usePartners(
@@ -16,8 +17,9 @@ export function usePartners(
   const limit = pageSize ?? 20;
   const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
   return useQuery<PartnersListResult, Error>({
-    queryKey: ['partners', filters ?? null, page, pageSize],
+    queryKey: ['partners', 'list', filters ?? null, page, pageSize],
     queryFn: () => partnerApi.getPartners(filters, limit, offset),
+    placeholderData: (previousData) => previousData,
   });
 }
 

@@ -10,12 +10,14 @@ export class UsersController {
   findAll(
     @Query('preview') preview?: string,
     @Query('full') full?: string,
+    @Query('all') all?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
     const previewMode = preview === '1' ? 'active' : preview === '2' ? 'all' : 'full';
     const useFullFormat = full === '1' || full === 'true';
-    const pagination = parsePagination(limit, offset);
+    const fetchAll = all === '1' || all === 'true';
+    const pagination = fetchAll ? undefined : parsePagination(limit, offset);
     return this.usersService.findAll(previewMode, useFullFormat, pagination);
   }
 

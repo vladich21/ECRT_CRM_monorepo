@@ -7,7 +7,6 @@ export const useFilteredUsers = (users: User[], filters: Record<string, any>) =>
     if (!users.length) return [];
 
     return users.filter(user => {
-      // Поиск по тексту
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const matchesSearch =
@@ -20,30 +19,25 @@ export const useFilteredUsers = (users: User[], filters: Record<string, any>) =>
         if (!matchesSearch) return false;
       }
 
-      // Фильтр по отделу
       if (filters.department && user.department?.id !== String(filters.department)) {
         return false;
       }
 
-      // Фильтр по должности
       if (filters.position && user.position?.id !== String(filters.position)) {
         return false;
       }
 
-      // Фильтр по ролям
       if (filters.role && user.roles?.length > 0) {
         const userRoleIds = user.roles.map(role => String(role.id));
         const hasMatchingRole = userRoleIds.includes(String(filters.role));
         if (!hasMatchingRole) return false;
       }
 
-      // Фильтр по статусу аккаунта
       if (filters.is_active !== undefined && filters.is_active !== '') {
         const filterActive = filters.is_active === 'true';
         if (user.is_active !== filterActive) return false;
       }
 
-      // Фильтр по дате регистрации
       if (filters.created_at) {
         const [startDate, endDate] = filters.created_at;
         const userCreatedAt = dayjs(user.created_at);

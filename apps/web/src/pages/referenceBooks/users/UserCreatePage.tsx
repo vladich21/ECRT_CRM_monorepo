@@ -1,27 +1,16 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, Select, Switch, Space, Row, Col, Divider } from 'antd';
-import {
-  SaveOutlined,
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  TeamOutlined,
-  IdcardOutlined,
-  SafetyCertificateOutlined,
-  UserAddOutlined,
-} from '@ant-design/icons';
+import { Form, Button } from 'antd';
+import { SaveOutlined } from '@ant-design/icons';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useCreateUser } from '../../../api/users/userApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { initialFormValues } from './data';
+import { UserFormFields } from './UserFormFields';
 import styles from './UserFormPage.module.scss';
-
-const { Option } = Select;
 
 export default function UserCreatePage() {
   const navigate = useNavigate();
@@ -52,7 +41,7 @@ export default function UserCreatePage() {
       ...values,
       department_id: toUuidOrNull(values.department_id),
       position_id: toUuidOrNull(values.position_id),
-      role_ids: Array.isArray(roleIds) ? roleIds.map(String).filter(id => id && id !== '') : [],
+      role_ids: Array.isArray(roleIds) ? roleIds.map(String).filter((id) => id && id !== '') : [],
       roles: undefined,
     };
     delete (payload as Record<string, unknown>).roles;
@@ -64,187 +53,47 @@ export default function UserCreatePage() {
   }
 
   if (isReferencesError || !referenceBooks) {
-    return <NotFound errorMessage='Не удалось подгрузить справочники' />;
+    return <NotFound errorMessage="Не удалось подгрузить справочники" />;
   }
 
   return (
-    <div className={styles.wrap}>
-      {contextHolder}
-      <BackButton />
-      <PageHeader title="Создание нового пользователя" subtitle="Заполните данные для создания пользователя" />
-
+    <DetailPageHeader
+      title="Создание нового пользователя"
+      titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания пользователя</span>}
+      backLabel="Пользователи"
+      onBack={() => navigate(-1)}
+      actions={
+        <>
+          <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
+            Очистить форму
+          </Button>
+          <Button type="primary" icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
+            Создать пользователя
+          </Button>
+        </>
+      }
+      tabs={[{ key: 'main', label: 'Создание' }]}
+      activeTab="main"
+      onTabChange={() => {}}
+      contextHolder={contextHolder}
+      stickyHeader
+    >
       <div className={styles.formCard}>
-          <Form
-            form={form}
-            layout='vertical'
-            initialValues={initialFormValues}
-            onFinish={handleCreate}
-            onKeyPress={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-              }
-            }}
-            scrollToFirstError
-          >
-            {/* Основная информация */}
-            <Divider orientation='left'>
-              <UserOutlined /> Основная информация
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item label='Имя' name='first_name' rules={[{ required: true, message: 'Введите имя' }]}>
-                  <Input placeholder='Введите имя' />
-                </Form.Item>
-              </Col>
-
-            </Row>
-
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item label='Фамилия' name='last_name' rules={[{ required: true, message: 'Введите фамилию' }]}>
-                  <Input placeholder='Введите фамилию' />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item label='Отчество' name='middle_name'>
-                  <Input placeholder='Введите отчество' />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* Контактная информация */}
-            <Divider orientation='left'>
-              <MailOutlined /> Контактная информация
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label='Почта'
-                  name='email'
-                  rules={[
-                    { required: true, message: 'Введите email' },
-                    { type: 'email', message: 'Введите корректный email' },
-                  ]}
-                >
-                  <Input prefix={<MailOutlined />} placeholder='email@example.com' type='email' />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label='Моб. телефон'
-                  name='phone'
-                  rules={[
-                    {
-                      pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/,
-                      message: 'Введите корректный номер телефона (например: +7 (999) 999-99-99)',
-                    },
-                  ]}
-                >
-                  <Input prefix={<PhoneOutlined />} placeholder='+7 (999) 999-99-99' />
-                </Form.Item>
-              </Col>
-
-            </Row>
-
-            {/* Организационная информация */}
-            <Divider orientation='left'>
-              <TeamOutlined /> Организационная информация
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item label='Отдел' name='department_id'>
-                  <Select
-                    showSearch
-                    optionFilterProp='children'
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder='Выберите отдел'
-                    allowClear
-                    suffixIcon={<TeamOutlined />}
-                  >
-                    {referenceBooks?.departments?.map(dept => (
-                      <Option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item label='Должность' name='position_id'>
-                  <Select
-                    showSearch
-                    optionFilterProp='children'
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder='Выберите должность'
-                    allowClear
-                    suffixIcon={<IdcardOutlined />}
-                  >
-                    {referenceBooks?.positions?.map(position => (
-                      <Option key={position.id} value={position.id}>
-                        {position.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-            </Row>
-
-            {/* Права доступа */}
-            <Divider orientation='left'>
-              <SafetyCertificateOutlined /> Права доступа
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                <Form.Item label='Роли' name='roles'>
-                  <Select
-                    mode='multiple'
-                    placeholder='Выберите роли'
-                    allowClear
-                    suffixIcon={<SafetyCertificateOutlined />}
-                  >
-                    {referenceBooks?.roles?.map(role => (
-                      <Option key={role.id} value={role.id}>
-                        {role.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item label='Статус аккаунта' name='is_active' valuePropName='checked' initialValue={true}>
-                  <Switch checkedChildren='Активен' unCheckedChildren='Не активен' defaultChecked />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            {/* Кнопки действий */}
-            <div className={styles.formActions}>
-              <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
-                Очистить форму
-              </Button>
-              <Button type='primary' htmlType='submit' icon={<SaveOutlined />} loading={isCreateLoading}>
-                Создать пользователя
-              </Button>
-            </div>
-          </Form>
+        <Form
+          form={form}
+          layout="vertical"
+          size="middle"
+          initialValues={initialFormValues}
+          onFinish={handleCreate}
+          disabled={isCreateLoading}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') e.preventDefault();
+          }}
+          scrollToFirstError
+        >
+          <UserFormFields form={form} referenceBooks={referenceBooks} />
+        </Form>
       </div>
-    </div>
+    </DetailPageHeader>
   );
 }

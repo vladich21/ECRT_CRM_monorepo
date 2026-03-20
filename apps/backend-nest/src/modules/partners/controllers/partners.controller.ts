@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,12 +11,21 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { PartnersService } from '../services/partners.service';
+import { PartnersService, type PartnerListTabScope } from '../services/partners.service';
+import { PartnerInnLookupService } from '../services/partner-inn-lookup.service';
 import { parsePagination } from '../../../common/pagination';
+
+function parseListTab(raw?: string): PartnerListTabScope {
+  if (raw === 'ready' || raw === 'in_progress' || raw === 'key_supplier') return raw;
+  return 'all';
+}
 
 @Controller('partners')
 export class PartnersController {
-  constructor(private readonly service: PartnersService) {}
+  constructor(
+    private readonly service: PartnersService,
+    private readonly innLookup: PartnerInnLookupService,
+  ) {}
 
   @Get()
   findAll(
@@ -26,17 +36,28 @@ export class PartnersController {
     @Query('type_ids') typeIds?: string,
     @Query('status_ids') statusIds?: string,
     @Query('competence_ids') competenceIds?: string,
+    @Query('readiness') readiness?: string,
   ) {
     const pagination = parsePagination(limit, offset, 20, 100);
 
     const filters = {
       search: search || undefined,
-      typeIds:       typeIds       ? typeIds.split(',').filter(Boolean)       : undefined,
-      statusIds:     statusIds     ? statusIds.split(',').filter(Boolean)     : undefined,
+      typeIds: typeIds ? typeIds.split(',').filter(Boolean) : undefined,
+      statusIds: statusIds ? statusIds.split(',').filter(Boolean) : undefined,
       competenceIds: competenceIds ? competenceIds.split(',').filter(Boolean) : undefined,
+      readiness: parseListTab(readiness),
     };
 
     return this.service.findAll(preview === '1', pagination, filters);
+  }
+
+  /** Прокси к DataNewton: ключ API только на сервере (.env). */
+  @Get('inn-lookup')
+  async lookupByInn(@Query('inn') inn?: string) {
+    if (!inn?.trim()) {
+      throw new BadRequestException('Укажите параметр inn');
+    }
+    return this.innLookup.lookupByInn(inn.trim());
   }
 
   @Get(':id')

@@ -4,10 +4,11 @@
 
 | Функция | Где реализовано | Описание |
 |--------|------------------|----------|
-| **Пагинация** (страницы, размер страницы) | **Бэкенд** | Запрос с `limit` и `offset`; ответ `{ data, total }`. БД отдаёт только одну страницу, `total` — общее число записей. |
-| **Фильтрация** (поиск, отдел, должность, роль и т.д.) | **Фронт** | Фильтруются только записи **текущей страницы** (в памяти). По всем данным фильтрация на бэкенде пока не реализована. |
-
-Итого: листание страниц и общее число записей — с сервера; сужение по фильтрам — только по уже загруженной странице. Чтобы фильтровать по всем пользователям на сервере, нужно добавить query-параметры в `GET /users` (search, department_id, position_id и т.д.) и применять их в сервисе до `count()` и до выборки с `limit`/`offset`.
+| **Пагинация** (страницы, размер страницы) | **Бэкенд** (contracts, patents, …) | Запрос с `limit` и `offset`; ответ `{ data, total }`. |
+| **Список пользователей** | **Один запрос + клиент** | `GET /users?all=1` — вся выборка без `LIMIT`; на фронте кэш и клиентская пагинация/фильтры. |
+| **Фильтрация** (patents) | **Бэкенд** | `GET /patents`: `search`, `department_id`, `status_id`, `author_ids` (через запятую), `created_by`, `deleted_scope` (`active` / `deleted` / `all`). Ответ включает `tab_counts`. |
+| **Фильтрация** (partners) | **Бэкенд** | `GET /partners`: `search`, `type_ids`, `status_ids`, `competence_ids`, `readiness` (`all` / `ready` / `in_progress` / `key_supplier`). Ответ с `tab_counts` по четырём вкладкам. |
+| **Фильтрация** (contracts и др.) | Частично **фронт** | Пока без query на бэке — только по текущей странице. |
 
 ---
 
@@ -15,24 +16,28 @@
 
 - **Контракт:** query-параметры `limit` и `offset`.
 - **Дефолты:** `limit=50`, `offset=0` для всех списков (users, contracts, patents).
-- **Максимум:** `limit` не более 100.
-- **Ответ списка users:** `{ data: User[], total: number }` — по `total` фронт строит пагинацию.
+- **Максимум:** `limit` не более **100** (см. `parsePagination`), кроме режима **`all=1`** для users.
+- **Ответ списка users:** `{ data: User[], total: number }`. С **`all=1`** в `data` попадают все строки, удовлетворяющие `preview`; пагинация в UI — в браузере.
 - **Комментарии:** сейчас без limit/cap (отдает все комментарии по сущности).
 
 Эндпоинты: `GET /users`, `GET /contracts`, `GET /patents`, `GET /patents/deleted`, `GET /comments`.
 
 ### Цепочка на бэкенде (users)
 
-1. **Контроллер** (`users.controller.ts`): считывает `limit`, `offset` из query, вызывает `parsePagination(limit, offset)` → `{ limit, offset }` (дефолт 50, макс. 100).
-2. **Сервис** (`users.service.ts`): один раз считает общее число записей с теми же условиями (без limit/offset) → `total`; отдельным запросом выбирает страницу с `.limit(limit).offset(offset)` → `data`. Возвращает `{ data, total }`.
-3. Фронт по `total` рисует пагинацию и при смене страницы запрашивает, например, `limit=50&offset=50` (страница 2).
+1. **Контроллер** (`users.controller.ts`): если **`all=1`** (или `all=true`) — в сервис уходит **без** пагинации; иначе `parsePagination(limit, offset)` (дефолт 50, макс. 100).
+2. **Сервис** (`users.service.ts`): `total` через `count()`; выборка — либо **без** `.limit()/.offset()` (режим «все»), либо с пагинацией.
 
 ### Цепочка на фронте (список пользователей)
 
-1. **Состояние:** `page` (текущая страница, 1-based), `pageSize` (20/50/100), `filters` (значения фильтров).
-2. **Запрос:** `useUsers(2, true, page, pageSize)` → внутри считается `offset = (page - 1) * pageSize`, вызывается `GET /users?preview=2&full=1&limit=50&offset=0` (и т.д.). Ответ `{ data, total }` кэшируется по ключу `['users', 2, true, page, pageSize]`.
-3. **Таблица:** в `dataSource` передаётся только текущая страница (`data`). В `pagination` передаются `total`, `current: page`, `pageSize`; при клике по странице или смене размера вызывается `onChange(pagination)` → обновляются `page`/`pageSize` → новый запрос за нужной страницей.
-4. **Фильтры:** `useFilteredUsers(users, filters)` фильтрует только массив текущей страницы (`users`) в памяти; на бэкенд фильтры не отправляются.
+1. **Запрос:** `useUsers(2, true)` → `GET /users?preview=2&full=1&all=1`. Ключ кэша: `['users', 'full-list', 2, true]`.
+2. **Фильтры и поиск:** `useFilteredUsers` по полному загруженному массиву (после табов «Все / Активные / Неактивные»).
+3. **Пагинация:** Ant Design `Pagination` по **отфильтрованному** списку (`slice` на клиенте), без повторных запросов при смене страницы.
+
+### Patents (`GET /patents`, `GET /patents/deleted`)
+
+- **Параметры:** `preview`, `deleted_scope` (`active` \| `deleted` \| `all`), `search`, `department_id`, `status_id`, `author_ids`, `created_by`, `limit`, `offset`. Совместимость: `is_deleted=true` → как `deleted_scope=deleted`.
+- **Ответ (не preview):** `{ data, total, tab_counts: { active, deleted, all } }` — счётчики вкладок с теми же фильтрами поиска/модалки (без двойного клиентского фильтра).
+- **Фронт:** хук `usePatentsList`, debounce поиска, `placeholderData` в React Query.
 
 ## Как проконтролировать, что проблема решена
 

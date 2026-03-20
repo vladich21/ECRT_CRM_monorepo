@@ -34,6 +34,11 @@
   margin-top: 16px;
 }
 
+.cardListDimmed {
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+
 // ─── Patent card (Partners SupplierCard style) ──────────────────────────────
 .card {
   background: #fff;
