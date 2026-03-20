@@ -1,15 +1,141 @@
-import { asc, eq } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, asc, count, eq, gte, ilike, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { projects } from '../../../database/schema';
+import { PaginationParams } from '../../../common/pagination';
 
 const REQUIRED_CREATE_FIELDS = ['code', 'name', 'short_name', 'start_date', 'status'] as const;
+
+export type ProjectListTab =
+  | 'all'
+  | 'active'
+  | 'completed'
+  | 'pending'
+  | 'paused'
+  | 'cancelled';
+
+export type ProjectEndDatePresence = 'set' | 'empty';
+
+export interface ProjectQueryFilters {
+  search?: string;
+  listTab?: ProjectListTab;
+  managerId?: string;
+  /** Кто создал запись */
+  createdBy?: string;
+  /** Проект пересекается с интервалом [dateFrom, dateTo] по срокам (как у договоров) */
+  dateFrom?: string;
+  dateTo?: string;
+  /** Дата начала проекта */
+  startDateFrom?: string;
+  startDateTo?: string;
+  /** Дата окончания (только записи, где end_date задан) */
+  endDateFrom?: string;
+  endDateTo?: string;
+  /** set — только с датой окончания; empty — без даты (бессрочные) */
+  endDatePresence?: ProjectEndDatePresence;
+}
+
+export interface ProjectTabCounts {
+  all: number;
+  active: number;
+  completed: number;
+  pending: number;
+  paused: number;
+  cancelled: number;
+}
+
+export type ProjectsFindAllResult =
+  | { id: string; name: string; code: string }[]
+  | { data: unknown[]; total: number; tab_counts: ProjectTabCounts };
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(private readonly db: DatabaseService) {}
+
+  private mergeWhereParts(parts: SQL[]): SQL {
+    if (parts.length === 0) {
+      return sql`true`;
+    }
+    if (parts.length === 1) return parts[0];
+    return and(...parts)!;
+  }
+
+  private async countWhere(where: SQL): Promise<number> {
+    const result = await this.db.db.select({ value: count() }).from(projects).where(where);
+    return Number(result[0]?.value ?? 0);
+  }
+
+  /** Базовые условия: поиск, руководитель (без вкладки по статусу) */
+  private buildBaseFilterParts(filters?: ProjectQueryFilters): SQL[] | null {
+    const parts: SQL[] = [];
+    if (!filters) return parts;
+
+    if (filters.managerId) {
+      parts.push(eq(projects.managerId, filters.managerId));
+    }
+
+    if (filters.createdBy) {
+      parts.push(eq(projects.createdBy, filters.createdBy));
+    }
+
+    if (filters.dateFrom && filters.dateTo) {
+      parts.push(
+        and(
+          lte(projects.startDate, filters.dateTo),
+          gte(sql`COALESCE(${projects.endDate}, ${projects.startDate})`, filters.dateFrom),
+        )!,
+      );
+    }
+
+    if (filters.startDateFrom) {
+      parts.push(gte(projects.startDate, filters.startDateFrom));
+    }
+    if (filters.startDateTo) {
+      parts.push(lte(projects.startDate, filters.startDateTo));
+    }
+
+    if (filters.endDateFrom) {
+      parts.push(
+        and(isNotNull(projects.endDate), gte(projects.endDate, filters.endDateFrom))!,
+      );
+    }
+    if (filters.endDateTo) {
+      parts.push(
+        and(isNotNull(projects.endDate), lte(projects.endDate, filters.endDateTo))!,
+      );
+    }
+
+    if (filters.endDatePresence === 'set') {
+      parts.push(isNotNull(projects.endDate));
+    } else if (filters.endDatePresence === 'empty') {
+      parts.push(isNull(projects.endDate));
+    }
+
+    const raw = filters.search?.trim();
+    if (raw) {
+      const safe = raw.replace(/[%_\\]/g, '');
+      if (!safe) return null;
+      const term = `%${safe}%`;
+      parts.push(
+        or(
+          ilike(projects.name, term),
+          ilike(projects.shortName, term),
+          ilike(projects.code, term),
+          ilike(projects.description, term),
+        )!,
+      );
+    }
+
+    return parts;
+  }
+
+  private tabStatusCondition(tab: ProjectListTab): SQL | undefined {
+    if (tab === 'all') return undefined;
+    return eq(projects.status, tab);
+  }
 
   async findOne(id: string) {
     this.logger.debug(`Получение проекта по id: ${id}`);
@@ -97,8 +223,14 @@ export class ProjectsService {
     };
   }
 
-  async findAll(preview?: boolean) {
+  async findAll(options: {
+    preview?: boolean;
+    pagination?: PaginationParams;
+    filters?: ProjectQueryFilters;
+  }): Promise<ProjectsFindAllResult> {
+    const { preview, pagination, filters } = options;
     this.logger.debug(`Получение проектов (preview=${preview})`);
+
     if (preview) {
       const rows = await this.db.db
         .select({ id: projects.id, name: projects.name, code: projects.code })
@@ -110,11 +242,82 @@ export class ProjectsService {
         code: String(row.code ?? ''),
       }));
     }
-    const rows = await this.db.db
-      .select()
-      .from(projects)
-      .orderBy(asc(projects.name));
-    return rows.map((row) => this.toResponse(row));
+
+    const { limit = 50, offset = 0 } = pagination ?? {};
+    const basePartsResult = this.buildBaseFilterParts(filters);
+    if (basePartsResult === null) {
+      const zeros: ProjectTabCounts = {
+        all: 0,
+        active: 0,
+        completed: 0,
+        pending: 0,
+        paused: 0,
+        cancelled: 0,
+      };
+      return { data: [], total: 0, tab_counts: zeros };
+    }
+
+    const baseParts = basePartsResult;
+    const tabs: ProjectListTab[] = [
+      'all',
+      'active',
+      'completed',
+      'pending',
+      'paused',
+      'cancelled',
+    ];
+
+    const countForTab = async (tab: ProjectListTab): Promise<number> => {
+      const tabSql = this.tabStatusCondition(tab);
+      const parts = tabSql ? [...baseParts, tabSql] : [...baseParts];
+      const where = this.mergeWhereParts(parts);
+      return this.countWhere(where);
+    };
+
+    const listTab: ProjectListTab = filters?.listTab ?? 'all';
+    const listTabSql = this.tabStatusCondition(listTab);
+    const listParts = listTabSql ? [...baseParts, listTabSql] : [...baseParts];
+    const listWhere = this.mergeWhereParts(listParts);
+
+    const countPromises = tabs.map((t) => countForTab(t));
+    const [counts, rows] = await Promise.all([
+      Promise.all(countPromises),
+      this.db.db
+        .select()
+        .from(projects)
+        .where(listWhere)
+        .orderBy(asc(projects.name))
+        .limit(limit)
+        .offset(offset),
+    ]);
+
+    const tab_counts: ProjectTabCounts = {
+      all: counts[0],
+      active: counts[1],
+      completed: counts[2],
+      pending: counts[3],
+      paused: counts[4],
+      cancelled: counts[5],
+    };
+
+    const total =
+      listTab === 'active'
+        ? tab_counts.active
+        : listTab === 'completed'
+          ? tab_counts.completed
+          : listTab === 'pending'
+            ? tab_counts.pending
+            : listTab === 'paused'
+              ? tab_counts.paused
+              : listTab === 'cancelled'
+                ? tab_counts.cancelled
+                : tab_counts.all;
+
+    return {
+      data: rows.map((row) => this.toResponse(row)),
+      total,
+      tab_counts,
+    };
   }
 
   private toResponse(row: (typeof projects.$inferSelect)) {
@@ -127,6 +330,7 @@ export class ProjectsService {
       start_date: row.startDate ? String(row.startDate) : null,
       end_date: row.endDate ? String(row.endDate) : null,
       manager_id: row.managerId ? String(row.managerId) : null,
+      created_by: row.createdBy ? String(row.createdBy) : null,
       status: row.status ?? '',
       created_at: row.createdAt ? row.createdAt.toISOString() : null,
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,

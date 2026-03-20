@@ -9,8 +9,27 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ContractsService } from '../services/contract.service';
+import {
+  ContractListTab,
+  ContractQueryFilters,
+  ContractsService,
+} from '../services/contract.service';
 import { parsePagination } from '../../../common/pagination';
+
+const CONTRACT_LIST_TABS: ContractListTab[] = ['all', 'active', 'draft', 'inactive'];
+
+function parseContractListTab(raw?: string): ContractListTab {
+  if (raw && CONTRACT_LIST_TABS.includes(raw as ContractListTab)) {
+    return raw as ContractListTab;
+  }
+  return 'all';
+}
+
+function parseOptionalNumber(raw?: string): number | undefined {
+  if (raw == null || raw === '') return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
 
 @Controller('contracts')
 export class ContractsController {
@@ -31,12 +50,30 @@ export class ContractsController {
     @Query('for_reference') forReference?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
+    @Query('search') search?: string,
+    @Query('list_tab') listTab?: string,
+    @Query('category_id') categoryId?: string,
+    @Query('state_id') stateId?: string,
+    @Query('date_from') dateFrom?: string,
+    @Query('date_to') dateTo?: string,
+    @Query('amount_min') amountMin?: string,
+    @Query('amount_max') amountMax?: string,
   ) {
     if (forReference === '1' && !partnerId) {
       return this.service.findAll(preview === '1', undefined, undefined, { forReference: true });
     }
     const pagination = parsePagination(limit, offset);
-    return this.service.findAll(preview === '1', partnerId, pagination);
+    const filters: ContractQueryFilters = {
+      search: search?.trim() || undefined,
+      listTab: parseContractListTab(listTab),
+      categoryId: categoryId || undefined,
+      stateId: stateId || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      amountMin: parseOptionalNumber(amountMin),
+      amountMax: parseOptionalNumber(amountMax),
+    };
+    return this.service.findAll(preview === '1', partnerId, pagination, { filters });
   }
 
   @Get(':id')

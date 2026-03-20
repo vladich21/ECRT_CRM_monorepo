@@ -30,6 +30,8 @@ export interface Project {
   start_date: string;
   end_date: string;
   manager_id: string;
+  /** Автор записи (UUID), если приходит с API */
+  created_by?: string | null;
   status: string;
   created_at: string;
   updated_at: string;

@@ -33,7 +33,9 @@ import { CommentsModule } from './modules/comments/comments.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.development', '.env'],
+      // Сначала .env — общие секреты (SMTP и т.д.), затем .env.development;
+      // при совпадении ключей побеждает .env (см. merge в @nestjs/config loadEnvFile).
+      envFilePath: ['.env', '.env.development'],
     }),
     AuthModule,
     DatabaseModule,

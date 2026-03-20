@@ -66,7 +66,16 @@ $portal-accent: #002f55;
 // ─── Card list ──────────────────────────────────────────────────────────────
 .cardList { margin-top: 16px; }
 
-// ─── Project card (SupplierCard style) ──────────────────────────────────────
+.cardListDimmed {
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+
+.pagination {
+  @include lp.pagination;
+}
+
+// ─── Project card ─────────────────────────────────────────────────────────
 .card {
   background: #fff;
   border-radius: 12px;
@@ -95,13 +104,6 @@ $portal-accent: #002f55;
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
-}
-
-.name {
-  font-weight: 700;
-  font-size: 16px;
-  color: #141414;
-  white-space: nowrap;
 }
 
 .metaInn {
@@ -134,50 +136,13 @@ $portal-accent: #002f55;
 }
 
 .metaText {
-  color: #fff;
+  color: #595959;
   display: flex;
   align-items: center;
   gap: 3px;
 }
 
-.metaDot { color: #d9d9d9; }
-
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 20px;
-  padding: 2px 8px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.categoryCol { flex: 1; min-width: 0; }
-
-.categoryName {
-  font-size: 14px;
-  color: #262626;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.description {
-  font-size: 14px;
-  color: #8c8c8c;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .metricsCol { flex: 0 0 180px; margin-left: auto; }
-
-.metricsTop {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
 
 .statsBlock { text-align: left; }
 
@@ -198,14 +163,6 @@ $portal-accent: #002f55;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-}
-
-.activityDate {
-  font-size: 14px;
-  color: #8c8c8c;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .arrow { color: #d9d9d9; }

@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { ProjectAdvancedFilters, ProjectFilterTab } from '../ProjectsListPage.types';
 import { DEFAULT_PROJECT_FILTERS } from '../ProjectsListPage.types';
+import { countActiveProjectFilters } from '../filters/projectListFilters';
 
 export function useProjectListFilters() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,7 +10,7 @@ export function useProjectListFilters() {
   const [appliedFilters, setAppliedFilters] = useState<ProjectAdvancedFilters>(DEFAULT_PROJECT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<ProjectAdvancedFilters>(DEFAULT_PROJECT_FILTERS);
 
-  const activeFiltersCount = [appliedFilters.managerId != null].filter(Boolean).length;
+  const activeFiltersCount = useMemo(() => countActiveProjectFilters(appliedFilters), [appliedFilters]);
 
   const updateDraftFilter = useCallback((patch: Partial<ProjectAdvancedFilters>) => {
     setDraftFilters((prev) => ({ ...prev, ...patch }));

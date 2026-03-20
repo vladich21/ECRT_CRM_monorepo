@@ -30,11 +30,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local env files (секреты не коммитить; шаблоны — .env.example)
+# Local env files: только корень репо (docker и т.п.); apps/backend-nest/.env не игнорируем — можно держать SMTP локально
 .env*.local
-.env
-.env.development
-.env.production
+/.env
 
 # Vercel
 .vercel

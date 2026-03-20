@@ -83,7 +83,7 @@ const referenceApiMethods = {
       list.map((role) => ({ id: role.id, name: role.role_name ?? (role as { name?: string }).name ?? role.id })),
     ),
   positions: () => positionApi.getPositions(1),
-  projects: () => projectApi.getProjects(1),
+  projects: () => projectApi.getProjectsPreview(),
   competencies: partnerCompetenceApi.getPartnerCompetencies,
 
   partners: () => partnerApi.getPartnersForReference(),

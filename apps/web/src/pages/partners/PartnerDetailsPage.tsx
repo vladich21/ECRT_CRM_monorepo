@@ -40,7 +40,12 @@ export default function PartnerDetailsPage() {
 
   const { data: contacts = [] } = usePartnerContacts(partnerId);
   const { data: files = [] } = useFilesByEntity('partner', partnerId!);
-  const { data: contractsList } = useContracts({ partner_id: partnerId } as any, 1, 1);
+  const { data: contractsList } = useContracts(
+    partnerId ? { partner_id: partnerId } : undefined,
+    1,
+    1,
+    { enabled: Boolean(partnerId) },
+  );
 
   const getActiveTabFromPath = () => {
     const path = location.pathname;

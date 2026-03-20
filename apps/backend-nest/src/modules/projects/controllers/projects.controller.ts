@@ -9,15 +9,70 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ProjectsService } from '../services/projects.service';
+import { parsePagination } from '../../../common/pagination';
+import type { ProjectEndDatePresence } from '../services/projects.service';
+import { ProjectListTab, ProjectsService } from '../services/projects.service';
+
+const PROJECT_LIST_TABS: ProjectListTab[] = [
+  'all',
+  'active',
+  'completed',
+  'pending',
+  'paused',
+  'cancelled',
+];
+
+function parseProjectListTab(raw?: string): ProjectListTab {
+  if (raw && PROJECT_LIST_TABS.includes(raw as ProjectListTab)) {
+    return raw as ProjectListTab;
+  }
+  return 'all';
+}
+
+function parseEndDatePresence(raw?: string): ProjectEndDatePresence | undefined {
+  if (raw === 'set' || raw === 'empty') return raw;
+  return undefined;
+}
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly service: ProjectsService) {}
 
   @Get()
-  findAll(@Query('preview') preview?: string) {
-    return this.service.findAll(preview === '1');
+  findAll(
+    @Query('preview') preview?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('search') search?: string,
+    @Query('list_tab') listTab?: string,
+    @Query('manager_id') managerId?: string,
+    @Query('created_by') createdBy?: string,
+    @Query('date_from') dateFrom?: string,
+    @Query('date_to') dateTo?: string,
+    @Query('start_date_from') startDateFrom?: string,
+    @Query('start_date_to') startDateTo?: string,
+    @Query('end_date_from') endDateFrom?: string,
+    @Query('end_date_to') endDateTo?: string,
+    @Query('end_date_presence') endDatePresence?: string,
+  ) {
+    if (preview === '1') {
+      return this.service.findAll({ preview: true });
+    }
+    const pagination = parsePagination(limit, offset);
+    const filters = {
+      search: search?.trim() || undefined,
+      listTab: parseProjectListTab(listTab),
+      managerId: managerId || undefined,
+      createdBy: createdBy || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      startDateFrom: startDateFrom || undefined,
+      startDateTo: startDateTo || undefined,
+      endDateFrom: endDateFrom || undefined,
+      endDateTo: endDateTo || undefined,
+      endDatePresence: parseEndDatePresence(endDatePresence),
+    };
+    return this.service.findAll({ pagination, filters });
   }
 
   @Get(':id')

@@ -50,7 +50,6 @@ export default function UsersListPage() {
   const { data: references } = useReferenceData(['departments', 'positions', 'roles']);
 
   const allUsers = data?.data ?? [];
-  const serverTotal = data?.total ?? allUsers.length;
 
   const resetToFirstPage = useCallback(() => setPage(1), []);
 
@@ -217,13 +216,8 @@ export default function UsersListPage() {
                     allowClear
                   />
                   <span className={styles.resultCount}>
-                    Найдено: <strong>{filteredTotal}</strong>
-                    {serverTotal !== filteredTotal && (
-                      <>
-                        {' '}
-                        (всего в системе: <strong>{serverTotal}</strong>)
-                      </>
-                    )}
+                    Показано: <strong>{paginatedUsers.length}</strong> из{' '}
+                    <strong>{filteredTotal}</strong>
                   </span>
                 </div>
               </div>

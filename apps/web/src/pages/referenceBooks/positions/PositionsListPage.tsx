@@ -1,20 +1,22 @@
-import BasicTable from '../../../components/basicTable/BasicTable';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { useEffect, useState } from 'react';
+import { Button, Spin } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { Position } from '../../../types/referenceTypes';
-import { columns } from './data';
 import {
   useCreatePosition,
   useDeletePosition,
-  usePositionById,
   usePositions,
   useUpdatePosition,
 } from '../../../api/positions/positionApiHooks';
-import { useEffect, useState } from 'react';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { getNameById } from '../../../helpers/getNameById';
+import { BackButton } from '../../../components/backButton/BackButton';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { PositionCard } from './PositionCard';
+import styles from './PositionsListPage.module.scss';
 
 type ActionType = 'edit' | 'delete' | 'add' | '';
 
@@ -42,9 +44,9 @@ const PositionsListPage: React.FC = () => {
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editPositionMutation : addPositionMutation,
     successMessage: `Должность успешно ${action === 'edit' ? 'изменена' : 'добавлена'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'измененить' : 'добавить'} должность`,
+    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} должность`,
     modalType: 'positionForm',
-    modalData: { name: getNameById(+currentPositionId, data) },
+    modalData: { name: getNameById(currentPositionId, data) },
     getMutationProps: action === 'edit' ? () => currentPositionId : () => undefined,
     showNotification,
   });
@@ -55,6 +57,7 @@ const PositionsListPage: React.FC = () => {
     } else if (action === 'edit' || action === 'add') {
       openMutateModal();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpenModal не стабилен
   }, [currentPositionId, action]);
 
   useEffect(() => {
@@ -68,30 +71,46 @@ const PositionsListPage: React.FC = () => {
     setCurrentPositionId('');
   };
 
-  const onDelete = ({ id }: { id: number }) => {
+  const onDelete = (position: Position) => {
     setAction('delete');
-    setCurrentPositionId(id.toString());
+    setCurrentPositionId(position.id);
   };
 
-  const onEdit = ({ id }: { id: number }) => {
+  const onEdit = (position: Position) => {
     setAction('edit');
-    setCurrentPositionId(id.toString());
+    setCurrentPositionId(position.id);
   };
 
   return (
-    <ReferenceBookListPage title="Должности" addButtonLabel="Добавить должность" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
-      <BasicTable<Position>
-        data={data}
-        loading={loading}
-        columns={columns}
-        showActions={true}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        actionsColumnTitle='Действия'
-        actionsColumnWidth={100}
-        enableExport
+    <div className={styles.wrap}>
+      {contextHolder}
+      <BackButton path="/" />
+      <PageHeader
+        title="Должности"
+        subtitle="Справочник должностей"
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAddModal}>
+            Добавить должность
+          </Button>
+        }
       />
-    </ReferenceBookListPage>
+
+      {loading ? (
+        <div className={styles.loading}>
+          <Spin size="large" />
+        </div>
+      ) : (
+        <div className={styles.cardList}>
+          {data.length === 0 ? (
+            <div className={styles.empty}>Должности не найдены</div>
+          ) : (
+            data.map((position) => (
+              <PositionCard key={position.id} position={position} onEdit={onEdit} onDelete={onDelete} />
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

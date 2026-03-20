@@ -8,7 +8,8 @@
 | **Список пользователей** | **Один запрос + клиент** | `GET /users?all=1` — вся выборка без `LIMIT`; на фронте кэш и клиентская пагинация/фильтры. |
 | **Фильтрация** (patents) | **Бэкенд** | `GET /patents`: `search`, `department_id`, `status_id`, `author_ids` (через запятую), `created_by`, `deleted_scope` (`active` / `deleted` / `all`). Ответ включает `tab_counts`. |
 | **Фильтрация** (partners) | **Бэкенд** | `GET /partners`: `search`, `type_ids`, `status_ids`, `competence_ids`, `readiness` (`all` / `ready` / `in_progress` / `key_supplier`). Ответ с `tab_counts` по четырём вкладкам. |
-| **Фильтрация** (contracts и др.) | Частично **фронт** | Пока без query на бэке — только по текущей странице. |
+| **Фильтрация** (contracts) | **Бэкенд** | `GET /contracts`: `search`, `list_tab` (`all` / `active` / `draft` / `inactive`), `partner_id`, `category_id`, `state_id`, `date_from`, `date_to`, `amount_min`, `amount_max`. Ответ с `tab_counts`. |
+| **Список проектов** | **Бэкенд** | `GET /projects` (без `preview`): `search`, `list_tab`, `manager_id`, `created_by`, пересечение сроков `date_from`+`date_to`, `start_date_from`/`start_date_to`, `end_date_from`/`end_date_to`, `end_date_presence` (`set` \| `empty`), `limit`, `offset`. Ответ `{ data, total, tab_counts }`. Справочник: `GET /projects?preview=1`. |
 
 ---
 

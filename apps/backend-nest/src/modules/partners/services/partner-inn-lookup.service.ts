@@ -17,7 +17,6 @@ export class PartnerInnLookupService {
   constructor(private readonly config: ConfigService) {}
 
   async lookupByInn(innRaw: string): Promise<unknown> {
-    // В Docker ключ приходит из process.env; ConfigService обычно тоже видит, но оставляем fallback
     const apiKey = (
       this.config.get<string>('DATANEWTON_API_KEY') ?? process.env.DATANEWTON_API_KEY
     )?.trim();

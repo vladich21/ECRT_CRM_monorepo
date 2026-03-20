@@ -1,21 +1,49 @@
 import { Contract, ContractStage } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
 import { apiClient } from '../clients';
-import { ContractParams } from './contractApiHooks';
+
+export type ContractListTabParam = 'all' | 'active' | 'draft' | 'inactive';
+
+export interface ContractsListParams {
+  partner_id?: string;
+  preview?: boolean;
+  search?: string;
+  list_tab?: ContractListTabParam;
+  category_id?: string;
+  state_id?: string;
+  date_from?: string;
+  date_to?: string;
+  amount_min?: number;
+  amount_max?: number;
+}
 
 export interface ContractsListResponse {
   data: Contract[];
   total: number;
+  tab_counts?: {
+    all: number;
+    active: number;
+    draft: number;
+    inactive: number;
+  };
+}
+
+function compactParams(
+  obj: Record<string, string | number | boolean | undefined>,
+): Record<string, string | number | boolean> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined && v !== ''),
+  ) as Record<string, string | number | boolean>;
 }
 
 export const contractApi = {
   getContracts: async (
-    params?: ContractParams,
+    params?: ContractsListParams,
     limit: number = 50,
     offset: number = 0,
   ): Promise<ContractsListResponse> => {
     const response = await apiClient.get('/contracts', {
-      params: { ...params, limit, offset },
+      params: compactParams({ ...(params ?? {}), limit, offset }),
     });
     return response.data;
   },

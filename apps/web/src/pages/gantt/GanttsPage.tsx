@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Divider, Tabs } from 'antd';
+import { Divider, Spin, Tabs } from 'antd';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { NotFound } from '../../components/notFound/NotFound';
-import { useNotification } from '../../customhooks/useNotification';
-import { useProjects } from '../../api/projects/projectApiHooks';
 import { GanttField } from './GanttField';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import styles from './GanttsPage.module.scss';
@@ -15,31 +12,43 @@ export interface CounterType {
 }
 
 export default function GanttsPage() {
-  const navigate = useNavigate();
-  const { showNotification, contextHolder } = useNotification();
   const [activeProjectTab, setActiveProjectTab] = useState<string>();
 
-  const { data, isLoading, isError } = useProjects();
+  const { data: referenceBooks, isError: isReferencesError, isLoading: isReferencesLoading } =
+    useReferenceData([
+      'departments',
+      'users',
+      'contracts',
+      'projects',
+      'contractCategories',
+      'patentStatuses',
+      'patentIntellectProps',
+    ]);
+
+  const ganttProjects = referenceBooks?.projects ?? [];
 
   useEffect(() => {
-    if (data) setActiveProjectTab(data[0]?.id.toString());
-  }, [data]);
+    if (ganttProjects.length > 0) {
+      setActiveProjectTab(ganttProjects[0]?.id.toString());
+    }
+  }, [ganttProjects]);
 
-  const { data: referenceBooks, isError: isReferencesError } = useReferenceData([
-    'departments',
-    'users',
-    'contracts',
-    'projects',
-    'contractCategories',
-    'patentStatuses',
-    'patentIntellectProps',
-  ]);
-
-  if (isReferencesError || isError) {
+  if (isReferencesError) {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
 
-  const tabItems = data?.map(el => ({
+  if (isReferencesLoading) {
+    return (
+      <div className={styles.pageContainer}>
+        <PageHeader title='Диаграммы Ганта по проектам' />
+        <div style={{ padding: 48, textAlign: 'center' }}>
+          <Spin size='large' />
+        </div>
+      </div>
+    );
+  }
+
+  const tabItems = ganttProjects.map((el) => ({
     key: el.id.toString(),
     label: <span>{el.name}</span>,
     children: (
@@ -52,11 +61,10 @@ export default function GanttsPage() {
         <GanttField />
       </div>
     ),
-  })) ?? [];
+  }));
 
   return (
     <div className={styles.pageContainer}>
-      {contextHolder}
       <PageHeader title='Диаграммы Ганта по проектам' />
 
       <div className={styles.gantCard}>

@@ -13,6 +13,8 @@ interface ReferenceBookListPageProps {
   children: ReactNode;
   contextHolder?: ReactNode;
   extraActions?: ReactNode;
+  /** Вкладки, поиск и т.п. под заголовком (как у PageHeader.filters) */
+  filters?: ReactNode;
 }
 
 export default function ReferenceBookListPage({
@@ -23,6 +25,7 @@ export default function ReferenceBookListPage({
   children,
   contextHolder,
   extraActions,
+  filters,
 }: ReferenceBookListPageProps) {
   return (
     <div className={styles.wrap}>
@@ -31,6 +34,7 @@ export default function ReferenceBookListPage({
       <PageHeader
         title={title}
         subtitle={subtitle}
+        filters={filters}
         actions={
           <div className={styles.actions}>
             {extraActions}

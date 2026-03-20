@@ -1,6 +1,6 @@
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -8,7 +8,7 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import { useNotification } from '../../../customhooks/useNotification';
 import { Contract } from '../../../types/contract';
 import { useContracts } from '../../../api/contracts/contractApiHooks';
-import { isContractDraft } from '../utils/contractStateUtils';
+import type { ContractsListParams } from '../../../api/contracts/contractApi';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { ContractCard } from './ContractCard';
@@ -17,13 +17,10 @@ import {
   FILTER_TABS,
   type ContractListReferences,
 } from './ContractsListPage.types';
-import {
-  filterByTab,
-  filterByAdvanced,
-  filterBySearch,
-} from '../filters/contractListFilters';
 import { useContractListFilters } from '../hooks/useContractListFilters';
 import styles from './ContractsListPage.module.scss';
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 function validateAmountFilters(filters: {
   amountMin: number | null;
@@ -59,7 +56,7 @@ function buildSelectOptions(references: ContractListReferences) {
 export default function ContractsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { partnerId } = useParams();
+  const { partnerId: partnerIdFromRoute } = useParams();
   const { contextHolder, showNotification } = useNotification();
 
   const {
@@ -80,13 +77,49 @@ export default function ContractsListPage() {
     validateFilters: validateAmountFilters,
   });
 
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
   const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
-  const { data, isLoading, isError } = useContracts(
-    partnerId ? { partner_id: partnerId } : undefined,
-    page,
-    pageSize
-  );
+
+  const effectivePartnerId = partnerIdFromRoute ?? appliedFilters.partnerId ?? undefined;
+
+  const apiFilters = useMemo((): ContractsListParams => {
+    const base: ContractsListParams = {
+      partner_id: effectivePartnerId || undefined,
+      search: debouncedSearch || undefined,
+      list_tab: activeTab,
+    };
+    if (appliedFilters.categoryId) {
+      base.category_id = appliedFilters.categoryId;
+    }
+    if (appliedFilters.stateId) {
+      base.state_id = appliedFilters.stateId;
+    }
+    if (appliedFilters.dateRange?.[0] && appliedFilters.dateRange?.[1]) {
+      base.date_from = appliedFilters.dateRange[0].format('YYYY-MM-DD');
+      base.date_to = appliedFilters.dateRange[1].format('YYYY-MM-DD');
+    }
+    if (appliedFilters.amountMin != null) {
+      base.amount_min = appliedFilters.amountMin;
+    }
+    if (appliedFilters.amountMax != null) {
+      base.amount_max = appliedFilters.amountMax;
+    }
+    return base;
+  }, [effectivePartnerId, debouncedSearch, activeTab, appliedFilters]);
+
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetching,
+  } = useContracts(apiFilters, page, pageSize);
+
   const {
     data: referenceBooks,
     isError: isRefsError,
@@ -94,34 +127,30 @@ export default function ContractsListPage() {
   } = useReferenceData(['partners', 'contractStates', 'contractCategories']);
 
   const contracts = data?.data ?? [];
-  const totalCount = data?.total ?? 0;
+  const total = data?.total ?? 0;
+  const tabCounts = data?.tab_counts ?? {
+    all: 0,
+    active: 0,
+    draft: 0,
+    inactive: 0,
+  };
   const references = referenceBooks as ContractListReferences;
 
-  const tabCounts = useMemo(
-    () => ({
-      all: contracts.length,
-      active: contracts.filter((contract) => contract.is_active).length,
-      draft: contracts.filter((contract) =>
-        isContractDraft(contract.state_id, references?.contractStates)
-      ).length,
-      inactive: contracts.filter((contract) => !contract.is_active).length,
-    }),
-    [contracts, references?.contractStates]
-  );
+  useEffect(() => {
+    resetPage();
+  }, [debouncedSearch, activeTab, appliedFilters, resetPage]);
 
-  const filteredContracts = useMemo(() => {
-    const afterTab = filterByTab(
-      contracts,
-      activeTab,
-      references?.contractStates
-    );
-    const afterAdvanced = filterByAdvanced(afterTab, appliedFilters);
-    return filterBySearch(afterAdvanced, searchQuery, references);
-  }, [contracts, activeTab, appliedFilters, searchQuery, references]);
+  useEffect(() => {
+    if (isRefsError || isError) return;
+    const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
+    if (page > maxPage) {
+      handleTableChange({ current: maxPage, pageSize } as never);
+    }
+  }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
 
   const selectOptions = useMemo(
     () => buildSelectOptions(references),
-    [references]
+    [references],
   );
 
   const handleApplyFilters = () => {
@@ -131,13 +160,8 @@ export default function ContractsListPage() {
     }
   };
 
-  useEffect(() => {
-    resetPage();
-  }, [searchQuery, activeTab, appliedFilters, resetPage]);
-
   const handleContractClick = (contract: Contract) =>
     navigate(`/contracts/${contract.id}`, {
-      // preserve current list route (including /partners/:id/contracts)
       state: { contract, from: location.pathname },
     });
 
@@ -151,13 +175,13 @@ export default function ContractsListPage() {
     return <NotFound errorMessage="Не удалось выполнить запрос" />;
   }
 
-  const isPageLoading = isRefsLoading || isLoading;
-  const paginationConfig = getPaginationConfig(totalCount);
+  const isInitialLoad = isRefsLoading || (isLoading && !data);
+  const paginationConfig = getPaginationConfig(total);
 
   return (
     <div className={styles.wrap}>
       {contextHolder}
-      {!partnerId && <BackButton path="/" />}
+      {!partnerIdFromRoute && <BackButton path="/" />}
 
       <PageHeader
         title="Договоры"
@@ -180,14 +204,16 @@ export default function ContractsListPage() {
             </Button>
             <Button
               type="primary"
-              onClick={() => navigate('/contracts/create', { state: { partnerId } })}
+              onClick={() =>
+                navigate('/contracts/create', { state: { partnerId: partnerIdFromRoute } })
+              }
             >
               Новый договор
             </Button>
           </>
         }
         filters={
-          !isPageLoading ? (
+          !isInitialLoad ? (
             <div className={styles.filterSection}>
               <div className={styles.filterTabsRow}>
                 <div className={styles.filterTabs}>
@@ -216,8 +242,8 @@ export default function ContractsListPage() {
                     onChange={(event) => setSearchQuery(event.target.value)}
                   />
                   <span className={styles.resultCount}>
-                    Показано: <strong>{filteredContracts.length}</strong> из{' '}
-                    <strong>{totalCount}</strong>
+                    Показано: <strong>{contracts.length}</strong> из{' '}
+                    <strong>{total}</strong>
                   </span>
                 </div>
               </div>
@@ -236,39 +262,44 @@ export default function ContractsListPage() {
         selectOptions={selectOptions}
       />
 
-      {isPageLoading ? (
+      {isInitialLoad ? (
         <div className={styles.loading}>
           <Spin size="large" />
         </div>
-      ) : filteredContracts.length === 0 ? (
-        <div className={styles.empty}>Нет договоров</div>
       ) : (
-        <>
-          <div className={styles.cardList}>
-            {filteredContracts.map((contract) => (
+        <div
+          className={`${styles.cardList}${
+            isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''
+          }`}
+        >
+          {contracts.length === 0 ? (
+            <div className={styles.empty}>Нет договоров</div>
+          ) : (
+            contracts.map((contract) => (
               <ContractCard
                 key={contract.id}
                 contract={contract}
                 refs={references}
                 onClick={handleContractClick}
               />
-            ))}
-          </div>
-          {(paginationConfig.total ?? 0) > 0 && (
-            <div className={styles.pagination}>
-              <Pagination
-                current={paginationConfig.current}
-                pageSize={paginationConfig.pageSize}
-                total={paginationConfig.total}
-                showSizeChanger
-                pageSizeOptions={[20, 50, 100]}
-                showTotal={(total) => `Всего: ${total}`}
-                onChange={handlePageChange}
-                onShowSizeChange={(_, size) => handlePageChange(1, size)}
-              />
-            </div>
+            ))
           )}
-        </>
+        </div>
+      )}
+
+      {(paginationConfig.total ?? 0) > 0 && (
+        <div className={styles.pagination}>
+          <Pagination
+            current={paginationConfig.current}
+            pageSize={paginationConfig.pageSize}
+            total={paginationConfig.total}
+            showSizeChanger
+            pageSizeOptions={[20, 50, 100]}
+            showTotal={(t, range) => `${range[0]}-${range[1]} из ${t}`}
+            onChange={handlePageChange}
+            onShowSizeChange={(_, size) => handlePageChange(1, size)}
+          />
+        </div>
       )}
     </div>
   );

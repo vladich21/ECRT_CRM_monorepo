@@ -1,28 +1,23 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { contractApi } from './contractApi';
+import { contractApi, ContractsListParams, ContractsListResponse } from './contractApi';
 import { Contract, ContractStage } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
-import { PartnerContact } from '../../types/partner';
 
-export interface ContractParams extends Partial<PartnerContact> {
-  preview?: boolean;
-}
-
-export interface ContractsListResult {
-  data: Contract[];
-  total: number;
-}
+export type { ContractsListParams };
 
 export function useContracts(
-  params?: ContractParams,
+  params?: ContractsListParams,
   page?: number,
   pageSize?: number,
-): UseQueryResult<ContractsListResult, Error> {
+  queryOptions?: { enabled?: boolean },
+): UseQueryResult<ContractsListResponse, Error> {
   const limit = pageSize ?? 50;
   const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
-  return useQuery<ContractsListResult, Error>({
-    queryKey: ['contracts', params ?? undefined, page, pageSize],
+  return useQuery<ContractsListResponse, Error>({
+    queryKey: ['contracts', params ?? {}, page, pageSize],
     queryFn: () => contractApi.getContracts(params, limit, offset),
+    placeholderData: (prev) => prev,
+    enabled: queryOptions?.enabled !== false,
   });
 }
 

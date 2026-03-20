@@ -28,15 +28,16 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
       style={{ '--status-color': st.color } as React.CSSProperties}
       onClick={() => onClick(project)}
     >
-      {/* Основная информация */}
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
           <span className={styles.metaInn}>Код: {project.code || '—'}</span>
         </div>
         <div className={styles.projectName}>{project.name || '—'}</div>
         <div className={styles.metaRow}>
-          <Tag color={st.color} style={{ fontSize: 14 }}>{st.label}</Tag>
-        </div>  
+          <Tag color={st.color} style={{ fontSize: 14 }}>
+            {st.label}
+          </Tag>
+        </div>
         {project.short_name && (
           <div className={styles.metaRow} style={{ marginTop: 2 }}>
             <span>{project.short_name}</span>
@@ -52,7 +53,6 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
         )}
       </div>
 
-      {/* Даты */}
       <div className={styles.metricsCol}>
         <div className={styles.statsBlock}>
           <div className={styles.statValue}>
@@ -63,7 +63,6 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
         </div>
       </div>
 
-      {/* Стрелка */}
       <div className={styles.activityCol}>
         <RightOutlined className={styles.arrow} />
       </div>
