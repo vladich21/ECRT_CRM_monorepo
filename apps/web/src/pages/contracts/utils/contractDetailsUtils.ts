@@ -12,7 +12,7 @@ export type ContractDetailsTabItem = {
 
 export const CONTRACT_DETAILS_TABS: ContractDetailsTabItem[] = [
   { key: 'main', label: 'Основное' },
-  { key: 'additional-agreements', label: 'Доп. соглашения', count: 0 },
+  { key: 'additional-agreements', label: 'Доп. соглашения' },
   { key: 'files', label: 'Файлы', count: 0 },
   { key: 'history', label: 'История изменений' },
 ];

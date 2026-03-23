@@ -6,7 +6,7 @@ import { isValidUuid } from '../../helpers/isValidUuid';
 export interface PartnersListResult {
   data: Partner[];
   total: number;
-  tab_counts: { all: number; ready: number; in_progress: number; key_supplier: number };
+  tab_counts: { all: number; ready: number; in_progress: number };
 }
 
 export function usePartners(
@@ -61,13 +61,18 @@ export const useUpdatePartner = (): UseMutationResult<Partner, Error, { id: stri
   });
 };
 
+/**
+ * См. `useDeleteContract`: отложенная инвалидация, чтобы не мигал экран «не найден» перед редиректом.
+ */
 export const useDeletePartner = (): UseMutationResult<Partner, Error, string, unknown> => {
   const queryClient = useQueryClient();
   return useMutation<Partner, Error, string>({
     mutationFn: (partnerId: string) => partnerApi.deletePartner(partnerId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
+      queueMicrotask(() => {
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
+        });
       });
     },
   });

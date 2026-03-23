@@ -1,6 +1,6 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { contractApi, ContractsListParams, ContractsListResponse } from './contractApi';
-import { Contract, ContractStage } from '../../types/contract';
+import { Contract } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
 
 export type { ContractsListParams };
@@ -72,30 +72,9 @@ export const useDeleteContract = (): UseMutationResult<Contract, Error, string, 
   return useMutation<Contract, Error, string>({
     mutationFn: (contractId: string) => contractApi.deleteContract(contractId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
+      queueMicrotask(() => {
+        queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
+      });
     },
-  });
-};
-
-// Публичный доступ к договору (без авторизации)
-export const useContractByPublicToken = (
-  token: string,
-  options?: { enabled?: boolean }
-): UseQueryResult<Contract, Error> => {
-  return useQuery<Contract, Error>({
-    queryKey: ['contracts', 'public', token],
-    queryFn: () => contractApi.getContractByPublicToken(token),
-    enabled: options?.enabled !== false && !!token,
-  });
-};
-
-export const useContractStagesByPublicToken = (
-  token: string,
-  options?: { enabled?: boolean }
-): UseQueryResult<ContractStage[], Error> => {
-  return useQuery<ContractStage[], Error>({
-    queryKey: ['contracts', 'public', token, 'stages'],
-    queryFn: () => contractApi.getContractStagesByPublicToken(token),
-    enabled: options?.enabled !== false && !!token,
   });
 };

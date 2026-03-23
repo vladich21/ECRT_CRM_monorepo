@@ -4,6 +4,11 @@ import { CalendarOutlined, DollarOutlined, UserOutlined } from '@ant-design/icon
 import { ContractStage } from '../../../../../types/contract';
 import { getNameById } from '../../../../../helpers/getNameById';
 import { formatDate } from './data';
+import {
+  getDeadlineCountdownTone,
+  getDeadlineCountdownTagStyle,
+  pluralDaysRu,
+} from './utils/stageHelpers';
 import styles from '../../ContractDetails.module.scss';
 
 const { Text } = Typography;
@@ -53,18 +58,16 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
               </Text>
             </div>
           )}
-          {!isCompleted && (
+          {!isCompleted && stage.planned_end_date && (
             <div className={`${styles.stageInfoRow} ${styles.stageInfoRowSpaced}`}>
               <Tag
                 className={styles.timeTag}
-                style={{
-                  backgroundColor: isOverdue ? 'rgba(211, 47, 47, 0.1)' : 'rgba(0, 21, 41, 0.1)',
-                  color: isOverdue ? '#D32F2F' : '#001529',
-                  border: isOverdue ? '1px solid #D32F2F' : '1px solid #001529',
-                }}
+                style={getDeadlineCountdownTagStyle(
+                  getDeadlineCountdownTone(daysUntilDeadline, { isCompleted, isOverdue }),
+                )}
               >
                 {isOverdue ? 'Просрочено' : 'Осталось'}: {Math.abs(daysUntilDeadline)}{' '}
-                {Math.abs(daysUntilDeadline) === 1 ? 'день' : 'дней'}
+                {pluralDaysRu(daysUntilDeadline)}
               </Tag>
             </div>
           )}

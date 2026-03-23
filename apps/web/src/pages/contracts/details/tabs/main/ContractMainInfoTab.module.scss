@@ -87,6 +87,11 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.stagesExpandToggle {
+  padding-inline: 8px !important;
 }
 
 .filtersBtnActive {
@@ -133,4 +138,9 @@
   .toolbarInput {
     width: 100%;
   }
+}
+
+/** Шире стандартной модалки: три колонки бюджета и даты без тесноты */
+.stageFormModal :global(.ant-modal) {
+  max-width: calc(100vw - 32px);
 }

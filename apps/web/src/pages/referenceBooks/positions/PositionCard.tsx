@@ -1,4 +1,4 @@
-import { Button, Space } from 'antd';
+import { Button } from 'antd';
 import { DeleteOutlined, EditOutlined, IdcardOutlined } from '@ant-design/icons';
 import type { Position } from '../../../types/referenceTypes';
 import styles from './PositionsListPage.module.scss';
@@ -16,21 +16,23 @@ export function PositionCard({ position, onEdit, onDelete }: Props) {
         <IdcardOutlined className={styles.cardIcon} />
         <div className={styles.cardTitle}>{position.name || '—'}</div>
       </div>
-      <Space size="small" className={styles.cardActions}>
+      <div className={styles.cardActions}>
         <Button
-          type="primary"
+          className={styles.actionBtn}
           icon={<EditOutlined />}
           onClick={() => onEdit(position)}
+          aria-label="Редактировать"
           title="Редактировать"
         />
         <Button
-          type="primary"
           danger
+          className={styles.actionBtn}
           icon={<DeleteOutlined />}
           onClick={() => onDelete(position)}
+          aria-label="Удалить"
           title="Удалить"
         />
-      </Space>
+      </div>
     </div>
   );
 }

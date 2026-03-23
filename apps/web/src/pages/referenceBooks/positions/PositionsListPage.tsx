@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Button, Spin } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Input, Spin } from 'antd';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Position } from '../../../types/referenceTypes';
 import {
   useCreatePosition,
@@ -18,6 +18,8 @@ import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { PositionCard } from './PositionCard';
 import styles from './PositionsListPage.module.scss';
 
+const SEARCH_DEBOUNCE_MS = 350;
+
 type ActionType = 'edit' | 'delete' | 'add' | '';
 
 const PositionsListPage: React.FC = () => {
@@ -25,7 +27,20 @@ const PositionsListPage: React.FC = () => {
   const { data = [], isLoading: loading } = usePositions();
   const [currentPositionId, setCurrentPositionId] = useState<string>('');
   const [action, setAction] = useState<ActionType>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const modalProps = useModalStore();
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
+  const filteredPositions = useMemo(() => {
+    const q = debouncedSearch.toLowerCase();
+    if (!q) return data;
+    return data.filter((p) => (p.name ?? '').toLowerCase().includes(q));
+  }, [data, debouncedSearch]);
 
   const deletePositionMutation = useDeletePosition();
   const editPositionMutation = useUpdatePosition();
@@ -81,6 +96,8 @@ const PositionsListPage: React.FC = () => {
     setCurrentPositionId(position.id);
   };
 
+  const total = data.length;
+
   return (
     <div className={styles.wrap}>
       {contextHolder}
@@ -93,6 +110,28 @@ const PositionsListPage: React.FC = () => {
             Добавить должность
           </Button>
         }
+        filters={
+          !loading ? (
+            <div className={styles.filterSection}>
+              <div className={styles.filterTabsRow}>
+                <div className={styles.filterTabsRight}>
+                  <Input.Search
+                    className={styles.searchInTabsRow}
+                    placeholder="Поиск по названию..."
+                    allowClear
+                    enterButton={false}
+                    prefix={<SearchOutlined className={styles.searchIcon} />}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <span className={styles.resultCount}>
+                    Показано: <strong>{filteredPositions.length}</strong> из <strong>{total}</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : undefined
+        }
       />
 
       {loading ? (
@@ -101,10 +140,12 @@ const PositionsListPage: React.FC = () => {
         </div>
       ) : (
         <div className={styles.cardList}>
-          {data.length === 0 ? (
-            <div className={styles.empty}>Должности не найдены</div>
+          {filteredPositions.length === 0 ? (
+            <div className={styles.empty}>
+              {total === 0 ? 'Должности не найдены' : 'Ничего не найдено по запросу'}
+            </div>
           ) : (
-            data.map((position) => (
+            filteredPositions.map((position) => (
               <PositionCard key={position.id} position={position} onEdit={onEdit} onDelete={onDelete} />
             ))
           )}

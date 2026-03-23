@@ -5,7 +5,6 @@ export type PartnersTabCounts = {
   all: number;
   ready: number;
   in_progress: number;
-  key_supplier: number;
 };
 
 export interface PartnersListResponse {
@@ -19,7 +18,7 @@ export interface PartnerListParams {
   typeIds?: string[];
   statusIds?: string[];
   competenceIds?: string[];
-  readiness?: 'all' | 'ready' | 'in_progress' | 'key_supplier';
+  readiness?: 'all' | 'ready' | 'in_progress';
 }
 
 export const partnerApi = {
@@ -40,7 +39,18 @@ export const partnerApi = {
           filters?.readiness && filters.readiness !== 'all' ? filters.readiness : undefined,
       },
     });
-    return response.data;
+    const responseBody = response.data as PartnersListResponse & {
+      tab_counts?: PartnersTabCounts & { key_supplier?: number };
+    };
+    const tabCountsFromApi = responseBody.tab_counts;
+    return {
+      ...responseBody,
+      tab_counts: {
+        all: tabCountsFromApi?.all ?? 0,
+        ready: tabCountsFromApi?.ready ?? 0,
+        in_progress: tabCountsFromApi?.in_progress ?? 0,
+      },
+    };
   },
 
   getPartnersForReference: async (): Promise<Partner[]> => {

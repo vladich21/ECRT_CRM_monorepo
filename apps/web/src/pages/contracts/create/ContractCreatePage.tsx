@@ -318,16 +318,27 @@ export default function ContractCreatePage() {
                       name='vat_rate'
                       rules={[{ required: true, message: 'Введите ставку НДС' }]}
                     >
-                      <InputNumber
-                        placeholder='0'
-                        style={{ width: '100%' }}
-                        min={0}
-                        max={100}
-                        step={1}
-                        precision={0}
-                        onChange={handleVatRateChange}
-                        addonAfter='%'
-                      />
+                      <Space.Compact block style={{ width: '100%' }}>
+                        <InputNumber
+                          placeholder='0'
+                          style={{ flex: 1, minWidth: 0 }}
+                          min={0}
+                          max={100}
+                          step={1}
+                          precision={0}
+                          onChange={handleVatRateChange}
+                        />
+                        <Input
+                          readOnly
+                          value='%'
+                          style={{
+                            width: 44,
+                            textAlign: 'center',
+                            pointerEvents: 'none',
+                            color: 'rgba(0, 0, 0, 0.45)',
+                          }}
+                        />
+                      </Space.Compact>
                     </Form.Item>
                   </Col>
                   <Col xs={24}>

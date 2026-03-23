@@ -65,7 +65,6 @@ export default function PartnersListPage() {
     all: 0,
     ready: 0,
     in_progress: 0,
-    key_supplier: 0,
   };
 
   useEffect(() => {

@@ -36,6 +36,8 @@ import PartnerCompetenceCreatePage from "../pages/referenceBooks/competencies/Co
 import PartnerCompetenceEditPage from "../pages/referenceBooks/competencies/CompetencyEditPage";
 import { ContractMainInfoTab } from "../pages/contracts/details/tabs/main/ContractMainInfoTab";
 import { ContractFilesTab } from "../pages/contracts/details/tabs/files/ContractFilesTab";
+import { ContractAdditionalAgreementsTab } from "../pages/contracts/details/tabs/additionalAgreements/ContractAdditionalAgreementsTab";
+import { ContractHistoryTab } from "../pages/contracts/details/tabs/history/ContractHistoryTab";
 import { EntityFilesTab } from "../components/entityFiles/EntityFilesTab";
 import PatentCreatePage from "../pages/patents/PatentCreatePage";
 import PatentEditPage from "../pages/patents/PatentEditPage";
@@ -152,9 +154,9 @@ export default function AppRoutes() {
           <Route path=":contractId/edit" element={<ContractEditPage />} />
           <Route path=":contractId" element={<ContractDetailsPage />}>
             <Route index element={<ContractMainInfoTab />} />
-            <Route path="additional-agreements" element={<div>Доп. соглашения (в разработке)</div>} />
+            <Route path="additional-agreements" element={<ContractAdditionalAgreementsTab />} />
             <Route path="files" element={<ContractFilesTab />} />
-            <Route path="history" element={<div>История изменений (в разработке)</div>} />
+            <Route path="history" element={<ContractHistoryTab />} />
           </Route>
         </Route>
 

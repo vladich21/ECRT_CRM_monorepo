@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button, Select, Switch, Row, Col, Divider, InputNumber, DatePicker } from 'antd';
+import { Form, Input, Button, Select, Switch, Row, Col, Divider, InputNumber, DatePicker, Space } from 'antd';
 import {
   CloseOutlined,
   SaveOutlined,
@@ -377,16 +377,27 @@ export default function ContractEditPage() {
                       name='vat_rate'
                       rules={[{ required: true, message: 'Введите ставку НДС' }]}
                     >
-                      <InputNumber
-                        placeholder='0'
-                        style={{ width: '100%' }}
-                        min={0}
-                        max={100}
-                        step={1}
-                        precision={0}
-                        onChange={handleVatRateChange}
-                        addonAfter='%'
-                      />
+                      <Space.Compact block style={{ width: '100%' }}>
+                        <InputNumber
+                          placeholder='0'
+                          style={{ flex: 1, minWidth: 0 }}
+                          min={0}
+                          max={100}
+                          step={1}
+                          precision={0}
+                          onChange={handleVatRateChange}
+                        />
+                        <Input
+                          readOnly
+                          value='%'
+                          style={{
+                            width: 44,
+                            textAlign: 'center',
+                            pointerEvents: 'none',
+                            color: 'rgba(0, 0, 0, 0.45)',
+                          }}
+                        />
+                      </Space.Compact>
                     </Form.Item>
                   </Col>
                   <Col xs={24}>

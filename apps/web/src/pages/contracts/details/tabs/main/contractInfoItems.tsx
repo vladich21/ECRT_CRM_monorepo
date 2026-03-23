@@ -20,9 +20,7 @@ type AsideRefs = Partial<
 export function buildMainInfoItems(
   contract: Contract,
   refs: MainInfoRefs,
-  formatDateValue: (d: string | null | undefined) => string
 ) {
-  const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
 
   return [
     {

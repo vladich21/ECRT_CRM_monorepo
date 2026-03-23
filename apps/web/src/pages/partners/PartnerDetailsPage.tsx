@@ -20,6 +20,7 @@ import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
 import { useFilesByEntity } from '../../api/files/fileApiHooks';
 import { useContracts } from '../../api/contracts/contractApiHooks';
+import { PARTNERS_REGISTRY_PATH } from './constants/routes';
 
 const STATUS_COLORS: Record<string, string> = {
   'Активный': '#52c41a',
@@ -62,9 +63,9 @@ export default function PartnerDetailsPage() {
     mutation,
     successMessage: 'Контрагент успешно удалён',
     errorMessage: 'Не удалось удалить контрагента',
-    redirectPath: '/partners',
     getMutationProps: () => partnerId!,
     showNotification,
+    onSuccess: () => navigate(PARTNERS_REGISTRY_PATH, { replace: true }),
   });
 
   const handleTabChange = (key: string) => {
@@ -99,7 +100,7 @@ export default function PartnerDetailsPage() {
     <DetailPageHeader
       title={partner.short_name || partner.name || 'Контрагент'}
       backLabel="Реестр контрагентов"
-      onBack={() => navigate('/partners')}
+      onBack={() => navigate(PARTNERS_REGISTRY_PATH)}
       statusBadge={statusName ? {
         label: statusName,
         color: STATUS_COLORS[statusName] ?? '#1677ff',

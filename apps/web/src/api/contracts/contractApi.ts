@@ -1,4 +1,4 @@
-import { Contract, ContractStage } from '../../types/contract';
+import { Contract } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
 import { apiClient } from '../clients';
 
@@ -83,24 +83,6 @@ export const contractApi = {
 
   deleteContract: async (contractId: string): Promise<Contract> => {
     const response = await apiClient.delete(`/contracts/${contractId}`);
-    return response.data;
-  },
-
-  // Публичный доступ к договору по токену (без авторизации)
-  getContractByPublicToken: async (token: string): Promise<Contract> => {
-    const response = await apiClient.get(`/contracts/public/${token}`);
-    return response.data;
-  },
-
-  // Получение этапов договора по публичному токену
-  getContractStagesByPublicToken: async (token: string): Promise<ContractStage[]> => {
-    const response = await apiClient.get(`/contracts/public/${token}/stages`);
-    return response.data;
-  },
-
-  // Получение статусов этапов для публичного доступа
-  getContractStageStatesPublic: async (): Promise<any[]> => {
-    const response = await apiClient.get('/contract-stage-states/public');
     return response.data;
   },
 };

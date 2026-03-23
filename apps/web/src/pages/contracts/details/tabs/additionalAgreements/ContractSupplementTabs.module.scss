@@ -1,0 +1,74 @@
+.tabRoot {
+  width: 100%;
+  max-width: none;
+}
+
+.card {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.intro {
+  display: block;
+  margin-bottom: 16px;
+  max-width: none;
+  line-height: 1.5;
+}
+
+.alert {
+  margin-bottom: 16px;
+}
+
+.subMuted {
+  font-size: 12px;
+}
+
+.footerHint {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.timeline {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.timelineItem {
+  padding-bottom: 4px;
+}
+
+.timelineTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  margin-bottom: 4px;
+}
+
+.timelineAt {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.timelineDetail {
+  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+}

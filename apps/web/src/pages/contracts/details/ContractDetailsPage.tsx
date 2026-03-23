@@ -26,6 +26,8 @@ import {
 } from '../utils/contractDetailsUtils';
 import tagStyles from '../list/ContractsListPage.module.scss';
 import { useContractStages } from '../../../api/contractStages/contractStagesApiHooks';
+import { DEMO_ADDITIONAL_AGREEMENTS } from './tabs/additionalAgreements/ContractAdditionalAgreementsTab';
+import { CONTRACTS_REGISTRY_PATH, getContractEditPath } from '../constants/routes';
 
 export default function ContractDetailsPage() {
   const { contractId } = useParams();
@@ -39,7 +41,7 @@ export default function ContractDetailsPage() {
       navigate(from);
       return;
     }
-    navigate('/contracts');
+    navigate(CONTRACTS_REGISTRY_PATH);
   };
 
   const { data: contract, isLoading, isError } = useContractById(contractId!);
@@ -60,19 +62,23 @@ export default function ContractDetailsPage() {
     mutation: deleteContractMutation,
     successMessage: 'Договор успешно удалён',
     errorMessage: 'Не удалось удалить договор',
-    redirectPath: '/contracts',
     getMutationProps: () => contractId!,
     showNotification,
+    onSuccess: () => navigate(CONTRACTS_REGISTRY_PATH, { replace: true }),
   });
 
   const activeTab = getActiveContractDetailsTab(location.pathname);
 
-  const tabsWithCounts = CONTRACT_DETAILS_TABS.map((tab) =>
-    tab.key === 'files' ? { ...tab, count: contractFiles.length } : tab
-  );
+  const tabsWithCounts = CONTRACT_DETAILS_TABS.map((tab) => {
+    if (tab.key === 'files') return { ...tab, count: contractFiles.length };
+    if (tab.key === 'additional-agreements') {
+      return { ...tab, count: DEMO_ADDITIONAL_AGREEMENTS.length };
+    }
+    return tab;
+  });
 
   const handleEdit = () => {
-    navigate(`/contracts/${contractId}/edit`, { state: { from } });
+    navigate(getContractEditPath(contractId!), { state: { from } });
   };
 
   const handleDelete = () => {

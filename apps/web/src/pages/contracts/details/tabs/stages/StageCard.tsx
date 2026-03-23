@@ -1,8 +1,24 @@
 import React from 'react';
-import { Card, Tag, Button, Row, Col, Typography } from 'antd';
-import { UpOutlined, DownOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Card, Tag, Button, Row, Col, Typography, Popconfirm } from 'antd';
+import {
+  UpOutlined,
+  DownOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
+} from '@ant-design/icons';
 import { ContractStage } from '../../../../../types/contract';
-import { getStageStatus, getStageStatusDisplay, calculateDaysUntilDeadline, calculateBudgetDeviation } from './utils/stageHelpers';
+import {
+  getStageStatus,
+  getStageStatusDisplay,
+  calculateDaysUntilDeadline,
+  calculateBudgetDeviation,
+  getDeadlineCountdownTone,
+  getDeadlineCountdownTagStyle,
+  pluralDaysRu,
+} from './utils/stageHelpers';
 import styles from '../../ContractDetails.module.scss';
 import { StageInfoItem } from './StageInfoItem';
 
@@ -20,6 +36,9 @@ interface StageCardProps {
   users?: any[];
   isExpanded: boolean;
   onToggle: () => void;
+  /** Редактирование этапа (локально / до появления API) */
+  onEdit?: (stage: ContractStage) => void;
+  onDelete?: (stage: ContractStage) => void;
 }
 
 export const StageCard: React.FC<StageCardProps> = ({
@@ -28,9 +47,11 @@ export const StageCard: React.FC<StageCardProps> = ({
   users,
   isExpanded,
   onToggle,
+  onEdit,
+  onDelete,
 }) => {
   const stageStatus = getStageStatus(stage, contractStageStates);
-  const { status, isCompleted, isInProgress, isDelayed } = stageStatus;
+  const { status, isCompleted, isDelayed } = stageStatus;
 
   const statusDisplay = getStageStatusDisplay(status);
   const { iconType, text: statusText, statusColor } = statusDisplay;
@@ -39,6 +60,13 @@ export const StageCard: React.FC<StageCardProps> = ({
   const daysUntilDeadline = calculateDaysUntilDeadline(stage.planned_end_date);
   const isOverdue = isDelayed || (daysUntilDeadline < 0 && !isCompleted);
   const budgetDeviation = calculateBudgetDeviation(stage.planned_budget, stage.actual_budget);
+  const countdownTone = getDeadlineCountdownTone(daysUntilDeadline, { isCompleted, isOverdue });
+  const showHeaderCountdown =
+    !isCompleted &&
+    !isOverdue &&
+    daysUntilDeadline >= 0 &&
+    daysUntilDeadline <= 14 &&
+    Boolean(stage.planned_end_date);
 
   const getStatusTagStyle = () => {
     if (status === 'overdue') {
@@ -98,22 +126,49 @@ export const StageCard: React.FC<StageCardProps> = ({
             <Tag className={styles.stageStatusTag} style={getStatusTagStyle()}>
               {statusText}
             </Tag>
-            {isInProgress && !isOverdue && daysUntilDeadline <= 7 && (
-              <Tag
-                className={styles.urgentBadge}
-                style={{
-                  backgroundColor: 'rgba(0, 21, 41, 0.1)',
-                  color: '#001529',
-                  border: '1px solid #001529',
-                }}
-              >
-                Осталось {daysUntilDeadline} {daysUntilDeadline === 1 ? 'день' : 'дней'}
+            {showHeaderCountdown && (
+              <Tag className={styles.urgentBadge} style={getDeadlineCountdownTagStyle(countdownTone)}>
+                Осталось {daysUntilDeadline} {pluralDaysRu(daysUntilDeadline)}
               </Tag>
+            )}
+            {onEdit && (
+              <Button
+                type="text"
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(stage);
+                }}
+                className={styles.toggleStageButton}
+                title="Редактировать этап"
+              />
+            )}
+            {onDelete && (
+              <Popconfirm
+                title="Удалить этап?"
+                description="Этап будет удалён из списка. Для данных с сервера позже потребуется запрос к API."
+                okText="Удалить"
+                cancelText="Отмена"
+                okButtonProps={{ danger: true }}
+                onConfirm={() => onDelete(stage)}
+              >
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                  className={styles.toggleStageButton}
+                  title="Удалить этап"
+                />
+              </Popconfirm>
             )}
             <Button
               type="text"
               icon={isExpanded ? <UpOutlined /> : <DownOutlined />}
-              onClick={onToggle}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
               className={styles.toggleStageButton}
               title={isExpanded ? 'Свернуть' : 'Развернуть'}
             />
@@ -122,7 +177,7 @@ export const StageCard: React.FC<StageCardProps> = ({
 
         {isExpanded && (
           <div className={styles.stageCardContent}>
-            <Row gutter={[24, 16]}>
+            <Row gutter={[12, 8]}>
               <Col xs={24} sm={12} md={8}>
                 <StageInfoItem
                   type="dates"
