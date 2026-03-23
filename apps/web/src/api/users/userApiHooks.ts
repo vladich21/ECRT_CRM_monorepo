@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi } from './userApi';
 import { User } from '../../types/user';
-
-type UpdateUserInput = { id: string; data: Partial<User> };
-
+type UpdateUserInput = {
+  id: string;
+  data: Partial<User>;
+};
 const usersQueryKey = ['users'] as const;
 
 export function useUsers(preview = 2, full = true) {
@@ -23,7 +24,6 @@ export function useUserById(userId: string) {
 
 export function useCreateUser() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (data: User) => userApi.addUser(data),
     onSuccess: () => {
@@ -34,7 +34,6 @@ export function useCreateUser() {
 
 export function useUpdateUser() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ id, data }: UpdateUserInput) => userApi.editUser(id, data),
     onSuccess: () => {

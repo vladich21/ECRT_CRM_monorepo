@@ -2,7 +2,6 @@ export interface Reference {
   id: string;
   name: string;
 }
-
 export interface Department {
   id: string;
   name: string;
@@ -13,14 +12,12 @@ export interface Department {
   created_at: string;
   updated_at: string;
 }
-
 export interface Position {
   id: string;
   name: string;
   created_at: string;
   updated_at: string;
 }
-
 export interface Project {
   id: string;
   code: string | number;
@@ -30,9 +27,9 @@ export interface Project {
   start_date: string;
   end_date: string;
   manager_id: string;
-  /** Автор записи (UUID), если приходит с API */
   created_by?: string | null;
   status: string;
   created_at: string;
   updated_at: string;
+  is_deleted?: boolean;
 }

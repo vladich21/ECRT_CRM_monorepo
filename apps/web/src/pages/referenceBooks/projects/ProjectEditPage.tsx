@@ -20,10 +20,8 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useProjectById, useUpdateProject } from '../../../api/projects/projectApiHooks';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 import styles from './ProjectFormPage.module.scss';
-
 const { Option } = Select;
 const { TextArea } = Input;
-
 export default function ProjectEditPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -32,14 +30,11 @@ export default function ProjectEditPage() {
   const [isFormChanged, setIsFormChanged] = useState(false);
   const { data: project, isLoading: isProjectLoading, isError: isProjectError } = useProjectById(projectId!);
   const { mutate, isPending: isUpdateLoading, isError: isUpdateError, isSuccess: isUpdateSuccess } = useUpdateProject();
-
   const { data: referenceBooks, isLoading, isError } = useReferenceData(['users']);
-
   const wCode = Form.useWatch('code', form) as string | number | undefined;
   const wName = Form.useWatch('name', form) as string | undefined;
   const wShortName = Form.useWatch('short_name', form) as string | undefined;
   const wStatus = Form.useWatch('status', form) as string | undefined;
-
   useEffect(() => {
     if (project) {
       const formData = projectUpdateFormMapper(project);
@@ -50,7 +45,6 @@ export default function ProjectEditPage() {
       });
     }
   }, [project, form]);
-
   useEffect(() => {
     if (isUpdateSuccess) {
       showNotification('success', 'Успех', 'Проект успешно изменён');
@@ -59,56 +53,57 @@ export default function ProjectEditPage() {
       showNotification('error', 'Ошибка', 'Не удалось изменить проект');
     }
   }, [isUpdateError, isUpdateSuccess]);
-
   if (isLoading || isProjectLoading) {
     return <Loader />;
   }
-
   if (isError || isProjectError || !project || !referenceBooks) {
     return <NotFound errorMessage='Не найден проект или справочник' />;
   }
-
   const handleSave = async (values: any) => {
     const payload = getChangedFields(values, projectUpdateFormMapper(project));
-
     if (payload.start_date && dayjs.isDayjs(payload.start_date)) {
       payload.start_date = payload.start_date.format('YYYY-MM-DD');
     }
     if (payload.end_date && dayjs.isDayjs(payload.end_date)) {
       payload.end_date = payload.end_date.format('YYYY-MM-DD');
     }
-
     mutate({ id: projectId!, data: payload });
   };
-
   const statusBadge = (() => {
     const s = (wStatus ?? (project as any)?.status) as string | undefined;
     if (!s) return undefined;
     const st = (PROJECT_STATUS_CONFIG as any)[s] ?? PROJECT_STATUS_CONFIG.active;
     return { label: st.label, color: st.color };
   })();
-
   const headerName = (wName ?? project.name ?? '').trim();
   const headerTitle = headerName || '—';
   const headerCode = (wCode ?? (project as any)?.code) ? String(wCode ?? (project as any)?.code) : '';
-  const headerShortRaw = (wShortName ?? (project as any)?.short_name) ? String(wShortName ?? (project as any)?.short_name) : '';
+  const headerShortRaw =
+    (wShortName ?? (project as any)?.short_name) ? String(wShortName ?? (project as any)?.short_name) : '';
   const headerShort = headerShortRaw && headerShortRaw !== headerTitle ? headerShortRaw : '';
-
   return (
     <DetailPageHeader
       title={headerTitle}
-      backLabel="Проекты"
+      backLabel='Проекты'
       onBack={() => navigate('/projects')}
       statusBadge={statusBadge}
       metaItems={[
-        headerCode ? <span key="code" className={hStyles.metaText}>Код: {headerCode}</span> : null,
-        headerShort ? <span key="short" className={hStyles.metaText}>{headerShort}</span> : null,
+        headerCode ? (
+          <span key='code' className={hStyles.metaText}>
+            Код: {headerCode}
+          </span>
+        ) : null,
+        headerShort ? (
+          <span key='short' className={hStyles.metaText}>
+            {headerShort}
+          </span>
+        ) : null,
       ].filter(Boolean)}
       actions={
         <>
           <Button onClick={() => navigate(-1)}>Отмена</Button>
           <Button
-            type="primary"
+            type='primary'
             icon={<SaveOutlined />}
             disabled={!isFormChanged}
             loading={isUpdateLoading}
@@ -119,7 +114,7 @@ export default function ProjectEditPage() {
         </>
       }
       tabs={[{ key: 'main', label: 'Редактирование' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
       stickyHeader
@@ -127,10 +122,10 @@ export default function ProjectEditPage() {
       <div className={styles.formCard}>
         <Form
           form={form}
-          layout="vertical"
+          layout='vertical'
           onFieldsChange={() => setIsFormChanged(true)}
           onFinish={handleSave}
-          onKeyPress={(e) => {
+          onKeyPress={e => {
             if (e.key === 'Enter') e.preventDefault();
           }}
           scrollToFirstError
@@ -147,11 +142,7 @@ export default function ProjectEditPage() {
             </Col>
 
             <Col xs={24} md={13}>
-              <Form.Item
-                label='Название'
-                name='name'
-                rules={[{ required: true, message: 'Введите название проекта' }]}
-              >
+              <Form.Item label='Название' name='name' rules={[{ required: true, message: 'Введите название проекта' }]}>
                 <Input placeholder='Введите название проекта' />
               </Form.Item>
             </Col>
@@ -177,39 +168,39 @@ export default function ProjectEditPage() {
 
           <div className={styles.twoColSections}>
             <div className={styles.sectionBox}>
-              <Divider orientation="left" style={{ marginTop: 0 }}>
+              <Divider orientation='left' style={{ marginTop: 0 }}>
                 <CalendarOutlined /> Сроки и статус
               </Divider>
 
               <Row gutter={16}>
                 <Col xs={24} md={8}>
                   <Form.Item
-                    label="Дата начала"
-                    name="start_date"
+                    label='Дата начала'
+                    name='start_date'
                     rules={[{ required: true, message: 'Выберите дату начала' }]}
                   >
-                    <DatePicker style={{ width: '100%' }} placeholder="Выберите дату начала" format="DD.MM.YYYY" />
+                    <DatePicker style={{ width: '100%' }} placeholder='Выберите дату начала' format='DD.MM.YYYY' />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} md={8}>
-                  <Form.Item label="Дата окончания" name="end_date">
-                    <DatePicker style={{ width: '100%' }} placeholder="Выберите дату окончания" format="DD.MM.YYYY" />
+                  <Form.Item label='Дата окончания' name='end_date'>
+                    <DatePicker style={{ width: '100%' }} placeholder='Выберите дату окончания' format='DD.MM.YYYY' />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} md={8}>
                   <Form.Item
-                    label="Статус"
-                    name="status"
+                    label='Статус'
+                    name='status'
                     rules={[{ required: true, message: 'Выберите статус проекта' }]}
                   >
-                    <Select placeholder="Выберите статус" suffixIcon={<EditOutlined />}>
-                      <Option value="active">Активный</Option>
-                      <Option value="pending">В ожидании</Option>
-                      <Option value="paused">Приостановлен</Option>
-                      <Option value="completed">Завершен</Option>
-                      <Option value="cancelled">Отменен</Option>
+                    <Select placeholder='Выберите статус' suffixIcon={<EditOutlined />}>
+                      <Option value='active'>Активный</Option>
+                      <Option value='pending'>В ожидании</Option>
+                      <Option value='paused'>Приостановлен</Option>
+                      <Option value='completed'>Завершен</Option>
+                      <Option value='cancelled'>Отменен</Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -217,25 +208,27 @@ export default function ProjectEditPage() {
             </div>
 
             <div className={styles.sectionBox}>
-              <Divider orientation="left" style={{ marginTop: 0 }}>
+              <Divider orientation='left' style={{ marginTop: 0 }}>
                 <UserOutlined /> Управление
               </Divider>
 
               <Row gutter={16}>
                 <Col xs={24}>
-                  <Form.Item label="Руководитель" name="manager_id">
+                  <Form.Item label='Руководитель' name='manager_id'>
                     <Select
-                      placeholder="Выберите руководителя"
+                      placeholder='Выберите руководителя'
                       allowClear
                       showSearch
-                      optionFilterProp="label"
-                      optionLabelProp="label"
+                      optionFilterProp='label'
+                      optionLabelProp='label'
                       filterOption={(input, option) =>
-                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        String(option?.label ?? '')
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
                       }
                       suffixIcon={<UserOutlined />}
                     >
-                      {referenceBooks?.users?.map((user) => (
+                      {referenceBooks?.users?.map(user => (
                         <Option key={user.id} value={user.id} label={user.name}>
                           {user.name}
                         </Option>

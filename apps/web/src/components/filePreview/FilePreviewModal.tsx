@@ -17,7 +17,7 @@ interface FilePreviewLinkProps {
 
 export function FilePreviewLink({ url, filename }: FilePreviewLinkProps) {
   return (
-    <a href={url} download={filename} rel="noreferrer" className={styles.linkButton}>
+    <a href={url} download={filename} rel='noreferrer' className={styles.linkButton}>
       {filename}
     </a>
   );

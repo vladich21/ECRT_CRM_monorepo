@@ -15,21 +15,16 @@ import { useContractStages } from '../../api/contractStages/contractStagesApiHoo
 import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
 import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import styles from './ContractRevisionDetailsPage.module.scss';
-
 const TAB_ITEMS = [
   { key: 'info', label: 'Информация' },
   { key: 'stages', label: 'Этапы' },
 ];
-
 export default function ContractRevisionDetailsPage() {
   const { contractId, revisionNumber } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('info');
-
   const { data: revision, isLoading, isError } = useContractRevisionById(contractId!, Number(revisionNumber));
-
   const { data: stages = [], isLoading: isStagesLoading, isError: isStagesError } = useContractStages(contractId!);
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
@@ -43,24 +38,19 @@ export default function ContractRevisionDetailsPage() {
     'contractStageStates',
     'contracts',
   ]);
-
   if (isLoading || isReferencesLoading || isStagesLoading) {
     return <Loader />;
   }
-
   if (isError || isReferencesError || !revision || isStagesError) {
     return <NotFound errorMessage='Ревизия не найдена' />;
   }
-
   return (
     <DetailPageHeader
       title={`Ревизия договора №${revision.revision_number}`}
       backLabel='К договору'
       onBack={() => navigate(`/contracts/${contractId}`)}
       statusBadge={
-        revision.is_active
-          ? { label: 'Текущая', color: '#52c41a' }
-          : { label: 'Не активна', color: '#ff4d4f' }
+        revision.is_active ? { label: 'Текущая', color: '#52c41a' } : { label: 'Не активна', color: '#ff4d4f' }
       }
       metaItems={[
         <span key='ver' className={hStyles.metaText}>
@@ -73,10 +63,7 @@ export default function ContractRevisionDetailsPage() {
         ),
       ]}
       actions={
-        <Button
-          icon={<HistoryOutlined />}
-          onClick={() => navigate(`/contracts/${contractId}/revisions`)}
-        >
+        <Button icon={<HistoryOutlined />} onClick={() => navigate(`/contracts/${contractId}/revisions`)}>
           Все ревизии
         </Button>
       }

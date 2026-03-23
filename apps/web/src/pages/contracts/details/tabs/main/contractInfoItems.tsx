@@ -6,22 +6,14 @@ import { getNameById } from '../../../../../helpers/getNameById';
 import { formatDate } from '../stages/data';
 import { getContractStateTagClass } from '../../../utils/contractStateUtils';
 import listStyles from '../../../list/ContractsListPage.module.scss';
-
 const { Text } = Typography;
-
 type MainInfoRefs = Partial<
   Pick<ReferenceData, 'partners' | 'projects' | 'users' | 'contractCategories' | 'contractTypes'>
 >;
-
 type AsideRefs = Partial<
   Pick<ReferenceData, 'partners' | 'users' | 'contractStates' | 'contractCategories' | 'contractTypes'>
 >;
-
-export function buildMainInfoItems(
-  contract: Contract,
-  refs: MainInfoRefs,
-) {
-
+export function buildMainInfoItems(contract: Contract, refs: MainInfoRefs) {
   return [
     {
       key: 'partner',
@@ -40,12 +32,10 @@ export function buildMainInfoItems(
     },
   ];
 }
-
 export function buildDetailItems(contract: Contract, refs: AsideRefs) {
   const state = getEntityById(contract.state_id, refs?.contractStates);
   const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
   const typeName = getNameById(contract.contract_type_id, refs?.contractTypes ?? []);
-
   return [
     {
       key: 'number',
@@ -55,7 +45,7 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
     {
       key: 'cipher',
       label: 'Шифр',
-      children: <Text >{contract.cipher || '—'}</Text>,
+      children: <Text>{contract.cipher || '—'}</Text>,
     },
     {
       key: 'type',
@@ -65,19 +55,13 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
     {
       key: 'category',
       label: 'Категория',
-      children: categoryName
-        ? <span className={listStyles.cardCategory}>{categoryName}</span>
-        : '—',
+      children: categoryName ? <span className={listStyles.cardCategory}>{categoryName}</span> : '—',
     },
     {
       key: 'status',
       label: 'Статус',
       children: (
-        <span
-          className={
-            contract.is_active ? listStyles.tagStatusActive : listStyles.tagStatusInactive
-          }
-        >
+        <span className={contract.is_active ? listStyles.tagStatusActive : listStyles.tagStatusInactive}>
           {contract.is_active ? 'Действует' : 'Не действует'}
         </span>
       ),
@@ -86,17 +70,15 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
       key: 'state',
       label: 'Состояние',
       children: state ? (
-        <span
-          className={
-            listStyles[getContractStateTagClass(state.code) as keyof typeof listStyles]
-          }
-        >
+        <span className={listStyles[getContractStateTagClass(state.code) as keyof typeof listStyles]}>
           {state.name}
         </span>
-      ) : '—',
+      ) : (
+        '—'
+      ),
     },
     { key: 'signed', label: 'Подписан', children: formatDate(contract.date_signed) },
-    { key: 'start',  label: 'Начало',   children: formatDate(contract.start_date) },
-    { key: 'end',    label: 'Окончание', children: formatDate(contract.end_date) },
+    { key: 'start', label: 'Начало', children: formatDate(contract.start_date) },
+    { key: 'end', label: 'Окончание', children: formatDate(contract.end_date) },
   ];
 }

@@ -7,7 +7,6 @@ import { getTagColorByData } from '../../../../../helpers/getTagColorByData';
 import { getEntityById } from '../../../../../helpers/getEntityById';
 import { getNameById } from '../../../../../helpers/getNameById';
 import styles from './data.module.scss';
-
 export const getStageColumnsData = (
   references: Pick<ReferenceData, 'contractStageStates' | 'contracts'>,
 ): ColumnType<ContractStage>[] => [
@@ -68,14 +67,12 @@ export const getStageColumnsData = (
     render: (_: any, record: ContractStage) => {
       const { planned_budget, forecasted_budget, actual_budget } = record;
       const budgetDeviation = actual_budget ? ((actual_budget - planned_budget) / planned_budget) * 100 : 0;
-
       const deviationClass =
         budgetDeviation > 10
           ? styles.budgetDeviation
           : budgetDeviation < -10
             ? styles.budgetDeviationPositive
             : styles.budgetDeviationNeutral;
-
       return (
         <div className={styles.budgetContainer}>
           <div>
@@ -104,16 +101,12 @@ export const getStageColumnsData = (
       const plannedStart = new Date(record.planned_start_date);
       const plannedEnd = new Date(record.planned_end_date);
       const today = new Date();
-
       const totalDays = Math.max((plannedEnd.getTime() - plannedStart.getTime()) / (1000 * 60 * 60 * 24), 1);
       const passedDays = Math.max((today.getTime() - plannedStart.getTime()) / (1000 * 60 * 60 * 24), 0);
       const timeProgress = Math.min((passedDays / totalDays) * 100, 100);
-
       const budgetProgress = record.planned_budget > 0 ? (record.actual_budget / record.planned_budget) * 100 : 0;
-
       const isDelayed = timeProgress > 100 && !record.actual_end_date;
       const statusCode = references.contractStageStates?.find(s => s.id === record.state_id)?.code || 'completed';
-
       return (
         <div>
           <div className={styles.progressContainer}>
@@ -157,7 +150,6 @@ export const getStageColumnsData = (
         on_hold: 'warning',
         cancelled: 'error',
       };
-
       return (
         <Tag color={statusColors[status?.code || 'default']} className={styles.statusTagCentered}>
           {'Выполнено'}
@@ -182,7 +174,6 @@ export const getStageColumnsData = (
     render: (date: string) => formatDate(date, 'DD.MM.YYYY HH:mm'),
   },
 ];
-
 export const formatCurrency = (amount: number | null | undefined): string => {
   if (!amount && amount !== 0) return '-';
   return `${amount.toLocaleString('ru-RU', {
@@ -190,7 +181,6 @@ export const formatCurrency = (amount: number | null | undefined): string => {
     maximumFractionDigits: 2,
   })} ₽`;
 };
-
 export const formatDate = (dateString: string | null | undefined, format: string = 'DD.MM.YYYY'): string => {
   if (!dateString) return '-';
   const date = new Date(dateString);
@@ -205,7 +195,6 @@ export const formatDate = (dateString: string | null | undefined, format: string
   }
   return date.toLocaleDateString('ru-RU');
 };
-
 export const getRevisionColumnsData = (
   references: Pick<ReferenceData, 'contractStates'>,
 ): ColumnType<ContractRevision>[] => [

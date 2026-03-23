@@ -9,25 +9,20 @@ import { formatDate } from '../../../../../helpers/formatDate';
 import { NotFound } from '../../../../../components/notFound/NotFound';
 import { useReferenceData } from '../../../../../api/hooks/useReferences';
 import styles from './ContractRevisionsMainInfoTab.module.scss';
-
 export default function ContractRevisionsListTab() {
   const navigate = useNavigate();
   const { contractId } = useParams();
   const { data: revisions = [], isLoading, isError } = useContractRevisions(contractId!);
-
   const latestRevision = revisions.find(el => {
     if (el.revision_number === revisions.length) return true;
     return false;
   });
-
   const { contextHolder, showNotification } = useNotification();
-
   const {
     data: referenceBooks,
     isError: isReferencesError,
     isLoading: isReferencesLoading,
   } = useReferenceData(['contractStates']);
-
   const handleRowClick = (record: ContractRevision) => {
     navigate(`revisions/${record.revision_number}`, {
       state: {
@@ -36,20 +31,16 @@ export default function ContractRevisionsListTab() {
       },
     });
   };
-
   const handleCreateRevision = () => {
     if (!contractId) {
       showNotification('error', 'Ошибка', 'Для создания ревизии выберите договор');
       return;
     }
-
     navigate(`/contracts/${contractId}/revisions/create`);
   };
-
   if (isError || isReferencesError) {
     return <NotFound errorMessage='Не удалось загрузить ревизии договора' />;
   }
-
   return (
     <div>
       {contextHolder}

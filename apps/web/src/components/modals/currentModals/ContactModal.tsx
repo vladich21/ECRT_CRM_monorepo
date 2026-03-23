@@ -47,7 +47,7 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
   }) => {
     await onConfirm(modalData ? getChangedFields(values, modalData) : values);
   };
-
+  
   return (
     <BaseModal
       {...layoutProps}
@@ -102,14 +102,14 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
             <Form.Item
               name='phone'
               label='Телефон'
-              normalize={(v) => (typeof v === 'string' ? v.trim() : v)}
+              normalize={v => (typeof v === 'string' ? v.trim() : v)}
               rules={[
                 {
                   validator: (_, value) => {
                     if (!value || !value.trim()) return Promise.resolve();
                     const digits = value.replace(/\D/g, '');
                     const valid =
-                      digits.length === 10 && digits.startsWith('9') ||
+                      (digits.length === 10 && digits.startsWith('9')) ||
                       (digits.length === 11 && (digits.startsWith('79') || digits.startsWith('89')));
                     return valid
                       ? Promise.resolve()

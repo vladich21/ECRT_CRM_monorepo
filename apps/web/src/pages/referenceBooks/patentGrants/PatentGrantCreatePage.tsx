@@ -10,34 +10,28 @@ import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { PatentGrantFormFields } from './PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
-
 export default function PatentGrantCreatePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-
   const patentIdFromState = location.state?.patentId;
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['patents']);
-
   const {
     mutate,
     isPending: isCreateLoading,
     isError: isCreateError,
     isSuccess: isCreateSuccess,
   } = useCreatePatentGrant();
-
   useEffect(() => {
     if (patentIdFromState && referenceBooks?.patents) {
       form.setFieldsValue({ patent_id: patentIdFromState });
     }
   }, [patentIdFromState, referenceBooks, form]);
-
   useEffect(() => {
     if (isCreateSuccess) {
       showNotification('success', 'Успех', 'Патентный грант успешно создан');
@@ -50,7 +44,6 @@ export default function PatentGrantCreatePage() {
       showNotification('error', 'Ошибка', 'Не удалось создать патентный грант');
     }
   }, [isCreateError, isCreateSuccess, navigate, showNotification, patentIdFromState]);
-
   const handleCreate = async (values: any) => {
     const patentId = values.patent_id;
     if (!patentId) return;
@@ -64,33 +57,30 @@ export default function PatentGrantCreatePage() {
     };
     mutate({ patentId, data });
   };
-
   if (isReferencesLoading) {
     return <Loader />;
   }
-
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
-
   return (
     <DetailPageHeader
-      title="Создание нового патентного гранта"
+      title='Создание нового патентного гранта'
       titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания гранта</span>}
-      backLabel="Патентные гранты"
+      backLabel='Патентные гранты'
       onBack={() => navigate(-1)}
       actions={
         <>
           <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
             Очистить форму
           </Button>
-          <Button type="primary" icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
+          <Button type='primary' icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
             Создать патентный грант
           </Button>
         </>
       }
       tabs={[{ key: 'main', label: 'Создание' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
       stickyHeader
@@ -98,8 +88,8 @@ export default function PatentGrantCreatePage() {
       <div className={styles.formCard}>
         <Form
           form={form}
-          layout="vertical"
-          size="middle"
+          layout='vertical'
+          size='middle'
           onFinish={handleCreate}
           disabled={isCreateLoading}
           onKeyPress={e => {
@@ -107,11 +97,7 @@ export default function PatentGrantCreatePage() {
           }}
           scrollToFirstError
         >
-          <PatentGrantFormFields
-            form={form}
-            referenceBooks={referenceBooks}
-            patentIdFromState={patentIdFromState}
-          />
+          <PatentGrantFormFields form={form} referenceBooks={referenceBooks} patentIdFromState={patentIdFromState} />
         </Form>
       </div>
     </DetailPageHeader>

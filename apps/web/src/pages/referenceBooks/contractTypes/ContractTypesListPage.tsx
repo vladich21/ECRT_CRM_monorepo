@@ -1,6 +1,5 @@
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ContractType } from '../../../types/contract';
-
 import { useEffect, useState } from 'react';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
@@ -16,20 +15,16 @@ import {
 } from '../../../api/contracts/contractTypeApiHooks';
 import { getNameById } from '../../../helpers/getNameById';
 import { getEntityById } from '../../../helpers/getEntityById';
-
 type ActionType = 'edit' | 'delete' | 'add' | '';
-
 const ContractTypesListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = useContractTypes();
   const [currentTypeId, setCurrentTypeId] = useState<string>('');
   const [action, setAction] = useState<ActionType>('');
   const modalProps = useModalStore();
-
   const deleteTypeMutation = useDeleteContractType();
   const editTypeMutation = useUpdateContractType();
   const addTypeMutation = useCreateContractType();
-
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteTypeMutation,
     successMessage: 'Тип договора успешно удален',
@@ -37,7 +32,6 @@ const ContractTypesListPage: React.FC = () => {
     getMutationProps: () => currentTypeId,
     showNotification,
   });
-
   const { handleOpenModal: openMutateModal } = useMutateByModal<ContractType, Error>({
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editTypeMutation : addTypeMutation,
@@ -52,7 +46,6 @@ const ContractTypesListPage: React.FC = () => {
     getMutationProps: action === 'edit' ? () => currentTypeId : () => undefined,
     showNotification,
   });
-
   useEffect(() => {
     if (action === 'delete') {
       openDeleteModal();
@@ -60,32 +53,32 @@ const ContractTypesListPage: React.FC = () => {
       openMutateModal();
     }
   }, [currentTypeId, action]);
-
   useEffect(() => {
     if (!modalProps.open) {
       setAction('');
     }
   }, [modalProps.open]);
-
   const handleOpenAddModal = () => {
     setAction('add');
     setCurrentTypeId('');
   };
-
   const onDelete = ({ id }: { id: string }) => {
     setAction('delete');
     setCurrentTypeId(id);
   };
-
   const onEdit = ({ id }: { id: string }) => {
     setAction('edit');
     setCurrentTypeId(id);
   };
-
   return (
-    <ReferenceBookListPage title="Типы договоров" addButtonLabel="Добавить тип договора" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
+    <ReferenceBookListPage
+      title='Типы договоров'
+      addButtonLabel='Добавить тип договора'
+      onAdd={handleOpenAddModal}
+      contextHolder={contextHolder}
+    >
       <ReferenceBookCardList>
-        {data.map((contractType) => (
+        {data.map(contractType => (
           <ReferenceBookItemCard
             key={contractType.id}
             title={contractType.name}
@@ -98,5 +91,4 @@ const ContractTypesListPage: React.FC = () => {
     </ReferenceBookListPage>
   );
 };
-
 export default ContractTypesListPage;

@@ -18,23 +18,18 @@ import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { useCreateProject } from '../../../api/projects/projectApiHooks';
 import styles from './ProjectFormPage.module.scss';
-
 const { Option } = Select;
 const { TextArea } = Input;
-
 export default function ProjectCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-
   const { mutate, isPending: isCreateLoading, isError: isCreateError, isSuccess: isCreateSuccess } = useCreateProject();
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['users']);
-
   useEffect(() => {
     if (isCreateSuccess) {
       showNotification('success', 'Успех', 'Проект успешно создан');
@@ -43,11 +38,9 @@ export default function ProjectCreatePage() {
       showNotification('error', 'Ошибка', 'Не удалось создать проект');
     }
   }, [isCreateError, isCreateSuccess, navigate, showNotification]);
-
   const handleCreate = async (values: any) => {
     const start_date = values.start_date ? values.start_date.format('YYYY-MM-DD') : '';
     const end_date = values.end_date ? values.end_date.format('YYYY-MM-DD') : '';
-
     mutate({
       code: values.code != null ? String(values.code) : '',
       name: values.name ?? '',
@@ -59,20 +52,17 @@ export default function ProjectCreatePage() {
       status: values.status ?? 'active',
     } as Parameters<typeof mutate>[0]);
   };
-
   if (isReferencesLoading) {
     return <Loader />;
   }
-
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
-
   return (
     <div className={styles.wrap}>
       {contextHolder}
       <BackButton />
-      <PageHeader title="Создание нового проекта" subtitle="Заполните данные проекта" />
+      <PageHeader title='Создание нового проекта' subtitle='Заполните данные проекта' />
 
       <div className={styles.formCard}>
         <Form
@@ -85,7 +75,6 @@ export default function ProjectCreatePage() {
           }}
           scrollToFirstError
         >
-          {/* Идентификация проекта */}
           <Divider orientation='left'>
             <ProjectOutlined /> Идентификация проекта
           </Divider>
@@ -143,7 +132,6 @@ export default function ProjectCreatePage() {
             </Col>
           </Row>
 
-          {/* Сроки и статус */}
           <Divider orientation='left'>
             <CalendarOutlined /> Сроки и статус
           </Divider>
@@ -207,7 +195,6 @@ export default function ProjectCreatePage() {
             </Col>
           </Row>
 
-          {/* Управление */}
           <Divider orientation='left'>
             <UserOutlined /> Управление
           </Divider>
@@ -222,7 +209,9 @@ export default function ProjectCreatePage() {
                   optionFilterProp='label'
                   optionLabelProp='label'
                   filterOption={(input, option) =>
-                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    String(option?.label ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   suffixIcon={<UserOutlined />}
                 >
@@ -236,7 +225,6 @@ export default function ProjectCreatePage() {
             </Col>
           </Row>
 
-          {/* Кнопки действий */}
           <div className={styles.formActions}>
             <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
               Очистить форму

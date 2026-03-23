@@ -5,7 +5,6 @@ import { getContractStateTagClass } from '../../utils/contractStateUtils';
 import detailsStyles from '../ContractDetails.module.scss';
 import headerStyles from '../../../../components/pageLayout/PageHeader.module.scss';
 import tagStyles from '../../list/ContractsListPage.module.scss';
-
 type ContractDetailsHeaderProps = {
   contractNumber: string;
   contractName: string;
@@ -20,7 +19,6 @@ type ContractDetailsHeaderProps = {
   onEdit: () => void;
   onDelete: () => void;
 };
-
 export function ContractDetailsHeader({
   contractNumber,
   contractName,
@@ -43,33 +41,19 @@ export function ContractDetailsHeader({
             <div>
               <h1 className={headerStyles.pageTitle}>
                 Договор №{contractNumber}
-                {contractCipher && (
-                  <span className={detailsStyles.phTitleCipher}> ({contractCipher})</span>
-                )}
-                {contractName && (
-                  <span className={detailsStyles.phTitleName}>{contractName}</span>
-                )}
+                {contractCipher && <span className={detailsStyles.phTitleCipher}> ({contractCipher})</span>}
+                {contractName && <span className={detailsStyles.phTitleName}>{contractName}</span>}
               </h1>
 
               <div className={detailsStyles.phSub}>
-                <span
-                  className={
-                    isContractActive ? tagStyles.tagStatusActive : tagStyles.tagStatusInactive
-                  }
-                >
+                <span className={isContractActive ? tagStyles.tagStatusActive : tagStyles.tagStatusInactive}>
                   {isContractActive ? 'Действует' : 'Не действует'}
                 </span>
 
                 <span className={detailsStyles.phSubSeparator}>·</span>
 
                 {contractState ? (
-                  <span
-                    className={
-                      tagStyles[
-                        getContractStateTagClass(contractState.code) as keyof typeof tagStyles
-                      ]
-                    }
-                  >
+                  <span className={tagStyles[getContractStateTagClass(contractState.code) as keyof typeof tagStyles]}>
                     {contractState.name}
                   </span>
                 ) : (
@@ -91,10 +75,10 @@ export function ContractDetailsHeader({
           </div>
 
           <div className={headerStyles.pageHeaderRight}>
-            <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
+            <Button type='primary' icon={<EditOutlined />} onClick={onEdit}>
               Редактировать
             </Button>
-            <Button type="primary" danger icon={<DeleteOutlined />} onClick={onDelete}>
+            <Button type='primary' danger icon={<DeleteOutlined />} onClick={onDelete}>
               Удалить
             </Button>
           </div>
@@ -103,9 +87,8 @@ export function ContractDetailsHeader({
 
       {shouldShowDeadlineBanner && (
         <div className={detailsStyles.deadlineBanner}>
-          Срок действия договора истекает через{' '}
-          <strong>{daysUntilEnd} дн.</strong>{' '}
-          — до <strong>{formattedEndDate}</strong>
+          Срок действия договора истекает через <strong>{daysUntilEnd} дн.</strong> — до{' '}
+          <strong>{formattedEndDate}</strong>
         </div>
       )}
     </>

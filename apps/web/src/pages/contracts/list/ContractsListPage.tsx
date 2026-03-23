@@ -10,55 +10,43 @@ import { Contract } from '../../../types/contract';
 import { useContracts } from '../../../api/contracts/contractApiHooks';
 import type { ContractsListParams } from '../../../api/contracts/contractApi';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { ContractCard } from './ContractCard';
 import { ContractFiltersModal } from './ContractFiltersModal';
-import {
-  FILTER_TABS,
-  type ContractListReferences,
-} from './ContractsListPage.types';
+import { FILTER_TABS, type ContractListReferences, type FilterTab } from './ContractsListPage.types';
 import { useContractListFilters } from '../hooks/useContractListFilters';
+import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
+import { buildContractsListNavSnapshot, parseContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 import styles from './ContractsListPage.module.scss';
-
 const SEARCH_DEBOUNCE_MS = 350;
-
-function validateAmountFilters(filters: {
-  amountMin: number | null;
-  amountMax: number | null;
-}): string | null {
-  if (
-    filters.amountMin != null &&
-    filters.amountMax != null &&
-    filters.amountMin > filters.amountMax
-  ) {
+function validateAmountFilters(filters: { amountMin: number | null; amountMax: number | null }): string | null {
+  if (filters.amountMin != null && filters.amountMax != null && filters.amountMin > filters.amountMax) {
     return 'Минимальная сумма не может быть больше максимальной';
   }
   return null;
 }
-
 function buildSelectOptions(references: ContractListReferences) {
   return {
-    partners: (references?.partners ?? []).map((partner) => ({
+    partners: (references?.partners ?? []).map(partner => ({
       label: partner.name,
       value: partner.id,
     })),
-    categories: (references?.contractCategories ?? []).map((category) => ({
+    categories: (references?.contractCategories ?? []).map(category => ({
       label: category.name,
       value: category.id,
     })),
-    states: (references?.contractStates ?? []).map((state) => ({
+    states: (references?.contractStates ?? []).map(state => ({
       label: state.name,
       value: state.id,
     })),
   };
 }
-
 export default function ContractsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { partnerId: partnerIdFromRoute } = useParams();
   const { contextHolder, showNotification } = useNotification();
-
   const {
     searchQuery,
     setSearchQuery,
@@ -68,7 +56,9 @@ export default function ContractsListPage() {
     openFiltersModal,
     closeFiltersModal,
     appliedFilters,
+    setAppliedFilters,
     draftFilters,
+    setDraftFilters,
     updateDraftFilter,
     applyFilters,
     resetDraftFilters,
@@ -76,23 +66,42 @@ export default function ContractsListPage() {
   } = useContractListFilters({
     validateFilters: validateAmountFilters,
   });
-
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(t);
+    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(debounceTimerId);
   }, [searchQuery]);
-
-  const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
+  const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
-
+  const { skipNextListResetRef } = useListReturnFromDetail({
+    location,
+    navigate,
+    getRawSnapshot: navigationState => navigationState.contractsListReturn,
+    parse: parseContractsListNavSnapshot,
+    applyParsed: restoredListState => {
+      setSearchQuery(restoredListState.searchQuery);
+      setDebouncedSearch(restoredListState.searchQuery.trim());
+      setActiveTab(restoredListState.activeTab);
+      setAppliedFilters(restoredListState.appliedFilters);
+      setDraftFilters(restoredListState.appliedFilters);
+      setPage(restoredListState.page);
+      setPageSize(restoredListState.pageSize);
+    },
+    applyFallback: navigationState => {
+      if (navigationState.listTab != null) {
+        setActiveTab(navigationState.listTab as FilterTab);
+        return;
+      }
+      if (navigationState.deletionScope === 'deleted') setActiveTab('deleted');
+    },
+  });
   const effectivePartnerId = partnerIdFromRoute ?? appliedFilters.partnerId ?? undefined;
-
   const apiFilters = useMemo((): ContractsListParams => {
     const base: ContractsListParams = {
       partner_id: effectivePartnerId || undefined,
       search: debouncedSearch || undefined,
-      list_tab: activeTab,
+      list_tab: activeTab === 'deleted' ? 'all' : activeTab,
+      deleted_scope: activeTab === 'deleted' ? 'deleted' : 'all',
     };
     if (appliedFilters.categoryId) {
       base.category_id = appliedFilters.categoryId;
@@ -112,20 +121,12 @@ export default function ContractsListPage() {
     }
     return base;
   }, [effectivePartnerId, debouncedSearch, activeTab, appliedFilters]);
-
-  const {
-    data,
-    isLoading,
-    isError,
-    isFetching,
-  } = useContracts(apiFilters, page, pageSize);
-
+  const { data, isLoading, isError, isFetching } = useContracts(apiFilters, page, pageSize);
   const {
     data: referenceBooks,
     isError: isRefsError,
     isLoading: isRefsLoading,
   } = useReferenceData(['partners', 'contractStates', 'contractCategories']);
-
   const contracts = data?.data ?? [];
   const total = data?.total ?? 0;
   const tabCounts = data?.tab_counts ?? {
@@ -134,12 +135,9 @@ export default function ContractsListPage() {
     draft: 0,
     inactive: 0,
   };
+  const deletionTabCounts = data?.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS;
   const references = referenceBooks as ContractListReferences;
-
-  useEffect(() => {
-    resetPage();
-  }, [debouncedSearch, activeTab, appliedFilters, resetPage]);
-
+  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
   useEffect(() => {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
@@ -147,66 +145,58 @@ export default function ContractsListPage() {
       handleTableChange({ current: maxPage, pageSize } as never);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-
-  const selectOptions = useMemo(
-    () => buildSelectOptions(references),
-    [references],
-  );
-
+  const selectOptions = useMemo(() => buildSelectOptions(references), [references]);
   const handleApplyFilters = () => {
     const result = applyFilters();
     if (!result.success && result.error) {
       showNotification('error', 'Ошибка', result.error);
+      return;
     }
+    resetPage();
   };
-
   const handleContractClick = (contract: Contract) =>
     navigate(`/contracts/${contract.id}`, {
-      state: { contract, from: location.pathname },
+      state: {
+        contract,
+        from: location.pathname,
+        deletionScope: activeTab === 'deleted' ? ('deleted' as const) : undefined,
+        contractsListReturn: buildContractsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
+      },
     });
-
   const handlePageChange = (newPage: number, newPageSize?: number) =>
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
     } as never);
-
   if (isRefsError || isError) {
-    return <NotFound errorMessage="Не удалось выполнить запрос" />;
+    return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-
   const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
-
   return (
     <div className={styles.wrap}>
       {contextHolder}
-      {!partnerIdFromRoute && <BackButton path="/" />}
+      {!partnerIdFromRoute && <BackButton path='/' />}
 
       <PageHeader
-        title="Договоры"
-        subtitle="Реестр договоров организации"
+        title='Договоры'
+        subtitle='Реестр договоров организации'
         actions={
           <>
-            <Button type="default">Экспорт</Button>
+            <Button type='default'>Экспорт</Button>
             <Button
-              type="default"
+              type='default'
               icon={<FilterOutlined />}
               onClick={openFiltersModal}
-              className={
-                activeFiltersCount > 0 ? styles.filtersBtnActive : undefined
-              }
+              className={activeFiltersCount > 0 ? styles.filtersBtnActive : undefined}
             >
               Фильтры
-              {activeFiltersCount > 0 && (
-                <span className={styles.filtersBadge}>{activeFiltersCount}</span>
-              )}
+              {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
             </Button>
             <Button
-              type="primary"
-              onClick={() =>
-                navigate('/contracts/create', { state: { partnerId: partnerIdFromRoute } })
-              }
+              type='primary'
+              disabled={activeTab === 'deleted'}
+              onClick={() => navigate('/contracts/create', { state: { partnerId: partnerIdFromRoute } })}
             >
               Новый договор
             </Button>
@@ -220,30 +210,29 @@ export default function ContractsListPage() {
                   {FILTER_TABS.map(({ key, label }) => (
                     <button
                       key={key}
-                      type="button"
-                      className={`${styles.filterTab}${
-                        activeTab === key ? ` ${styles.filterTabActive}` : ''
-                      }`}
+                      type='button'
+                      className={`${styles.filterTab}${activeTab === key ? ` ${styles.filterTabActive}` : ''}`}
                       onClick={() => setActiveTab(key)}
                     >
                       {label}{' '}
-                      <span className={styles.filterTabCount}>{tabCounts[key]}</span>
+                      <span className={styles.filterTabCount}>
+                        {key === 'deleted' ? deletionTabCounts.deleted : tabCounts[key]}
+                      </span>
                     </button>
                   ))}
                 </div>
                 <div className={styles.filterTabsRight}>
                   <Input.Search
                     className={styles.searchInTabsRow}
-                    placeholder="Поиск по номеру, названию, партнёру..."
+                    placeholder='Поиск по номеру, названию, партнёру...'
                     allowClear
                     enterButton={false}
                     prefix={<SearchOutlined className={styles.searchIcon} />}
                     value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onChange={event => setSearchQuery(event.target.value)}
                   />
                   <span className={styles.resultCount}>
-                    Показано: <strong>{contracts.length}</strong> из{' '}
-                    <strong>{total}</strong>
+                    Показано: <strong>{contracts.length}</strong> из <strong>{total}</strong>
                   </span>
                 </div>
               </div>
@@ -264,24 +253,15 @@ export default function ContractsListPage() {
 
       {isInitialLoad ? (
         <div className={styles.loading}>
-          <Spin size="large" />
+          <Spin size='large' />
         </div>
       ) : (
-        <div
-          className={`${styles.cardList}${
-            isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''
-          }`}
-        >
+        <div className={`${styles.cardList}${isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''}`}>
           {contracts.length === 0 ? (
-            <div className={styles.empty}>Нет договоров</div>
+            <div className={styles.empty}>{activeTab === 'deleted' ? 'Нет удалённых договоров' : 'Нет договоров'}</div>
           ) : (
-            contracts.map((contract) => (
-              <ContractCard
-                key={contract.id}
-                contract={contract}
-                refs={references}
-                onClick={handleContractClick}
-              />
+            contracts.map(contract => (
+              <ContractCard key={contract.id} contract={contract} refs={references} onClick={handleContractClick} />
             ))
           )}
         </div>

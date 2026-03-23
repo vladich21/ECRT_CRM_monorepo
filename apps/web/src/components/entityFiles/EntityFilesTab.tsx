@@ -1,12 +1,5 @@
 import { useRef, useState } from 'react';
-import {
-  Upload,
-  Card,
-  Typography,
-  Button,
-  Tooltip,
-  Spin,
-} from 'antd';
+import { Upload, Card, Typography, Button, Tooltip, Spin } from 'antd';
 import {
   InboxOutlined,
   CloudUploadOutlined,
@@ -44,7 +37,8 @@ function getFileIcon(filename: string): React.ReactNode {
   if (ext === 'pdf') return <FilePdfOutlined className={styles.iconPdf} />;
   if (['doc', 'docx'].includes(ext)) return <FileWordOutlined className={styles.iconWord} />;
   if (['xls', 'xlsx', 'csv'].includes(ext)) return <FileExcelOutlined className={styles.iconExcel} />;
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return <FileImageOutlined className={styles.iconImage} />;
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext))
+    return <FileImageOutlined className={styles.iconImage} />;
   return <FileOutlined className={styles.iconDefault} />;
 }
 
@@ -67,12 +61,10 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const pendingDeleteId = useRef<string>('');
-
   const { contextHolder, showNotification } = useNotification();
   const { data: files = [], isLoading } = useFilesByEntity(entityType, entityId);
   const { data: referenceBooks } = useReferenceData(['users']);
   const deleteFileMutation = useDeleteFile();
-
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteFileMutation,
     successMessage: 'Файл успешно удалён',
@@ -123,7 +115,7 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
   };
 
   const hasFiles = files.length > 0;
-
+  
   const draggerProps = {
     name: 'file',
     multiple: true,
@@ -131,7 +123,6 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
     customRequest: handleUpload,
     accept: '*',
   };
-
   return (
     <div className={styles.pageWrap}>
       {contextHolder}
@@ -143,24 +134,22 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
             <Title level={5} style={{ margin: '8px 0 2px' }}>
               Перетащите файлы сюда
             </Title>
-            <Text type="secondary">или нажмите для выбора файлов с устройства</Text>
+            <Text type='secondary'>или нажмите для выбора файлов с устройства</Text>
           </div>
         </Dragger>
       ) : (
         <Dragger {...draggerProps} className={styles.draggerCompact} disabled={uploading}>
           <CloudUploadOutlined className={styles.draggerIconSmall} />
-          <Text type="secondary" style={{ fontSize: 14 }}>
-            Перетащите файлы или{' '}
-            <Text style={{ color: '#002f55', fontWeight: 500 }}>выберите с устройства</Text>
+          <Text type='secondary' style={{ fontSize: 14 }}>
+            Перетащите файлы или <Text style={{ color: '#002f55', fontWeight: 500 }}>выберите с устройства</Text>
           </Text>
         </Dragger>
       )}
 
       {hasFiles && (
         <div className={styles.sectionHeader}>
-          <Text type="secondary" style={{ fontSize: 14 }}>
-            {files.length}{' '}
-            {files.length === 1 ? 'файл' : files.length < 5 ? 'файла' : 'файлов'}
+          <Text type='secondary' style={{ fontSize: 14 }}>
+            {files.length} {files.length === 1 ? 'файл' : files.length < 5 ? 'файла' : 'файлов'}
           </Text>
         </div>
       )}
@@ -168,10 +157,10 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
       <Spin spinning={isLoading || uploading}>
         {hasFiles && (
           <div className={styles.fileGrid}>
-            {files.map((file) => (
+            {files.map(file => (
               <Card
                 key={file.id}
-                size="small"
+                size='small'
                 className={styles.fileCard}
                 styles={{ body: { padding: '12px' } }}
                 onClick={() => handleFileClick(file)}
@@ -202,14 +191,14 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
                   </div>
 
                   <div className={styles.fileActions}>
-                    <Tooltip title="Удалить">
+                    <Tooltip title='Удалить'>
                       <Button
-                        type="text"
-                        size="small"
+                        type='text'
+                        size='small'
                         danger
                         icon={<DeleteOutlined />}
                         loading={deleteFileMutation.isPending && pendingDeleteId.current === file.id}
-                        onClick={(e) => handleDelete(e, file.id)}
+                        onClick={e => handleDelete(e, file.id)}
                       />
                     </Tooltip>
                   </div>

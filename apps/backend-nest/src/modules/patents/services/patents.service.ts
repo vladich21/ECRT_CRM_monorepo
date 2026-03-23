@@ -9,22 +9,19 @@ import {
   relPatentAuthors,
 } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
+import { type DeletedScope, sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** Таб «Все» = active + deleted с теми же фильтрами поиска/модалки. */
-export type PatentDeletedScope = 'active' | 'deleted' | 'all';
-
 export interface PatentFindAllParams {
   preview: boolean;
-  deletedScope: PatentDeletedScope;
+  deletedScope: DeletedScope;
   pagination: PaginationParams;
   search?: string;
   departmentId?: string;
   statusId?: string;
   authorIds: string[];
-  /** Создатель записи (в UI — «Ответственный»). */
   createdBy?: string;
 }
 
@@ -123,7 +120,6 @@ export class PatentsService {
     }
   }
 
-  /** Условия без учёта is_deleted (для поиска и счётчиков вкладок). */
   private buildPatentFilterParts(params: {
     search?: string;
     departmentId?: string;
@@ -179,15 +175,9 @@ export class PatentsService {
     return parts;
   }
 
-  private whereForListScope(baseParts: SQL[], deletedScope: PatentDeletedScope): SQL {
-    const deletedPart =
-      deletedScope === 'active'
-        ? eq(patents.isDeleted, false)
-        : deletedScope === 'deleted'
-          ? eq(patents.isDeleted, true)
-          : undefined;
-    const allParts = deletedPart ? [...baseParts, deletedPart] : [...baseParts];
-    return allParts.length > 0 ? and(...allParts)! : sql`true`;
+  private whereForListScope(baseParts: SQL[], deletedScope: DeletedScope): SQL {
+    const parts = [...baseParts, ...sqlPartsForDeletedScope(patents.isDeleted, deletedScope)];
+    return parts.length > 0 ? and(...parts)! : sql`true`;
   }
 
   private async countPatentsWhere(where: SQL): Promise<number> {

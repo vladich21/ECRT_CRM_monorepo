@@ -2,18 +2,15 @@ import type { ReactNode } from 'react';
 import { Button } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import styles from './DetailPageHeader.module.scss';
-
 interface TabItem {
   key: string;
   label: ReactNode;
 }
-
 interface StatusBadge {
   label: string;
   color: string;
   icon?: ReactNode;
 }
-
 interface DetailPageHeaderProps {
   title: string;
   titleSuffix?: ReactNode;
@@ -31,7 +28,6 @@ interface DetailPageHeaderProps {
   children?: ReactNode;
   contextHolder?: ReactNode;
 }
-
 export default function DetailPageHeader({
   title,
   titleSuffix,
@@ -54,12 +50,7 @@ export default function DetailPageHeader({
       {contextHolder}
 
       <div className={`${styles.header} ${stickyHeader ? styles.headerSticky : ''}`}>
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={onBack}
-          className={styles.backBtn}
-        >
+        <Button type='text' icon={<ArrowLeftOutlined />} onClick={onBack} className={styles.backBtn}>
           {backLabel}
         </Button>
 
@@ -94,7 +85,7 @@ export default function DetailPageHeader({
         {extraContent}
 
         <div className={styles.tabs}>
-          {tabs.map((tab) => (
+          {tabs.map(tab => (
             <div
               key={tab.key}
               className={activeTab === tab.key ? styles.tabActive : styles.tab}
@@ -110,5 +101,4 @@ export default function DetailPageHeader({
     </div>
   );
 }
-
 export { styles as detailPageHeaderStyles };

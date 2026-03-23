@@ -91,7 +91,8 @@ export const contracts = pgTable('contracts', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
-})
+  isDeleted: boolean('is_deleted').notNull().default(false),
+});
 
 export const positions = pgTable('positions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -147,6 +148,7 @@ export const projects = pgTable('projects', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
+  isDeleted: boolean('is_deleted').notNull().default(false),
 });
 
 export const refPatentStatuses = pgTable('ref_patent_statuses', {
@@ -290,6 +292,7 @@ export const partnerContacts = pgTable('partner_contacts', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
+  isDeleted: boolean('is_deleted').notNull().default(false),
 });
 
 export const files = pgTable(
@@ -358,4 +361,5 @@ export const partners = pgTable('partners', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
+  isDeleted: boolean('is_deleted').notNull().default(false),
 });

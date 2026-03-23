@@ -14,6 +14,7 @@ import {
 import { PartnersService, type PartnerListTabScope } from '../services/partners.service';
 import { PartnerInnLookupService } from '../services/partner-inn-lookup.service';
 import { parsePagination } from '../../../common/pagination';
+import { parseDeletedScope } from '../../../common/deleted-scope';
 
 function parseListTab(raw?: string): PartnerListTabScope {
   if (raw === 'ready' || raw === 'in_progress' || raw === 'key_supplier') return raw;
@@ -37,6 +38,7 @@ export class PartnersController {
     @Query('status_ids') statusIds?: string,
     @Query('competence_ids') competenceIds?: string,
     @Query('readiness') readiness?: string,
+    @Query('deleted_scope') deletedScopeRaw?: string,
   ) {
     const pagination = parsePagination(limit, offset, 20, 100);
 
@@ -46,6 +48,7 @@ export class PartnersController {
       statusIds: statusIds ? statusIds.split(',').filter(Boolean) : undefined,
       competenceIds: competenceIds ? competenceIds.split(',').filter(Boolean) : undefined,
       readiness: parseListTab(readiness),
+      deletedScope: parseDeletedScope(deletedScopeRaw),
     };
 
     return this.service.findAll(preview === '1', pagination, filters);
@@ -74,6 +77,13 @@ export class PartnersController {
     const userId = req?.user?.user_id;
     const row = await this.service.create(body ?? {}, userId);
     return row ? [row] : [];
+  }
+
+  @Put(':id/restore')
+  async restore(@Param('id') id: string) {
+    const row = await this.service.restore(id);
+    if (!row) throw new NotFoundException(`Партнёр ${id} не найден`);
+    return [row];
   }
 
   @Put(':id')

@@ -28,11 +28,20 @@ export const useContractStageById = (contractId: string, stageId: string): UseQu
 export const useCreateContractStage = (): UseMutationResult<
   ContractStage,
   Error,
-  { contractId: string; data: ContractStage }
+  {
+    contractId: string;
+    data: ContractStage;
+  }
 > => {
   const queryClient = useQueryClient();
-
-  return useMutation<ContractStage, Error, { contractId: string; data: ContractStage }>({
+  return useMutation<
+    ContractStage,
+    Error,
+    {
+      contractId: string;
+      data: ContractStage;
+    }
+  >({
     mutationFn: ({ contractId, data }) => contractStageApi.addContractStage(contractId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -47,11 +56,22 @@ export const useCreateContractStage = (): UseMutationResult<
 export const useUpdateContractStage = (): UseMutationResult<
   ContractStage,
   Error,
-  { contractId: string; stageId: string; data: Partial<ContractStage> }
+  {
+    contractId: string;
+    stageId: string;
+    data: Partial<ContractStage>;
+  }
 > => {
   const queryClient = useQueryClient();
-
-  return useMutation<ContractStage, Error, { contractId: string; stageId: string; data: Partial<ContractStage> }>({
+  return useMutation<
+    ContractStage,
+    Error,
+    {
+      contractId: string;
+      stageId: string;
+      data: Partial<ContractStage>;
+    }
+  >({
     mutationFn: ({ contractId, stageId, data }) => contractStageApi.editContractStage(contractId, stageId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -63,10 +83,23 @@ export const useUpdateContractStage = (): UseMutationResult<
   });
 };
 
-export const useDeleteContractStage = (): UseMutationResult<void, Error, { contractId: string; stageId: string }> => {
+export const useDeleteContractStage = (): UseMutationResult<
+  void,
+  Error,
+  {
+    contractId: string;
+    stageId: string;
+  }
+> => {
   const queryClient = useQueryClient();
-
-  return useMutation<void, Error, { contractId: string; stageId: string }>({
+  return useMutation<
+    void,
+    Error,
+    {
+      contractId: string;
+      stageId: string;
+    }
+  >({
     mutationFn: ({ contractId, stageId }) => contractStageApi.deleteContractStage(contractId, stageId),
     onSuccess: () => {
       queryClient.invalidateQueries({

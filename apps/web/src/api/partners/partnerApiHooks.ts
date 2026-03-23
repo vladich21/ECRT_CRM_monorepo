@@ -3,23 +3,17 @@ import { Partner } from '../../types/partner';
 import { partnerApi, PartnerListParams, PartnersListResponse } from './partnerApi';
 import { isValidUuid } from '../../helpers/isValidUuid';
 
-export interface PartnersListResult {
-  data: Partner[];
-  total: number;
-  tab_counts: { all: number; ready: number; in_progress: number };
-}
-
 export function usePartners(
   filters?: PartnerListParams,
   page?: number,
   pageSize?: number,
-): UseQueryResult<PartnersListResult, Error> {
+): UseQueryResult<PartnersListResponse, Error> {
   const limit = pageSize ?? 20;
   const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
-  return useQuery<PartnersListResult, Error>({
+  return useQuery<PartnersListResponse, Error>({
     queryKey: ['partners', 'list', filters ?? null, page, pageSize],
     queryFn: () => partnerApi.getPartners(filters, limit, offset),
-    placeholderData: (previousData) => previousData,
+    placeholderData: previousData => previousData,
   });
 }
 
@@ -43,27 +37,38 @@ export const useCreatePartner = (): UseMutationResult<Partner, Error, Partner> =
     mutationFn: (data: Partner) => partnerApi.addPartner(data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
+        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
       });
     },
   });
 };
 
-export const useUpdatePartner = (): UseMutationResult<Partner, Error, { id: string; data: Partial<Partner> }> => {
+export const useUpdatePartner = (): UseMutationResult<
+  Partner,
+  Error,
+  {
+    id: string;
+    data: Partial<Partner>;
+  }
+> => {
   const queryClient = useQueryClient();
-  return useMutation<Partner, Error, { id: string; data: Partial<Partner> }>({
+  return useMutation<
+    Partner,
+    Error,
+    {
+      id: string;
+      data: Partial<Partner>;
+    }
+  >({
     mutationFn: ({ id, data }) => partnerApi.editPartner(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
+        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
       });
     },
   });
 };
 
-/**
- * См. `useDeleteContract`: отложенная инвалидация, чтобы не мигал экран «не найден» перед редиректом.
- */
 export const useDeletePartner = (): UseMutationResult<Partner, Error, string, unknown> => {
   const queryClient = useQueryClient();
   return useMutation<Partner, Error, string>({
@@ -71,9 +76,22 @@ export const useDeletePartner = (): UseMutationResult<Partner, Error, string, un
     onSuccess: () => {
       queueMicrotask(() => {
         queryClient.invalidateQueries({
-          predicate: (query) => query.queryKey.some((key) => typeof key === 'string' && key === 'partners'),
+          predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
         });
       });
+    },
+  });
+};
+
+export const useRestorePartner = (): UseMutationResult<Partner, Error, string> => {
+  const queryClient = useQueryClient();
+  return useMutation<Partner, Error, string>({
+    mutationFn: (partnerId: string) => partnerApi.restorePartner(partnerId),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({
+        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
+      });
+      queryClient.invalidateQueries({ queryKey: ['partners', id] });
     },
   });
 };

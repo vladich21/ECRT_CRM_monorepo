@@ -10,48 +10,48 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './styles.module.scss';
-
 const { Text } = Typography;
-
 function HomePage() {
   const navigate = useNavigate();
-
   const statistics = {
     partners: { value: 156, growth: 12 },
     contracts: { value: 89, growth: -5 },
     patents: { value: 34, growth: 8 },
     projects: { value: 23, growth: 15 },
   };
-
   const recentActivities = [
     { id: 1, title: 'Новый договор с ООО "Поставщик"', date: '2026-01-20', label: 'Договор' },
     { id: 2, title: 'Зарегистрирован патент №123456', date: '2026-01-19', label: 'РИД' },
     { id: 3, title: 'Завершен этап проекта "Модернизация"', date: '2026-01-18', label: 'Проект' },
     { id: 4, title: 'Добавлен новый контрагент', date: '2026-01-17', label: 'Контрагент' },
   ];
-
   const quickLinks = [
     { title: 'Создать договор', icon: <FileTextOutlined />, path: '/contracts/create' },
     { title: 'Добавить контрагента', icon: <TeamOutlined />, path: '/partners/create' },
     { title: 'Новый РИД', icon: <CopyrightOutlined />, path: '/patents/create' },
     { title: 'Создать проект', icon: <ProjectOutlined />, path: '/projects/create' },
   ];
-
   const upcomingTasks = [
     { id: 1, title: 'Продление договора №45', deadline: '2026-01-25', priority: 'high', priorityLabel: 'Высокий' },
-    { id: 2, title: 'Проверка документов по патенту', deadline: '2026-01-28', priority: 'medium', priorityLabel: 'Средний' },
+    {
+      id: 2,
+      title: 'Проверка документов по патенту',
+      deadline: '2026-01-28',
+      priority: 'medium',
+      priorityLabel: 'Средний',
+    },
     { id: 3, title: 'Встреча с новым поставщиком', deadline: '2026-02-01', priority: 'low', priorityLabel: 'Низкий' },
   ];
-
   const GrowthIndicator = ({ value }: { value: number }) => (
     <span className={styles.growth}>
-      {value > 0
-        ? <ArrowUpOutlined style={{ color: '#52c41a' }} />
-        : <ArrowDownOutlined style={{ color: '#ff4d4f' }} />}
+      {value > 0 ? (
+        <ArrowUpOutlined style={{ color: '#52c41a' }} />
+      ) : (
+        <ArrowDownOutlined style={{ color: '#ff4d4f' }} />
+      )}
       {Math.abs(value)}%
     </span>
   );
-
   return (
     <div className={styles.homePage}>
       <div className={styles.heroBanner}>
@@ -63,33 +63,55 @@ function HomePage() {
         <Row gutter={[16, 16]} className={styles.statistics}>
           <Col xs={24} sm={12} lg={6}>
             <div className={styles.statCard}>
-              <Statistic title="Контрагенты" value={statistics.partners.value} prefix={<TeamOutlined />} suffix={<GrowthIndicator value={statistics.partners.growth} />} />
+              <Statistic
+                title='Контрагенты'
+                value={statistics.partners.value}
+                prefix={<TeamOutlined />}
+                suffix={<GrowthIndicator value={statistics.partners.growth} />}
+              />
             </div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <div className={styles.statCard}>
-              <Statistic title="Договоры" value={statistics.contracts.value} prefix={<FileTextOutlined />} suffix={<GrowthIndicator value={statistics.contracts.growth} />} />
+              <Statistic
+                title='Договоры'
+                value={statistics.contracts.value}
+                prefix={<FileTextOutlined />}
+                suffix={<GrowthIndicator value={statistics.contracts.growth} />}
+              />
             </div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <div className={styles.statCard}>
-              <Statistic title="РИД" value={statistics.patents.value} prefix={<CopyrightOutlined />} suffix={<GrowthIndicator value={statistics.patents.growth} />} />
+              <Statistic
+                title='РИД'
+                value={statistics.patents.value}
+                prefix={<CopyrightOutlined />}
+                suffix={<GrowthIndicator value={statistics.patents.growth} />}
+              />
             </div>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <div className={styles.statCard}>
-              <Statistic title="Проекты" value={statistics.projects.value} prefix={<ProjectOutlined />} suffix={<GrowthIndicator value={statistics.projects.growth} />} />
+              <Statistic
+                title='Проекты'
+                value={statistics.projects.value}
+                prefix={<ProjectOutlined />}
+                suffix={<GrowthIndicator value={statistics.projects.growth} />}
+              />
             </div>
           </Col>
         </Row>
 
-        <Card title="Быстрые действия" className={`${styles.section} ${styles.sectionCard}`}>
+        <Card title='Быстрые действия' className={`${styles.section} ${styles.sectionCard}`}>
           <Row gutter={[16, 16]}>
             {quickLinks.map((link, index) => (
               <Col xs={24} sm={12} md={6} key={index}>
                 <div className={styles.quickLinkCard} onClick={() => navigate(link.path)}>
                   <div className={styles.quickLinkIcon}>{link.icon}</div>
-                  <Text strong style={{ fontSize: 14 }}>{link.title}</Text>
+                  <Text strong style={{ fontSize: 14 }}>
+                    {link.title}
+                  </Text>
                 </div>
               </Col>
             ))}
@@ -98,10 +120,14 @@ function HomePage() {
 
         <Row gutter={[16, 16]} className={styles.section}>
           <Col xs={24} lg={12}>
-            <Card title="Последняя активность" className={styles.sectionCard} extra={<a onClick={() => navigate('/contracts')}>Посмотреть все</a>}>
+            <Card
+              title='Последняя активность'
+              className={styles.sectionCard}
+              extra={<a onClick={() => navigate('/contracts')}>Посмотреть все</a>}
+            >
               <List
                 dataSource={recentActivities}
-                renderItem={(item) => (
+                renderItem={item => (
                   <List.Item>
                     <List.Item.Meta
                       title={
@@ -113,7 +139,9 @@ function HomePage() {
                       description={
                         <Space size={4}>
                           <CalendarOutlined style={{ fontSize: 12 }} />
-                          <Text type="secondary" style={{ fontSize: 13 }}>{item.date}</Text>
+                          <Text type='secondary' style={{ fontSize: 13 }}>
+                            {item.date}
+                          </Text>
                         </Space>
                       }
                     />
@@ -124,10 +152,14 @@ function HomePage() {
           </Col>
 
           <Col xs={24} lg={12}>
-            <Card title="Предстоящие задачи" className={styles.sectionCard} extra={<a onClick={() => navigate('/contracts')}>Посмотреть все</a>}>
+            <Card
+              title='Предстоящие задачи'
+              className={styles.sectionCard}
+              extra={<a onClick={() => navigate('/contracts')}>Посмотреть все</a>}
+            >
               <List
                 dataSource={upcomingTasks}
-                renderItem={(item) => (
+                renderItem={item => (
                   <List.Item>
                     <List.Item.Meta
                       title={
@@ -139,8 +171,12 @@ function HomePage() {
                       description={
                         <Space size={4}>
                           <CalendarOutlined style={{ fontSize: 12 }} />
-                          <Text type="secondary" style={{ fontSize: 13 }}>Срок: {item.deadline}</Text>
-                          <Text type="secondary" style={{ fontSize: 13 }}>· {item.priorityLabel}</Text>
+                          <Text type='secondary' style={{ fontSize: 13 }}>
+                            Срок: {item.deadline}
+                          </Text>
+                          <Text type='secondary' style={{ fontSize: 13 }}>
+                            · {item.priorityLabel}
+                          </Text>
                         </Space>
                       }
                     />
@@ -154,5 +190,4 @@ function HomePage() {
     </div>
   );
 }
-
 export default HomePage;

@@ -1,28 +1,22 @@
 import { Reference } from './referenceTypes';
-
 export interface Partner {
   id: string;
   short_name: string;
   name: string;
   comment: string;
-
   status_id: string;
   category_id: string;
   partner_economic_category_id: string;
   type_ids: Array<string>;
   competence_ids: Array<string>;
-
   legal_address: string;
   actual_address: string;
-
   phone: string;
   email: string;
   website: string;
-
   kpp: string;
   inn: string;
   ogrn: string;
-
   is_key_supplier: boolean;
   is_targeted: boolean;
   legal_check_passed: boolean;
@@ -31,11 +25,10 @@ export interface Partner {
   is_approved: boolean;
   rating: number | null;
   next_audit_date: string | null;
-
   created_at: string;
   updated_at: string;
+  is_deleted?: boolean;
 }
-
 export interface PartnerCategory {
   id: string;
   name: string;
@@ -43,7 +36,6 @@ export interface PartnerCategory {
   created_at: string;
   updated_at: string;
 }
-
 export interface PartnerContact {
   id: string;
   partner_id: string;
@@ -55,21 +47,18 @@ export interface PartnerContact {
   created_at: string;
   updated_at: string;
 }
-
 export interface PartnerType {
   id: string;
   name: string;
   created_at: string;
   updated_at: string;
 }
-
 export interface PartnerStatus {
   id: string;
   name: string;
   created_at: string;
   updated_at: string;
 }
-
 export interface PartnerCompetence {
   id: string;
   name: string;
@@ -79,7 +68,6 @@ export interface PartnerCompetence {
   created_at: string;
   updated_at: string;
 }
-
 export interface PartnerEconomicCategory {
   id: string;
   name: string;

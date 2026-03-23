@@ -4,7 +4,6 @@ import { Patent } from '../../types/patent';
 
 export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
 
-/** Поля фильтров, уходящие в query API (без привязки к UI-модалке). */
 export type PatentsListServerFilters = {
   search: string;
   departmentId?: string | null;
@@ -32,7 +31,6 @@ function buildListQuery(
   };
 }
 
-/** Список РИД с серверными фильтрами, пагинацией и счётчиками вкладок. */
 export function usePatentsList(
   deletedScope: PatentsDeletedScope,
   page: number,
@@ -49,7 +47,7 @@ export function usePatentsList(
       }
       return res;
     },
-    placeholderData: (previousData) => previousData,
+    placeholderData: previousData => previousData,
   });
 }
 
@@ -64,23 +62,34 @@ export const usePatentById = (patentId: string): UseQueryResult<Patent, Error> =
 export const useCreatePatent = (): UseMutationResult<
   Patent,
   Error,
-  Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted' | 'deleted_at'>
+  Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>
 > => {
   const queryClient = useQueryClient();
-
-  return useMutation<Patent, Error, Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted' | 'deleted_at'>>({
-    mutationFn: (data: Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted' | 'deleted_at'>) =>
-      patentApi.createPatent(data),
+  return useMutation<Patent, Error, Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>>({
+    mutationFn: (data: Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>) => patentApi.createPatent(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patents'] });
     },
   });
 };
 
-export const useUpdatePatent = (): UseMutationResult<Patent, Error, { id: string; data: Partial<Patent> }> => {
+export const useUpdatePatent = (): UseMutationResult<
+  Patent,
+  Error,
+  {
+    id: string;
+    data: Partial<Patent>;
+  }
+> => {
   const queryClient = useQueryClient();
-
-  return useMutation<Patent, Error, { id: string; data: Partial<Patent> }>({
+  return useMutation<
+    Patent,
+    Error,
+    {
+      id: string;
+      data: Partial<Patent>;
+    }
+  >({
     mutationFn: ({ id, data }: { id: string; data: Partial<Patent> }) => patentApi.updatePatent(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['patents'] });
@@ -91,7 +100,6 @@ export const useUpdatePatent = (): UseMutationResult<Patent, Error, { id: string
 
 export const useRestorePatent = (): UseMutationResult<Patent, Error, string> => {
   const queryClient = useQueryClient();
-
   return useMutation<Patent, Error, string>({
     mutationFn: (patentId: string) => patentApi.restorePatent(patentId),
     onSuccess: () => {
@@ -102,7 +110,6 @@ export const useRestorePatent = (): UseMutationResult<Patent, Error, string> => 
 
 export const useDeletePatent = (): UseMutationResult<void, Error, string> => {
   const queryClient = useQueryClient();
-
   return useMutation<void, Error, string>({
     mutationFn: (patentId: string) => patentApi.deletePatent(patentId),
     onSuccess: () => {

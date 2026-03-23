@@ -1,6 +1,5 @@
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PartnerEconomicCategory } from '../../../types/partner';
-
 import { useEffect, useState } from 'react';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
@@ -16,20 +15,16 @@ import {
 } from '../../../api/partners/partnerEconomicCategoryApiHooks';
 import { getNameById } from '../../../helpers/getNameById';
 import { getEntityById } from '../../../helpers/getEntityById';
-
 type ActionType = 'edit' | 'delete' | 'add' | '';
-
 const PartnerEconomicCategoriesListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = usePartnerEconomicCategories();
   const [currentCategoryId, setCurrentCategoryId] = useState<string>('');
   const [action, setAction] = useState<ActionType>('');
   const modalProps = useModalStore();
-
   const deleteCategoryMutation = useDeletePartnerEconomicCategory();
   const editCategoryMutation = useUpdatePartnerEconomicCategory();
   const addCategoryMutation = useCreatePartnerEconomicCategory();
-
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteCategoryMutation,
     successMessage: 'Экономическая категория успешно удалена',
@@ -37,7 +32,6 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
     getMutationProps: () => currentCategoryId,
     showNotification,
   });
-
   const { handleOpenModal: openMutateModal } = useMutateByModal<PartnerEconomicCategory, Error>({
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editCategoryMutation : addCategoryMutation,
@@ -54,7 +48,6 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
     getMutationProps: action === 'edit' ? () => currentCategoryId : () => undefined,
     showNotification,
   });
-
   useEffect(() => {
     if (action === 'delete') {
       openDeleteModal();
@@ -62,32 +55,32 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
       openMutateModal();
     }
   }, [currentCategoryId, action]);
-
   useEffect(() => {
     if (!modalProps.open) {
       setAction('');
     }
   }, [modalProps.open]);
-
   const handleOpenAddModal = () => {
     setAction('add');
     setCurrentCategoryId('');
   };
-
   const onDelete = ({ id }: { id: string }) => {
     setAction('delete');
     setCurrentCategoryId(id);
   };
-
   const onEdit = ({ id }: { id: string }) => {
     setAction('edit');
     setCurrentCategoryId(id);
   };
-
   return (
-    <ReferenceBookListPage title="Экономические категории контрагентов" addButtonLabel="Добавить экономическую категорию" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
+    <ReferenceBookListPage
+      title='Экономические категории контрагентов'
+      addButtonLabel='Добавить экономическую категорию'
+      onAdd={handleOpenAddModal}
+      contextHolder={contextHolder}
+    >
       <ReferenceBookCardList>
-        {data.map((category) => (
+        {data.map(category => (
           <ReferenceBookItemCard
             key={category.id}
             title={category.name}
@@ -101,5 +94,4 @@ const PartnerEconomicCategoriesListPage: React.FC = () => {
     </ReferenceBookListPage>
   );
 };
-
 export default PartnerEconomicCategoriesListPage;

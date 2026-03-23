@@ -20,9 +20,11 @@ interface UseFilesReturn {
 }
 
 export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn => {
+ 
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+ 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+ 
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const bytesBase = 1024;
@@ -33,9 +35,10 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+    
       const files = e.target.files;
+     
       if (!files || files.length === 0) return;
-
       const newFiles: AttachedFile[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -46,7 +49,6 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
           newFiles.push({ id: `${Date.now()}-${i}`, file });
         }
       }
-
       if (newFiles.length > 0) {
         setAttachedFiles(prev => [...prev, ...newFiles]);
         newFiles.forEach(attachedFile => onAttachFile?.(attachedFile.file));
@@ -70,7 +72,7 @@ export const useFiles = (onAttachFile?: (file: File) => void): UseFilesReturn =>
   const getFiles = useCallback((): File[] => {
     return attachedFiles.map(attachedFile => attachedFile.file);
   }, [attachedFiles]);
-
+ 
   return {
     attachedFiles,
     fileInputRef,

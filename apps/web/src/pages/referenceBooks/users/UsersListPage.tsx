@@ -10,54 +10,38 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import UserCard from './registry/UserCard';
-import {
-  UserFiltersModal,
-  EMPTY_USER_FILTERS,
-  type UserFilters,
-} from './UserFiltersModal';
+import { UserFiltersModal, EMPTY_USER_FILTERS, type UserFilters } from './UserFiltersModal';
 import { useFilteredUsers } from './hooks/useFilteredUsers';
 import styles from './UsersListPage.module.scss';
-
 const DEFAULT_PAGE_SIZE = 20;
-
 type FilterTab = 'all' | 'active' | 'inactive';
-
-const FILTER_TABS: { key: FilterTab; label: string }[] = [
+const FILTER_TABS: {
+  key: FilterTab;
+  label: string;
+}[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активные' },
   { key: 'inactive', label: 'Неактивные' },
 ];
-
 function filterByTab(users: User[], tab: FilterTab): User[] {
   if (tab === 'all') return users;
-  return users.filter((u) => (tab === 'active' ? u.is_active : !u.is_active));
+  return users.filter(u => (tab === 'active' ? u.is_active : !u.is_active));
 }
-
 export default function UsersListPage() {
   const navigate = useNavigate();
   const { contextHolder } = useNotification();
-
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [appliedFilters, setAppliedFilters] = useState<UserFilters>(EMPTY_USER_FILTERS);
   const [draftFilters, setDraftFilters] = useState<UserFilters>(EMPTY_USER_FILTERS);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-
   const { data, isLoading, isError } = useUsers(2, true);
   const { data: references } = useReferenceData(['departments', 'positions', 'roles']);
-
   const allUsers = data?.data ?? [];
-
   const resetToFirstPage = useCallback(() => setPage(1), []);
-
-  const usersByTab = useMemo(
-    () => filterByTab(allUsers, activeTab),
-    [allUsers, activeTab],
-  );
-
+  const usersByTab = useMemo(() => filterByTab(allUsers, activeTab), [allUsers, activeTab]);
   const mappedFilters = useMemo(
     () => ({
       search: searchQuery || undefined,
@@ -68,80 +52,79 @@ export default function UsersListPage() {
     }),
     [searchQuery, appliedFilters],
   );
-
   const filteredUsers = useFilteredUsers(usersByTab, mappedFilters);
-
   const activeFiltersCount =
     (appliedFilters.departmentId ? 1 : 0) +
     (appliedFilters.positionId ? 1 : 0) +
     (appliedFilters.roleId ? 1 : 0) +
     (appliedFilters.createdAtRange ? 1 : 0);
-
   const tabCounts = useMemo(
     () => ({
       all: allUsers.length,
-      active: allUsers.filter((u) => u.is_active).length,
-      inactive: allUsers.filter((u) => !u.is_active).length,
+      active: allUsers.filter(u => u.is_active).length,
+      inactive: allUsers.filter(u => !u.is_active).length,
     }),
     [allUsers],
   );
-
   const filteredTotal = filteredUsers.length;
   const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
-
   const paginatedUsers = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredUsers.slice(start, start + pageSize);
   }, [filteredUsers, page, pageSize]);
-
   const selectOptions = useMemo(
     () => ({
-      departments: (references?.departments ?? []).map((d) => ({
+      departments: (references?.departments ?? []).map(d => ({
         label: d.name,
         value: d.id,
       })),
-      positions: (references?.positions ?? []).map((p) => ({
+      positions: (references?.positions ?? []).map(p => ({
         label: p.name,
         value: p.id,
       })),
-      roles: (references?.roles ?? []).map((r) => ({
-        label: (r as { role_name?: string; name?: string }).role_name ?? (r as { name?: string }).name ?? r.id,
+      roles: (references?.roles ?? []).map(r => ({
+        label:
+          (
+            r as {
+              role_name?: string;
+              name?: string;
+            }
+          ).role_name ??
+          (
+            r as {
+              name?: string;
+            }
+          ).name ??
+          r.id,
         value: r.id,
       })),
     }),
     [references],
   );
-
   useEffect(() => {
     resetToFirstPage();
   }, [searchQuery, activeTab, appliedFilters, resetToFirstPage]);
-
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
     }
   }, [page, totalPages]);
-
   const openFiltersModal = () => {
     setDraftFilters(appliedFilters);
     setIsFiltersOpen(true);
   };
-
   const applyFilters = () => {
     setAppliedFilters(draftFilters);
     setIsFiltersOpen(false);
     resetToFirstPage();
   };
-
   const resetFilters = () => {
     setDraftFilters(EMPTY_USER_FILTERS);
     setAppliedFilters(EMPTY_USER_FILTERS);
     setIsFiltersOpen(false);
     resetToFirstPage();
   };
-
   const handleCardClick = (user: User) => navigate(`/users/${user.id}`);
-
   const handlePageChange = (newPage: number, newPageSize?: number) => {
     if (newPageSize != null && newPageSize !== pageSize) {
       setPageSize(newPageSize);
@@ -150,21 +133,18 @@ export default function UsersListPage() {
     }
     setPage(newPage);
   };
-
   if (isError) {
-    return <NotFound errorMessage="Не удалось выполнить запрос" />;
+    return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-
   const showPagination = filteredTotal > 0;
-
   return (
     <div className={styles.wrap}>
       {contextHolder}
       <BackButton />
 
       <PageHeader
-        title="Пользователи"
-        subtitle="Управление пользователями системы"
+        title='Пользователи'
+        subtitle='Управление пользователями системы'
         transparentBlock
         actions={
           <>
@@ -174,15 +154,9 @@ export default function UsersListPage() {
               className={activeFiltersCount > 0 ? styles.filtersBtnActive : undefined}
             >
               Фильтры
-              {activeFiltersCount > 0 && (
-                <span className={styles.filtersBadge}>{activeFiltersCount}</span>
-              )}
+              {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/users/create')}
-            >
+            <Button type='primary' icon={<PlusOutlined />} onClick={() => navigate('/users/create')}>
               Добавить пользователя
             </Button>
           </>
@@ -195,14 +169,11 @@ export default function UsersListPage() {
                   {FILTER_TABS.map(({ key, label }) => (
                     <button
                       key={key}
-                      type="button"
-                      className={`${styles.filterTab}${
-                        activeTab === key ? ` ${styles.filterTabActive}` : ''
-                      }`}
+                      type='button'
+                      className={`${styles.filterTab}${activeTab === key ? ` ${styles.filterTabActive}` : ''}`}
                       onClick={() => setActiveTab(key)}
                     >
-                      {label}{' '}
-                      <span className={styles.filterTabCount}>{tabCounts[key]}</span>
+                      {label} <span className={styles.filterTabCount}>{tabCounts[key]}</span>
                     </button>
                   ))}
                 </div>
@@ -210,14 +181,13 @@ export default function UsersListPage() {
                   <Input
                     className={styles.searchInTabsRow}
                     prefix={<SearchOutlined className={styles.searchIcon} />}
-                    placeholder="Поиск по ФИО, email"
+                    placeholder='Поиск по ФИО, email'
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     allowClear
                   />
                   <span className={styles.resultCount}>
-                    Показано: <strong>{paginatedUsers.length}</strong> из{' '}
-                    <strong>{filteredTotal}</strong>
+                    Показано: <strong>{paginatedUsers.length}</strong> из <strong>{filteredTotal}</strong>
                   </span>
                 </div>
               </div>
@@ -229,9 +199,7 @@ export default function UsersListPage() {
       <UserFiltersModal
         open={isFiltersOpen}
         draftFilters={draftFilters}
-        onUpdateDraftFilter={(patch) =>
-          setDraftFilters((prev) => ({ ...prev, ...patch }))
-        }
+        onUpdateDraftFilter={patch => setDraftFilters(prev => ({ ...prev, ...patch }))}
         onClose={() => setIsFiltersOpen(false)}
         onApply={applyFilters}
         onReset={resetFilters}
@@ -240,13 +208,13 @@ export default function UsersListPage() {
 
       {isLoading ? (
         <div className={styles.loading}>
-          <Spin size="large" />
+          <Spin size='large' />
         </div>
       ) : filteredTotal === 0 ? (
         <div className={styles.empty}>Пользователи не найдены</div>
       ) : (
         <div className={styles.cardList}>
-          {paginatedUsers.map((user) => (
+          {paginatedUsers.map(user => (
             <UserCard key={user.id} user={user} onClick={handleCardClick} />
           ))}
         </div>

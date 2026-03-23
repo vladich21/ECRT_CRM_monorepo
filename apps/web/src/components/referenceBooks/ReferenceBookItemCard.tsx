@@ -1,13 +1,11 @@
 import { Button, Tooltip } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import styles from './ReferenceBookItemCard.module.scss';
-
 type Props = {
   title: string;
   metaText?: string;
   subtitle?: string;
   description?: string;
-  // Для компетенций: превью тега с цветами
   previewBgColor?: string;
   previewTextColor?: string;
   previewBorderColor?: string;
@@ -16,7 +14,6 @@ type Props = {
   onEdit?: () => void;
   onDelete?: () => void;
 };
-
 export function ReferenceBookItemCard({
   title,
   metaText,
@@ -39,7 +36,7 @@ export function ReferenceBookItemCard({
         onClick={onClick}
         onKeyDown={
           onClick
-            ? (e) => {
+            ? e => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   onClick();
@@ -80,7 +77,7 @@ export function ReferenceBookItemCard({
             <Button
               className={styles.actionBtn}
               icon={<EditOutlined />}
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 onEdit();
               }}
@@ -93,7 +90,7 @@ export function ReferenceBookItemCard({
               danger
               className={styles.actionBtn}
               icon={<DeleteOutlined />}
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 onDelete();
               }}
@@ -104,4 +101,3 @@ export function ReferenceBookItemCard({
     </div>
   );
 }
-

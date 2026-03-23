@@ -4,7 +4,6 @@ import { PlusOutlined } from '@ant-design/icons';
 import { BackButton } from '../backButton/BackButton';
 import { PageHeader } from './PageHeader';
 import styles from './ReferenceBookListPage.module.scss';
-
 interface ReferenceBookListPageProps {
   title: string;
   subtitle?: string;
@@ -13,10 +12,8 @@ interface ReferenceBookListPageProps {
   children: ReactNode;
   contextHolder?: ReactNode;
   extraActions?: ReactNode;
-  /** Вкладки, поиск и т.п. под заголовком (как у PageHeader.filters) */
   filters?: ReactNode;
 }
-
 export default function ReferenceBookListPage({
   title,
   subtitle,
@@ -38,15 +35,13 @@ export default function ReferenceBookListPage({
         actions={
           <div className={styles.actions}>
             {extraActions}
-            <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
+            <Button type='primary' icon={<PlusOutlined />} onClick={onAdd}>
               {addButtonLabel}
             </Button>
           </div>
         }
       />
-      <div className={styles.tableContainer}>
-        {children}
-      </div>
+      <div className={styles.tableContainer}>{children}</div>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { projects } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
+import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
+import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 
 const REQUIRED_CREATE_FIELDS = ['code', 'name', 'short_name', 'start_date', 'status'] as const;
 
@@ -20,19 +22,15 @@ export type ProjectEndDatePresence = 'set' | 'empty';
 export interface ProjectQueryFilters {
   search?: string;
   listTab?: ProjectListTab;
+  deletedScope?: DeletedScope;
   managerId?: string;
-  /** Кто создал запись */
   createdBy?: string;
-  /** Проект пересекается с интервалом [dateFrom, dateTo] по срокам (как у договоров) */
   dateFrom?: string;
   dateTo?: string;
-  /** Дата начала проекта */
   startDateFrom?: string;
   startDateTo?: string;
-  /** Дата окончания (только записи, где end_date задан) */
   endDateFrom?: string;
   endDateTo?: string;
-  /** set — только с датой окончания; empty — без даты (бессрочные) */
   endDatePresence?: ProjectEndDatePresence;
 }
 
@@ -47,7 +45,7 @@ export interface ProjectTabCounts {
 
 export type ProjectsFindAllResult =
   | { id: string; name: string; code: string }[]
-  | { data: unknown[]; total: number; tab_counts: ProjectTabCounts };
+  | { data: unknown[]; total: number; tab_counts: ProjectTabCounts; deletion_tab_counts: DeletionTabCounts };
 
 @Injectable()
 export class ProjectsService {
@@ -68,7 +66,6 @@ export class ProjectsService {
     return Number(result[0]?.value ?? 0);
   }
 
-  /** Базовые условия: поиск, руководитель (без вкладки по статусу) */
   private buildBaseFilterParts(filters?: ProjectQueryFilters): SQL[] | null {
     const parts: SQL[] = [];
     if (!filters) return parts;
@@ -192,11 +189,25 @@ export class ProjectsService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Удаление проекта id: ${id}`);
+    this.logger.debug(`Мягкое удаление проекта id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
-    await this.db.db.delete(projects).where(eq(projects.id, id));
-    return row;
+    await this.db.db
+      .update(projects)
+      .set({ isDeleted: true, updatedAt: new Date() })
+      .where(eq(projects.id, id));
+    return this.findOne(id);
+  }
+
+  async restore(id: string) {
+    this.logger.debug(`Восстановление проекта id: ${id}`);
+    const row = await this.findOne(id);
+    if (!row) return null;
+    await this.db.db
+      .update(projects)
+      .set({ isDeleted: false, updatedAt: new Date() })
+      .where(eq(projects.id, id));
+    return this.findOne(id);
   }
 
   private mapToDb(data: Record<string, unknown>) {
@@ -235,6 +246,7 @@ export class ProjectsService {
       const rows = await this.db.db
         .select({ id: projects.id, name: projects.name, code: projects.code })
         .from(projects)
+        .where(eq(projects.isDeleted, false))
         .orderBy(asc(projects.name));
       return rows.map((row) => ({
         id: String(row.id),
@@ -254,9 +266,15 @@ export class ProjectsService {
         paused: 0,
         cancelled: 0,
       };
-      return { data: [], total: 0, tab_counts: zeros };
+      return {
+        data: [],
+        total: 0,
+        tab_counts: zeros,
+        deletion_tab_counts: { active: 0, deleted: 0, all: 0 },
+      };
     }
 
+    const deletedScope: DeletedScope = filters?.deletedScope ?? 'active';
     const baseParts = basePartsResult;
     const tabs: ProjectListTab[] = [
       'all',
@@ -269,19 +287,38 @@ export class ProjectsService {
 
     const countForTab = async (tab: ProjectListTab): Promise<number> => {
       const tabSql = this.tabStatusCondition(tab);
-      const parts = tabSql ? [...baseParts, tabSql] : [...baseParts];
+      const parts = [
+        ...(tabSql ? [...baseParts, tabSql] : [...baseParts]),
+        ...sqlPartsForDeletedScope(projects.isDeleted, 'all'),
+      ];
       const where = this.mergeWhereParts(parts);
       return this.countWhere(where);
     };
 
     const listTab: ProjectListTab = filters?.listTab ?? 'all';
     const listTabSql = this.tabStatusCondition(listTab);
-    const listParts = listTabSql ? [...baseParts, listTabSql] : [...baseParts];
+    const listParts = [
+      ...(listTabSql ? [...baseParts, listTabSql] : [...baseParts]),
+      ...sqlPartsForDeletedScope(projects.isDeleted, deletedScope),
+    ];
     const listWhere = this.mergeWhereParts(listParts);
 
+    const partsForCurrentListTabOnly = listTabSql ? [...baseParts, listTabSql] : [...baseParts];
+    const countDeletionSlice = (scope: DeletedScope) =>
+      this.countWhere(
+        this.mergeWhereParts([
+          ...partsForCurrentListTabOnly,
+          ...sqlPartsForDeletedScope(projects.isDeleted, scope),
+        ]),
+      );
+
     const countPromises = tabs.map((t) => countForTab(t));
-    const [counts, rows] = await Promise.all([
+    const [counts, delActive, delDeleted, delAll, listTotal, rows] = await Promise.all([
       Promise.all(countPromises),
+      countDeletionSlice('active'),
+      countDeletionSlice('deleted'),
+      countDeletionSlice('all'),
+      this.countWhere(listWhere),
       this.db.db
         .select()
         .from(projects)
@@ -300,23 +337,15 @@ export class ProjectsService {
       cancelled: counts[5],
     };
 
-    const total =
-      listTab === 'active'
-        ? tab_counts.active
-        : listTab === 'completed'
-          ? tab_counts.completed
-          : listTab === 'pending'
-            ? tab_counts.pending
-            : listTab === 'paused'
-              ? tab_counts.paused
-              : listTab === 'cancelled'
-                ? tab_counts.cancelled
-                : tab_counts.all;
-
     return {
       data: rows.map((row) => this.toResponse(row)),
-      total,
+      total: listTotal,
       tab_counts,
+      deletion_tab_counts: {
+        active: delActive,
+        deleted: delDeleted,
+        all: delAll,
+      },
     };
   }
 
@@ -334,6 +363,7 @@ export class ProjectsService {
       status: row.status ?? '',
       created_at: row.createdAt ? row.createdAt.toISOString() : null,
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
+      is_deleted: row.isDeleted ?? false,
     };
   }
 }

@@ -1,6 +1,9 @@
-export type PartnerListTab = 'all' | 'ready' | 'in_progress';
-
-export const PARTNER_FILTER_TABS: { key: PartnerListTab; label: string; hint?: string }[] = [
+export type PartnerListTab = 'all' | 'ready' | 'in_progress' | 'deleted';
+export const PARTNER_FILTER_TABS: {
+  key: PartnerListTab;
+  label: string;
+  hint?: string;
+}[] = [
   { key: 'all', label: 'Все' },
   {
     key: 'ready',
@@ -12,4 +15,5 @@ export const PARTNER_FILTER_TABS: { key: PartnerListTab; label: string; hint?: s
     label: 'В оформлении',
     hint: 'Не все этапы оформления завершены',
   },
+  { key: 'deleted', label: 'Удалённые', hint: 'Можно восстановить из карточки' },
 ];

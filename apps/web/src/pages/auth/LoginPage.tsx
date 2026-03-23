@@ -14,34 +14,33 @@ import {
 } from './LoginPage.types';
 import { LoginFormFields } from './LoginFormFields';
 import styles from './LoginPage.module.scss';
-
 function LoginPage() {
   const navigate = useNavigate();
-  const storeLogin = useAuthStore((s) => s.login);
+  const storeLogin = useAuthStore(s => s.login);
   const [form] = Form.useForm<FormValues>();
   const [state, setState] = useState<LoginState>(INITIAL_LOGIN_STATE);
-
-  const set = (patch: Partial<LoginState>) => setState((prev) => ({ ...prev, ...patch }));
-
+  const set = (patch: Partial<LoginState>) => setState(prev => ({ ...prev, ...patch }));
   const finish = (user: User | undefined) => {
     if (user) storeLogin(user);
     authLoadingScreenStore.showThenNavigate(() => navigate('/home'), 1000, 1500);
   };
-
   const handleBack = () => {
     const savedEmail = state.email;
     setState(INITIAL_LOGIN_STATE);
     form.resetFields();
     if (savedEmail) form.setFieldValue('email', savedEmail);
   };
-
   const handleSubmit = async (values: FormValues) => {
     set({ loading: true, error: '' });
     try {
       switch (state.step) {
         case 'login': {
           const data = await authApi.checkEmail(values.email!);
-          set({ email: values.email!, step: data.tempCodeSent ? 'temp-code' : 'password', maskedEmail: data.email ?? '' });
+          set({
+            email: values.email!,
+            step: data.tempCodeSent ? 'temp-code' : 'password',
+            maskedEmail: data.email ?? '',
+          });
           break;
         }
         case 'password': {
@@ -67,27 +66,31 @@ function LoginPage() {
         }
       }
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string } } };
+      const axiosError = err as {
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
+      };
       set({ error: axiosError.response?.data?.message ?? 'Ошибка подключения к серверу' });
     } finally {
       set({ loading: false });
     }
   };
-
   const showCodeHint = state.maskedEmail && (state.step === 'temp-code' || state.step === '2fa-code');
-
   return (
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.header}>
-          <Image src="/logo.png" alt="Логотип" preview={false} width={160} />
+          <Image src='/logo.png' alt='Логотип' preview={false} width={160} />
           <h2>{STEP_TITLES[state.step]}</h2>
           {showCodeHint && <p className={styles.emailHint}>Код отправлен на {state.maskedEmail}</p>}
         </div>
 
         {state.error && (
           <Alert
-            type="error"
+            type='error'
             message={state.error}
             showIcon
             closable
@@ -96,17 +99,17 @@ function LoginPage() {
           />
         )}
 
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form form={form} layout='vertical' onFinish={handleSubmit}>
           <LoginFormFields step={state.step} email={state.email} onBack={handleBack} />
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" size="large" loading={state.loading} block>
+            <Button type='primary' htmlType='submit' size='large' loading={state.loading} block>
               {STEP_BUTTON_LABELS[state.step]}
             </Button>
           </Form.Item>
         </Form>
 
         {state.step !== 'login' && (
-          <Button type="link" block className={styles.backBtn} onClick={handleBack}>
+          <Button type='link' block className={styles.backBtn} onClick={handleBack}>
             Назад
           </Button>
         )}
@@ -114,5 +117,4 @@ function LoginPage() {
     </div>
   );
 }
-
 export default LoginPage;

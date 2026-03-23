@@ -5,7 +5,6 @@ import { ReferenceData } from '../../../api/hooks/useReferences';
 import { getNameById } from '../../../helpers/getNameById';
 import { getTagColorByData } from '../../../helpers/getTagColorByData';
 import { getEntityById } from '../../../helpers/getEntityById';
-
 export const initialFormValues = {
   number: '',
   cipher: '',
@@ -24,7 +23,6 @@ export const initialFormValues = {
   is_active: true,
   state_id: null,
 };
-
 export const getColumnsData = (
   references: Pick<ReferenceData, 'contractStates' | 'contractCategories' | 'partners'>,
 ): ColumnType<Contract>[] => [
@@ -78,7 +76,9 @@ export const getColumnsData = (
     dataIndex: 'is_active',
     key: 'is_active',
     width: 100,
-    render: (isActive: boolean) => <Tag color={isActive ? 'green' : 'red'}>{isActive ? 'Действует' : 'Не действует'}</Tag>,
+    render: (isActive: boolean) => (
+      <Tag color={isActive ? 'green' : 'red'}>{isActive ? 'Действует' : 'Не действует'}</Tag>
+    ),
   },
   {
     title: 'Состояние',

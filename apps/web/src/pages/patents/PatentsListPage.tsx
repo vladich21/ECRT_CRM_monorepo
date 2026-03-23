@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useReferenceData } from '../../api/hooks/useReferences';
@@ -8,32 +8,29 @@ import { NotFound } from '../../components/notFound/NotFound';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
+import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
 import { usePatentListFilters } from './hooks/usePatentListFilters';
 import { PatentCard } from './PatentCard';
 import { PatentFiltersModal } from './PatentFiltersModal';
 import { PATENT_FILTER_TABS, type PatentFilterTab } from './PatentsListPage.types';
 import type { ReferenceDataForPatents } from './data';
 import type { Patent } from '../../types/patent';
+import { buildPatentsListNavSnapshot, parsePatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
 import styles from './PatentsListPage.module.scss';
-
 const SEARCH_DEBOUNCE_MS = 350;
-
 function tabToDeletedScope(tab: PatentFilterTab): PatentsDeletedScope {
   if (tab === 'deleted') return 'deleted';
   if (tab === 'active') return 'active';
   return 'all';
 }
-
 export interface CounterType {
   active?: number;
   deleted?: number;
 }
-
 export type ActionType = 'active' | 'deleted';
-
 export default function PatentsListPage() {
   const navigate = useNavigate();
-
+  const location = useLocation();
   const {
     searchQuery,
     setSearchQuery,
@@ -43,25 +40,43 @@ export default function PatentsListPage() {
     openFiltersModal,
     closeFiltersModal,
     appliedFilters,
+    setAppliedFilters,
     draftFilters,
+    setDraftFilters,
     updateDraftFilter,
     applyFilters,
     resetDraftFilters,
     activeFiltersCount,
   } = usePatentListFilters();
-
-  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
-
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(t);
+    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(debounceTimerId);
   }, [searchQuery]);
-
-  const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
+  const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
-
+  const { skipNextListResetRef } = useListReturnFromDetail({
+    location,
+    navigate,
+    getRawSnapshot: navigationState => navigationState.patentsListReturn,
+    parse: parsePatentsListNavSnapshot,
+    applyParsed: restoredListState => {
+      setSearchQuery(restoredListState.searchQuery);
+      setDebouncedSearch(restoredListState.searchQuery);
+      setActiveTab(restoredListState.activeTab);
+      setAppliedFilters(restoredListState.appliedFilters);
+      setDraftFilters(restoredListState.appliedFilters);
+      setPage(restoredListState.page);
+      setPageSize(restoredListState.pageSize);
+    },
+    applyFallback: navigationState => {
+      const tabFromNavigation = navigationState.tab;
+      if (tabFromNavigation === 'all' || tabFromNavigation === 'active' || tabFromNavigation === 'deleted') {
+        setActiveTab(tabFromNavigation);
+      }
+    },
+  });
   const deletedScope = tabToDeletedScope(activeTab);
-
   const serverFilters = useMemo(
     () => ({
       search: debouncedSearch,
@@ -72,14 +87,12 @@ export default function PatentsListPage() {
     }),
     [debouncedSearch, appliedFilters],
   );
-
   const {
     data: listData,
     isLoading,
     isError,
     isFetching,
   } = usePatentsList(deletedScope, page, pageSize, serverFilters);
-
   const {
     data: referenceBooks,
     isError: isRefsError,
@@ -93,18 +106,11 @@ export default function PatentsListPage() {
     'patentStatuses',
     'patentIntellectProps',
   ]);
-
   const refs = referenceBooks as ReferenceDataForPatents;
-
   const patents = listData?.data ?? [];
   const total = listData?.total ?? 0;
   const tabCounts = listData?.tab_counts ?? { all: 0, active: 0, deleted: 0 };
-
-  useEffect(() => {
-    resetPage();
-  }, [debouncedSearch, activeTab, appliedFilters, resetPage]);
-
-  /** Если total стал меньше (фильтр, удаление, invalidate), а номер страницы больше возможного — поджимаем. */
+  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
   useEffect(() => {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
@@ -112,67 +118,61 @@ export default function PatentsListPage() {
       handleTableChange({ current: maxPage, pageSize } as never);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-
   const selectOptions = useMemo(
     () => ({
-      departments: (refs?.departments ?? []).map((department) => ({
+      departments: (refs?.departments ?? []).map(department => ({
         label: department.name,
         value: department.id,
       })),
-      statuses: (refs?.patentStatuses ?? []).map((status) => ({
+      statuses: (refs?.patentStatuses ?? []).map(status => ({
         label: status.name,
         value: status.id,
       })),
-      users: (refs?.users ?? []).map((user) => ({
+      users: (refs?.users ?? []).map(user => ({
         label: user.name,
         value: user.id,
       })),
     }),
     [refs],
   );
-
   const handlePatentClick = (patent: Patent) =>
     navigate(`/patents/${patent.id}`, {
-      state: { from: 'patents-list', tab: activeTab },
+      state: {
+        from: 'patents-list',
+        tab: activeTab,
+        patentsListReturn: buildPatentsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
+      },
     });
-
   const handlePageChange = (newPage: number, newPageSize?: number) =>
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
     } as never);
-
   if (isRefsError || isError) {
-    return <NotFound errorMessage="Не удалось выполнить запрос" />;
+    return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-
   const isInitialLoad = isRefsLoading || (isLoading && !listData);
   const paginationConfig = getPaginationConfig(total);
-
   return (
     <div className={styles.wrap}>
-      <BackButton path="/" />
+      <BackButton path='/' />
 
       <PageHeader
-        title="РИД"
-        subtitle="Результаты интеллектуальной деятельности"
+        title='РИД'
+        subtitle='Результаты интеллектуальной деятельности'
         actions={
           <>
             <Button
-              type="default"
+              type='default'
               icon={<FilterOutlined />}
               onClick={openFiltersModal}
-              className={
-                activeFiltersCount > 0 ? styles.filtersBtnActive : undefined
-              }
+              className={activeFiltersCount > 0 ? styles.filtersBtnActive : undefined}
             >
               Фильтры
-              {activeFiltersCount > 0 && (
-                <span className={styles.filtersBadge}>{activeFiltersCount}</span>
-              )}
+              {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
             </Button>
             <Button
-              type="primary"
+              type='primary'
               icon={<PlusOutlined />}
               onClick={() => navigate('/patents/create')}
               disabled={activeTab === 'deleted'}
@@ -189,26 +189,23 @@ export default function PatentsListPage() {
                   {PATENT_FILTER_TABS.map(({ key, label }) => (
                     <button
                       key={key}
-                      type="button"
-                      className={`${styles.filterTab}${
-                        activeTab === key ? ` ${styles.filterTabActive}` : ''
-                      }`}
+                      type='button'
+                      className={`${styles.filterTab}${activeTab === key ? ` ${styles.filterTabActive}` : ''}`}
                       onClick={() => setActiveTab(key)}
                     >
-                      {label}{' '}
-                      <span className={styles.filterTabCount}>{tabCounts[key]}</span>
+                      {label} <span className={styles.filterTabCount}>{tabCounts[key]}</span>
                     </button>
                   ))}
                 </div>
                 <div className={styles.filterTabsRight}>
                   <Input.Search
                     className={styles.searchInTabsRow}
-                    placeholder="Поиск по названию, номеру, КД..."
+                    placeholder='Поиск по названию, номеру, КД...'
                     allowClear
                     enterButton={false}
                     prefix={<SearchOutlined className={styles.searchIcon} />}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                   />
                   <span className={styles.resultCount}>
                     Показано: <strong>{patents.length}</strong> из <strong>{total}</strong>
@@ -225,27 +222,25 @@ export default function PatentsListPage() {
         draftFilters={draftFilters}
         onUpdateDraftFilter={updateDraftFilter}
         onClose={closeFiltersModal}
-        onApply={applyFilters}
+        onApply={() => {
+          applyFilters();
+          resetPage();
+        }}
         onReset={resetDraftFilters}
         selectOptions={selectOptions}
       />
 
       {isInitialLoad ? (
         <div className={styles.loading}>
-          <Spin size="large" />
+          <Spin size='large' />
         </div>
       ) : patents.length === 0 ? (
         <div className={styles.empty}>Нет результатов интеллектуальной деятельности</div>
       ) : (
         <>
           <div className={`${styles.cardList}${isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''}`}>
-            {patents.map((patent) => (
-              <PatentCard
-                key={patent.id}
-                patent={patent}
-                refs={refs}
-                onClick={handlePatentClick}
-              />
+            {patents.map(patent => (
+              <PatentCard key={patent.id} patent={patent} refs={refs} onClick={handlePatentClick} />
             ))}
           </div>
           {(paginationConfig.total ?? 0) > 0 && (

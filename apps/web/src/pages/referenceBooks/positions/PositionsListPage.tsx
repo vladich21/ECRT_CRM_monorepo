@@ -17,11 +17,8 @@ import { BackButton } from '../../../components/backButton/BackButton';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { PositionCard } from './PositionCard';
 import styles from './PositionsListPage.module.scss';
-
 const SEARCH_DEBOUNCE_MS = 350;
-
 type ActionType = 'edit' | 'delete' | 'add' | '';
-
 const PositionsListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = usePositions();
@@ -30,22 +27,18 @@ const PositionsListPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const modalProps = useModalStore();
-
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(t);
+    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(debounceTimerId);
   }, [searchQuery]);
-
   const filteredPositions = useMemo(() => {
     const q = debouncedSearch.toLowerCase();
     if (!q) return data;
-    return data.filter((p) => (p.name ?? '').toLowerCase().includes(q));
+    return data.filter(p => (p.name ?? '').toLowerCase().includes(q));
   }, [data, debouncedSearch]);
-
   const deletePositionMutation = useDeletePosition();
   const editPositionMutation = useUpdatePosition();
   const addPositionMutation = useCreatePosition();
-
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deletePositionMutation,
     successMessage: 'Должность успешно удалена',
@@ -54,7 +47,6 @@ const PositionsListPage: React.FC = () => {
     getMutationProps: () => currentPositionId,
     showNotification,
   });
-
   const { handleOpenModal: openMutateModal } = useMutateByModal<Position>({
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editPositionMutation : addPositionMutation,
@@ -65,48 +57,40 @@ const PositionsListPage: React.FC = () => {
     getMutationProps: action === 'edit' ? () => currentPositionId : () => undefined,
     showNotification,
   });
-
   useEffect(() => {
     if (action === 'delete') {
       openDeleteModal();
     } else if (action === 'edit' || action === 'add') {
       openMutateModal();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpenModal не стабилен
   }, [currentPositionId, action]);
-
   useEffect(() => {
     if (!modalProps.open) {
       setAction('');
     }
   }, [modalProps.open]);
-
   const handleOpenAddModal = () => {
     setAction('add');
     setCurrentPositionId('');
   };
-
   const onDelete = (position: Position) => {
     setAction('delete');
     setCurrentPositionId(position.id);
   };
-
   const onEdit = (position: Position) => {
     setAction('edit');
     setCurrentPositionId(position.id);
   };
-
   const total = data.length;
-
   return (
     <div className={styles.wrap}>
       {contextHolder}
-      <BackButton path="/" />
+      <BackButton path='/' />
       <PageHeader
-        title="Должности"
-        subtitle="Справочник должностей"
+        title='Должности'
+        subtitle='Справочник должностей'
         actions={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAddModal}>
+          <Button type='primary' icon={<PlusOutlined />} onClick={handleOpenAddModal}>
             Добавить должность
           </Button>
         }
@@ -117,12 +101,12 @@ const PositionsListPage: React.FC = () => {
                 <div className={styles.filterTabsRight}>
                   <Input.Search
                     className={styles.searchInTabsRow}
-                    placeholder="Поиск по названию..."
+                    placeholder='Поиск по названию...'
                     allowClear
                     enterButton={false}
                     prefix={<SearchOutlined className={styles.searchIcon} />}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                   />
                   <span className={styles.resultCount}>
                     Показано: <strong>{filteredPositions.length}</strong> из <strong>{total}</strong>
@@ -136,16 +120,14 @@ const PositionsListPage: React.FC = () => {
 
       {loading ? (
         <div className={styles.loading}>
-          <Spin size="large" />
+          <Spin size='large' />
         </div>
       ) : (
         <div className={styles.cardList}>
           {filteredPositions.length === 0 ? (
-            <div className={styles.empty}>
-              {total === 0 ? 'Должности не найдены' : 'Ничего не найдено по запросу'}
-            </div>
+            <div className={styles.empty}>{total === 0 ? 'Должности не найдены' : 'Ничего не найдено по запросу'}</div>
           ) : (
-            filteredPositions.map((position) => (
+            filteredPositions.map(position => (
               <PositionCard key={position.id} position={position} onEdit={onEdit} onDelete={onDelete} />
             ))
           )}
@@ -154,5 +136,4 @@ const PositionsListPage: React.FC = () => {
     </div>
   );
 };
-
 export default PositionsListPage;

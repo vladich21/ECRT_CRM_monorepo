@@ -1,5 +1,4 @@
 export type PartnerRegistryStatus = 'active' | 'potential' | 'blocked' | 'archive';
-
 export interface PartnerDetailExtras {
   status: PartnerRegistryStatus;
   type: string;

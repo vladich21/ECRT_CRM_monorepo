@@ -24,15 +24,12 @@ import { getEntityById } from '../../helpers/getEntityById';
 import { getNameById } from '../../helpers/getNameById';
 import { patentUpdateFormMapper } from '../../helpers/mappers/patentUpdateFormMapper';
 import styles from './PatentFormPage.module.scss';
-
 const { Option } = Select;
 const { TextArea } = Input;
-
 const STATUS_STYLE = {
   active: { color: '#52c41a', label: 'Активен' },
   deleted: { color: '#ff4d4f', label: 'Удалён' },
 } as const;
-
 export default function PatentEditPage() {
   const { patentId } = useParams();
   const navigate = useNavigate();
@@ -40,7 +37,6 @@ export default function PatentEditPage() {
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
   const { data: patent, isLoading: isPatentLoading, isError: isPatentError } = usePatentById(patentId!);
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
@@ -54,13 +50,10 @@ export default function PatentEditPage() {
     'patentStatuses',
     'patentAreas',
   ]);
-
   const { mutate, isPending: isUpdateLoading, isError: isUpdateError, isSuccess: isUpdateSuccess } = useUpdatePatent();
-
   useEffect(() => {
     if (patent) form.setFieldsValue(patentUpdateFormMapper(patent, referenceBooks));
   }, [patent, form, referenceBooks]);
-
   useEffect(() => {
     if (isUpdateSuccess) {
       showNotification('success', 'Успех', 'Патент успешно изменён');
@@ -69,15 +62,11 @@ export default function PatentEditPage() {
       showNotification('error', 'Ошибка', 'Не удалось изменить патент');
     }
   }, [isUpdateError, isUpdateSuccess]);
-
   const handleUpdate = async (values: any) => {
     const areaIds = values.area_ids
-      ? values.area_ids
-          .map((id: unknown) => (id != null ? String(id) : ''))
-          .filter((id: string) => id && id !== 'NaN')
+      ? values.area_ids.map((id: unknown) => (id != null ? String(id) : '')).filter((id: string) => id && id !== 'NaN')
       : [];
     const authorIds = values.author_ids ? values.author_ids.filter((id: any) => id !== null && id !== undefined) : [];
-
     const payload = {
       ...values,
       registration_date: values.registration_date ? values.registration_date.format('YYYY-MM-DD') : null,
@@ -91,12 +80,9 @@ export default function PatentEditPage() {
       area_ids: areaIds,
       author_ids: authorIds,
     };
-
     delete payload['project_code'];
-
     mutate({ id: patentId!, data: payload });
   };
-
   const handleProjectChange = (value: string | null) => {
     if (value) {
       form.setFieldValue('project_id', value);
@@ -105,56 +91,49 @@ export default function PatentEditPage() {
       form.setFieldValue('project_code', '');
     }
   };
-
   if (isReferencesLoading || isPatentLoading) {
     return <Loader />;
   }
-
   if (isReferencesError || !referenceBooks || isPatentError) {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
-
   if (!patent) return <NotFound errorMessage='РИД не найден' />;
-
   const st = patent.is_deleted ? STATUS_STYLE.deleted : STATUS_STYLE.active;
-
-  // Dynamic header meta — updates as user edits fields
   const wName = Form.useWatch('name', form) as string | undefined;
   const wIntellectPropId = Form.useWatch('intellectprop_id', form) as string | undefined;
   const wStatusId = Form.useWatch('status_id', form) as string | undefined;
   const wDepartmentId = Form.useWatch('department_id', form) as string | undefined;
   const wRegNumber = Form.useWatch('registration_number', form) as string | undefined;
-
   const headerName = (wName ?? patent.name) || '';
   const headerRegNumber = (wRegNumber ?? patent.registration_number) || '';
-  const ipTypeName = getNameById(wIntellectPropId ?? patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
+  const ipTypeName =
+    getNameById(wIntellectPropId ?? patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
   const statusName = getNameById(wStatusId ?? patent.status_id, referenceBooks?.patentStatuses) || '';
   const deptName = getNameById(wDepartmentId ?? patent.department_id, referenceBooks?.departments) || '';
-
   return (
     <DetailPageHeader
       title={`Редактирование: РИД ${headerRegNumber || '—'}`}
-      backLabel="Реестр РИД"
+      backLabel='Реестр РИД'
       onBack={() => navigate(-1)}
       statusBadge={{ label: st.label, color: st.color }}
       metaItems={[
         headerName ? (
-          <span key="name" className={hStyles.metaText}>
+          <span key='name' className={hStyles.metaText}>
             {headerName}
           </span>
         ) : null,
         ipTypeName ? (
-          <span key="ipType" className={hStyles.metaType}>
+          <span key='ipType' className={hStyles.metaType}>
             {ipTypeName}
           </span>
         ) : null,
         statusName ? (
-          <span key="status" className={hStyles.metaType}>
+          <span key='status' className={hStyles.metaType}>
             {statusName}
           </span>
         ) : null,
         deptName ? (
-          <span key="dept" className={hStyles.metaText}>
+          <span key='dept' className={hStyles.metaText}>
             <TeamOutlined /> {deptName}
           </span>
         ) : null,
@@ -165,7 +144,7 @@ export default function PatentEditPage() {
             Отмена
           </Button>
           <Button
-            type="primary"
+            type='primary'
             icon={<SaveOutlined />}
             onClick={() => form.submit()}
             loading={isUpdateLoading}
@@ -176,7 +155,7 @@ export default function PatentEditPage() {
         </>
       }
       tabs={[{ key: 'main', label: 'Редактирование' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
       stickyHeader
@@ -185,7 +164,7 @@ export default function PatentEditPage() {
         <Form
           form={form}
           layout='vertical'
-          size="middle"
+          size='middle'
           onFieldsChange={() => setIsFormChanged(true)}
           onFinish={handleUpdate}
           onKeyPress={e => {
@@ -194,245 +173,35 @@ export default function PatentEditPage() {
           scrollToFirstError
         >
           <div className={styles.formSectionsStack}>
-          <div className={styles.sectionBox}>
-            <Divider orientation='left'>
-              <FileTextOutlined /> Идентификация РИД
-            </Divider>
-
-            <Row gutter={16}>
-              <Col xs={24}>
-                <Form.Item
-                  label='Наименование РИД'
-                  name='name'
-                  rules={[{ required: true, message: 'Введите наименование РИД' }]}
-                >
-                  <TextArea
-                    placeholder='Введите наименование объекта интеллектуальной собственности'
-                    rows={3}
-                    showCount
-                    maxLength={500}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item
-                  label='Объект собственности'
-                  name='intellectprop_id'
-                  rules={[{ required: true, message: 'Выберите объект собственности' }]}
-                >
-                  <Select
-                    showSearch
-                    optionFilterProp='children'
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder='Выберите объект'
-                  >
-                    {referenceBooks?.patentIntellectProps?.map(prop => (
-                      <Option key={prop.id} value={prop.id}>
-                        {prop.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item label='Статус' name='status_id' rules={[{ required: true, message: 'Выберите состояние' }]}>
-                  <Select
-                    showSearch
-                    optionFilterProp='children'
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder='Выберите статус'
-                  >
-                    {referenceBooks?.patentStatuses?.map(status => (
-                      <Option key={status.id} value={status.id}>
-                        {status.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item label='Области применения' name='area_ids'>
-                  <Select
-                    mode='multiple'
-                    showSearch
-                    maxTagCount="responsive"
-                    optionFilterProp='children'
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder='Выберите области'
-                    suffixIcon={<GlobalOutlined />}
-                  >
-                    {referenceBooks?.patentAreas?.map(area => (
-                      <Option key={area.id} value={area.id}>
-                        {area.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
-
-          <div className={styles.twoColSections}>
             <div className={styles.sectionBox}>
               <Divider orientation='left'>
-                <BankOutlined /> Регистрационные данные
+                <FileTextOutlined /> Идентификация РИД
               </Divider>
-
-              <Row gutter={16}>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label='Номер АО "ИЦ ЖТ"'
-                    name='registration_number'
-                    rules={[{ required: true, message: 'Введите номер регистрации' }]}
-                  >
-                    <Input placeholder='Внутренний номер' prefix={<NumberOutlined />} />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label='Дата АО "ИЦ ЖТ"'
-                    name='registration_date'
-                    rules={[{ required: true, message: 'Выберите дату регистрации' }]}
-                  >
-                    <DatePicker
-                      style={{ width: '100%' }}
-                      placeholder='Выберите дату'
-                      format='DD.MM.YYYY'
-                      suffixIcon={<CalendarOutlined />}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={8}>
-                  <Form.Item label='Номер заявки' name='application_number'>
-                    <Input placeholder='Номер патентной заявки' />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col xs={24} md={8}>
-                  <Form.Item label='Номер ЦИР' name='registration_number_cir'>
-                    <Input placeholder='Номер регистрации в ЦИР' />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={8}>
-                  <Form.Item label='Дата ЦИР' name='registration_date_cir'>
-                    <DatePicker
-                      style={{ width: '100%' }}
-                      placeholder='Выберите дату'
-                      format='DD.MM.YYYY'
-                      suffixIcon={<CalendarOutlined />}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={8}>
-                  <Form.Item label='Номер КД' name='kd_number'>
-                    <Input placeholder='Номер конструкторской документации' />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div>
-
-            <div className={styles.sectionBox}>
-              <Divider orientation='left'>
-                <TeamOutlined /> Организация и ответственные
-              </Divider>
-
-              <Row gutter={16}>
-                <Col xs={24} md={12}>
-                  <Form.Item label='Отдел' name='department_id' rules={[{ required: true, message: 'Выберите отдел' }]}>
-                    <Select
-                      showSearch
-                      optionFilterProp='children'
-                      filterOption={(input, option) =>
-                        String(option?.children ?? '')
-                          .toLowerCase()
-                          .includes(input.toLowerCase())
-                      }
-                      placeholder='Выберите отдел'
-                      suffixIcon={<TeamOutlined />}
-                    >
-                      {referenceBooks?.departments?.map(dept => (
-                        <Option key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item label='Ответственный за патентование' name='responsible_for_patenting_id'>
-                    <Select
-                      showSearch
-                      optionFilterProp='label'
-                      optionLabelProp='label'
-                      filterOption={(input, option) =>
-                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                      }
-                      placeholder='Выберите ответственного'
-                      allowClear
-                      suffixIcon={<UserOutlined />}
-                    >
-                      {referenceBooks?.users?.map(user => (
-                        <Option key={user.id} value={user.id} label={user.name}>
-                          {user.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
 
               <Row gutter={16}>
                 <Col xs={24}>
-                  <Form.Item label='Авторы (Исполнители)' name='author_ids'>
-                    <Select
-                      mode='multiple'
-                      showSearch
-                      maxTagCount="responsive"
-                      optionFilterProp='label'
-                      optionLabelProp='label'
-                      filterOption={(input, option) =>
-                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                      }
-                      placeholder='Выберите исполнителей'
-                      suffixIcon={<UserOutlined />}
-                    >
-                      {referenceBooks?.users?.map(user => (
-                        <Option key={user.id} value={user.id} label={user.name}>
-                          {user.name}
-                        </Option>
-                      ))}
-                    </Select>
+                  <Form.Item
+                    label='Наименование РИД'
+                    name='name'
+                    rules={[{ required: true, message: 'Введите наименование РИД' }]}
+                  >
+                    <TextArea
+                      placeholder='Введите наименование объекта интеллектуальной собственности'
+                      rows={3}
+                      showCount
+                      maxLength={500}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
 
               <Row gutter={16}>
                 <Col xs={24} md={8}>
-                  <Form.Item label='Проект' name='project_id'>
+                  <Form.Item
+                    label='Объект собственности'
+                    name='intellectprop_id'
+                    rules={[{ required: true, message: 'Выберите объект собственности' }]}
+                  >
                     <Select
                       showSearch
                       optionFilterProp='children'
@@ -441,14 +210,11 @@ export default function PatentEditPage() {
                           .toLowerCase()
                           .includes(input.toLowerCase())
                       }
-                      placeholder='Выберите проект'
-                      allowClear
-                      onChange={handleProjectChange}
-                      suffixIcon={<ProjectOutlined />}
+                      placeholder='Выберите объект'
                     >
-                      {referenceBooks?.projects?.map(project => (
-                        <Option key={project.id} value={project.id}>
-                          {project.name}
+                      {referenceBooks?.patentIntellectProps?.map(prop => (
+                        <Option key={prop.id} value={prop.id}>
+                          {prop.name}
                         </Option>
                       ))}
                     </Select>
@@ -456,13 +222,11 @@ export default function PatentEditPage() {
                 </Col>
 
                 <Col xs={24} md={8}>
-                  <Form.Item label='Номер проекта' name='project_code'>
-                    <Input placeholder='-' disabled />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={8}>
-                  <Form.Item label='Договор (доходный)' name='contract_id'>
+                  <Form.Item
+                    label='Статус'
+                    name='status_id'
+                    rules={[{ required: true, message: 'Выберите состояние' }]}
+                  >
                     <Select
                       showSearch
                       optionFilterProp='children'
@@ -471,12 +235,35 @@ export default function PatentEditPage() {
                           .toLowerCase()
                           .includes(input.toLowerCase())
                       }
-                      placeholder='Выберите договор'
-                      allowClear
+                      placeholder='Выберите статус'
                     >
-                      {referenceBooks?.contracts?.map(contract => (
-                        <Option key={contract.id} value={contract.id}>
-                          {contract.number}
+                      {referenceBooks?.patentStatuses?.map(status => (
+                        <Option key={status.id} value={status.id}>
+                          {status.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} md={8}>
+                  <Form.Item label='Области применения' name='area_ids'>
+                    <Select
+                      mode='multiple'
+                      showSearch
+                      maxTagCount='responsive'
+                      optionFilterProp='children'
+                      filterOption={(input, option) =>
+                        String(option?.children ?? '')
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      placeholder='Выберите области'
+                      suffixIcon={<GlobalOutlined />}
+                    >
+                      {referenceBooks?.patentAreas?.map(area => (
+                        <Option key={area.id} value={area.id}>
+                          {area.name}
                         </Option>
                       ))}
                     </Select>
@@ -484,9 +271,212 @@ export default function PatentEditPage() {
                 </Col>
               </Row>
             </div>
-          </div>
-          </div>
 
+            <div className={styles.twoColSections}>
+              <div className={styles.sectionBox}>
+                <Divider orientation='left'>
+                  <BankOutlined /> Регистрационные данные
+                </Divider>
+
+                <Row gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      label='Номер АО "ИЦ ЖТ"'
+                      name='registration_number'
+                      rules={[{ required: true, message: 'Введите номер регистрации' }]}
+                    >
+                      <Input placeholder='Внутренний номер' prefix={<NumberOutlined />} />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      label='Дата АО "ИЦ ЖТ"'
+                      name='registration_date'
+                      rules={[{ required: true, message: 'Выберите дату регистрации' }]}
+                    >
+                      <DatePicker
+                        style={{ width: '100%' }}
+                        placeholder='Выберите дату'
+                        format='DD.MM.YYYY'
+                        suffixIcon={<CalendarOutlined />}
+                      />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <Form.Item label='Номер заявки' name='application_number'>
+                      <Input placeholder='Номер патентной заявки' />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Form.Item label='Номер ЦИР' name='registration_number_cir'>
+                      <Input placeholder='Номер регистрации в ЦИР' />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <Form.Item label='Дата ЦИР' name='registration_date_cir'>
+                      <DatePicker
+                        style={{ width: '100%' }}
+                        placeholder='Выберите дату'
+                        format='DD.MM.YYYY'
+                        suffixIcon={<CalendarOutlined />}
+                      />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <Form.Item label='Номер КД' name='kd_number'>
+                      <Input placeholder='Номер конструкторской документации' />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className={styles.sectionBox}>
+                <Divider orientation='left'>
+                  <TeamOutlined /> Организация и ответственные
+                </Divider>
+
+                <Row gutter={16}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      label='Отдел'
+                      name='department_id'
+                      rules={[{ required: true, message: 'Выберите отдел' }]}
+                    >
+                      <Select
+                        showSearch
+                        optionFilterProp='children'
+                        filterOption={(input, option) =>
+                          String(option?.children ?? '')
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
+                        }
+                        placeholder='Выберите отдел'
+                        suffixIcon={<TeamOutlined />}
+                      >
+                        {referenceBooks?.departments?.map(dept => (
+                          <Option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} md={12}>
+                    <Form.Item label='Ответственный за патентование' name='responsible_for_patenting_id'>
+                      <Select
+                        showSearch
+                        optionFilterProp='label'
+                        optionLabelProp='label'
+                        filterOption={(input, option) =>
+                          String(option?.label ?? '')
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
+                        }
+                        placeholder='Выберите ответственного'
+                        allowClear
+                        suffixIcon={<UserOutlined />}
+                      >
+                        {referenceBooks?.users?.map(user => (
+                          <Option key={user.id} value={user.id} label={user.name}>
+                            {user.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={16}>
+                  <Col xs={24}>
+                    <Form.Item label='Авторы (Исполнители)' name='author_ids'>
+                      <Select
+                        mode='multiple'
+                        showSearch
+                        maxTagCount='responsive'
+                        optionFilterProp='label'
+                        optionLabelProp='label'
+                        filterOption={(input, option) =>
+                          String(option?.label ?? '')
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
+                        }
+                        placeholder='Выберите исполнителей'
+                        suffixIcon={<UserOutlined />}
+                      >
+                        {referenceBooks?.users?.map(user => (
+                          <Option key={user.id} value={user.id} label={user.name}>
+                            {user.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Form.Item label='Проект' name='project_id'>
+                      <Select
+                        showSearch
+                        optionFilterProp='children'
+                        filterOption={(input, option) =>
+                          String(option?.children ?? '')
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
+                        }
+                        placeholder='Выберите проект'
+                        allowClear
+                        onChange={handleProjectChange}
+                        suffixIcon={<ProjectOutlined />}
+                      >
+                        {referenceBooks?.projects?.map(project => (
+                          <Option key={project.id} value={project.id}>
+                            {project.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <Form.Item label='Номер проекта' name='project_code'>
+                      <Input placeholder='-' disabled />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <Form.Item label='Договор (доходный)' name='contract_id'>
+                      <Select
+                        showSearch
+                        optionFilterProp='children'
+                        filterOption={(input, option) =>
+                          String(option?.children ?? '')
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
+                        }
+                        placeholder='Выберите договор'
+                        allowClear
+                      >
+                        {referenceBooks?.contracts?.map(contract => (
+                          <Option key={contract.id} value={contract.id}>
+                            {contract.number}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
+            </div>
+          </div>
         </Form>
       </div>
     </DetailPageHeader>

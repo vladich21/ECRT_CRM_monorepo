@@ -1,25 +1,17 @@
 import { ReactNode } from 'react';
-import {
-  FileTextOutlined,
-  BarChartOutlined,
-  SafetyCertificateOutlined,
-  CalendarOutlined,
-} from '@ant-design/icons';
+import { FileTextOutlined, BarChartOutlined, SafetyCertificateOutlined, CalendarOutlined } from '@ant-design/icons';
 import styles from './KpiRow.module.scss';
-
 interface KpiRowProps {
   contractsCount: number;
   totalVolume: string;
   complianceScore: number;
   nextAuditDate?: string;
 }
-
 interface KpiTile {
   icon: ReactNode;
   value: string | number;
   label: string;
 }
-
 export default function KpiRow({ contractsCount, totalVolume, complianceScore, nextAuditDate }: KpiRowProps) {
   const tiles: KpiTile[] = [
     { icon: <FileTextOutlined />, value: contractsCount, label: 'Договоров' },
@@ -27,7 +19,6 @@ export default function KpiRow({ contractsCount, totalVolume, complianceScore, n
     { icon: <SafetyCertificateOutlined />, value: (complianceScore / 20).toFixed(2), label: 'Оценка' },
     { icon: <CalendarOutlined />, value: nextAuditDate || '—', label: 'След. оценка' },
   ];
-
   return (
     <div className={styles.row}>
       {tiles.map((kpi, i) => (

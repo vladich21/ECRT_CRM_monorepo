@@ -1,6 +1,5 @@
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { PartnerStatus } from '../../../types/partner';
-
 import { useEffect, useState } from 'react';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useModalStore } from '../../../store/ModalStore';
@@ -15,20 +14,16 @@ import {
   useUpdatePartnerStatus,
 } from '../../../api/partners/partnerStatusApiHooks';
 import { getNameById } from '../../../helpers/getNameById';
-
 type ActionType = 'edit' | 'delete' | 'add' | '';
-
 const PartnerStatusesListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = usePartnerStatuses();
   const [currentPartnerStatusId, setCurrentPartnerStatusId] = useState<string>('');
   const [action, setAction] = useState<ActionType>('');
   const modalProps = useModalStore();
-
   const deletePartnerStatusMutation = useDeletePartnerStatus();
   const editPartnerStatusMutation = useUpdatePartnerStatus();
   const addPartnerStatusMutation = useCreatePartnerStatus();
-
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deletePartnerStatusMutation,
     successMessage: 'Статус контрагента успешно удалён',
@@ -36,7 +31,6 @@ const PartnerStatusesListPage: React.FC = () => {
     getMutationProps: () => currentPartnerStatusId,
     showNotification,
   });
-
   const { handleOpenModal: openMutateModal } = useMutateByModal<PartnerStatus, Error>({
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editPartnerStatusMutation : addPartnerStatusMutation,
@@ -47,7 +41,6 @@ const PartnerStatusesListPage: React.FC = () => {
     getMutationProps: action === 'edit' ? () => currentPartnerStatusId : () => undefined,
     showNotification,
   });
-
   useEffect(() => {
     if (action === 'delete') {
       openDeleteModal();
@@ -55,32 +48,32 @@ const PartnerStatusesListPage: React.FC = () => {
       openMutateModal();
     }
   }, [currentPartnerStatusId, action]);
-
   useEffect(() => {
     if (!modalProps.open) {
       setAction('');
     }
   }, [modalProps.open]);
-
   const handleOpenAddModal = () => {
     setAction('add');
     setCurrentPartnerStatusId('');
   };
-
   const onDelete = ({ id }: { id: string }) => {
     setAction('delete');
     setCurrentPartnerStatusId(id);
   };
-
   const onEdit = ({ id }: { id: string }) => {
     setAction('edit');
     setCurrentPartnerStatusId(id);
   };
-
   return (
-    <ReferenceBookListPage title="Статусы контрагентов" addButtonLabel="Добавить статус контрагента" onAdd={handleOpenAddModal} contextHolder={contextHolder}>
+    <ReferenceBookListPage
+      title='Статусы контрагентов'
+      addButtonLabel='Добавить статус контрагента'
+      onAdd={handleOpenAddModal}
+      contextHolder={contextHolder}
+    >
       <ReferenceBookCardList>
-        {data.map((status) => (
+        {data.map(status => (
           <ReferenceBookItemCard
             key={status.id}
             title={status.name}
@@ -92,5 +85,4 @@ const PartnerStatusesListPage: React.FC = () => {
     </ReferenceBookListPage>
   );
 };
-
 export default PartnerStatusesListPage;

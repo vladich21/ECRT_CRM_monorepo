@@ -5,10 +5,7 @@ import { FileAddOutlined, LinkOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Contract } from '../../../../../types/contract';
 import styles from './ContractSupplementTabs.module.scss';
-
 const { Text, Title } = Typography;
-
-/** Демо-строки для превью вкладки (позже заменятся данными API) */
 export const DEMO_ADDITIONAL_AGREEMENTS: {
   id: string;
   number: string;
@@ -46,23 +43,20 @@ export const DEMO_ADDITIONAL_AGREEMENTS: {
     validTo: '',
   },
 ];
-
-type OutletContext = { contract: Contract };
-
+type OutletContext = {
+  contract: Contract;
+};
 const statusConfig = {
   active: { label: 'Действует', color: 'success' as const },
   draft: { label: 'Проект', color: 'default' as const },
   expired: { label: 'Истёк', color: 'error' as const },
 };
-
 function formatRuDate(iso: string): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('ru-RU');
 }
-
 export function ContractAdditionalAgreementsTab() {
   const { contract } = useOutletContext<OutletContext>();
-
   const columns: ColumnsType<(typeof DEMO_ADDITIONAL_AGREEMENTS)[0]> = useMemo(
     () => [
       {
@@ -71,9 +65,9 @@ export function ContractAdditionalAgreementsTab() {
         key: 'number',
         width: 120,
         render: (text, row) => (
-          <Space direction="vertical" size={0}>
+          <Space direction='vertical' size={0}>
             <Text strong>{text}</Text>
-            <Text type="secondary" className={styles.subMuted}>
+            <Text type='secondary' className={styles.subMuted}>
               id: {row.id}
             </Text>
           </Space>
@@ -115,7 +109,6 @@ export function ContractAdditionalAgreementsTab() {
     ],
     [],
   );
-
   return (
     <div className={styles.tabRoot}>
       <Card className={styles.card}>
@@ -124,28 +117,28 @@ export function ContractAdditionalAgreementsTab() {
             <Title level={4} className={styles.cardTitle}>
               Дополнительные соглашения
             </Title>
-            <Text type="secondary">
+            <Text type='secondary'>
               К договору №{contract.number}
-              {contract.cipher ? ` (${contract.cipher})` : ''} привязаны отдельные документы (ДС), которые
-              изменяют условия основного договора.
+              {contract.cipher ? ` (${contract.cipher})` : ''} привязаны отдельные документы (ДС), которые изменяют
+              условия основного договора.
             </Text>
           </div>
-          <Button type="primary" icon={<FileAddOutlined />} disabled>
+          <Button type='primary' icon={<FileAddOutlined />} disabled>
             Добавить ДС
           </Button>
         </div>
 
         <Alert
           className={styles.alert}
-          type="info"
+          type='info'
           showIcon
-          message="Демонстрационные данные"
-          description="Список ниже показывает, как может выглядеть вкладка после подключения API: учёт номеров ДС, дат, статусов и сроков."
+          message='Демонстрационные данные'
+          description='Список ниже показывает, как может выглядеть вкладка после подключения API: учёт номеров ДС, дат, статусов и сроков.'
         />
 
         <Table
-          size="middle"
-          rowKey="id"
+          size='middle'
+          rowKey='id'
           pagination={false}
           columns={columns}
           dataSource={DEMO_ADDITIONAL_AGREEMENTS}
@@ -153,8 +146,8 @@ export function ContractAdditionalAgreementsTab() {
         />
 
         <div className={styles.footerHint}>
-          <LinkOutlined /> В перспективе: ссылка на скан ДС, связь с редакциями договора, уведомления о
-          истечении срока действия ДС.
+          <LinkOutlined /> В перспективе: ссылка на скан ДС, связь с редакциями договора, уведомления о истечении срока
+          действия ДС.
         </div>
       </Card>
     </div>

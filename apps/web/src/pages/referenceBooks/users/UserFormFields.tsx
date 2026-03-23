@@ -9,61 +9,58 @@ import {
 } from '@ant-design/icons';
 import type { ReferenceData } from '../../../api/hooks/useReferences';
 import styles from './UserFormPage.module.scss';
-
 const { Option } = Select;
-
 interface UserFormFieldsProps {
   form: ReturnType<typeof Form.useForm>[0];
   referenceBooks: ReferenceData | null;
 }
-
 export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
   return (
     <div className={styles.fourColSections}>
       <div className={styles.sectionBox}>
-        <Divider orientation="left" style={{ marginTop: 0 }}>
+        <Divider orientation='left' style={{ marginTop: 0 }}>
           <UserOutlined /> Основная информация
         </Divider>
         <Row gutter={16}>
           <Col xs={24}>
-            <Form.Item label="Имя" name="first_name" rules={[{ required: true, message: 'Введите имя' }]}>
-              <Input placeholder="Введите имя" />
+            <Form.Item label='Имя' name='first_name' rules={[{ required: true, message: 'Введите имя' }]}>
+              <Input placeholder='Введите имя' />
             </Form.Item>
           </Col>
           <Col xs={24}>
-            <Form.Item label="Фамилия" name="last_name" rules={[{ required: true, message: 'Введите фамилию' }]}>
-              <Input placeholder="Введите фамилию" />
+            <Form.Item label='Фамилия' name='last_name' rules={[{ required: true, message: 'Введите фамилию' }]}>
+              <Input placeholder='Введите фамилию' />
             </Form.Item>
           </Col>
           <Col xs={24}>
-            <Form.Item label="Отчество" name="middle_name">
-              <Input placeholder="Введите отчество" />
+            <Form.Item label='Отчество' name='middle_name'>
+              <Input placeholder='Введите отчество' />
             </Form.Item>
           </Col>
         </Row>
       </div>
 
       <div className={styles.sectionBox}>
-        <Divider orientation="left" style={{ marginTop: 0 }}>
+        <Divider orientation='left' style={{ marginTop: 0 }}>
           <MailOutlined /> Контактная информация
         </Divider>
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item
-              label="Почта"
-              name="email"
+              label='Почта'
+              name='email'
               rules={[
                 { required: true, message: 'Введите email' },
                 { type: 'email', message: 'Введите корректный email' },
               ]}
             >
-              <Input prefix={<MailOutlined />} placeholder="email@example.com" type="email" />
+              <Input prefix={<MailOutlined />} placeholder='email@example.com' type='email' />
             </Form.Item>
           </Col>
           <Col xs={24}>
             <Form.Item
-              label="Моб. телефон"
-              name="phone"
+              label='Моб. телефон'
+              name='phone'
               rules={[
                 {
                   pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/,
@@ -71,30 +68,32 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
                 },
               ]}
             >
-              <Input prefix={<PhoneOutlined />} placeholder="+7 (999) 999-99-99" />
+              <Input prefix={<PhoneOutlined />} placeholder='+7 (999) 999-99-99' />
             </Form.Item>
           </Col>
         </Row>
       </div>
 
       <div className={styles.sectionBox}>
-        <Divider orientation="left" style={{ marginTop: 0 }}>
+        <Divider orientation='left' style={{ marginTop: 0 }}>
           <TeamOutlined /> Организационная информация
         </Divider>
         <Row gutter={16}>
           <Col xs={24}>
-            <Form.Item label="Отдел" name="department_id">
+            <Form.Item label='Отдел' name='department_id'>
               <Select
                 showSearch
-                optionFilterProp="children"
+                optionFilterProp='children'
                 filterOption={(input, option) =>
-                  String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                  String(option?.children ?? '')
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
                 }
-                placeholder="Выберите отдел"
+                placeholder='Выберите отдел'
                 allowClear
                 suffixIcon={<TeamOutlined />}
               >
-                {referenceBooks?.departments?.map((dept) => (
+                {referenceBooks?.departments?.map(dept => (
                   <Option key={dept.id} value={dept.id}>
                     {dept.name}
                   </Option>
@@ -103,18 +102,20 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
             </Form.Item>
           </Col>
           <Col xs={24}>
-            <Form.Item label="Должность" name="position_id">
+            <Form.Item label='Должность' name='position_id'>
               <Select
                 showSearch
-                optionFilterProp="children"
+                optionFilterProp='children'
                 filterOption={(input, option) =>
-                  String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                  String(option?.children ?? '')
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
                 }
-                placeholder="Выберите должность"
+                placeholder='Выберите должность'
                 allowClear
                 suffixIcon={<IdcardOutlined />}
               >
-                {referenceBooks?.positions?.map((position) => (
+                {referenceBooks?.positions?.map(position => (
                   <Option key={position.id} value={position.id}>
                     {position.name}
                   </Option>
@@ -126,22 +127,26 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
       </div>
 
       <div className={styles.sectionBox}>
-        <Divider orientation="left" style={{ marginTop: 0 }}>
+        <Divider orientation='left' style={{ marginTop: 0 }}>
           <SafetyCertificateOutlined /> Права доступа
         </Divider>
         <Row gutter={16}>
           <Col xs={24}>
-            <Form.Item label="Роли" name="role_ids">
-              <Select
-                mode="multiple"
-                placeholder="Выберите роли"
-                allowClear
-                suffixIcon={<SafetyCertificateOutlined />}
-              >
-                {referenceBooks?.roles?.map((role) => (
+            <Form.Item label='Роли' name='role_ids'>
+              <Select mode='multiple' placeholder='Выберите роли' allowClear suffixIcon={<SafetyCertificateOutlined />}>
+                {referenceBooks?.roles?.map(role => (
                   <Option key={role.id} value={role.id}>
-                    {(role as { role_name?: string; name?: string }).role_name ??
-                      (role as { name?: string }).name ??
+                    {(
+                      role as {
+                        role_name?: string;
+                        name?: string;
+                      }
+                    ).role_name ??
+                      (
+                        role as {
+                          name?: string;
+                        }
+                      ).name ??
                       role.id}
                   </Option>
                 ))}
@@ -149,8 +154,8 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
             </Form.Item>
           </Col>
           <Col xs={24}>
-            <Form.Item label="Статус аккаунта" name="is_active" valuePropName="checked">
-              <Switch checkedChildren="Активен" unCheckedChildren="Не активен" />
+            <Form.Item label='Статус аккаунта' name='is_active' valuePropName='checked'>
+              <Switch checkedChildren='Активен' unCheckedChildren='Не активен' />
             </Form.Item>
           </Col>
         </Row>

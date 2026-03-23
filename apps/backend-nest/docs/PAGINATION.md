@@ -7,9 +7,9 @@
 | **Пагинация** (страницы, размер страницы) | **Бэкенд** (contracts, patents, …) | Запрос с `limit` и `offset`; ответ `{ data, total }`. |
 | **Список пользователей** | **Один запрос + клиент** | `GET /users?all=1` — вся выборка без `LIMIT`; на фронте кэш и клиентская пагинация/фильтры. |
 | **Фильтрация** (patents) | **Бэкенд** | `GET /patents`: `search`, `department_id`, `status_id`, `author_ids` (через запятую), `created_by`, `deleted_scope` (`active` / `deleted` / `all`). Ответ включает `tab_counts`. |
-| **Фильтрация** (partners) | **Бэкенд** | `GET /partners`: `search`, `type_ids`, `status_ids`, `competence_ids`, `readiness` (`all` / `ready` / `in_progress` / `key_supplier`). Ответ с `tab_counts` по четырём вкладкам. |
-| **Фильтрация** (contracts) | **Бэкенд** | `GET /contracts`: `search`, `list_tab` (`all` / `active` / `draft` / `inactive`), `partner_id`, `category_id`, `state_id`, `date_from`, `date_to`, `amount_min`, `amount_max`. Ответ с `tab_counts`. |
-| **Список проектов** | **Бэкенд** | `GET /projects` (без `preview`): `search`, `list_tab`, `manager_id`, `created_by`, пересечение сроков `date_from`+`date_to`, `start_date_from`/`start_date_to`, `end_date_from`/`end_date_to`, `end_date_presence` (`set` \| `empty`), `limit`, `offset`. Ответ `{ data, total, tab_counts }`. Справочник: `GET /projects?preview=1`. |
+| **Фильтрация** (partners) | **Бэкенд** | `GET /partners`: плюс `deleted_scope` (`active` / `deleted` / `all`), мягкое удаление. Ответ: `tab_counts` + `deletion_tab_counts`. Восстановление: `PUT /partners/:id/restore`. |
+| **Фильтрация** (contracts) | **Бэкенд** | `GET /contracts`: плюс `deleted_scope`. Ответ: `tab_counts` + `deletion_tab_counts`. `PUT /contracts/:id/restore`. Справочники/превью — только строки с `is_deleted=false`. |
+| **Список проектов** | **Бэкенд** | `GET /projects` (без `preview`): плюс `deleted_scope`. Ответ `{ data, total, tab_counts, deletion_tab_counts }`. `PUT /projects/:id/restore`. Справочник: `GET /projects?preview=1` (без удалённых). |
 
 ---
 
@@ -36,7 +36,7 @@
 
 ### Patents (`GET /patents`, `GET /patents/deleted`)
 
-- **Параметры:** `preview`, `deleted_scope` (`active` \| `deleted` \| `all`), `search`, `department_id`, `status_id`, `author_ids`, `created_by`, `limit`, `offset`. Совместимость: `is_deleted=true` → как `deleted_scope=deleted`.
+- **Параметры:** `preview`, `deleted_scope` (`active` \| `deleted` \| `all`), `search`, `department_id`, `status_id`, `author_ids`, `created_by`, `limit`, `offset`. Фильтр по корзине удалённых — только `deleted_scope=deleted` (отдельного query `is_deleted` нет).
 - **Ответ (не preview):** `{ data, total, tab_counts: { active, deleted, all } }` — счётчики вкладок с теми же фильтрами поиска/модалки (без двойного клиентского фильтра).
 - **Фронт:** хук `usePatentsList`, debounce поиска, `placeholderData` в React Query.
 

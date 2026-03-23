@@ -1,18 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Form,
-  Input,
-  InputNumber,
-  DatePicker,
-  Select,
-  Button,
-  Space,
-  Tag,
-  Switch,
-  Row,
-  Col,
-} from 'antd';
+import { Form, Input, InputNumber, DatePicker, Select, Button, Space, Tag, Switch, Row, Col } from 'antd';
 import { SaveOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { useForm } from 'antd/es/form/Form';
 import dayjs from 'dayjs';
@@ -31,22 +19,16 @@ import { ContractRevision } from '../../types/contract';
 import { getEntityById } from '../../helpers/getEntityById';
 import { useNotification } from '../../customhooks/useNotification';
 import styles from './ContractRevisionCreatePage.module.scss';
-
 const { TextArea } = Input;
 const { Option } = Select;
-
 export default function CreateContractRevisionPage() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const [form] = useForm();
   const { showNotification, contextHolder } = useNotification();
-
   const [stages, setStages] = useState<ContractStage[]>([]);
-
   const { data: contract, isLoading: isContractLoading, isError: isContractError } = useContractById(contractId!);
-
   const { data: stagesData = [], isLoading: isStagesLoading, isError: isStagesError } = useContractStages(contractId!);
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
@@ -60,14 +42,12 @@ export default function CreateContractRevisionPage() {
     'contractStageStates',
     'contracts',
   ]);
-
   const {
     mutate,
     isPending: isCreateLoading,
     isError: isCreateError,
     isSuccess: isCreateSuccess,
   } = useCreateContractRevision();
-
   useEffect(() => {
     if (isCreateSuccess) {
       showNotification('success', 'Успех', 'Договор успешно создан');
@@ -76,7 +56,6 @@ export default function CreateContractRevisionPage() {
       showNotification('error', 'Ошибка', 'Не удалось создать договор');
     }
   }, [isCreateError, isCreateSuccess, navigate, showNotification]);
-
   useEffect(() => {
     if (contract) {
       form.setFieldsValue({
@@ -103,13 +82,11 @@ export default function CreateContractRevisionPage() {
       });
     }
   }, [contract, form]);
-
   useEffect(() => {
     if (stagesData.length > 0) {
       setStages(stagesData);
     }
   }, [stagesData]);
-
   const handleStageEdit = (record: ContractStage) => {
     navigate(`/stages/${record.id}/edit`, {
       state: {
@@ -117,7 +94,6 @@ export default function CreateContractRevisionPage() {
       },
     });
   };
-
   const handleStageDelete = (record: ContractStage) => {
     if (getEntityById(record.state_id, referenceBooks?.contractStageStates)?.code !== 'COMPLETED') {
       setStages(prev => [...prev.filter(el => el.id !== record.id)]);
@@ -125,7 +101,6 @@ export default function CreateContractRevisionPage() {
       showNotification('error', 'Ошибка', 'Нельзя удалять завершённые этапы');
     }
   };
-
   const handleAddStage = () => {
     navigate(`/stages/create`, {
       state: {
@@ -133,7 +108,6 @@ export default function CreateContractRevisionPage() {
       },
     });
   };
-
   const handleSubmit = async (values: Record<string, unknown>) => {
     const data = {
       ...values,
@@ -142,19 +116,15 @@ export default function CreateContractRevisionPage() {
     } as Omit<ContractRevision, 'contract_id' | 'revision_number'>;
     if (contractId) mutate({ contractId, data });
   };
-
   const handleCancel = () => {
     navigate(`/contracts/${contractId}/revisions`);
   };
-
   if (isContractLoading || isReferencesLoading || isStagesLoading || isCreateLoading) {
     return <Loader />;
   }
-
   if (isContractError || isReferencesError || !contract || isCreateError) {
     return <NotFound errorMessage='Договор не найден' />;
   }
-
   return (
     <div className={styles.wrap}>
       {contextHolder}

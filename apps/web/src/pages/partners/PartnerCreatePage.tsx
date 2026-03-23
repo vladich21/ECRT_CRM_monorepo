@@ -12,36 +12,41 @@ import { initialFormValues } from './data';
 import { partnerUploadFormMapper } from '../../helpers/mappers/partnerUploadFormMapper';
 import { PartnerFormFields } from './PartnerFormFields';
 import styles from './PartnerFormPage.module.scss';
-
 export default function PartnerCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const [errorFields, setErrorFields] = useState<string[]>([]);
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData(['partnerCategories', 'partnerTypes', 'partnerStatuses', 'competencies', 'partnerEconomicCategories']);
-
-  const { mutate, isPending: isCreateLoading, isError: isCreateError, isSuccess: isCreateSuccess, error: createError } = useCreatePartner();
+  } = useReferenceData([
+    'partnerCategories',
+    'partnerTypes',
+    'partnerStatuses',
+    'competencies',
+    'partnerEconomicCategories',
+  ]);
+  const {
+    mutate,
+    isPending: isCreateLoading,
+    isError: isCreateError,
+    isSuccess: isCreateSuccess,
+    error: createError,
+  } = useCreatePartner();
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
-
   useEffect(() => {
     if (isCreateSuccess) {
       showNotification('success', 'Успех', 'Контрагент успешно создан');
       setTimeout(() => navigate(-1), 1000);
     }
   }, [isCreateSuccess, createError, navigate, showNotification]);
-
   const isSubmittingRef = useRef(false);
-
   const handleCreate = async (values: any) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setErrorFields([]);
-
     const payload = {
       ...values,
       status_id: values.status_id || null,
@@ -49,7 +54,6 @@ export default function PartnerCreatePage() {
       competence_ids: values.competence_ids || [],
       partner_economic_category_id: values.partner_economic_category_id,
     };
-
     mutate(payload, {
       onSettled: () => {
         isSubmittingRef.current = false;
@@ -59,7 +63,6 @@ export default function PartnerCreatePage() {
         const isInnKppDuplicate = message.includes('ИНН и КПП');
         const isInnRequired = message.includes('ИНН обязателен');
         const isKppRequired = message.includes('КПП обязателен');
-
         if (isInnKppDuplicate) {
           setErrorFields(['inn', 'kpp']);
           form.setFields([
@@ -77,11 +80,9 @@ export default function PartnerCreatePage() {
       },
     });
   };
-
   const getFieldStatus = (fieldName: string) => {
     return errorFields.includes(fieldName) ? 'error' : undefined;
   };
-
   const handleUploadByInn = async () => {
     getPartnerDataByInn(form.getFieldValue('inn'), {
       onSuccess: data => {
@@ -93,33 +94,30 @@ export default function PartnerCreatePage() {
       },
     });
   };
-
   if (isReferencesLoading) {
     return <Loader />;
   }
-
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
-
   return (
     <DetailPageHeader
-      title="Создание нового контрагента"
+      title='Создание нового контрагента'
       titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные контрагента</span>}
-      backLabel="Контрагенты"
+      backLabel='Контрагенты'
       onBack={() => navigate(-1)}
       actions={
         <>
           <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
             Очистить форму
           </Button>
-          <Button type="primary" icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
+          <Button type='primary' icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
             Создать контрагента
           </Button>
         </>
       }
       tabs={[{ key: 'main', label: 'Создание' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
       stickyHeader
@@ -127,8 +125,8 @@ export default function PartnerCreatePage() {
       <div className={styles.formCard}>
         <Form
           form={form}
-          layout="vertical"
-          size="middle"
+          layout='vertical'
+          size='middle'
           initialValues={initialFormValues}
           onFinish={handleCreate}
           disabled={isCreateLoading}

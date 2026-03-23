@@ -17,20 +17,16 @@ import {
 import { getNameById } from '../../../helpers/getNameById';
 import { getEntityById } from '../../../helpers/getEntityById';
 import styles from './PatentAreasListPage.module.scss';
-
 type ActionType = 'edit' | 'delete' | 'add' | '';
-
 const PatentAreasListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = usePatentAreas();
   const [currentAreaId, setCurrentAreaId] = useState<string>('');
   const [action, setAction] = useState<ActionType>('');
   const modalProps = useModalStore();
-
   const deleteAreaMutation = useDeletePatentArea();
   const editAreaMutation = useUpdatePatentArea();
   const addAreaMutation = useCreatePatentArea();
-
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteAreaMutation,
     successMessage: 'Область патентных заявок успешно удалена',
@@ -38,7 +34,6 @@ const PatentAreasListPage: React.FC = () => {
     getMutationProps: () => currentAreaId,
     showNotification,
   });
-
   const { handleOpenModal: openMutateModal } = useMutateByModal<PatentArea, Error>({
     isEdit: action === 'edit',
     mutation: action === 'edit' ? editAreaMutation : addAreaMutation,
@@ -53,7 +48,6 @@ const PatentAreasListPage: React.FC = () => {
     getMutationProps: action === 'edit' ? () => currentAreaId : () => undefined,
     showNotification,
   });
-
   useEffect(() => {
     if (action === 'delete') {
       openDeleteModal();
@@ -61,44 +55,39 @@ const PatentAreasListPage: React.FC = () => {
       openMutateModal();
     }
   }, [currentAreaId, action]);
-
   useEffect(() => {
     if (!modalProps.open) {
       setAction('');
     }
   }, [modalProps.open]);
-
   const handleOpenAddModal = () => {
     setAction('add');
     setCurrentAreaId('');
   };
-
   const onDelete = ({ id }: { id: string }) => {
     setAction('delete');
     setCurrentAreaId(id);
   };
-
   const onEdit = ({ id }: { id: string }) => {
     setAction('edit');
     setCurrentAreaId(id);
   };
-
   return (
     <ReferenceBookListPage
-      title="Области патентных заявок"
-      addButtonLabel="Добавить область патентных заявок"
+      title='Области патентных заявок'
+      addButtonLabel='Добавить область патентных заявок'
       onAdd={handleOpenAddModal}
       contextHolder={contextHolder}
     >
       {loading ? (
         <div className={styles.loading}>
-          <Spin size="large" />
+          <Spin size='large' />
         </div>
       ) : data.length === 0 ? (
         <div className={styles.empty}>Области патентных заявок не найдены</div>
       ) : (
         <ReferenceBookCardList>
-          {data.map((area) => (
+          {data.map(area => (
             <ReferenceBookItemCard
               key={area.id}
               title={area.name || '—'}
@@ -113,5 +102,4 @@ const PatentAreasListPage: React.FC = () => {
     </ReferenceBookListPage>
   );
 };
-
 export default PatentAreasListPage;

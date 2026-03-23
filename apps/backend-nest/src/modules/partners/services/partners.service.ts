@@ -6,7 +6,6 @@ import {
   partners,
   relPartnersTypes,
   relPartnersCompetencies,
-  partnerContacts,
   contracts,
   refPartnerStatuses,
   refPartnerEconomicCategories,
@@ -15,6 +14,8 @@ import {
   refPartnerCategories,
 } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
+import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
+import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 
 export type PartnerListTabScope = 'all' | 'ready' | 'in_progress' | 'key_supplier';
 
@@ -24,6 +25,7 @@ export interface PartnerQueryFilters {
   statusIds?: string[];
   competenceIds?: string[];
   readiness?: PartnerListTabScope;
+  deletedScope?: DeletedScope;
 }
 
 export interface PartnersListPayload {
@@ -35,6 +37,7 @@ export interface PartnersListPayload {
     in_progress: number;
     key_supplier: number;
   };
+  deletion_tab_counts: DeletionTabCounts;
 }
 
 @Injectable()
@@ -64,14 +67,25 @@ export class PartnersService {
     }
   }
 
-  private mergeWhere(baseParts: SQL[], extra?: SQL): SQL | undefined {
+  private basePlusReadiness(baseParts: SQL[], tab: PartnerListTabScope): SQL {
+    const extra = this.listTabSql(tab);
     const parts = extra ? [...baseParts, extra] : [...baseParts];
-    return parts.length ? and(...parts) : undefined;
+    return parts.length ? and(...parts)! : sql`true`;
   }
 
-  private async countPartners(where: SQL | undefined): Promise<number> {
-    const base = this.db.db.select({ value: count() }).from(partners);
-    const rows = where != null ? await base.where(where) : await base;
+  private whereWithDeletion(
+    baseParts: SQL[],
+    readinessTab: PartnerListTabScope,
+    deletedScope: DeletedScope,
+  ): SQL {
+    const inner = this.basePlusReadiness(baseParts, readinessTab);
+    const dels = sqlPartsForDeletedScope(partners.isDeleted, deletedScope);
+    if (dels.length === 0) return inner;
+    return and(inner, dels[0])!;
+  }
+
+  private async countPartners(where: SQL): Promise<number> {
+    const rows = await this.db.db.select({ value: count() }).from(partners).where(where);
     return Number(rows[0]?.value ?? 0);
   }
 
@@ -120,6 +134,7 @@ export class PartnersService {
       const rows = await this.db.db
         .select({ id: partners.id, name: partners.name })
         .from(partners)
+        .where(eq(partners.isDeleted, false))
         .orderBy(asc(partners.name));
       const data = rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
       const n = data.length;
@@ -127,6 +142,7 @@ export class PartnersService {
         data,
         total: n,
         tab_counts: { all: n, ready: 0, in_progress: 0, key_supplier: 0 },
+        deletion_tab_counts: { active: n, deleted: 0, all: n },
       };
     }
 
@@ -136,40 +152,37 @@ export class PartnersService {
         data: [],
         total: 0,
         tab_counts: { all: 0, ready: 0, in_progress: 0, key_supplier: 0 },
+        deletion_tab_counts: { active: 0, deleted: 0, all: 0 },
       };
     }
 
+    const deletedScope: DeletedScope = filters?.deletedScope ?? 'active';
     const tab = filters?.readiness ?? 'all';
-    const whereAll = this.mergeWhere(baseParts, this.listTabSql('all'));
-    const whereReady = this.mergeWhere(baseParts, this.listTabSql('ready'));
-    const whereInProgress = this.mergeWhere(baseParts, this.listTabSql('in_progress'));
-    const whereKeySupplier = this.mergeWhere(baseParts, this.listTabSql('key_supplier'));
-    const listWhere = this.mergeWhere(baseParts, this.listTabSql(tab));
 
     const { limit = 20, offset = 0 } = pagination ?? {};
 
-    const [tabAll, tabReady, tabInProgress, tabKeySupplier, rows] = await Promise.all([
-      this.countPartners(whereAll),
-      this.countPartners(whereReady),
-      this.countPartners(whereInProgress),
-      this.countPartners(whereKeySupplier),
-      this.db.db
-        .select()
-        .from(partners)
-        .where(listWhere ?? sql`true`)
-        .orderBy(asc(partners.name))
-        .limit(limit)
-        .offset(offset),
-    ]);
+    const listWhere = this.whereWithDeletion(baseParts, tab, deletedScope);
 
-    const total =
-      tab === 'ready'
-        ? tabReady
-        : tab === 'in_progress'
-          ? tabInProgress
-          : tab === 'key_supplier'
-            ? tabKeySupplier
-            : tabAll;
+    const [tabAll, tabReady, tabInProgress, tabKeySupplier, delActive, delDeleted, delAll, listTotal, rows] =
+      await Promise.all([
+        this.countPartners(this.whereWithDeletion(baseParts, 'all', 'all')),
+        this.countPartners(this.whereWithDeletion(baseParts, 'ready', 'all')),
+        this.countPartners(this.whereWithDeletion(baseParts, 'in_progress', 'all')),
+        this.countPartners(this.whereWithDeletion(baseParts, 'key_supplier', 'all')),
+        this.countPartners(this.whereWithDeletion(baseParts, tab, 'active')),
+        this.countPartners(this.whereWithDeletion(baseParts, tab, 'deleted')),
+        this.countPartners(this.whereWithDeletion(baseParts, tab, 'all')),
+        this.countPartners(listWhere),
+        this.db.db
+          .select()
+          .from(partners)
+          .where(listWhere)
+          .orderBy(asc(partners.name))
+          .limit(limit)
+          .offset(offset),
+      ]);
+
+    const total = listTotal;
 
     const ids = rows.map((row) => row.id).filter(Boolean) as string[];
 
@@ -218,6 +231,11 @@ export class PartnersService {
         ready: tabReady,
         in_progress: tabInProgress,
         key_supplier: tabKeySupplier,
+      },
+      deletion_tab_counts: {
+        active: delActive,
+        deleted: delDeleted,
+        all: delAll,
       },
     };
   }
@@ -310,24 +328,35 @@ export class PartnersService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Удаление партнёра id: ${id}`);
+    this.logger.debug(`Мягкое удаление партнёра id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     const contractRefs = await this.db.db
       .select({ id: contracts.id })
       .from(contracts)
-      .where(eq(contracts.partnerId, id))
+      .where(and(eq(contracts.partnerId, id), eq(contracts.isDeleted, false)))
       .limit(1);
     if (contractRefs.length > 0) {
       throw new ConflictException(
-        'Невозможно удалить партнёра: к нему привязаны договоры.',
+        'Невозможно удалить партнёра: к нему привязаны активные (не удалённые) договоры.',
       );
     }
-    await this.db.db.delete(partnerContacts).where(eq(partnerContacts.partnerId, id));
-    await this.db.db.delete(relPartnersTypes).where(eq(relPartnersTypes.partnerId, id));
-    await this.db.db.delete(relPartnersCompetencies).where(eq(relPartnersCompetencies.partnerId, id));
-    await this.db.db.delete(partners).where(eq(partners.id, id));
-    return row;
+    await this.db.db
+      .update(partners)
+      .set({ isDeleted: true, updatedAt: new Date() })
+      .where(eq(partners.id, id));
+    return this.findOne(id);
+  }
+
+  async restore(id: string) {
+    this.logger.debug(`Восстановление партнёра id: ${id}`);
+    const row = await this.findOne(id);
+    if (!row) return null;
+    await this.db.db
+      .update(partners)
+      .set({ isDeleted: false, updatedAt: new Date() })
+      .where(eq(partners.id, id));
+    return this.findOne(id);
   }
 
   private async syncRelTables(partnerId: string, data: Record<string, unknown>) {
@@ -426,7 +455,7 @@ export class PartnersService {
     const existing = await this.db.db
       .select({ id: partners.id })
       .from(partners)
-      .where(and(...conditions))
+      .where(and(...conditions, eq(partners.isDeleted, false)))
       .limit(1);
     if (existing.length > 0) {
       throw new ConflictException(
@@ -493,6 +522,7 @@ export class PartnersService {
       next_audit_date: r.nextAuditDate ?? null,
       created_at: r.createdAt ? r.createdAt.toISOString() : '',
       updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
+      is_deleted: r.isDeleted ?? false,
     };
   }
 }

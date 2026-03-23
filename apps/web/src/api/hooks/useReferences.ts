@@ -46,26 +46,39 @@ export type ReferenceType =
   | 'patentAreas';
 
 export interface ReferenceData {
-  departments: Array<{ id: string; name: string; short_name?: string }>;
-  roles: Array<{ id: string; name: string }>;
-  positions: Array<{ id: string; name: string }>;
-  users: Array<{ id: string; name: string }>;
-  projects: Array<{ id: string; name: string; code: string }>;
+  departments: Array<{
+    id: string;
+    name: string;
+    short_name?: string;
+  }>;
+  roles: Array<{
+    id: string;
+    name: string;
+  }>;
+  positions: Array<{
+    id: string;
+    name: string;
+  }>;
+  users: Array<{
+    id: string;
+    name: string;
+  }>;
+  projects: Array<{
+    id: string;
+    name: string;
+    code: string;
+  }>;
   competencies: Array<PartnerCompetence>;
-
   partners: Array<Reference>;
   partnerCategories: Array<PartnerCategory>;
   partnerTypes: Array<PartnerType>;
   partnerStatuses: Array<PartnerStatus>;
   partnerEconomicCategories: Array<Reference>;
-
   contracts: Array<Contract>;
   contractStates: Array<ContractState>;
   contractCategories: Array<Reference>;
   contractTypes: Array<ContractType>;
-
   contractStageStates: Array<ContractStageState>;
-
   patents: Array<Reference>;
   patentStatuses: Array<Reference>;
   patentIntellectProps: Array<Reference>;
@@ -75,34 +88,41 @@ export interface ReferenceData {
 const referenceApiMethods = {
   users: async () => {
     const { data } = await userApi.getUsers(2, false);
-    return (data as unknown) as Array<{ id: string; name: string }>;
+    return data as unknown as Array<{
+      id: string;
+      name: string;
+    }>;
   },
   departments: () => departmentApi.getDepartments(1),
   roles: () =>
-    roleApi.getRoles().then((list) =>
-      list.map((role) => ({ id: role.id, name: role.role_name ?? (role as { name?: string }).name ?? role.id })),
+    roleApi.getRoles().then(list =>
+      list.map(role => ({
+        id: role.id,
+        name:
+          role.role_name ??
+          (
+            role as {
+              name?: string;
+            }
+          ).name ??
+          role.id,
+      })),
     ),
   positions: () => positionApi.getPositions(1),
   projects: () => projectApi.getProjectsPreview(),
   competencies: partnerCompetenceApi.getPartnerCompetencies,
-
   partners: () => partnerApi.getPartnersForReference(),
   partnerCategories: partnerCategoryApi.getPartnerCategories,
   partnerTypes: partnerTypeApi.getPartnerTypes,
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,
-
-  contracts: () => contractApi.getContractsForReference().then((r) => r.data),
+  contracts: () => contractApi.getContractsForReference().then(r => r.data),
   contractStates: contractApi.getContractsStates,
   contractCategories: contractApi.getContractsCategories,
   contractTypes: contractTypeApi.getContractTypes,
-
   contractStageStates: contractStageStateApi.getContractStageStates,
-
   patents: () =>
-    patentApi.getPatents({ preview: true, deletedScope: 'active' }).then((r) =>
-      Array.isArray(r) ? r : r.data,
-    ),
+    patentApi.getPatents({ preview: true, deletedScope: 'active' }).then(r => (Array.isArray(r) ? r : r.data)),
   patentStatuses: patentStatusesApi.getPatentStatuses,
   patentIntellectProps: patentIntellectPropsApi.getPatentIntellectProps,
   patentAreas: patentAreasApi.getPatentAreas,
@@ -110,14 +130,13 @@ const referenceApiMethods = {
 
 export const useReferenceData = (neededReferences: ReferenceType[] = []) => {
   const sortedReferences = [...neededReferences].sort();
-
   return useQuery({
     queryKey: ['reference-data', ...sortedReferences],
     queryFn: async (): Promise<Partial<ReferenceData>> => {
-      const promises = neededReferences.map((refType) => {
+      const promises = neededReferences.map(refType => {
         const apiMethod = referenceApiMethods[refType];
         return apiMethod
-          ? apiMethod().then((data) => ({
+          ? apiMethod().then(data => ({
               type: refType,
               data,
             }))
@@ -125,13 +144,12 @@ export const useReferenceData = (neededReferences: ReferenceType[] = []) => {
       });
       const results = await Promise.allSettled(promises);
       const formattedData: Partial<ReferenceData> = {};
-      results.forEach((result) => {
+      results.forEach(result => {
         if (result.status === 'fulfilled') {
           const { type, data } = result.value;
           (formattedData as Record<ReferenceType, unknown>)[type] = data;
         }
       });
-
       return formattedData;
     },
     enabled: neededReferences.length > 0,

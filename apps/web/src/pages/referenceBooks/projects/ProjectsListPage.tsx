@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useProjectsList } from '../../../api/projects/projectApiHooks';
@@ -10,15 +10,16 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
 import { useProjectListFilters } from './hooks/useProjectListFilters';
 import { ProjectCard } from './ProjectCard';
 import { ProjectFiltersModal } from './ProjectFiltersModal';
 import { PROJECT_FILTER_TABS, type ProjectFilterTab } from './ProjectsListPage.types';
 import type { Project } from '../../../types/referenceTypes';
+import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
+import { buildProjectsListNavSnapshot, parseProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
 import styles from './ProjectsListPage.module.scss';
-
 const SEARCH_DEBOUNCE_MS = 350;
-
 const EMPTY_TAB_COUNTS: Record<ProjectFilterTab, number> = {
   all: 0,
   active: 0,
@@ -26,11 +27,11 @@ const EMPTY_TAB_COUNTS: Record<ProjectFilterTab, number> = {
   pending: 0,
   paused: 0,
   cancelled: 0,
+  deleted: 0,
 };
-
 export default function ProjectsListPage() {
   const navigate = useNavigate();
-
+  const location = useLocation();
   const {
     searchQuery,
     setSearchQuery,
@@ -40,26 +41,48 @@ export default function ProjectsListPage() {
     openFiltersModal,
     closeFiltersModal,
     appliedFilters,
+    setAppliedFilters,
     draftFilters,
+    setDraftFilters,
     updateDraftFilter,
     applyFilters,
     resetDraftFilters,
     activeFiltersCount,
   } = useProjectListFilters();
-
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(t);
+    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(debounceTimerId);
   }, [searchQuery]);
-
-  const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } =
+  const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
-
+  const { skipNextListResetRef } = useListReturnFromDetail({
+    location,
+    navigate,
+    getRawSnapshot: navigationState => navigationState.projectsListReturn,
+    parse: parseProjectsListNavSnapshot,
+    applyParsed: restoredListState => {
+      setSearchQuery(restoredListState.searchQuery);
+      setDebouncedSearch(restoredListState.searchQuery.trim());
+      setActiveTab(restoredListState.activeTab);
+      setAppliedFilters(restoredListState.appliedFilters);
+      setDraftFilters(restoredListState.appliedFilters);
+      setPage(restoredListState.page);
+      setPageSize(restoredListState.pageSize);
+    },
+    applyFallback: navigationState => {
+      if (navigationState.listTab != null) {
+        setActiveTab(navigationState.listTab as ProjectFilterTab);
+        return;
+      }
+      if (navigationState.deletionScope === 'deleted') setActiveTab('deleted');
+    },
+  });
   const apiFilters = useMemo((): ProjectsListParams => {
     const base: ProjectsListParams = {
       search: debouncedSearch || undefined,
-      list_tab: activeTab,
+      list_tab: activeTab === 'deleted' ? 'all' : activeTab,
+      deleted_scope: activeTab === 'deleted' ? 'deleted' : 'all',
     };
     if (appliedFilters.managerId) {
       base.manager_id = appliedFilters.managerId;
@@ -88,20 +111,13 @@ export default function ProjectsListPage() {
     }
     return base;
   }, [debouncedSearch, activeTab, appliedFilters]);
-
   const { data, isLoading, isError, isFetching } = useProjectsList(apiFilters, page, pageSize);
-
-  const { data: referenceBooks, isError: isRefsError, isLoading: isRefsLoading } =
-    useReferenceData(['users']);
-
+  const { data: referenceBooks, isError: isRefsError, isLoading: isRefsLoading } = useReferenceData(['users']);
   const projects = data?.data ?? [];
   const total = data?.total ?? 0;
   const tabCounts = { ...EMPTY_TAB_COUNTS, ...(data?.tab_counts ?? {}) };
-
-  useEffect(() => {
-    resetPage();
-  }, [debouncedSearch, activeTab, appliedFilters, resetPage]);
-
+  const deletionTabCounts = data?.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS;
+  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
   useEffect(() => {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
@@ -109,49 +125,52 @@ export default function ProjectsListPage() {
       handleTableChange({ current: maxPage, pageSize } as never);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-
   const selectOptions = useMemo(() => {
-    const users = (referenceBooks?.users ?? []).map((user) => ({ label: user.name, value: user.id }));
+    const users = (referenceBooks?.users ?? []).map(user => ({ label: user.name, value: user.id }));
     return { managers: users, creators: users };
   }, [referenceBooks]);
-
   const handleProjectClick = (project: Project) =>
-    navigate(`/projects/${project.id}`, { state: { from: 'projects-list' } });
-
+    navigate(`/projects/${project.id}`, {
+      state: {
+        from: 'projects-list',
+        deletionScope: activeTab === 'deleted' ? ('deleted' as const) : undefined,
+        projectsListReturn: buildProjectsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
+      },
+    });
   const handlePageChange = (newPage: number, newPageSize?: number) =>
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
     } as never);
-
   if (isRefsError || isError) {
-    return <NotFound errorMessage="Не удалось выполнить запрос" />;
+    return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-
   const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
-
   return (
     <div className={styles.wrap}>
-      <BackButton path="/" />
+      <BackButton path='/' />
 
       <PageHeader
-        title="Проекты"
-        subtitle="Управление проектами"
+        title='Проекты'
+        subtitle='Управление проектами'
         actions={
           <>
             <Button
-              type="default"
+              type='default'
               icon={<FilterOutlined />}
               onClick={openFiltersModal}
               className={activeFiltersCount > 0 ? styles.filtersBtnActive : undefined}
             >
               Фильтры
-              {activeFiltersCount > 0 && (
-                <span className={styles.filtersBadge}>{activeFiltersCount}</span>
-              )}
+              {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/create')}>
+            <Button
+              type='primary'
+              icon={<PlusOutlined />}
+              disabled={activeTab === 'deleted'}
+              onClick={() => navigate('/projects/create')}
+            >
               Добавить проект
             </Button>
           </>
@@ -164,24 +183,26 @@ export default function ProjectsListPage() {
                   {PROJECT_FILTER_TABS.map(({ key, label }) => (
                     <button
                       key={key}
-                      type="button"
+                      type='button'
                       className={`${styles.filterTab}${activeTab === key ? ` ${styles.filterTabActive}` : ''}`}
                       onClick={() => setActiveTab(key)}
                     >
                       {label}{' '}
-                      <span className={styles.filterTabCount}>{tabCounts[key]}</span>
+                      <span className={styles.filterTabCount}>
+                        {key === 'deleted' ? deletionTabCounts.deleted : tabCounts[key]}
+                      </span>
                     </button>
                   ))}
                 </div>
                 <div className={styles.filterTabsRight}>
                   <Input.Search
                     className={styles.searchInTabsRow}
-                    placeholder="Поиск по названию, коду..."
+                    placeholder='Поиск по названию, коду...'
                     allowClear
                     enterButton={false}
                     prefix={<SearchOutlined className={styles.searchIcon} />}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                   />
                   <span className={styles.resultCount}>
                     Показано: <strong>{projects.length}</strong> из <strong>{total}</strong>
@@ -198,25 +219,26 @@ export default function ProjectsListPage() {
         draftFilters={draftFilters}
         onUpdateDraftFilter={updateDraftFilter}
         onClose={closeFiltersModal}
-        onApply={applyFilters}
+        onApply={() => {
+          applyFilters();
+          resetPage();
+        }}
         onReset={resetDraftFilters}
         selectOptions={selectOptions}
       />
 
       {isInitialLoad ? (
         <div className={styles.loading}>
-          <Spin size="large" />
+          <Spin size='large' />
         </div>
       ) : (
-        <div
-          className={`${styles.cardList}${
-            isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''
-          }`}
-        >
+        <div className={`${styles.cardList}${isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''}`}>
           {projects.length === 0 ? (
-            <div className={styles.empty}>Проекты не найдены</div>
+            <div className={styles.empty}>
+              {activeTab === 'deleted' ? 'Нет удалённых проектов' : 'Проекты не найдены'}
+            </div>
           ) : (
-            projects.map((project) => (
+            projects.map(project => (
               <ProjectCard
                 key={project.id}
                 project={project}

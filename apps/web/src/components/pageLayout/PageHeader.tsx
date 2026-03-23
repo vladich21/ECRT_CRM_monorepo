@@ -1,15 +1,12 @@
 import type { ReactNode } from 'react';
 import styles from './PageHeader.module.scss';
-
 interface PageHeaderProps {
   title: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
   filters?: ReactNode;
-  /** Убрать белый фон у блока заголовка */
   transparentBlock?: boolean;
 }
-
 export function PageHeader({ title, subtitle, actions, filters, transparentBlock }: PageHeaderProps) {
   return (
     <div className={`${styles.pageBlock} ${transparentBlock ? styles.pageBlockTransparent : ''}`}>
@@ -17,14 +14,10 @@ export function PageHeader({ title, subtitle, actions, filters, transparentBlock
         <div className={styles.pageHeaderContainer}>
           <div className={styles.pageHeaderLeft}>
             <h1 className={styles.pageTitle}>{title}</h1>
-            {subtitle && (
-              <span className={styles.pageSubtitle}>{subtitle}</span>
-            )}
+            {subtitle && <span className={styles.pageSubtitle}>{subtitle}</span>}
           </div>
 
-          {actions && (
-            <div className={styles.pageHeaderRight}>{actions}</div>
-          )}
+          {actions && <div className={styles.pageHeaderRight}>{actions}</div>}
         </div>
       </header>
 

@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { Avatar, Button, Dropdown, Menu } from 'antd';
-import { UserOutlined, DownloadOutlined, MoreOutlined, MessageOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  DownloadOutlined,
+  MoreOutlined,
+  MessageOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import { triggerFileDownload } from '../filePreview/FilePreviewModal';
 import { Comment } from '../../types/comments';
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
@@ -22,12 +29,10 @@ interface CommentProps {
   onReply: (commentId: string) => Promise<void> | void;
   onEdit: (commentId: string) => Promise<void> | void;
   onDelete?: (commentId: string) => Promise<void> | void;
-  isLoading?: boolean;
   allComments?: Comment[];
   usersBook?: any[];
   entityType?: string;
   entityId?: string;
-  onScrollToComment?: (commentId: string) => void;
 }
 
 const CommentComponent: React.FC<CommentProps> = ({
@@ -38,24 +43,19 @@ const CommentComponent: React.FC<CommentProps> = ({
   userAvatar,
   onReply,
   onEdit,
-  isLoading = false,
   allComments = [],
   usersBook = [],
   entityType,
   entityId,
-  onScrollToComment,
 }) => {
   const { showNotification } = useNotification();
   const queryClient = useQueryClient();
   const deleteCommentMutation = useDeleteComment();
   const [isHovered, setIsHovered] = useState(false);
-
   const { findParentComment, getUserName } = useCommentHelpers(allComments, usersBook);
-
   const parentComment = findParentComment(comment.parent_id);
   const parentAuthorName = parentComment ? getUserName(parentComment) : null;
   const parentContent = parentComment?.html || parentComment?.message;
-
   const handleScrollToParent = () => {
     if (comment.parent_id) {
       scrollToElement(`comment-${comment.parent_id}`);
@@ -81,7 +81,7 @@ const CommentComponent: React.FC<CommentProps> = ({
   const commentAuthorId = comment.created_by || comment.user_id;
   const isCurrentUser = !!currentUserId && !!commentAuthorId && String(currentUserId) === String(commentAuthorId);
   const hasParent = comment.parent_id && parentAuthorName && parentContent;
-
+ 
   const menu = (
     <Menu className={styles.dropdownMenu}>
       <Menu.Item
@@ -128,12 +128,7 @@ const CommentComponent: React.FC<CommentProps> = ({
     >
       <div className={`${styles.content} ${level > 1 ? styles.withBorder : ''}`}>
         <div className={styles.header}>
-          <Avatar
-            src={userAvatar}
-            icon={<UserOutlined />}
-            size={36}
-            className={styles.avatar}
-          />
+          <Avatar src={userAvatar} icon={<UserOutlined />} size={36} className={styles.avatar} />
 
           <div className={styles.body}>
             <div className={styles.meta}>
@@ -152,22 +147,15 @@ const CommentComponent: React.FC<CommentProps> = ({
                 />
               </Dropdown>
             </div>
-
-            {/* Цитата родительского комментария (если есть parent_id) */}
+            
             {hasParent && (
               <div className={styles.parentQuote} onClick={handleScrollToParent}>
                 <div className={styles.parentQuoteAuthor}>{parentAuthorName}</div>
-                <div
-                  className={styles.parentQuoteContent}
-                  dangerouslySetInnerHTML={{ __html: parentContent }}
-                />
+                <div className={styles.parentQuoteContent} dangerouslySetInnerHTML={{ __html: parentContent }} />
               </div>
             )}
 
-            <div
-              className={styles.message}
-              dangerouslySetInnerHTML={{ __html: comment.html }}
-            />
+            <div className={styles.message} dangerouslySetInnerHTML={{ __html: comment.html }} />
 
             {comment.files && comment.files.length > 0 && (
               <div className={styles.files}>
@@ -183,9 +171,7 @@ const CommentComponent: React.FC<CommentProps> = ({
                     <DownloadOutlined className={styles.fileIcon} />
                     <div className={styles.fileInfo}>
                       <span className={styles.fileName}>{file.name}</span>
-                      {file.size && (
-                        <span className={styles.fileSize}>{formatFileSize(+file.size)}</span>
-                      )}
+                      {file.size && <span className={styles.fileSize}>{formatFileSize(+file.size)}</span>}
                     </div>
                   </div>
                 ))}
@@ -197,5 +183,4 @@ const CommentComponent: React.FC<CommentProps> = ({
     </div>
   );
 };
-
 export default CommentComponent;

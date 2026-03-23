@@ -15,19 +15,16 @@ import {
 import type { PartnerDetailExtras, PartnerRegistryStatus } from '../../../types/partnerRegistry';
 import { STATUS_CONFIG, TYPE_CONFIG } from '../partnerRegistryConfig';
 import styles from './DetailHeader.module.scss';
-
 const STATUS_ICONS: Record<PartnerRegistryStatus, React.ReactNode> = {
   active: <CheckCircleFilled />,
   potential: <ClockCircleFilled />,
   blocked: <StopFilled />,
   archive: <InboxOutlined />,
 };
-
 interface TabItem {
   key: string;
   label: string;
 }
-
 interface DetailHeaderProps {
   name: string;
   extras: PartnerDetailExtras;
@@ -38,7 +35,6 @@ interface DetailHeaderProps {
   onEdit: () => void;
   onDelete: () => void;
 }
-
 export default function DetailHeader({
   name,
   extras,
@@ -51,15 +47,9 @@ export default function DetailHeader({
 }: DetailHeaderProps) {
   const st = STATUS_CONFIG[extras.status];
   const tp = TYPE_CONFIG[extras.type];
-
   return (
     <div className={styles.header}>
-      <Button
-        type="text"
-        icon={<ArrowLeftOutlined />}
-        onClick={onBack}
-        className={styles.backBtn}
-      >
+      <Button type='text' icon={<ArrowLeftOutlined />} onClick={onBack} className={styles.backBtn}>
         Реестр контрагентов
       </Button>
 
@@ -68,7 +58,7 @@ export default function DetailHeader({
           <div className={styles.nameRow}>
             <h1 className={styles.companyName}>{name}</h1>
             {extras.key_supplier && (
-              <Tooltip title="Ключевой поставщик">
+              <Tooltip title='Ключевой поставщик'>
                 <div className={styles.badgeKey}>
                   <StarFilled style={{ fontSize: 12 }} />
                   Ключевой
@@ -76,7 +66,7 @@ export default function DetailHeader({
               </Tooltip>
             )}
             {extras.targeted && (
-              <Tooltip title="Целевой поставщик">
+              <Tooltip title='Целевой поставщик'>
                 <div className={styles.badgeTarget}>
                   <AimOutlined style={{ fontSize: 12 }} />
                   Целевой
@@ -107,17 +97,17 @@ export default function DetailHeader({
 
         <div className={styles.actions}>
           <Button icon={<BellOutlined />} className={styles.actionBtn} />
-          <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
+          <Button type='primary' icon={<EditOutlined />} onClick={onEdit}>
             Редактировать
           </Button>
-          <Button type="primary" danger icon={<DeleteOutlined />} onClick={onDelete}>
+          <Button type='primary' danger icon={<DeleteOutlined />} onClick={onDelete}>
             Удалить
           </Button>
         </div>
       </div>
 
       <div className={styles.tabs}>
-        {tabs.map((tab) => (
+        {tabs.map(tab => (
           <div
             key={tab.key}
             className={activeTab === tab.key ? styles.tabActive : styles.tab}

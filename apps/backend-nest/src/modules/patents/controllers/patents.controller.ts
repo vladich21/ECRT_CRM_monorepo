@@ -1,21 +1,11 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
-import { PatentsService, type PatentDeletedScope, type PatentFindAllParams } from '../services/patents.service';
+import { PatentsService, type PatentFindAllParams } from '../services/patents.service';
 import { parsePagination } from '../../../common/pagination';
+import { parseDeletedScope } from '../../../common/deleted-scope';
 
 function parseAuthorIds(raw?: string): string[] {
   if (!raw?.trim()) return [];
   return raw.split(',').map((s) => s.trim()).filter(Boolean);
-}
-
-function parseDeletedScope(
-  deletedScopeRaw?: string,
-  legacyIsDeleted?: string,
-): PatentDeletedScope {
-  if (deletedScopeRaw === 'all' || deletedScopeRaw === 'deleted' || deletedScopeRaw === 'active') {
-    return deletedScopeRaw;
-  }
-  if (legacyIsDeleted === 'true') return 'deleted';
-  return 'active';
 }
 
 @Controller('patents')
@@ -33,7 +23,6 @@ export class PatentsController {
   findAll(
     @Query('preview') preview?: string,
     @Query('deleted_scope') deletedScopeRaw?: string,
-    @Query('is_deleted') legacyIsDeleted?: string,
     @Query('search') search?: string,
     @Query('department_id') departmentId?: string,
     @Query('status_id') statusId?: string,
@@ -44,7 +33,7 @@ export class PatentsController {
   ) {
     const params: PatentFindAllParams = {
       preview: preview === '1',
-      deletedScope: parseDeletedScope(deletedScopeRaw, legacyIsDeleted),
+      deletedScope: parseDeletedScope(deletedScopeRaw),
       pagination: parsePagination(limit, offset),
       search: search?.trim() || undefined,
       departmentId: departmentId?.trim() || undefined,

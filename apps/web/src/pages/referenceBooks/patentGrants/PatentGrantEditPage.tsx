@@ -12,7 +12,6 @@ import { usePatentGrantById, useUpdatePatentGrant } from '../../../api/patents/p
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { PatentGrantFormFields } from './PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
-
 export default function PatentGrantEditPage() {
   const { grantId } = useParams();
   const navigate = useNavigate();
@@ -31,7 +30,6 @@ export default function PatentGrantEditPage() {
     isError: isUpdateError,
     isSuccess: isUpdateSuccess,
   } = useUpdatePatentGrant();
-
   useEffect(() => {
     if (patentGrant) {
       const formData = {
@@ -42,7 +40,6 @@ export default function PatentGrantEditPage() {
       form.setFieldsValue(formData);
     }
   }, [patentGrant, form]);
-
   useEffect(() => {
     if (isUpdateSuccess && patentGrant?.patent_id) {
       showNotification('success', 'Успех', 'Патентный грант успешно изменён');
@@ -51,41 +48,32 @@ export default function PatentGrantEditPage() {
       showNotification('error', 'Ошибка', 'Не удалось изменить патентный грант');
     }
   }, [isUpdateError, isUpdateSuccess, navigate, showNotification, patentGrant?.patent_id]);
-
   const handleSave = async (values: any) => {
     const payload = getChangedFields(values, patentGrant!);
-
-    // Преобразование дат обратно в строку
     if (payload.grant_date && dayjs.isDayjs(payload.grant_date)) {
       payload.grant_date = payload.grant_date.format('YYYY-MM-DD');
     }
     if (payload.renewal_date && dayjs.isDayjs(payload.renewal_date)) {
       payload.renewal_date = payload.renewal_date.format('YYYY-MM-DD');
     }
-
     mutate({ id: grantId!, data: payload });
   };
-
   const handleBack = () => {
     navigate(-1);
   };
-
   const handleFormChange = () => {
     setIsFormChanged(true);
   };
-
   if (isReferencesLoading || isGrantLoading) {
     return <Loader />;
   }
-
   if (isReferencesError || isGrantError || !patentGrant || !referenceBooks) {
     return <NotFound errorMessage='Не найден патентный грант или справочник' />;
   }
-
   return (
     <DetailPageHeader
       title={`Редактирование: ${patentGrant.grant_number}`}
-      backLabel="Патентные гранты"
+      backLabel='Патентные гранты'
       onBack={handleBack}
       actions={
         <>
@@ -93,7 +81,7 @@ export default function PatentGrantEditPage() {
             Отмена
           </Button>
           <Button
-            type="primary"
+            type='primary'
             icon={<SaveOutlined />}
             onClick={() => form.submit()}
             loading={isUpdateLoading}
@@ -104,7 +92,7 @@ export default function PatentGrantEditPage() {
         </>
       }
       tabs={[{ key: 'main', label: 'Редактирование' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
       stickyHeader
@@ -112,8 +100,8 @@ export default function PatentGrantEditPage() {
       <div className={styles.formCard}>
         <Form
           form={form}
-          layout="vertical"
-          size="middle"
+          layout='vertical'
+          size='middle'
           onFieldsChange={handleFormChange}
           onFinish={handleSave}
           disabled={isUpdateLoading}
@@ -122,11 +110,7 @@ export default function PatentGrantEditPage() {
           }}
           scrollToFirstError
         >
-          <PatentGrantFormFields
-            form={form}
-            referenceBooks={referenceBooks}
-            patentIdFromState={null}
-          />
+          <PatentGrantFormFields form={form} referenceBooks={referenceBooks} patentIdFromState={null} />
         </Form>
       </div>
     </DetailPageHeader>

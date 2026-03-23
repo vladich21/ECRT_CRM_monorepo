@@ -13,11 +13,8 @@ export interface PatentsListResponse {
   tab_counts: PatentsTabCounts;
 }
 
-/** Параметры списка РИД (серверная фильтрация + пагинация). */
 export interface PatentListQuery {
-  /** Краткий список { id, name } — ответ массив, без `tab_counts`. */
   preview?: boolean;
-  /** Вкладка: активные / удалённые / все. */
   deletedScope?: 'active' | 'deleted' | 'all';
   limit?: number;
   offset?: number;
@@ -25,7 +22,6 @@ export interface PatentListQuery {
   department_id?: string;
   status_id?: string;
   author_ids?: string[];
-  /** Создатель записи (в UI — «Ответственный»). */
   created_by?: string;
 }
 
@@ -44,9 +40,6 @@ function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | nu
 }
 
 export const patentApi = {
-  /**
-   * Список патентов. В режиме `preview` — массив; иначе `{ data, total, tab_counts }`.
-   */
   getPatents: async (query: PatentListQuery = {}): Promise<Patent[] | PatentsListResponse> => {
     const params = buildPatentsQueryParams({
       ...query,
@@ -55,29 +48,22 @@ export const patentApi = {
     const response = await apiClient.get<Patent[] | PatentsListResponse>('/patents', { params });
     return response.data;
   },
-
   getPatentById: async (id: string): Promise<Patent> => {
     const response = await apiClient.get(`/patents/${id}`);
     return response.data[0];
   },
-
-  createPatent: async (
-    patent: Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted' | 'deleted_at'>,
-  ): Promise<Patent> => {
+  createPatent: async (patent: Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>): Promise<Patent> => {
     const response = await apiClient.post('/patents', patent);
     return response.data[0];
   },
-
   updatePatent: async (id: string, patent: Partial<Patent>): Promise<Patent> => {
     const response = await apiClient.put(`/patents/${id}`, patent);
     return response.data[0];
   },
-
   restorePatent: async (id: string): Promise<Patent> => {
     const response = await apiClient.put(`/patents/${id}/restore`);
     return response.data[0];
   },
-
   deletePatent: async (id: string): Promise<void> => {
     await apiClient.delete(`/patents/${id}`);
   },

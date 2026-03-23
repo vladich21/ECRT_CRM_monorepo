@@ -1,13 +1,14 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from 'antd';
 import {
   CalendarOutlined,
   DeleteOutlined,
   EditOutlined,
+  UndoOutlined,
   NumberOutlined,
   ProjectOutlined,
 } from '@ant-design/icons';
-import { useDeleteProject, useProjectById } from '../../../api/projects/projectApiHooks';
+import { useDeleteProject, useRestoreProject, useProjectById } from '../../../api/projects/projectApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { Loader } from '../../../components/loader/Loader';
@@ -18,15 +19,19 @@ import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { getNameById } from '../../../helpers/getNameById';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 import styles from './ProjectDetails.module.scss';
-
+import type { DeletionScope } from '../../../constants/deletionScope';
+import type { ProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
-
 function getInitials(name: string) {
-  return name.split(' ').slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map(word => word[0])
+    .join('')
+    .toUpperCase();
 }
-
 const STATUS_TAG_CLASS: Record<string, string> = {
   active: 'tagGreen',
   completed: 'tagBlue',
@@ -34,65 +39,104 @@ const STATUS_TAG_CLASS: Record<string, string> = {
   paused: 'tagGray',
   cancelled: 'tagRed',
 };
-
 export default function ProjectDetailsPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { contextHolder, showNotification } = useNotification();
   const { data: project, isLoading, isError } = useProjectById(projectId!);
   const { data: referenceBooks, isLoading: isRefsLoading } = useReferenceData(['users']);
   const mutation = useDeleteProject();
-
+  const restoreMutation = useRestoreProject();
+  const navState = location.state as {
+    deletionScope?: DeletionScope;
+    projectsListReturn?: ProjectsListNavSnapshot;
+  } | null;
+  const listDeletionScope = navState?.deletionScope ?? 'active';
+  const projectsListReturn = navState?.projectsListReturn;
   const { handleOpenModal } = useConfirmByModal({
     mutation,
     successMessage: 'Проект успешно удалён',
     errorMessage: 'Не удалось удалить проект',
-    redirectPath: '/projects',
     getMutationProps: () => projectId!,
     showNotification,
+    redirectPath: '/projects',
+    redirectReplace: true,
+    redirectState: { deletionScope: 'deleted' as const },
   });
-
+  const { handleOpenModal: openRestoreModal } = useConfirmByModal({
+    mutation: restoreMutation,
+    successMessage: 'Проект успешно восстановлен',
+    errorMessage: 'Не удалось восстановить проект',
+    getMutationProps: () => projectId!,
+    showNotification,
+    redirectPath: '/projects',
+    redirectReplace: true,
+    redirectState: { listTab: 'all' as const },
+  });
   if (isLoading || isRefsLoading) return <Loader />;
-  if (isError || !project) return <NotFound errorMessage="Проект не найден" />;
-
+  if (isError || !project) return <NotFound errorMessage='Проект не найден' />;
   const st = PROJECT_STATUS_CONFIG[project.status] ?? PROJECT_STATUS_CONFIG.active;
   const managerName = getNameById(project.manager_id, referenceBooks?.users) || '';
   const tagClass = STATUS_TAG_CLASS[project.status] || 'tagGray';
-
   return (
     <DetailPageHeader
       title={project.name}
-      backLabel="Проекты"
-      onBack={() => navigate('/projects')}
-      statusBadge={{ label: st.label, color: st.color }}
+      backLabel='Проекты'
+      onBack={() =>
+        navigate('/projects', {
+          state: {
+            deletionScope: listDeletionScope,
+            ...(projectsListReturn ? { projectsListReturn } : {}),
+          },
+        })
+      }
+      statusBadge={project.is_deleted ? { label: 'Удалён', color: '#ff4d4f' } : { label: st.label, color: st.color }}
       metaItems={[
         project.code && (
-          <span key="code" className={hStyles.metaText}>Код: {project.code}</span>
+          <span key='code' className={hStyles.metaText}>
+            Код: {project.code}
+          </span>
         ),
         project.short_name && project.short_name !== project.name && (
-          <span key="short" className={hStyles.metaText}>{project.short_name}</span>
+          <span key='short' className={hStyles.metaText}>
+            {project.short_name}
+          </span>
         ),
       ].filter(Boolean)}
       actions={
         <>
-          <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/projects/${projectId}/edit`)}>
+          <Button
+            type='primary'
+            icon={<EditOutlined />}
+            disabled={!!project.is_deleted}
+            onClick={() => navigate(`/projects/${projectId}/edit`)}
+          >
             Редактировать
           </Button>
-          <Button type="primary" danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
-            Удалить
-          </Button>
+          {project.is_deleted ? (
+            <Button
+              type='primary'
+              icon={<UndoOutlined />}
+              onClick={openRestoreModal}
+              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            >
+              Восстановить
+            </Button>
+          ) : (
+            <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
+              Удалить
+            </Button>
+          )}
         </>
       }
       tabs={[{ key: 'main', label: 'Основное' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
     >
-      {/* Content — 2-column layout */}
       <div className={styles.layout}>
-        {/* Left column */}
         <div className={styles.leftColumn}>
-          {/* Код и сроки */}
           <div className={styles.kpiRow}>
             <div className={styles.kpiTile}>
               <div className={styles.kpiContent}>
@@ -129,7 +173,6 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
 
-          {/* Короткое название — только если есть и отличается от названия */}
           {project.short_name && project.short_name !== project.name && (
             <div className={styles.card}>
               <div className={styles.infoRows}>
@@ -141,7 +184,6 @@ export default function ProjectDetailsPage() {
             </div>
           )}
 
-          {/* Описание */}
           {project.description && (
             <div className={styles.card}>
               <h3 className={styles.cardTitle}>Описание</h3>
@@ -150,7 +192,6 @@ export default function ProjectDetailsPage() {
           )}
         </div>
 
-        {/* Right sidebar */}
         <div className={styles.sidebar}>
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Статус</h3>
@@ -168,7 +209,9 @@ export default function ProjectDetailsPage() {
                 <span className={styles.managerName}>{managerName}</span>
               </div>
             ) : (
-              <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>Не назначен</span>
+              <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>
+                Не назначен
+              </span>
             )}
           </div>
         </div>

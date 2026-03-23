@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { parsePagination } from '../../../common/pagination';
+import { parseDeletedScope } from '../../../common/deleted-scope';
 import type { ProjectEndDatePresence } from '../services/projects.service';
 import { ProjectListTab, ProjectsService } from '../services/projects.service';
 
@@ -54,6 +55,7 @@ export class ProjectsController {
     @Query('end_date_from') endDateFrom?: string,
     @Query('end_date_to') endDateTo?: string,
     @Query('end_date_presence') endDatePresence?: string,
+    @Query('deleted_scope') deletedScopeRaw?: string,
   ) {
     if (preview === '1') {
       return this.service.findAll({ preview: true });
@@ -62,6 +64,7 @@ export class ProjectsController {
     const filters = {
       search: search?.trim() || undefined,
       listTab: parseProjectListTab(listTab),
+      deletedScope: parseDeletedScope(deletedScopeRaw),
       managerId: managerId || undefined,
       createdBy: createdBy || undefined,
       dateFrom: dateFrom || undefined,
@@ -85,6 +88,13 @@ export class ProjectsController {
   async create(@Body('body') body?: Record<string, unknown>) {
     const row = await this.service.create(body ?? {});
     return row ? [row] : [];
+  }
+
+  @Put(':id/restore')
+  async restore(@Param('id') id: string) {
+    const row = await this.service.restore(id);
+    if (!row) throw new NotFoundException(`Проект ${id} не найден`);
+    return [row];
   }
 
   @Put(':id')

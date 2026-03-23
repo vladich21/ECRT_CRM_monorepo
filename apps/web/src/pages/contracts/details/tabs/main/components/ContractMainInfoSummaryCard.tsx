@@ -3,9 +3,7 @@ import { UpOutlined, DownOutlined } from '@ant-design/icons';
 import type { DescriptionsProps } from 'antd';
 import type { Contract } from '../../../../../../types/contract';
 import tabStyles from '../ContractMainInfoTab.module.scss';
-
 const { Text } = Typography;
-
 type ContractMainInfoSummaryCardProps = {
   contract: Contract;
   infoItems: DescriptionsProps['items'];
@@ -15,7 +13,6 @@ type ContractMainInfoSummaryCardProps = {
   totalStagesCount: number;
   progressPercent: number;
 };
-
 export function ContractMainInfoSummaryCard({
   contract,
   infoItems,
@@ -32,24 +29,20 @@ export function ContractMainInfoSummaryCard({
           <Text style={{ fontSize: '16px' }} strong>
             Прогресс выполнения
           </Text>
-          <Text type="secondary">
+          <Text type='secondary'>
             Этап <Text strong>{currentStageDisplayIndex}</Text> из <Text strong>{totalStagesCount}</Text>
           </Text>
         </div>
-        <Progress percent={Math.round(progressPercent)} strokeColor="#1677ff" />
+        <Progress percent={Math.round(progressPercent)} strokeColor='#1677ff' />
       </div>
 
-      <div
-        className={`${tabStyles.sectionHeader} ${
-          isMainInfoExpanded ? tabStyles.sectionHeaderBordered : ''
-        }`}
-      >
+      <div className={`${tabStyles.sectionHeader} ${isMainInfoExpanded ? tabStyles.sectionHeaderBordered : ''}`}>
         <Text style={{ fontSize: '16px' }} strong>
           Основная информация
         </Text>
         <Button
-          type="text"
-          size="small"
+          type='text'
+          size='small'
           icon={isMainInfoExpanded ? <UpOutlined /> : <DownOutlined />}
           onClick={onToggleMainInfoExpanded}
         >
@@ -62,8 +55,8 @@ export function ContractMainInfoSummaryCard({
           <Descriptions
             items={infoItems}
             column={3}
-            size="small"
-            layout="vertical"
+            size='small'
+            layout='vertical'
             colon={false}
             classNames={{
               label: tabStyles.descLabel,
@@ -74,14 +67,14 @@ export function ContractMainInfoSummaryCard({
           {contract.description && (
             <Collapse
               ghost
-              size="small"
+              size='small'
               defaultActiveKey={['desc']}
               className={tabStyles.descriptionCollapse}
               items={[
                 {
                   key: 'desc',
                   label: (
-                    <Text type="secondary" className={tabStyles.descriptionLabel}>
+                    <Text type='secondary' className={tabStyles.descriptionLabel}>
                       Описание
                     </Text>
                   ),

@@ -1,15 +1,19 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
-import { contracts, patents, refContractStates } from '../../../database/schema';
+import { contracts, refContractStates } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
+import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
+import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 
 export type ContractListTab = 'all' | 'active' | 'draft' | 'inactive';
 
 export interface ContractQueryFilters {
   search?: string;
   listTab?: ContractListTab;
+  /** Мягкое удаление: по умолчанию только не удалённые. */
+  deletedScope?: DeletedScope;
   categoryId?: string;
   stateId?: string;
   dateFrom?: string;
@@ -26,7 +30,12 @@ export interface ContractTabCounts {
 }
 
 export type ContractsListResult =
-  | { data: unknown[]; total: number; tab_counts: ContractTabCounts }
+  | {
+      data: unknown[];
+      total: number;
+      tab_counts: ContractTabCounts;
+      deletion_tab_counts: DeletionTabCounts;
+    }
   | { data: unknown[]; total: number };
 
 /** TTL кэша списка договоров для справочников */
@@ -67,30 +76,32 @@ export class ContractsService {
     });
   }
 
-  private async getContractsTotal(partnerFilter?: any): Promise<number> {
-    let countQuery = this.db.db.select({ value: count() }).from(contracts);
-    if (partnerFilter) countQuery = countQuery.where(partnerFilter) as typeof countQuery;
-    const result = await countQuery;
+  private async getContractsTotal(partnerFilter?: SQL): Promise<number> {
+    const notDeleted = eq(contracts.isDeleted, false);
+    const where = partnerFilter ? and(partnerFilter, notDeleted)! : notDeleted;
+    const result = await this.db.db.select({ value: count() }).from(contracts).where(where);
     return Number(result[0]?.value ?? 0);
   }
 
   private async getContractsRows(
     preview: boolean,
-    partnerFilter?: any,
+    partnerFilter?: SQL,
     pagination?: PaginationParams,
   ) {
+    const notDeleted = eq(contracts.isDeleted, false);
+    const baseWhere = partnerFilter ? and(partnerFilter, notDeleted)! : notDeleted;
+
     if (preview) {
       let query: any = this.db.db
         .select({ id: contracts.id, name: contracts.name, number: contracts.number })
         .from(contracts)
+        .where(baseWhere)
         .orderBy(asc(contracts.number));
-      if (partnerFilter) query = query.where(partnerFilter);
       if (pagination) query = query.limit(pagination.limit).offset(pagination.offset);
       return query;
     }
 
-    let query: any = this.db.db.select().from(contracts).orderBy(asc(contracts.number));
-    if (partnerFilter) query = query.where(partnerFilter);
+    let query: any = this.db.db.select().from(contracts).where(baseWhere).orderBy(asc(contracts.number));
     if (pagination) query = query.limit(pagination.limit).offset(pagination.offset);
     return query;
   }
@@ -258,8 +269,11 @@ export class ContractsService {
         data: [],
         total: 0,
         tab_counts: { all: 0, active: 0, draft: 0, inactive: 0 },
+        deletion_tab_counts: { active: 0, deleted: 0, all: 0 },
       };
     }
+
+    const deletedScope: DeletedScope = filters?.deletedScope ?? 'active';
 
     const baseParts: SQL[] = [];
     if (partnerFilter) baseParts.push(partnerFilter);
@@ -267,22 +281,52 @@ export class ContractsService {
 
     const draftIds = await this.getDraftStateIds();
 
+    /** Счётчики вкладок по состоянию договора не зависят от deleted_scope запроса. */
     const countForTab = async (tab: ContractListTab): Promise<number> => {
       const tabSql = this.contractListTabCondition(tab, draftIds);
-      const parts = tabSql ? [...baseParts, tabSql] : [...baseParts];
+      const parts = [
+        ...(tabSql ? [...baseParts, tabSql] : [...baseParts]),
+        ...sqlPartsForDeletedScope(contracts.isDeleted, 'all'),
+      ];
       return this.countContractsWhere(this.mergeWhereParts(parts));
     };
 
     const listTab: ContractListTab = filters?.listTab ?? 'all';
     const listTabSql = this.contractListTabCondition(listTab, draftIds);
-    const listParts = listTabSql ? [...baseParts, listTabSql] : [...baseParts];
+    const listParts = [
+      ...(listTabSql ? [...baseParts, listTabSql] : [...baseParts]),
+      ...sqlPartsForDeletedScope(contracts.isDeleted, deletedScope),
+    ];
     const listWhere = this.mergeWhereParts(listParts);
 
-    const [tabAll, tabActive, tabDraft, tabInactive, rows] = await Promise.all([
+    const partsForCurrentListTabOnly = listTabSql ? [...baseParts, listTabSql] : [...baseParts];
+    const countDeletionSlice = (scope: DeletedScope) =>
+      this.countContractsWhere(
+        this.mergeWhereParts([
+          ...partsForCurrentListTabOnly,
+          ...sqlPartsForDeletedScope(contracts.isDeleted, scope),
+        ]),
+      );
+
+    const [
+      tabAll,
+      tabActive,
+      tabDraft,
+      tabInactive,
+      delActive,
+      delDeleted,
+      delAll,
+      listTotal,
+      rows,
+    ] = await Promise.all([
       countForTab('all'),
       countForTab('active'),
       countForTab('draft'),
       countForTab('inactive'),
+      countDeletionSlice('active'),
+      countDeletionSlice('deleted'),
+      countDeletionSlice('all'),
+      this.countContractsWhere(listWhere),
       this.db.db
         .select()
         .from(contracts)
@@ -292,23 +336,19 @@ export class ContractsService {
         .offset(offset),
     ]);
 
-    const total =
-      listTab === 'active'
-        ? tabActive
-        : listTab === 'inactive'
-          ? tabInactive
-          : listTab === 'draft'
-            ? tabDraft
-            : tabAll;
-
     return {
       data: this.mapContractsRows(rows, false),
-      total,
+      total: listTotal,
       tab_counts: {
         all: tabAll,
         active: tabActive,
         draft: tabDraft,
         inactive: tabInactive,
+      },
+      deletion_tab_counts: {
+        active: delActive,
+        deleted: delDeleted,
+        all: delAll,
       },
     };
   }
@@ -357,22 +397,27 @@ export class ContractsService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Удаление договора id: ${id}`);
+    this.logger.debug(`Мягкое удаление договора id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
-    const patentRefs = await this.db.db
-      .select({ id: patents.id })
-      .from(patents)
-      .where(eq(patents.contractId, id))
-      .limit(1);
-    if (patentRefs.length > 0) {
-      throw new ConflictException(
-        'Невозможно удалить договор: к нему привязаны патенты.',
-      );
-    }
-    await this.db.db.delete(contracts).where(eq(contracts.id, id));
+    await this.db.db
+      .update(contracts)
+      .set({ isDeleted: true, updatedAt: new Date() })
+      .where(eq(contracts.id, id));
     this.invalidateListCache();
-    return row;
+    return this.findOne(id);
+  }
+
+  async restore(id: string) {
+    this.logger.debug(`Восстановление договора id: ${id}`);
+    const row = await this.findOne(id);
+    if (!row) return null;
+    await this.db.db
+      .update(contracts)
+      .set({ isDeleted: false, updatedAt: new Date() })
+      .where(eq(contracts.id, id));
+    this.invalidateListCache();
+    return this.findOne(id);
   }
 
   private toResponse(row: (typeof contracts.$inferSelect)) {
@@ -396,6 +441,7 @@ export class ContractsService {
       date_signed: row.dateSigned ? String(row.dateSigned) : '',
       state_id: String(row.stateId),
       is_active: row.isActive ?? true,
+      is_deleted: row.isDeleted ?? false,
       created_at: row.createdAt ? row.createdAt.toISOString() : '',
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     };

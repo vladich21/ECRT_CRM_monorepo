@@ -10,12 +10,10 @@ import {
 } from '@ant-design/icons';
 import type { Contract } from '../../../../../types/contract';
 import styles from '../additionalAgreements/ContractSupplementTabs.module.scss';
-
 const { Text, Title } = Typography;
-
-type OutletContext = { contract: Contract };
-
-/** Пример ленты событий (аудит позже может идти с API) */
+type OutletContext = {
+  contract: Contract;
+};
 const DEMO_HISTORY_ITEMS: {
   key: string;
   color: 'green' | 'blue' | 'gray' | 'orange';
@@ -65,33 +63,30 @@ const DEMO_HISTORY_ITEMS: {
     at: '02.01.2025 08:30',
   },
 ];
-
 export function ContractHistoryTab() {
   const { contract } = useOutletContext<OutletContext>();
-
   return (
     <div className={styles.tabRoot}>
       <Card className={styles.card}>
         <Title level={4} className={styles.cardTitle}>
           История изменений
         </Title>
-        <Text type="secondary" className={styles.intro}>
+        <Text type='secondary' className={styles.intro}>
           Хронология действий по договору №{contract.number}
-          {contract.cipher ? ` (${contract.cipher})` : ''}: правки полей, файлы, смена ответственных,
-          смена статусов.
+          {contract.cipher ? ` (${contract.cipher})` : ''}: правки полей, файлы, смена ответственных, смена статусов.
         </Text>
 
         <Alert
           className={styles.alert}
-          type="info"
+          type='info'
           showIcon
-          message="Демонстрационная лента"
-          description="События приведены для примера интерфейса."
+          message='Демонстрационная лента'
+          description='События приведены для примера интерфейса.'
         />
 
         <Timeline
           className={styles.timeline}
-          items={DEMO_HISTORY_ITEMS.map((item) => ({
+          items={DEMO_HISTORY_ITEMS.map(item => ({
             key: item.key,
             color: item.color,
             dot: item.icon,
@@ -99,11 +94,11 @@ export function ContractHistoryTab() {
               <div className={styles.timelineItem}>
                 <div className={styles.timelineTitleRow}>
                   <Text strong>{item.title}</Text>
-                  <Text type="secondary" className={styles.timelineAt}>
+                  <Text type='secondary' className={styles.timelineAt}>
                     {item.at}
                   </Text>
                 </div>
-                <Text type="secondary" className={styles.timelineDetail}>
+                <Text type='secondary' className={styles.timelineDetail}>
                   {item.detail}
                 </Text>
               </div>

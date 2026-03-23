@@ -1,45 +1,47 @@
 import { Tag } from 'antd';
-import {
-  PhoneOutlined,
-  MailOutlined,
-  GlobalOutlined,
-  EnvironmentOutlined,
-} from '@ant-design/icons';
+import { PhoneOutlined, MailOutlined, GlobalOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import type { Partner } from '../../../types/partner';
 import styles from './DetailSidebar.module.scss';
-
 const STATUS_COLORS: Record<string, string> = {
-  'Активный': '#52c41a',
-  'Потенциальный': '#1677ff',
-  'Заблокирован': '#ff4d4f',
-  'Архив': '#8c8c8c',
+  Активный: '#52c41a',
+  Потенциальный: '#1677ff',
+  Заблокирован: '#ff4d4f',
+  Архив: '#8c8c8c',
 };
-
 interface DetailSidebarProps {
   partner: Partner;
   references?: {
-    partnerCategories?: Array<{ id: string; name: string }>;
-    partnerStatuses?: Array<{ id: string; name: string }>;
-    partnerTypes?: Array<{ id: string; name: string }>;
-    partnerEconomicCategories?: Array<{ id: string; name: string }>;
+    partnerCategories?: Array<{
+      id: string;
+      name: string;
+    }>;
+    partnerStatuses?: Array<{
+      id: string;
+      name: string;
+    }>;
+    partnerTypes?: Array<{
+      id: string;
+      name: string;
+    }>;
+    partnerEconomicCategories?: Array<{
+      id: string;
+      name: string;
+    }>;
   };
 }
-
 export default function DetailSidebar({ partner, references }: DetailSidebarProps) {
   const statusName = references?.partnerStatuses?.find(s => s.id === partner.status_id)?.name ?? '—';
   const typeNames = (partner.type_ids ?? [])
     .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
     .filter(Boolean);
-  const econCategory = references?.partnerEconomicCategories?.find(c => c.id === partner.partner_economic_category_id)?.name;
+  const econCategory = references?.partnerEconomicCategories?.find(
+    c => c.id === partner.partner_economic_category_id,
+  )?.name;
   const categoryName = references?.partnerCategories?.find(c => c.id === partner.category_id)?.name ?? '—';
-
   const statusColor = STATUS_COLORS[statusName] ?? '#1677ff';
-
   const hasContact = partner.phone || partner.email || partner.website;
-
   return (
     <div className={styles.sidebar}>
-      {/* Контактная информация */}
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Контактная информация</h3>
         {hasContact ? (
@@ -61,11 +63,12 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
             )}
           </div>
         ) : (
-          <div className={styles.contactItem} style={{ color: '#8c8c8c' }}>Не указана</div>
+          <div className={styles.contactItem} style={{ color: '#8c8c8c' }}>
+            Не указана
+          </div>
         )}
       </div>
 
-      {/* Классификация */}
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Классификация</h3>
         <div className={styles.classItems}>
@@ -75,7 +78,9 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Статус</span>
-            <Tag color={statusColor} style={{ fontSize: 14 }}>{statusName}</Tag>
+            <Tag color={statusColor} style={{ fontSize: 14 }}>
+              {statusName}
+            </Tag>
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Утверждён</span>
@@ -94,7 +99,6 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
         </div>
       </div>
 
-      {/* Реквизиты */}
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Реквизиты</h3>
         <div className={styles.classItems}>
@@ -112,7 +116,7 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
           </div>
         </div>
       </div>
-      {/* Адреса */}
+
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Адреса</h3>
         <div className={styles.contactItems}>
@@ -135,11 +139,12 @@ export default function DetailSidebar({ partner, references }: DetailSidebarProp
             </div>
           ) : null}
           {!partner.legal_address && !partner.actual_address && (
-            <div className={styles.contactItem} style={{ color: '#8c8c8c' }}>Не указаны</div>
+            <div className={styles.contactItem} style={{ color: '#8c8c8c' }}>
+              Не указаны
+            </div>
           )}
         </div>
       </div>
-
     </div>
   );
 }

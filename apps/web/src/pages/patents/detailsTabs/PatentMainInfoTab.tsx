@@ -13,20 +13,17 @@ import { Patent } from '../../../types/patent';
 import { useOutletContext } from 'react-router-dom';
 import { getEntityById } from '../../../helpers/getEntityById';
 import styles from './PatentMainInfoTab.module.scss';
-
 function formatDate(dateString: string) {
   return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '—';
 }
-
 function getInitials(name: string) {
   return name
     .split(' ')
     .slice(0, 2)
-    .map((word) => word[0])
+    .map(word => word[0])
     .join('')
     .toUpperCase();
 }
-
 export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const {
     data: referenceBooks,
@@ -41,30 +38,25 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
     'patentStatuses',
     'patentAreas',
   ]);
-
   if (isReferencesLoading) return <Loader />;
   if (isReferencesError || !referenceBooks) {
-    return <NotFound errorMessage="Не подгрузились справочники" />;
+    return <NotFound errorMessage='Не подгрузились справочники' />;
   }
-
   const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps);
   const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses);
   const deptName = getNameById(patent.department_id, referenceBooks?.departments);
   const projectName = getNameById(patent.project_id, referenceBooks?.projects);
   const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
-  const contract = referenceBooks.contracts?.find((el) => el.id === patent.contract_id);
+  const contract = referenceBooks.contracts?.find(el => el.id === patent.contract_id);
   const authorNames = (patent.author_ids ?? [])
-    .map((id) => referenceBooks?.users?.find((user) => user.id === id)?.name)
+    .map(id => referenceBooks?.users?.find(user => user.id === id)?.name)
     .filter(Boolean) as string[];
   const areaNames = (patent.area_ids ?? [])
-    .map((id) => referenceBooks?.patentAreas?.find((area) => area.id === id)?.name)
+    .map(id => referenceBooks?.patentAreas?.find(area => area.id === id)?.name)
     .filter(Boolean) as string[];
-
   return (
     <div className={styles.layout}>
-      {/* ─── Left column ─────────────────────────────────────────────── */}
       <div className={styles.leftColumn}>
-        {/* KPI tiles */}
         <div className={styles.kpiRow}>
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
@@ -115,7 +107,6 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           </div>
         </div>
 
-        {/* Основные сведения и Регистрационные данные — в один ряд, два столбца */}
         <div className={styles.twoColCards}>
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Основные сведения</h3>
@@ -142,8 +133,10 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                 <span className={styles.infoLabel}>Область применения</span>
                 {areaNames.length > 0 ? (
                   <div className={styles.tagsWrap}>
-                    {areaNames.map((name) => (
-                      <span key={name} className={styles.areaTag}>{name}</span>
+                    {areaNames.map(name => (
+                      <span key={name} className={styles.areaTag}>
+                        {name}
+                      </span>
                     ))}
                   </div>
                 ) : (
@@ -185,37 +178,27 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* ─── Right sidebar ───────────────────────────────────────────── */}
       <div className={styles.sidebar}>
-        {/* Классификация */}
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Классификация</h3>
           <div className={styles.infoRows}>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Объект ИС</span>
-              <span className={ipTypeName ? styles.infoValue : styles.infoValueMuted}>
-                {ipTypeName || '—'}
-              </span>
+              <span className={ipTypeName ? styles.infoValue : styles.infoValueMuted}>{ipTypeName || '—'}</span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Статус</span>
-              <span className={statusName ? styles.infoValue : styles.infoValueMuted}>
-                {statusName || '—'}
-              </span>
+              <span className={statusName ? styles.infoValue : styles.infoValueMuted}>{statusName || '—'}</span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Отдел</span>
-              <span className={deptName ? styles.infoValue : styles.infoValueMuted}>
-                {deptName || '—'}
-              </span>
+              <span className={deptName ? styles.infoValue : styles.infoValueMuted}>{deptName || '—'}</span>
             </div>
           </div>
         </div>
 
-        {/* Документация */}
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Документация</h3>
           <div className={styles.infoRows}>
@@ -240,28 +223,28 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           </div>
         </div>
 
-        {/* Авторы (Исполнители) */}
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>
             <TeamOutlined style={{ marginRight: 6 }} />
             Авторы ({authorNames.length})
           </h3>
           {authorNames.length > 0 ? (
-            authorNames.map((name) => (
+            authorNames.map(name => (
               <div key={name} className={styles.authorItem}>
                 <div className={styles.authorAvatar}>{getInitials(name)}</div>
                 <span className={styles.authorName}>{name}</span>
               </div>
             ))
           ) : (
-            <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>Не указаны</span>
+            <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>
+              Не указаны
+            </span>
           )}
         </div>
       </div>
     </div>
   );
 }
-
 export function PatentMainInfoTab() {
   const patent = useOutletContext<Patent>();
   return <PatentMainInfo patent={patent} />;

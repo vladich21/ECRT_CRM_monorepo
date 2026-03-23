@@ -11,20 +11,16 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import { initialFormValues } from './data';
 import { UserFormFields } from './UserFormFields';
 import styles from './UserFormPage.module.scss';
-
 export default function UserCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['departments', 'positions', 'roles']);
-
   const { mutate, isPending: isCreateLoading, isError: isCreateError, isSuccess: isCreateSuccess } = useCreateUser();
-
   useEffect(() => {
     if (isCreateSuccess) {
       showNotification('success', 'Успех', 'Пользователь успешно создан');
@@ -33,7 +29,6 @@ export default function UserCreatePage() {
       showNotification('error', 'Ошибка', 'Не удалось создать пользователя');
     }
   }, [isCreateError, isCreateSuccess, navigate, showNotification]);
-
   const handleCreate = async (values: Record<string, unknown>) => {
     const toUuidOrNull = (v: unknown) => (v != null && v !== '' ? String(v) : null);
     const roleIds = (values.role_ids ?? values.roles ?? []) as (string | number)[];
@@ -41,39 +36,36 @@ export default function UserCreatePage() {
       ...values,
       department_id: toUuidOrNull(values.department_id),
       position_id: toUuidOrNull(values.position_id),
-      role_ids: Array.isArray(roleIds) ? roleIds.map(String).filter((id) => id && id !== '') : [],
+      role_ids: Array.isArray(roleIds) ? roleIds.map(String).filter(id => id && id !== '') : [],
       roles: undefined,
     };
     delete (payload as Record<string, unknown>).roles;
     mutate(payload as any);
   };
-
   if (isReferencesLoading) {
     return <Loader />;
   }
-
   if (isReferencesError || !referenceBooks) {
-    return <NotFound errorMessage="Не удалось подгрузить справочники" />;
+    return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
-
   return (
     <DetailPageHeader
-      title="Создание нового пользователя"
+      title='Создание нового пользователя'
       titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания пользователя</span>}
-      backLabel="Пользователи"
+      backLabel='Пользователи'
       onBack={() => navigate(-1)}
       actions={
         <>
           <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
             Очистить форму
           </Button>
-          <Button type="primary" icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
+          <Button type='primary' icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
             Создать пользователя
           </Button>
         </>
       }
       tabs={[{ key: 'main', label: 'Создание' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
       stickyHeader
@@ -81,12 +73,12 @@ export default function UserCreatePage() {
       <div className={styles.formCard}>
         <Form
           form={form}
-          layout="vertical"
-          size="middle"
+          layout='vertical'
+          size='middle'
           initialValues={initialFormValues}
           onFinish={handleCreate}
           disabled={isCreateLoading}
-          onKeyPress={(e) => {
+          onKeyPress={e => {
             if (e.key === 'Enter') e.preventDefault();
           }}
           scrollToFirstError

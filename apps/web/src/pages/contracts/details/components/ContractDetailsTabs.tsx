@@ -1,21 +1,12 @@
 import { Tabs } from 'antd';
-import type {
-  ContractDetailsTabItem,
-  ContractDetailsTabKey,
-} from '../../utils/contractDetailsUtils';
+import type { ContractDetailsTabItem, ContractDetailsTabKey } from '../../utils/contractDetailsUtils';
 import styles from '../ContractDetails.module.scss';
-
 type ContractDetailsTabsProps = {
   activeTab: ContractDetailsTabKey;
   tabs: ContractDetailsTabItem[];
   onChange: (tabKey: ContractDetailsTabKey) => void;
 };
-
-export function ContractDetailsTabs({
-  activeTab,
-  tabs,
-  onChange,
-}: ContractDetailsTabsProps) {
+export function ContractDetailsTabs({ activeTab, tabs, onChange }: ContractDetailsTabsProps) {
   const tabItems = tabs.map(({ key, label, count }) => ({
     key,
     label:
@@ -28,13 +19,12 @@ export function ContractDetailsTabs({
         label
       ),
   }));
-
   return (
     <div className={styles.pageTabs}>
       <Tabs
         activeKey={activeTab}
         items={tabItems}
-        onChange={(key) => onChange(key as ContractDetailsTabKey)}
+        onChange={key => onChange(key as ContractDetailsTabKey)}
         tabBarStyle={{ margin: 0, borderBottom: 'none' }}
       />
     </div>

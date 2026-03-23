@@ -3,25 +3,20 @@ import { CalendarOutlined, RightOutlined, UserOutlined } from '@ant-design/icons
 import { Project } from '../../../types/referenceTypes';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 import styles from './ProjectsListPage.module.scss';
-
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
-
 type Props = {
   project: Project;
   managerName: string;
   onClick: (project: Project) => void;
 };
-
 export function ProjectCard({ project, managerName, onClick }: Props) {
   const st = PROJECT_STATUS_CONFIG[project.status] ?? PROJECT_STATUS_CONFIG.active;
-
   const periodStr =
     project.start_date || project.end_date
       ? [project.start_date, project.end_date].filter(Boolean).map(formatDate).join(' — ')
       : '—';
-
   return (
     <div
       className={styles.card}

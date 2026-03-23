@@ -15,6 +15,7 @@ import {
   ContractsService,
 } from '../services/contract.service';
 import { parsePagination } from '../../../common/pagination';
+import { parseDeletedScope } from '../../../common/deleted-scope';
 
 const CONTRACT_LIST_TABS: ContractListTab[] = ['all', 'active', 'draft', 'inactive'];
 
@@ -58,6 +59,7 @@ export class ContractsController {
     @Query('date_to') dateTo?: string,
     @Query('amount_min') amountMin?: string,
     @Query('amount_max') amountMax?: string,
+    @Query('deleted_scope') deletedScopeRaw?: string,
   ) {
     if (forReference === '1' && !partnerId) {
       return this.service.findAll(preview === '1', undefined, undefined, { forReference: true });
@@ -66,6 +68,7 @@ export class ContractsController {
     const filters: ContractQueryFilters = {
       search: search?.trim() || undefined,
       listTab: parseContractListTab(listTab),
+      deletedScope: parseDeletedScope(deletedScopeRaw),
       categoryId: categoryId || undefined,
       stateId: stateId || undefined,
       dateFrom: dateFrom || undefined,
@@ -91,6 +94,13 @@ export class ContractsController {
   async findOne(@Param('id') id: string) {
     const row = await this.service.findOne(id);
     return row ? [row] : [];
+  }
+
+  @Put(':id/restore')
+  async restore(@Param('id') id: string) {
+    const row = await this.service.restore(id);
+    if (!row) throw new NotFoundException(`Договор ${id} не найден`);
+    return [row];
   }
 
   @Put(':id')

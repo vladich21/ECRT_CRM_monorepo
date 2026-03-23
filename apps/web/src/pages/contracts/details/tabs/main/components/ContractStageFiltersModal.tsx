@@ -1,7 +1,6 @@
 import { Button, Form, Modal, Select } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import type { ReferenceData } from '../../../../../../api/hooks/useReferences';
-
 type ContractStageFiltersModalProps = {
   open: boolean;
   form: FormInstance;
@@ -10,7 +9,6 @@ type ContractStageFiltersModalProps = {
   onApply: () => void | Promise<void>;
   onReset: () => void;
 };
-
 export function ContractStageFiltersModal({
   open,
   form,
@@ -19,32 +17,31 @@ export function ContractStageFiltersModal({
   onApply,
   onReset,
 }: ContractStageFiltersModalProps) {
-  const userOptions = (users ?? []).map((user) => ({
+  const userOptions = (users ?? []).map(user => ({
     value: user.id,
     label: user.name,
   }));
-
   return (
     <Modal
-      title="Фильтры этапов"
+      title='Фильтры этапов'
       open={open}
       onCancel={onClose}
       forceRender
       footer={[
-        <Button key="reset" onClick={onReset}>
+        <Button key='reset' onClick={onReset}>
           Сбросить
         </Button>,
-        <Button key="cancel" onClick={onClose}>
+        <Button key='cancel' onClick={onClose}>
           Отмена
         </Button>,
-        <Button key="ok" type="primary" onClick={onApply}>
+        <Button key='ok' type='primary' onClick={onApply}>
           Применить
         </Button>,
       ]}
     >
       <Form
         form={form}
-        layout="vertical"
+        layout='vertical'
         initialValues={{
           status: 'all',
           responsible: 'all',
@@ -52,7 +49,7 @@ export function ContractStageFiltersModal({
           budget: 'all',
         }}
       >
-        <Form.Item name="status" label="Статус этапа">
+        <Form.Item name='status' label='Статус этапа'>
           <Select
             options={[
               { value: 'all', label: 'Все статусы' },
@@ -64,15 +61,15 @@ export function ContractStageFiltersModal({
           />
         </Form.Item>
 
-        <Form.Item name="responsible" label="Ответственный">
+        <Form.Item name='responsible' label='Ответственный'>
           <Select
             showSearch
-            optionFilterProp="label"
+            optionFilterProp='label'
             options={[{ value: 'all', label: 'Все ответственные' }, ...userOptions]}
           />
         </Form.Item>
 
-        <Form.Item name="deadline" label="Сроки">
+        <Form.Item name='deadline' label='Сроки'>
           <Select
             options={[
               { value: 'all', label: 'Все сроки' },
@@ -82,7 +79,7 @@ export function ContractStageFiltersModal({
           />
         </Form.Item>
 
-        <Form.Item name="budget" label="Бюджет">
+        <Form.Item name='budget' label='Бюджет'>
           <Select
             options={[
               { value: 'all', label: 'Любой бюджет' },

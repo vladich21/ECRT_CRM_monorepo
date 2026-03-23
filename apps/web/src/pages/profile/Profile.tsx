@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { App, Avatar, Button, Form, Input, Select } from "antd";
+import { useState, useEffect } from 'react';
+import { App, Avatar, Button, Form, Input, Select } from 'antd';
 import {
   UserOutlined,
   MailOutlined,
@@ -11,30 +11,31 @@ import {
   TeamOutlined,
   IdcardOutlined,
   CameraOutlined,
-} from "@ant-design/icons";
-import useAuthStore, { useAuthStore as useAuthStoreFull } from "../../store/AuthStore";
-import { UseLogout } from "../../customhooks/useLogout";
-import { useUpdateUser } from "../../api/users/userApiHooks";
-import { useReferenceData } from "../../api/hooks/useReferences";
-import { useNotification } from "../../customhooks/useNotification";
-import { userUpdateFormMapper } from "../../helpers/mappers/userUpdateFormMapper";
-import { getChangedFields } from "../../helpers/getChangedFields";
-import { Loader } from "../../components/loader/Loader";
-import styles from "./Profile.module.scss";
-
+} from '@ant-design/icons';
+import useAuthStore, { useAuthStore as useAuthStoreFull } from '../../store/AuthStore';
+import { UseLogout } from '../../customhooks/useLogout';
+import { useUpdateUser } from '../../api/users/userApiHooks';
+import { useReferenceData } from '../../api/hooks/useReferences';
+import { useNotification } from '../../customhooks/useNotification';
+import { userUpdateFormMapper } from '../../helpers/mappers/userUpdateFormMapper';
+import { getChangedFields } from '../../helpers/getChangedFields';
+import { Loader } from '../../components/loader/Loader';
+import styles from './Profile.module.scss';
 const { Option } = Select;
-
 const ProfilePage = () => {
   const { modal } = App.useApp();
-  const { user } = useAuthStore((state) => state);
+  const { user } = useAuthStore(state => state);
   const { logout } = UseLogout();
   const { showNotification, contextHolder } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
-
   const { data: referenceBooks, isLoading: isReferencesLoading } = useReferenceData(['departments', 'positions']);
-  const { mutate: updateUser, isPending: isUpdating, isSuccess: isUpdateSuccess, isError: isUpdateError } = useUpdateUser();
-
+  const {
+    mutate: updateUser,
+    isPending: isUpdating,
+    isSuccess: isUpdateSuccess,
+    isError: isUpdateError,
+  } = useUpdateUser();
   useEffect(() => {
     if (user) {
       const formData = {
@@ -45,7 +46,6 @@ const ProfilePage = () => {
       form.setFieldsValue(formData);
     }
   }, [user, form]);
-
   useEffect(() => {
     if (isUpdateSuccess) {
       showNotification('success', 'Успех', 'Профиль успешно обновлён');
@@ -67,20 +67,16 @@ const ProfilePage = () => {
       }
     }
   }, [isUpdateSuccess]);
-
   useEffect(() => {
     if (isUpdateError) {
       showNotification('error', 'Ошибка', 'Не удалось обновить профиль');
     }
   }, [isUpdateError, showNotification]);
-
   if (!user) {
     logout();
     return null;
   }
-
   if (isReferencesLoading) return <Loader />;
-
   const handleSave = async (values: any) => {
     if (!user) return;
     const payload = getChangedFields(values, userUpdateFormMapper(user));
@@ -91,19 +87,15 @@ const ProfilePage = () => {
     }
     updateUser({ id: user.id, data: payload });
   };
-
   const handleCancel = () => {
     form.setFieldsValue(userUpdateFormMapper(user));
     setIsEditing(false);
   };
-
   const fullName = `${user?.last_name || ''} ${user?.first_name || ''} ${user?.middle_name || ''}`.trim();
-
   return (
     <div className={styles.pageRoot}>
       {contextHolder}
 
-      {/* Dark gradient header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.avatarWrap}>
@@ -111,13 +103,13 @@ const ProfilePage = () => {
               size={96}
               icon={<UserOutlined />}
               className={styles.avatar}
-              style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
+              style={{ backgroundColor: '#fde3cf', color: '#f56a00' }}
             />
             <button
-              type="button"
+              type='button'
               className={styles.photoUploadBtn}
               onClick={() => showNotification('info', 'Фото', 'Загрузка фото (в разработке)')}
-              aria-label="Изменить фото"
+              aria-label='Изменить фото'
             >
               <CameraOutlined />
             </button>
@@ -125,10 +117,10 @@ const ProfilePage = () => {
           <div className={styles.headerInfo}>
             <h1 className={styles.userName}>{fullName}</h1>
             <div>
-              {user?.roles?.map((role) => (
+              {user?.roles?.map(role => (
                 <span
                   key={role.id}
-                  className={role.role_name === "admin" ? styles.roleTagAdmin : styles.roleTagDefault}
+                  className={role.role_name === 'admin' ? styles.roleTagAdmin : styles.roleTagDefault}
                 >
                   {role.role_name}
                 </span>
@@ -149,11 +141,11 @@ const ProfilePage = () => {
           <div className={styles.headerActions}>
             {!isEditing ? (
               <>
-                <Button type="primary" icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
+                <Button type='primary' icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
                   Редактировать
                 </Button>
                 <Button
-                  type="primary"
+                  type='primary'
                   danger
                   icon={<LogoutOutlined />}
                   onClick={() =>
@@ -175,7 +167,7 @@ const ProfilePage = () => {
                 <Button icon={<CloseOutlined />} onClick={handleCancel} disabled={isUpdating}>
                   Отмена
                 </Button>
-                <Button type="primary" icon={<SaveOutlined />} onClick={() => form.submit()} loading={isUpdating}>
+                <Button type='primary' icon={<SaveOutlined />} onClick={() => form.submit()} loading={isUpdating}>
                   Сохранить
                 </Button>
               </>
@@ -184,9 +176,8 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className={styles.contentWrap}>
-        <Form form={form} layout="vertical" onFinish={handleSave}>
+        <Form form={form} layout='vertical' onFinish={handleSave}>
           {!isEditing ? (
             <div className={styles.layout}>
               <div className={styles.leftColumn}>
@@ -223,7 +214,7 @@ const ProfilePage = () => {
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Телефон</span>
                       {user?.phone ? (
-                        <a href={`tel:${user.phone.replace(/\D/g, "")}`} className={styles.infoLink}>
+                        <a href={`tel:${user.phone.replace(/\D/g, '')}`} className={styles.infoLink}>
                           <PhoneOutlined /> {user.phone}
                         </a>
                       ) : (
@@ -239,53 +230,64 @@ const ProfilePage = () => {
             <div className={`${styles.card} ${styles.editCard}`}>
               <h3 className={styles.cardTitle}>Редактирование профиля</h3>
               <div className={styles.editGrid}>
-                <Form.Item label="Должность" name="position_id">
+                <Form.Item label='Должность' name='position_id'>
                   <Select
                     showSearch
-                    optionFilterProp="children"
+                    optionFilterProp='children'
                     filterOption={(input, option) =>
-                      String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                      String(option?.children ?? '')
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
                     }
-                    placeholder="Выберите должность"
+                    placeholder='Выберите должность'
                     allowClear
                     suffixIcon={<IdcardOutlined />}
                   >
                     {referenceBooks?.positions?.map(position => (
-                      <Option key={position.id} value={position.id}>{position.name}</Option>
+                      <Option key={position.id} value={position.id}>
+                        {position.name}
+                      </Option>
                     ))}
                   </Select>
                 </Form.Item>
 
-                <Form.Item label="Отдел" name="department_id">
+                <Form.Item label='Отдел' name='department_id'>
                   <Select
                     showSearch
-                    optionFilterProp="children"
+                    optionFilterProp='children'
                     filterOption={(input, option) =>
-                      String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                      String(option?.children ?? '')
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
                     }
-                    placeholder="Выберите отдел"
+                    placeholder='Выберите отдел'
                     allowClear
                     suffixIcon={<TeamOutlined />}
                   >
                     {referenceBooks?.departments?.map(dept => (
-                      <Option key={dept.id} value={dept.id}>{dept.name}</Option>
+                      <Option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </Option>
                     ))}
                   </Select>
                 </Form.Item>
 
-                <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Введите корректный email' }]}>
-                  <Input prefix={<MailOutlined />} placeholder="email@example.com" type="email" />
+                <Form.Item label='Email' name='email' rules={[{ type: 'email', message: 'Введите корректный email' }]}>
+                  <Input prefix={<MailOutlined />} placeholder='email@example.com' type='email' />
                 </Form.Item>
 
                 <Form.Item
-                  label="Телефон"
-                  name="phone"
+                  label='Телефон'
+                  name='phone'
                   rules={[
-                    { pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/, message: 'Введите корректный номер' },
+                    {
+                      pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/,
+                      message: 'Введите корректный номер',
+                    },
                     { max: 25, message: 'Максимум 25 символов' },
                   ]}
                 >
-                  <Input prefix={<PhoneOutlined />} placeholder="+7 (999) 123-45-67" />
+                  <Input prefix={<PhoneOutlined />} placeholder='+7 (999) 123-45-67' />
                 </Form.Item>
               </div>
             </div>
@@ -295,5 +297,4 @@ const ProfilePage = () => {
     </div>
   );
 };
-
 export default ProfilePage;

@@ -1,9 +1,5 @@
 import { ContractState } from '../../../types/contract';
-
-export function isContractDraft(
-  stateId: string | undefined,
-  contractStates: ContractState[] | undefined
-): boolean {
+export function isContractDraft(stateId: string | undefined, contractStates: ContractState[] | undefined): boolean {
   if (!stateId || !contractStates?.length) return false;
   const state = contractStates.find(s => s.id === stateId);
   if (!state) return false;
@@ -11,7 +7,6 @@ export function isContractDraft(
   const name = (state.name ?? '').toLowerCase();
   return code === 'draft' || name.includes('чернов');
 }
-
 export function getContractStateTagClass(code: string | undefined): string {
   if (!code) return 'tagStateDefault';
   const codeUpper = code.toUpperCase();
