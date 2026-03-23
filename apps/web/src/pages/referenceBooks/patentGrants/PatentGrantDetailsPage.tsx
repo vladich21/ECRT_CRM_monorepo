@@ -64,7 +64,7 @@ export default function PatentGrantDetailsPage() {
   return (
     <DetailPageHeader
       title={`Патентный грант ${patentGrant.grant_number}`}
-      backLabel="Патентные гранты"
+      backLabel='Патентные гранты'
       onBack={() => navigate(`/patents/${patentGrant.patent_id}/grants`)}
       statusBadge={
         patentGrant.status
@@ -76,22 +76,22 @@ export default function PatentGrantDetailsPage() {
       }
       metaItems={[
         patentGrant.grant_number && (
-          <span key="number" className={hStyles.metaText}>
+          <span key='number' className={hStyles.metaText}>
             <CopyrightOutlined /> {patentGrant.grant_number}
           </span>
         ),
         patentGrant.renewal_date && (
-          <span key="date" className={hStyles.metaText}>
+          <span key='date' className={hStyles.metaText}>
             <CalendarOutlined /> {new Date(patentGrant.renewal_date).toLocaleDateString('ru-RU')}
           </span>
         ),
       ].filter(Boolean)}
       actions={
         <Space>
-          <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+          <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
             Редактировать
           </Button>
-          <Button type="primary" danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
+          <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
             Удалить
           </Button>
         </Space>

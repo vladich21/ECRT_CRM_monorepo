@@ -74,7 +74,7 @@ export default function DepartmentCreatePage() {
     <div className={styles.wrap}>
       {contextHolder}
       <BackButton />
-      <PageHeader title="Создание нового отдела" subtitle="Заполните данные для создания отдела" />
+      <PageHeader title='Создание нового отдела' subtitle='Заполните данные для создания отдела' />
 
       <div className={styles.formCard}>
         <Form
@@ -106,11 +106,7 @@ export default function DepartmentCreatePage() {
             </Col>
 
             <Col xs={24} md={12}>
-              <Form.Item
-                label='Короткое название'
-                name='short_name'
-                rules={[{ message: 'Введите короткое название' }]}
-              >
+              <Form.Item label='Короткое название' name='short_name' rules={[{ message: 'Введите короткое название' }]}>
                 <Input placeholder='Введите короткое название' prefix={<IdcardOutlined />} />
               </Form.Item>
             </Col>
@@ -131,7 +127,9 @@ export default function DepartmentCreatePage() {
                   optionFilterProp='label'
                   optionLabelProp='label'
                   filterOption={(input, option) =>
-                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    String(option?.label ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   suffixIcon={<UserOutlined />}
                 >

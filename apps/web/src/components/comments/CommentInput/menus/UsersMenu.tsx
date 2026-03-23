@@ -19,9 +19,9 @@ export const UsersMenu: React.FC<FormatMenuProps> = memo(({ position, text, onSe
 
   const filteredUsers = useMemo(() => {
     const users = data?.users || [];
-    
+
     if (!text) return users;
-    
+
     return users.filter(user => user.name.toLowerCase().includes(text.toLowerCase()));
   }, [data, text]);
 
@@ -52,30 +52,33 @@ export const UsersMenu: React.FC<FormatMenuProps> = memo(({ position, text, onSe
     }
   }, []);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    e.stopPropagation();
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      e.stopPropagation();
 
-    if (!filteredUsers || filteredUsers.length === 0) return;
+      if (!filteredUsers || filteredUsers.length === 0) return;
 
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onSelect(filteredUsers[choosed]);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setChoosed(prev => {
-        const newIndex = prev === 0 ? filteredUsers.length - 1 : prev - 1;
-        scrollToItem(newIndex);
-        return newIndex;
-      });
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setChoosed(prev => {
-        const newIndex = prev === filteredUsers.length - 1 ? 0 : prev + 1;
-        scrollToItem(newIndex);
-        return newIndex;
-      });
-    }
-  }, [filteredUsers, choosed, onSelect, scrollToItem]);
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onSelect(filteredUsers[choosed]);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setChoosed(prev => {
+          const newIndex = prev === 0 ? filteredUsers.length - 1 : prev - 1;
+          scrollToItem(newIndex);
+          return newIndex;
+        });
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setChoosed(prev => {
+          const newIndex = prev === filteredUsers.length - 1 ? 0 : prev + 1;
+          scrollToItem(newIndex);
+          return newIndex;
+        });
+      }
+    },
+    [filteredUsers, choosed, onSelect, scrollToItem],
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);

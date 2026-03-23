@@ -26,7 +26,7 @@ export default function UserDetailsPage() {
   return (
     <DetailPageHeader
       title={fullName || 'Пользователь'}
-      backLabel="Пользователи"
+      backLabel='Пользователи'
       onBack={() => navigate('/users')}
       statusBadge={{
         label: user.is_active ? 'Активен' : 'Не активен',
@@ -34,28 +34,28 @@ export default function UserDetailsPage() {
       }}
       metaItems={[
         user.email && (
-          <span key="email" className={hStyles.metaText}>
+          <span key='email' className={hStyles.metaText}>
             <MailOutlined /> {user.email}
           </span>
         ),
         user.department?.name && (
-          <span key="dept" className={hStyles.metaText}>
+          <span key='dept' className={hStyles.metaText}>
             <TeamOutlined /> {user.department.name}
           </span>
         ),
         user.position?.name && (
-          <span key="pos" className={hStyles.metaText}>
+          <span key='pos' className={hStyles.metaText}>
             <IdcardOutlined /> {user.position.name}
           </span>
         ),
       ].filter(Boolean)}
       actions={
-        <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+        <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
           Редактировать
         </Button>
       }
       tabs={[{ key: 'main', label: 'Основное' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
     >
@@ -131,11 +131,15 @@ export default function UserDetailsPage() {
             {user.roles?.length > 0 ? (
               <div className={styles.rolesWrap}>
                 {user.roles.map(role => (
-                  <span key={role.id} className={styles.roleTag}>{role.role_name}</span>
+                  <span key={role.id} className={styles.roleTag}>
+                    {role.role_name}
+                  </span>
                 ))}
               </div>
             ) : (
-              <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>Роли не назначены</span>
+              <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>
+                Роли не назначены
+              </span>
             )}
           </div>
         </div>

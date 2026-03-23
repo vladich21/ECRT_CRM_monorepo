@@ -36,7 +36,7 @@ export default function DepartmentDetailsPage() {
   return (
     <DetailPageHeader
       title={department.name || 'Отдел'}
-      backLabel="Отделы"
+      backLabel='Отделы'
       onBack={() => navigate('/departments')}
       statusBadge={{
         label: department.is_active ? 'Активен' : 'Не активен',
@@ -44,23 +44,23 @@ export default function DepartmentDetailsPage() {
       }}
       metaItems={[
         department.short_name && (
-          <span key="short" className={hStyles.metaText}>
+          <span key='short' className={hStyles.metaText}>
             <TeamOutlined /> {department.short_name}
           </span>
         ),
         department.parent_id && (
-          <span key="parent" className={hStyles.metaText}>
+          <span key='parent' className={hStyles.metaText}>
             <ApartmentOutlined /> {getNameById(department.parent_id, referenceBooks?.departments!)}
           </span>
         ),
       ].filter(Boolean)}
       actions={
-        <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+        <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
           Редактировать
         </Button>
       }
       tabs={[{ key: 'main', label: 'Основное' }]}
-      activeTab="main"
+      activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
     >
@@ -92,17 +92,13 @@ export default function DepartmentDetailsPage() {
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Руководитель</span>
                 <span className={department.manager_id ? styles.infoValue : styles.infoValueMuted}>
-                  {department.manager_id
-                    ? getNameById(department.manager_id, referenceBooks?.users)
-                    : 'Не назначен'}
+                  {department.manager_id ? getNameById(department.manager_id, referenceBooks?.users) : 'Не назначен'}
                 </span>
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Родительский отдел</span>
                 <span className={department.parent_id ? styles.infoValue : styles.infoValueMuted}>
-                  {department.parent_id
-                    ? getNameById(department.parent_id, referenceBooks?.departments!)
-                    : 'Нет'}
+                  {department.parent_id ? getNameById(department.parent_id, referenceBooks?.departments!) : 'Нет'}
                 </span>
               </div>
             </div>

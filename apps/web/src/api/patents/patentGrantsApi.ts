@@ -3,9 +3,7 @@ import { apiClient } from '../clients';
 
 export const patentGrantsApi = {
   getPatentGrants: async (patentId?: string): Promise<PatentGrant[]> => {
-    const response = await apiClient.get(
-      patentId ? `/patents/${patentId}/grants` : '/patent_grants',
-    );
+    const response = await apiClient.get(patentId ? `/patents/${patentId}/grants` : '/patent_grants');
     return response.data;
   },
 
@@ -14,7 +12,10 @@ export const patentGrantsApi = {
     return response.data[0];
   },
 
-  createPatentGrant: async (patentId: string, data: Omit<PatentGrant, 'id' | 'patent_id' | 'created_at' | 'updated_at'>): Promise<PatentGrant> => {
+  createPatentGrant: async (
+    patentId: string,
+    data: Omit<PatentGrant, 'id' | 'patent_id' | 'created_at' | 'updated_at'>,
+  ): Promise<PatentGrant> => {
     const response = await apiClient.post(`/patents/${patentId}/grants`, data);
     return response.data[0];
   },

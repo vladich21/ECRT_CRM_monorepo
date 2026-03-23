@@ -32,13 +32,7 @@ function MainLayout({ children }: MainLayoutProps) {
           <img src='/logo_min.png' alt='Логотип' />
         </div>
 
-        <Menu
-          theme='dark'
-          mode='horizontal'
-          selectedKeys={getSelectedKeys()}
-          items={items}
-          className={styles.menu}
-        />
+        <Menu theme='dark' mode='horizontal' selectedKeys={getSelectedKeys()} items={items} className={styles.menu} />
 
         <div className={styles.profileSection}>
           <ProfileButton

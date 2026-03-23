@@ -8,7 +8,7 @@ const flattenTreeData = <T extends Record<string, unknown>>(treeData: T[]): T[] 
   const flatten = (items: T[]) => {
     items.forEach(item => {
       result.push(item);
-      const children = (item[CHILDREN_FIELD] as T[] | undefined);
+      const children = item[CHILDREN_FIELD] as T[] | undefined;
       if (children && children.length > 0) {
         flatten(children);
       }

@@ -30,21 +30,21 @@ export function ContractFiltersModal({
 }: ContractFiltersModalProps) {
   return (
     <Modal
-      title="Фильтры договоров"
+      title='Фильтры договоров'
       open={open}
       onCancel={onClose}
       onOk={onApply}
-      okText="Применить"
-      cancelText="Отмена"
+      okText='Применить'
+      cancelText='Отмена'
       width={900}
       footer={[
-        <Button key="reset" onClick={onReset}>
+        <Button key='reset' onClick={onReset}>
           Сбросить
         </Button>,
-        <Button key="cancel" onClick={onClose}>
+        <Button key='cancel' onClick={onClose}>
           Отмена
         </Button>,
-        <Button key="apply" type="primary" onClick={onApply}>
+        <Button key='apply' type='primary' onClick={onApply}>
           Применить
         </Button>,
       ]}
@@ -54,35 +54,35 @@ export function ContractFiltersModal({
           <span className={styles.filtersModalLabel}>Партнёр</span>
           <Select
             className={styles.filtersModalControl}
-            placeholder="Все партнёры"
+            placeholder='Все партнёры'
             allowClear
             showSearch
-            optionFilterProp="label"
+            optionFilterProp='label'
             options={selectOptions.partners}
             value={draftFilters.partnerId ?? undefined}
-            onChange={(value) => onUpdateDraftFilter({ partnerId: value ?? null })}
+            onChange={value => onUpdateDraftFilter({ partnerId: value ?? null })}
           />
         </div>
         <div className={styles.filtersModalField}>
           <span className={styles.filtersModalLabel}>Категория</span>
           <Select
             className={styles.filtersModalControl}
-            placeholder="Все категории"
+            placeholder='Все категории'
             allowClear
             options={selectOptions.categories}
             value={draftFilters.categoryId ?? undefined}
-            onChange={(value) => onUpdateDraftFilter({ categoryId: value ?? null })}
+            onChange={value => onUpdateDraftFilter({ categoryId: value ?? null })}
           />
         </div>
         <div className={styles.filtersModalField}>
           <span className={styles.filtersModalLabel}>Состояние</span>
           <Select
             className={styles.filtersModalControl}
-            placeholder="Все состояния"
+            placeholder='Все состояния'
             allowClear
             options={selectOptions.states}
             value={draftFilters.stateId ?? undefined}
-            onChange={(value) => onUpdateDraftFilter({ stateId: value ?? null })}
+            onChange={value => onUpdateDraftFilter({ stateId: value ?? null })}
           />
         </div>
         <div className={styles.filtersModalField}>
@@ -90,11 +90,9 @@ export function ContractFiltersModal({
           <DatePicker.RangePicker
             className={styles.filtersModalControl}
             placeholder={['Дата с', 'Дата по']}
-            format="DD.MM.YYYY"
+            format='DD.MM.YYYY'
             value={draftFilters.dateRange}
-            onChange={(dates) =>
-              onUpdateDraftFilter({ dateRange: dates as [Dayjs, Dayjs] | null })
-            }
+            onChange={dates => onUpdateDraftFilter({ dateRange: dates as [Dayjs, Dayjs] | null })}
           />
         </div>
         <div className={styles.filtersModalField}>
@@ -102,30 +100,22 @@ export function ContractFiltersModal({
           <div className={styles.filtersModalAmountRow}>
             <InputNumber
               className={styles.filtersModalAmountInput}
-              placeholder="От"
+              placeholder='От'
               min={0}
               value={draftFilters.amountMin ?? undefined}
-              onChange={(value) => onUpdateDraftFilter({ amountMin: value ?? null })}
-              formatter={(value) =>
-                value != null ? Number(value).toLocaleString('ru-RU') : ''
-              }
-              parser={(value) =>
-                value ? Number(String(value).replace(/\s/g, '')) : 0
-              }
+              onChange={value => onUpdateDraftFilter({ amountMin: value ?? null })}
+              formatter={value => (value != null ? Number(value).toLocaleString('ru-RU') : '')}
+              parser={value => (value ? Number(String(value).replace(/\s/g, '')) : 0)}
             />
             <span className={styles.filtersModalAmountSep}>—</span>
             <InputNumber
               className={styles.filtersModalAmountInput}
-              placeholder="До"
+              placeholder='До'
               min={0}
               value={draftFilters.amountMax ?? undefined}
-              onChange={(value) => onUpdateDraftFilter({ amountMax: value ?? null })}
-              formatter={(value) =>
-                value != null ? Number(value).toLocaleString('ru-RU') : ''
-              }
-              parser={(value) =>
-                value ? Number(String(value).replace(/\s/g, '')) : 0
-              }
+              onChange={value => onUpdateDraftFilter({ amountMax: value ?? null })}
+              formatter={value => (value != null ? Number(value).toLocaleString('ru-RU') : '')}
+              parser={value => (value ? Number(String(value).replace(/\s/g, '')) : 0)}
             />
             <span className={styles.filtersModalAmountUnit}>₽</span>
           </div>

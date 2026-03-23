@@ -103,7 +103,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
     },
     [editingComment, openModal, closeModal],
   );
-  
+
   const handleSend = useCallback(
     async (data: Partial<Comment>) => {
       const payload: any = {

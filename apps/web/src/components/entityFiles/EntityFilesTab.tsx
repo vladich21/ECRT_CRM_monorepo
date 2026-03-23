@@ -115,7 +115,7 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
   };
 
   const hasFiles = files.length > 0;
-  
+
   const draggerProps = {
     name: 'file',
     multiple: true,

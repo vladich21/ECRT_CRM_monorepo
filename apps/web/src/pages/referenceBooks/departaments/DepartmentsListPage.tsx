@@ -31,11 +31,7 @@ export default function DepartmentsListPage() {
   }
 
   return (
-    <ReferenceBookListPage
-      title="Отделы"
-      addButtonLabel="Добавить отдел"
-      onAdd={() => navigate('/departments/create')}
-    >
+    <ReferenceBookListPage title='Отделы' addButtonLabel='Добавить отдел' onAdd={() => navigate('/departments/create')}>
       <BasicTable<Department>
         data={departments}
         loading={isReferencesLoading || isLoading}

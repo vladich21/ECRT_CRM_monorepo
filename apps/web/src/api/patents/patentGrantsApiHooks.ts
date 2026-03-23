@@ -70,8 +70,7 @@ export const useDeletePatentGrant = (): UseMutationResult<void, Error, string> =
     onSuccess: (_, grantId) => {
       queryClient.removeQueries({ queryKey: ['patentGrants', grantId] });
       queryClient.invalidateQueries({
-        predicate: query =>
-          query.queryKey[0] === 'patentGrants' && query.queryKey[1] !== grantId,
+        predicate: query => query.queryKey[0] === 'patentGrants' && query.queryKey[1] !== grantId,
       });
     },
   });

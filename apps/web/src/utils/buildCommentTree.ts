@@ -12,7 +12,6 @@ export const buildCommentTree = (commentsList: Comment[]): CommentWithLevel[] =>
   const result: CommentWithLevel[] = [];
 
   const addWithChildren = (comment: Comment, level: number): void => {
-
     result.push({ ...comment, level });
 
     const children = commentsList.filter(c => c.parent_id === comment.id);

@@ -65,7 +65,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
 
   return (
     <Space direction='vertical' style={{ width: '100%' }} size='middle'>
-      <Dragger multiple showUploadList={false} customRequest={handleDragDrop} accept={ACCEPT_FILE_TYPES} disabled={isLoading}>
+      <Dragger
+        multiple
+        showUploadList={false}
+        customRequest={handleDragDrop}
+        accept={ACCEPT_FILE_TYPES}
+        disabled={isLoading}
+      >
         <p className='ant-upload-drag-icon'>
           <InboxOutlined />
         </p>

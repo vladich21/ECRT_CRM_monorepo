@@ -15,15 +15,10 @@ export interface InfoFieldProps {
   className?: string;
 }
 
-const InfoField: React.FC<InfoFieldProps> = ({
-  label,
-  value,
-  colProps = { xs: 24, sm: 12, md: 8 },
-  className,
-}) => {
+const InfoField: React.FC<InfoFieldProps> = ({ label, value, colProps = { xs: 24, sm: 12, md: 8 }, className }) => {
   return (
     <Col {...colProps} className={className}>
-      <Text type="secondary" className={styles.infoFieldLabel}>
+      <Text type='secondary' className={styles.infoFieldLabel}>
         {label}
       </Text>
       <Text className={styles.infoFieldValue}>{value}</Text>

@@ -1,11 +1,5 @@
 import { Tag, Tooltip } from 'antd';
-import {
-  CalendarOutlined,
-  FileTextOutlined,
-  RightOutlined,
-  TeamOutlined,
-  NumberOutlined,
-} from '@ant-design/icons';
+import { CalendarOutlined, FileTextOutlined, RightOutlined, TeamOutlined, NumberOutlined } from '@ant-design/icons';
 import { Patent } from '../../types/patent';
 import { getNameById } from '../../helpers/getNameById';
 import type { ReferenceDataForPatents } from './data';
@@ -45,12 +39,13 @@ export function PatentCard({ patent, refs, onClick }: Props) {
             <span className={styles.name}>{patent.name || '—'}</span>
           </Tooltip>
           <span className={styles.metaInn}>
-            <NumberOutlined style={{ fontSize: 11, marginRight: 4 }} />
-            № {patent.registration_number || '—'}
+            <NumberOutlined style={{ fontSize: 11, marginRight: 4 }} />№ {patent.registration_number || '—'}
           </span>
         </div>
         <div className={styles.metaRow}>
-          <Tag color={st.color} style={{ fontSize: 14 }}>{st.label}</Tag>
+          <Tag color={st.color} style={{ fontSize: 14 }}>
+            {st.label}
+          </Tag>
           {statusName && <Tag style={{ fontSize: 14 }}>{statusName}</Tag>}
         </div>
         {ipTypeName && (

@@ -23,7 +23,7 @@ export const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({ visible })
     } else if (shouldRender && !hasStartedFadeOutRef.current) {
       hasStartedFadeOutRef.current = true;
       setIsFadingOut(true);
-      
+
       fadeOutTimerRef.current = setTimeout(() => {
         setShouldRender(false);
         setIsFadingOut(false);
@@ -31,7 +31,7 @@ export const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({ visible })
         fadeOutTimerRef.current = null;
       }, 1500);
     }
-    
+
     return () => {
       if (fadeOutTimerRef.current) {
         clearTimeout(fadeOutTimerRef.current);
@@ -51,22 +51,19 @@ export const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({ visible })
         <div className={styles.preloaderLogo}>
           <div className={styles.logoContainer}>
             <div className={styles.logo}>
-              <img
-                src="/logo_monochrome.png"
-                alt="Логотип"
-                className={styles.logoImage}
-              />
+              <img src='/logo_monochrome.png' alt='Логотип' className={styles.logoImage} />
             </div>
           </div>
           <div className={styles.textContainer}>
             <div className={styles.textLine}>
-               Инжиниринговый
+              Инжиниринговый
               <br />
-               центр
-               <br />
-               железнодорожного
-               <br />
-               транспорта</div>
+              центр
+              <br />
+              железнодорожного
+              <br />
+              транспорта
+            </div>
           </div>
         </div>
       </div>

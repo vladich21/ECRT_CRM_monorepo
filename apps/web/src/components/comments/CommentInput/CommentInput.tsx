@@ -52,8 +52,16 @@ const CommentInput: React.FC<CommentInputProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { attachedFiles, fileInputRef, handleFileChange, removeFile, clearFiles, formatFileSize, getFiles, acceptFileTypes } =
-    useFiles(onAttachFile);
+  const {
+    attachedFiles,
+    fileInputRef,
+    handleFileChange,
+    removeFile,
+    clearFiles,
+    formatFileSize,
+    getFiles,
+    acceptFileTypes,
+  } = useFiles(onAttachFile);
 
   const closeUsersMenu = useCallback(() => {
     setShowUsersMenu(false);
@@ -243,7 +251,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
   }, [action, editingComment, clearFiles]);
 
   return (
-    <div 
+    <div
       className={`${styles.container} ${isFocused ? styles.focused : ''} ${disabled ? styles.disabled : ''} ${className}`}
       style={style}
     >
@@ -260,27 +268,19 @@ const CommentInput: React.FC<CommentInputProps> = ({
                 {/* Показываем существующие файлы */}
                 {editingComment.files && editingComment.files.length > 0 && (
                   <div className={styles.editFilesSection}>
-                    <div className={styles.editFilesLabel}>
-                      Прикрепленные файлы:
-                    </div>
+                    <div className={styles.editFilesLabel}>Прикрепленные файлы:</div>
                     <div className={styles.editFilesList}>
                       {editingComment.files.map(file => (
                         <div key={file.id} className={styles.editFileItem}>
                           <div className={styles.editFileContent}>
-                            <span className={styles.editFileName}>
-                              📎 {file.name}
-                            </span>
-                            {file.size && (
-                              <span className={styles.editFileSize}>
-                                ({formatFileSize(+file.size)})
-                              </span>
-                            )}
+                            <span className={styles.editFileName}>📎 {file.name}</span>
+                            {file.size && <span className={styles.editFileSize}>({formatFileSize(+file.size)})</span>}
                           </div>
                           <Button
                             type='text'
                             size='small'
                             icon={<CloseOutlined />}
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               if (onDeleteFile && file.id) {
                                 onDeleteFile(file.id);
@@ -305,8 +305,9 @@ const CommentInput: React.FC<CommentInputProps> = ({
                 <div
                   className={styles.replyQuoteBox}
                   dangerouslySetInnerHTML={{
-                    __html: ((replyingToComment.html || replyingToComment.message).substring(0, 80) +
-                      ((replyingToComment.html || replyingToComment.message).length > 80 ? '...' : ''))
+                    __html:
+                      (replyingToComment.html || replyingToComment.message).substring(0, 80) +
+                      ((replyingToComment.html || replyingToComment.message).length > 80 ? '...' : ''),
                   }}
                 />
               </div>
@@ -393,9 +394,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
             >
               <PaperClipOutlined className={styles.fileTagIconInline} />
               {attachedFile.file.name}
-              <span className={styles.fileTagSizeInline}>
-                ({formatFileSize(attachedFile.file.size)})
-              </span>
+              <span className={styles.fileTagSizeInline}>({formatFileSize(attachedFile.file.size)})</span>
             </Tag>
           ))}
         </div>

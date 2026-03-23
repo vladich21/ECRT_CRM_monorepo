@@ -41,7 +41,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
         <div className={styles.metricContent}>
           {rows.map((row, index) => (
             <div key={index} className={styles.metricRow}>
-              <Text type="secondary" className={styles.metricTextSecondary}>
+              <Text type='secondary' className={styles.metricTextSecondary}>
                 {row.label}
               </Text>
               <Text
@@ -55,7 +55,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           {progress && (
             <Progress
               percent={progress.percent}
-              size="small"
+              size='small'
               strokeColor={progress.strokeColor || '#001529'}
               showInfo={false}
               className={`${styles.metricProgress} ${styles.metricProgressWrapper}`}

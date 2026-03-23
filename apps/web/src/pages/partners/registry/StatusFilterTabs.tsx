@@ -20,15 +20,14 @@ const TABS: { key: StatusTab; label: string }[] = [
 export default function StatusFilterTabs({ activeStatus, counts, onChange }: StatusFilterTabsProps) {
   return (
     <div className={styles.filterTabs}>
-      {TABS.map((tab) => (
+      {TABS.map(tab => (
         <button
           key={tab.key}
-          type="button"
+          type='button'
           className={`${styles.filterTab}${activeStatus === tab.key ? ` ${styles.filterTabActive}` : ''}`}
           onClick={() => onChange(tab.key)}
         >
-          {tab.label}{' '}
-          <span className={styles.filterTabCount}>{counts[tab.key]}</span>
+          {tab.label} <span className={styles.filterTabCount}>{counts[tab.key]}</span>
         </button>
       ))}
     </div>

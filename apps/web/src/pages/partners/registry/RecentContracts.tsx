@@ -12,7 +12,7 @@ export default function RecentContracts({ contracts }: RecentContractsProps) {
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <h3 className={styles.title}>Последние договоры</h3>
-        <Button type="link" size="small" style={{ padding: 0 }}>
+        <Button type='link' size='small' style={{ padding: 0 }}>
           Все договоры <RightOutlined />
         </Button>
       </div>

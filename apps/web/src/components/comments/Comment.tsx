@@ -81,7 +81,7 @@ const CommentComponent: React.FC<CommentProps> = ({
   const commentAuthorId = comment.created_by || comment.user_id;
   const isCurrentUser = !!currentUserId && !!commentAuthorId && String(currentUserId) === String(commentAuthorId);
   const hasParent = comment.parent_id && parentAuthorName && parentContent;
- 
+
   const menu = (
     <Menu className={styles.dropdownMenu}>
       <Menu.Item
@@ -147,7 +147,7 @@ const CommentComponent: React.FC<CommentProps> = ({
                 />
               </Dropdown>
             </div>
-            
+
             {hasParent && (
               <div className={styles.parentQuote} onClick={handleScrollToParent}>
                 <div className={styles.parentQuoteAuthor}>{parentAuthorName}</div>

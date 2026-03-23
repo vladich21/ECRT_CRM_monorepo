@@ -21,10 +21,10 @@ interface SupplierCardProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  'Активный': '#52c41a',
-  'Потенциальный': '#1677ff',
-  'Заблокирован': '#ff4d4f',
-  'Архив': '#8c8c8c',
+  Активный: '#52c41a',
+  Потенциальный: '#1677ff',
+  Заблокирован: '#ff4d4f',
+  Архив: '#8c8c8c',
 };
 
 export default function SupplierCard({ partner, references, onClick }: SupplierCardProps) {
@@ -48,7 +48,9 @@ export default function SupplierCard({ partner, references, onClick }: SupplierC
           </span>
         </div>
         <div className={styles.metaRow}>
-          <Tag color={statusColor} style={{ fontSize: 14 }}>{statusName}</Tag>
+          <Tag color={statusColor} style={{ fontSize: 14 }}>
+            {statusName}
+          </Tag>
         </div>
         {typeNames.length > 0 && (
           <div className={styles.metaRow} style={{ marginTop: 2 }}>
@@ -68,10 +70,14 @@ export default function SupplierCard({ partner, references, onClick }: SupplierC
       <div className={styles.metricsCol}>
         <div className={styles.complianceBlock}>
           <div className={styles.complianceHeader}>
-            <span className={styles.complianceLabel}><SafetyCertificateOutlined /> Оценка</span>
-            <span className={styles.complianceScore} style={{ color: '#ff4d4f' }}>0.00</span>
+            <span className={styles.complianceLabel}>
+              <SafetyCertificateOutlined /> Оценка
+            </span>
+            <span className={styles.complianceScore} style={{ color: '#ff4d4f' }}>
+              0.00
+            </span>
           </div>
-          <Progress percent={0} showInfo={false} size="small" strokeColor="#ff4d4f" trailColor="#f0f0f0" />
+          <Progress percent={0} showInfo={false} size='small' strokeColor='#ff4d4f' trailColor='#f0f0f0' />
         </div>
         <div className={styles.contractsCount}>
           <CalendarOutlined />

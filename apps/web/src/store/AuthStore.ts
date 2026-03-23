@@ -11,7 +11,7 @@ interface IAuthStore {
 
 export const useAuthStore = create<IAuthStore>()(
   persist(
-    (set) => ({
+    set => ({
       user: null,
       isAuth: false,
 

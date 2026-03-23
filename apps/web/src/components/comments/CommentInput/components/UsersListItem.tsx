@@ -28,11 +28,8 @@ export const UserListItem = memo<UserListItemProps>(
     );
   },
   (prevProps, nextProps) => {
-    return (
-      prevProps.user.id === nextProps.user.id &&
-      prevProps.isSelected === nextProps.isSelected
-    );
-  }
+    return prevProps.user.id === nextProps.user.id && prevProps.isSelected === nextProps.isSelected;
+  },
 );
 
 UserListItem.displayName = 'UserListItem';

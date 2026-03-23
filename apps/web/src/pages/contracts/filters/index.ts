@@ -1,6 +1,1 @@
-export {
-  filterByTab,
-  filterByAdvanced,
-  filterBySearch,
-  countActiveFilters,
-} from './contractListFilters';
+export { filterByTab, filterByAdvanced, filterBySearch, countActiveFilters } from './contractListFilters';

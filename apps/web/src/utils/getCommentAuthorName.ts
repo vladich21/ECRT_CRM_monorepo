@@ -9,7 +9,7 @@ interface ReferenceUser {
 export const getCommentAuthorName = (
   comment: Comment,
   currentUser: User | null,
-  usersBook: ReferenceUser[]
+  usersBook: ReferenceUser[],
 ): string => {
   if (comment.created_by_fio) {
     return comment.created_by_fio;

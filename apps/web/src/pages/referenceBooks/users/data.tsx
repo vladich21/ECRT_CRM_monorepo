@@ -20,7 +20,9 @@ export const getColumnsData = () => [
     dataIndex: 'is_active',
     key: 'is_active',
     render: (is_active: boolean | undefined) =>
-      is_active === undefined ? '-' : is_active ? (
+      is_active === undefined ? (
+        '-'
+      ) : is_active ? (
         <Tag color='rgba(47, 160, 75, 1)'>Активен</Tag>
       ) : (
         <Tag color='rgba(139, 39, 39, 1)'>Не активен</Tag>

@@ -26,7 +26,6 @@ export const getColumnsData = (users: { id: string; name: string }[]) => [
     title: 'Дата загрузки',
     dataIndex: 'uploaded_at',
     key: 'uploaded_at',
-    render: (uploaded_at: string | null) =>
-      uploaded_at ? new Date(uploaded_at).toLocaleDateString('ru-RU') : '-',
+    render: (uploaded_at: string | null) => (uploaded_at ? new Date(uploaded_at).toLocaleDateString('ru-RU') : '-'),
   },
 ];

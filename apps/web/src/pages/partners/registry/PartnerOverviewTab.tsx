@@ -10,12 +10,29 @@ import styles from './PartnerOverviewTab.module.scss';
 
 export default function PartnerOverviewTab() {
   const partner = useOutletContext<Partner>();
-  const { data: references } = useReferenceData(['partnerCategories', 'partnerStatuses', 'partnerTypes', 'partnerEconomicCategories']);
+  const { data: references } = useReferenceData([
+    'partnerCategories',
+    'partnerStatuses',
+    'partnerTypes',
+    'partnerEconomicCategories',
+  ]);
 
   const complianceItems: ComplianceItem[] = [
-    { label: 'Юридическая проверка', done: partner.legal_check_passed, note: partner.legal_check_passed ? 'Пройдена' : 'Не пройдена' },
-    { label: 'Первичная оценка', done: partner.initial_assessment_done, note: partner.initial_assessment_done ? 'Выполнена' : 'Не выполнена' },
-    { label: 'Анкета', done: partner.questionnaire_filled, note: partner.questionnaire_filled ? 'Заполнена' : 'Не заполнена' },
+    {
+      label: 'Юридическая проверка',
+      done: partner.legal_check_passed,
+      note: partner.legal_check_passed ? 'Пройдена' : 'Не пройдена',
+    },
+    {
+      label: 'Первичная оценка',
+      done: partner.initial_assessment_done,
+      note: partner.initial_assessment_done ? 'Выполнена' : 'Не выполнена',
+    },
+    {
+      label: 'Анкета',
+      done: partner.questionnaire_filled,
+      note: partner.questionnaire_filled ? 'Заполнена' : 'Не заполнена',
+    },
   ];
 
   const ratingScore = partner.rating != null ? partner.rating * 20 : 0;
@@ -25,7 +42,7 @@ export default function PartnerOverviewTab() {
       <div className={styles.leftColumn}>
         <KpiRow
           contractsCount={0}
-          totalVolume="—"
+          totalVolume='—'
           complianceScore={ratingScore}
           nextAuditDate={partner.next_audit_date || undefined}
         />

@@ -83,7 +83,7 @@ export default function DepartmentEditPage() {
     <div className={styles.wrap}>
       {contextHolder}
       <BackButton />
-      <PageHeader title={`Редактирование отдела: ${department.name}`} subtitle="Измените данные отдела" />
+      <PageHeader title={`Редактирование отдела: ${department.name}`} subtitle='Измените данные отдела' />
 
       <div className={styles.formCard}>
         <Form
@@ -115,11 +115,7 @@ export default function DepartmentEditPage() {
             </Col>
 
             <Col xs={24} md={12}>
-              <Form.Item
-                label='Короткое название'
-                name='short_name'
-                rules={[{ message: 'Введите короткое название' }]}
-              >
+              <Form.Item label='Короткое название' name='short_name' rules={[{ message: 'Введите короткое название' }]}>
                 <Input placeholder='Введите короткое название' prefix={<IdcardOutlined />} />
               </Form.Item>
             </Col>
@@ -140,7 +136,9 @@ export default function DepartmentEditPage() {
                   optionFilterProp='label'
                   optionLabelProp='label'
                   filterOption={(input, option) =>
-                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    String(option?.label ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   suffixIcon={<UserOutlined />}
                 >
@@ -181,9 +179,7 @@ export default function DepartmentEditPage() {
 
           {/* Кнопки действий */}
           <div className={styles.formActions}>
-            <Button onClick={handleBack}>
-              Отмена
-            </Button>
+            <Button onClick={handleBack}>Отмена</Button>
             <Button
               type='primary'
               htmlType='submit'

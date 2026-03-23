@@ -38,9 +38,7 @@ export const useFilteredContracts = (contracts: Contract[], filters: Record<stri
       }
 
       if (filters.category_id && filters.category_id.length > 0) {
-        const categoryIds = Array.isArray(filters.category_id)
-          ? filters.category_id
-          : [filters.category_id];
+        const categoryIds = Array.isArray(filters.category_id) ? filters.category_id : [filters.category_id];
 
         if (!categoryIds.includes(contract.category_id)) {
           return false;
@@ -56,9 +54,7 @@ export const useFilteredContracts = (contracts: Contract[], filters: Record<stri
       }
 
       if (filters.state_id && filters.state_id.length > 0) {
-        const stateIds = Array.isArray(filters.state_id)
-          ? filters.state_id
-          : [filters.state_id];
+        const stateIds = Array.isArray(filters.state_id) ? filters.state_id : [filters.state_id];
 
         if (!stateIds.includes(contract.state_id)) {
           return false;

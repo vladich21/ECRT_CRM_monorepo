@@ -47,7 +47,7 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
   }) => {
     await onConfirm(modalData ? getChangedFields(values, modalData) : values);
   };
-  
+
   return (
     <BaseModal
       {...layoutProps}

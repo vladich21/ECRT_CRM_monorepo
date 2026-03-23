@@ -31,13 +31,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
   return (
     <Space direction='vertical' size='middle' className={styles.container}>
       {/* Основная информация */}
-      <Descriptions
-        title='Основная информация'
-        column={1}
-        bordered
-        size='middle'
-        className={styles.descriptions}
-      >
+      <Descriptions title='Основная информация' column={1} bordered size='middle' className={styles.descriptions}>
         <Descriptions.Item label='Номер гранта'>
           {patentGrant?.grant_number || <Text type='secondary'>Не указан</Text>}
         </Descriptions.Item>
@@ -60,13 +54,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
       </Descriptions>
 
       {/* Даты */}
-      <Descriptions
-        title='Даты'
-        column={1}
-        bordered
-        size='middle'
-        className={styles.descriptions}
-      >
+      <Descriptions title='Даты' column={1} bordered size='middle' className={styles.descriptions}>
         <Descriptions.Item label='Дата продления'>
           {patentGrant?.renewal_date ? (
             new Date(patentGrant.renewal_date).toLocaleDateString('ru-RU')
@@ -85,9 +73,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
           size='middle'
           className={styles.descriptions}
         >
-          <Descriptions.Item label='Примечания'>
-            {patentGrant.notes}
-          </Descriptions.Item>
+          <Descriptions.Item label='Примечания'>{patentGrant.notes}</Descriptions.Item>
         </Descriptions>
       )}
     </Space>
