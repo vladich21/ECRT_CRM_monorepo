@@ -362,3 +362,83 @@ export const partners = pgTable('partners', {
   updatedBy: uuid('updated_by'),
   isDeleted: boolean('is_deleted').notNull().default(false),
 });
+
+/** Справочник критериев матрицы оценки поставщика (веса в долях, сумма активных = 1). См. docs/supplier-evaluations-db-design.md */
+export const refSupplierEvaluationCriteria = pgTable(
+  'ref_supplier_evaluation_criteria',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: varchar('code', { length: 64 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    weight: numeric('weight', { precision: 6, scale: 4 }).notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (t) => [uniqueIndex('ref_supplier_eval_criteria_code_uidx').on(t.code)],
+);
+
+/**
+ * Оценка поставщика по проекту. status: active | archived (см. supplier-evaluation.enums.ts).
+ * Частичный уникальный индекс (partner_id, project_id) WHERE status = 'active' — в SQL миграции, см. docs.
+ */
+export const supplierEvaluations = pgTable(
+  'supplier_evaluations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    partnerId: uuid('partner_id').notNull(),
+    projectId: uuid('project_id').notNull(),
+    status: varchar('status', { length: 20 }).notNull(),
+    weightedScore: numeric('weighted_score', { precision: 5, scale: 2 }).notNull(),
+    category: varchar('category', { length: 1 }).notNull(),
+    evaluatedAt: date('evaluated_at').notNull(),
+    nextReevaluationDate: date('next_reevaluation_date'),
+    comment: text('comment'),
+    createdBy: uuid('created_by'),
+    updatedBy: uuid('updated_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('supplier_evaluations_partner_idx').on(t.partnerId),
+    index('supplier_evaluations_project_idx').on(t.projectId),
+    index('supplier_evaluations_partner_project_status_idx').on(t.partnerId, t.projectId, t.status),
+    index('supplier_evaluations_next_reeval_idx').on(t.nextReevaluationDate),
+  ],
+);
+
+export const supplierEvaluationCriterionScores = pgTable(
+  'supplier_evaluation_criterion_scores',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    evaluationId: uuid('evaluation_id').notNull(),
+    criterionId: uuid('criterion_id').notNull(),
+    score: numeric('score', { precision: 4, scale: 2 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('supplier_eval_scores_eval_criterion_uidx').on(t.evaluationId, t.criterionId),
+    index('supplier_eval_scores_evaluation_idx').on(t.evaluationId),
+  ],
+);
+
+/** Блокировка контрагента по конкретному проекту (категория D и др.). */
+export const supplierPartnerProjectBlocks = pgTable(
+  'supplier_partner_project_blocks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    partnerId: uuid('partner_id').notNull(),
+    projectId: uuid('project_id').notNull(),
+    sourceEvaluationId: uuid('source_evaluation_id'),
+    reason: varchar('reason', { length: 64 }),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('supplier_partner_project_blocks_pair_active_idx').on(t.partnerId, t.projectId, t.isActive),
+    index('supplier_partner_project_blocks_project_idx').on(t.projectId),
+  ],
+);

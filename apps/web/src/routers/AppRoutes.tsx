@@ -12,6 +12,8 @@ import PartnerCreatePage from "../pages/partners/PartnerCreatePage";
 import PartnerEditPage from "../pages/partners/PartnersEditPage";
 import PartnerContactsListPage from "../pages/partners/detailsTabs/Contacts/ContactsListPage";
 import { PartnerMainInfoTab } from "../pages/partners/detailsTabs/PartnerMainInfo";
+import PartnerEvaluationsTab from "../pages/partners/evaluations/PartnerEvaluationsTab";
+import SupplierEvaluationsRegistryPage from "../pages/supplierEvaluations/SupplierEvaluationsRegistryPage";
 import PartnerTypesListPage from "../pages/referenceBooks/partnerTypes/PartnerTypesListPage";
 import PartnerStatusesListPage from "../pages/referenceBooks/partnerStatuses/PartnerStatusesListPage";
 import ContractsListPage from "../pages/contracts/list/ContractsListPage";
@@ -144,10 +146,13 @@ export default function AppRoutes() {
 
             <Route path="contacts" element={<PartnerContactsListPage />}/>
             <Route path="contracts" element={<ContractsListPage />}/>
+            <Route path="evaluations" element={<PartnerEvaluationsTab />}/>
             <Route path="comments" element={<CommentsList entityType="partner"/>}/>
             <Route path="files" element={<EntityFilesTab entityType="partner"/>}/>
           </Route>
         </Route>
+
+        <Route path="supplier-evaluations" element={<SupplierEvaluationsRegistryPage />}/>
 
         <Route path="contracts">
           <Route index element={<ContractsListPage />}/>

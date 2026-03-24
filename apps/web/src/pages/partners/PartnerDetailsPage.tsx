@@ -15,6 +15,7 @@ import { useContracts } from '../../api/contracts/contractApiHooks';
 import { useFilesByEntity } from '../../api/files/fileApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useDeletePartner, usePartnerById, useRestorePartner } from '../../api/partners/partnerApiHooks';
+import { useSupplierEvaluationsList } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
@@ -53,10 +54,16 @@ export default function PartnerDetailsPage() {
   const { data: contractsList } = useContracts(partnerId ? { partner_id: partnerId } : undefined, 1, 1, {
     enabled: Boolean(partnerId),
   });
+  const { data: evaluationsCountData } = useSupplierEvaluationsList(
+    { partner_id: partnerId, status: 'all', limit: 1, offset: 0 },
+    Boolean(partnerId),
+  );
+  const evaluationsTotal = evaluationsCountData?.total ?? 0;
   const getActiveTabFromPath = () => {
     const path = location.pathname;
     if (path.includes('/contacts')) return 'contacts';
     if (path.includes('/contracts')) return 'contracts';
+    if (path.includes('/evaluations')) return 'evaluations';
     if (path.includes('/comments')) return 'comments';
     if (path.includes('/files')) return 'files';
     return 'main';
@@ -94,6 +101,9 @@ export default function PartnerDetailsPage() {
       case 'contracts':
         navigate(`${basePath}/contracts`);
         break;
+      case 'evaluations':
+        navigate(`${basePath}/evaluations`);
+        break;
       case 'comments':
         navigate(`${basePath}/comments`);
         break;
@@ -115,6 +125,7 @@ export default function PartnerDetailsPage() {
     { key: 'main', label: 'Основное' },
     { key: 'contacts', label: `Контактные лица (${contacts.length})` },
     { key: 'contracts', label: `Договоры (${contractsList?.total ?? 0})` },
+    { key: 'evaluations', label: `Оценки (${evaluationsTotal})` },
     { key: 'comments', label: 'Комментарии' },
     { key: 'files', label: `Файлы (${files.length})` },
   ];

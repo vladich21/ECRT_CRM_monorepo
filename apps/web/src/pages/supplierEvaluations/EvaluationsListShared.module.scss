@@ -1,0 +1,96 @@
+@use '../../styles/variables' as v;
+
+$portal-secondary: #1e293b;
+$portal-secondary-muted: #64748b;
+$portal-secondary-border: #e2e8f0;
+$portal-accent: #002f55;
+
+.wrap {
+  padding: 0;
+}
+
+.filterSection {
+  border-top: 1px solid $portal-secondary-border;
+  background: #f8fafc;
+}
+
+.filterTabsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  min-height: 46px;
+  flex-wrap: wrap;
+}
+
+.filterTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.filterTabsRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.searchInTabsRow {
+  width: 280px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+
+  :global(.ant-input-group-addon) {
+    display: none;
+  }
+  :global(.ant-input-affix-wrapper) {
+    border-radius: 8px !important;
+    overflow: hidden;
+  }
+}
+
+.searchIcon {
+  color: $portal-secondary-muted;
+  font-size: 14px;
+}
+
+.resultCount {
+  font-size: 14px;
+  color: $portal-secondary-muted;
+  white-space: nowrap;
+  strong {
+    color: $portal-secondary;
+  }
+}
+
+.filterTab {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: $portal-secondary-muted;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -4px;
+  transition: color 0.2s, border-color 0.2s;
+  &:hover {
+    color: $portal-secondary;
+  }
+}
+
+.filterTabActive {
+  color: $portal-secondary;
+  border-bottom-color: $portal-accent;
+}
+
+.tableCard {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid $portal-secondary-border;
+  overflow: hidden;
+}

@@ -1,9 +1,18 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 
 import { Project } from '../../types/referenceTypes';
-import { projectApi, ProjectsListParams, ProjectsListResponse } from './projectApi';
+import { projectApi, type ProjectPreviewItem, ProjectsListParams, ProjectsListResponse } from './projectApi';
 
 export type { ProjectsListParams };
+
+/** Справочник проектов для селектов (id, name, code). */
+export function useProjectsPreview(): UseQueryResult<ProjectPreviewItem[], Error> {
+  return useQuery({
+    queryKey: ['projects', 'preview'],
+    queryFn: () => projectApi.getProjectsPreview(),
+    staleTime: 10 * 60 * 1000,
+  });
+}
 
 export function useProjectsList(
   params?: ProjectsListParams,

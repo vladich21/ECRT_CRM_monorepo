@@ -69,7 +69,7 @@ export function UserFiltersModal({
       onCancel={onClose}
       onOk={onApply}
       width={640}
-      destroyOnClose
+      destroyOnHidden
       footer={footer}
     >
       <div className={styles.filtersModalGrid}>

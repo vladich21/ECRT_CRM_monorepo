@@ -28,6 +28,7 @@ import { PartnerTypesModule } from './modules/partner-types/partner-types.module
 import { PartnerEconomicCategoriesModule } from './modules/partner-economic-categories/partner-economic-categories.module';
 import { FilesModule } from './modules/files/files.module';
 import { CommentsModule } from './modules/comments/comments.module';
+import { SupplierEvaluationsModule } from './modules/supplier-evaluations/supplier-evaluations.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { CommentsModule } from './modules/comments/comments.module';
     PartnerEconomicCategoriesModule,
     FilesModule,
     CommentsModule,
+    SupplierEvaluationsModule,
   ],
   controllers: [AppController],
   providers: [

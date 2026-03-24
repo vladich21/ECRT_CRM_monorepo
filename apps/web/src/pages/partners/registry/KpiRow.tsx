@@ -4,7 +4,8 @@ import { BarChartOutlined, CalendarOutlined, FileTextOutlined, SafetyCertificate
 import styles from './KpiRow.module.scss';
 
 interface KpiRowProps {
-  contractsCount: number;
+  /** Число договоров партнёра (как на вкладке «Договоры»); пока грузится — undefined → «—». */
+  contractsCount?: number;
   totalVolume: string;
   complianceScore: number;
   nextAuditDate?: string;
@@ -16,7 +17,11 @@ interface KpiTile {
 }
 export default function KpiRow({ contractsCount, totalVolume, complianceScore, nextAuditDate }: KpiRowProps) {
   const tiles: KpiTile[] = [
-    { icon: <FileTextOutlined />, value: contractsCount, label: 'Договоров' },
+    {
+      icon: <FileTextOutlined />,
+      value: contractsCount === undefined ? '—' : contractsCount,
+      label: 'Договоров',
+    },
     { icon: <BarChartOutlined />, value: totalVolume, label: 'Общий объём' },
     { icon: <SafetyCertificateOutlined />, value: (complianceScore / 20).toFixed(2), label: 'Оценка' },
     { icon: <CalendarOutlined />, value: nextAuditDate || '—', label: 'След. оценка' },

@@ -1,11 +1,13 @@
 .layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
 }
 
 .leftColumn {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  min-width: 0;
 }

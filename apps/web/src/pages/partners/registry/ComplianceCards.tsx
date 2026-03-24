@@ -1,4 +1,4 @@
-import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 import styles from './ComplianceCards.module.scss';
 
@@ -18,14 +18,12 @@ export default function ComplianceCards({ items }: ComplianceCardsProps) {
       <h3 className={styles.title}>Статусы и соответствие</h3>
       <div className={styles.row}>
         {items.map((item, i) => (
-          <div key={i} className={styles.item}>
-            {item.done ? (
-              <CheckCircleFilled style={{ color: '#52c41a', fontSize: 14 }} />
-            ) : (
-              <CloseCircleFilled style={{ color: '#ff4d4f', fontSize: 14 }} />
-            )}
-            <span className={styles.label}>{item.label}</span>
-            <span className={item.done ? styles.valueDone : styles.valuePending}>{item.note}</span>
+          <div key={i} className={styles.cell}>
+            <div className={`${styles.iconCircle} ${item.done ? styles.iconCircleOk : styles.iconCircleBad}`}>
+              {item.done ? <CheckOutlined /> : <CloseOutlined />}
+            </div>
+            <div className={styles.cellLabel}>{item.label}</div>
+            <div className={item.done ? styles.cellValueOk : styles.cellValueBad}>{item.note}</div>
           </div>
         ))}
       </div>

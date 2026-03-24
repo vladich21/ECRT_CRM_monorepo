@@ -27,6 +27,10 @@ const menuItems = [
         label: <Link to='/contracts'>Договоры</Link>,
       },
       {
+        key: 'supplier_evaluations',
+        label: <Link to='/supplier-evaluations'>Реестр оценок</Link>,
+      },
+      {
         key: 'supply_references',
         label: 'Справочники',
         children: [
