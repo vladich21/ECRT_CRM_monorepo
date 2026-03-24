@@ -12,7 +12,7 @@ import {
   UnorderedListOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Button, Col, DatePicker, Divider, Form, Input, InputNumber, Row, Select, Space } from 'antd';
+import { Button, Col, DatePicker, Divider, Form, Input, InputNumber, Row, Select, Space, Switch } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import type { CreateContractPayload } from '../../../api/contracts/contractApi';
@@ -25,6 +25,7 @@ import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { numberFormatter, numberParser } from '../../../helpers/numberFormatters';
 import { initialFormValues } from '../list/data';
+import { isContractSignedState } from '../utils/contractStateUtils';
 import styles from './ContractCreatePage.module.scss';
 
 const { Option } = Select;
@@ -34,6 +35,7 @@ export default function ContractCreatePage() {
   const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
+  const watchStateId = Form.useWatch('state_id', form);
   const partnerIdFromState = (location.state as any)?.partnerId;
   const {
     data: referenceBooks,
@@ -141,6 +143,10 @@ export default function ContractCreatePage() {
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
+  const createEffectiveByState = isContractSignedState(
+    typeof watchStateId === 'string' ? watchStateId : undefined,
+    referenceBooks.contractStates,
+  );
   return (
     <DetailPageHeader
       title='Создание нового договора'
@@ -411,6 +417,16 @@ export default function ContractCreatePage() {
                         </Option>
                       ))}
                     </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24}>
+                  <Form.Item label='Статус договора'>
+                    <Switch
+                      checkedChildren='Действует'
+                      unCheckedChildren='Не действует'
+                      checked={createEffectiveByState}
+                      disabled
+                    />
                   </Form.Item>
                 </Col>
               </Row>

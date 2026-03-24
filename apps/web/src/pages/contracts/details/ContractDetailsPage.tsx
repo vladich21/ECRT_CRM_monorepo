@@ -28,7 +28,7 @@ import {
 } from '../utils/contractDetailsUtils';
 import type { ContractDeleteResult } from '../../../api/contracts/contractApi';
 import type { ContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
-import { getContractStateTagClass } from '../utils/contractStateUtils';
+import { getContractStateTagClass, isContractDraft } from '../utils/contractStateUtils';
 import styles from './ContractDetails.module.scss';
 import { DEMO_ADDITIONAL_AGREEMENTS } from './tabs/additionalAgreements/ContractAdditionalAgreementsTab';
 import { ContractDetailsAside } from './tabs/main/ContractDetailsAside';
@@ -114,7 +114,18 @@ export default function ContractDetailsPage() {
     navigate(getContractEditPath(contractId!), { state: { from } });
   };
   const handleDelete = () => {
-    handleOpenModal();
+    if (!contract) return;
+    if (isContractDraft(contract.state_id, referenceBooks?.contractStates)) {
+      handleOpenModal({
+        title: 'Удалить черновик безвозвратно?',
+        content:
+          'Черновик договора будет удалён навсегда. Восстановить его нельзя — запись исчезнет из системы.',
+        okText: 'Удалить навсегда',
+        confirmAppearance: 'delete',
+      });
+    } else {
+      handleOpenModal();
+    }
   };
   const handleTabChange = (tabKey: string) => {
     if (!contractId) return;

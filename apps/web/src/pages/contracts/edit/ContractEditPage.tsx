@@ -13,7 +13,7 @@ import {
   UnorderedListOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Button, Col, DatePicker, Divider, Form, Input, InputNumber, Row, Select, Space, Typography } from 'antd';
+import { Button, Col, DatePicker, Divider, Form, Input, InputNumber, Row, Select, Space, Switch } from 'antd';
 import dayjs from 'dayjs';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -35,7 +35,6 @@ import tagStyles from '../list/ContractsListPage.module.scss';
 import { getContractStateTagClass, isContractSignedState } from '../utils/contractStateUtils';
 
 const { Option } = Select;
-const { Text } = Typography;
 const { TextArea } = Input;
 export default function ContractEditPage() {
   const { contractId } = useParams();
@@ -501,12 +500,13 @@ export default function ContractEditPage() {
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
-                  <Form.Item label='Действие договора'>
-                    <Text type='secondary'>
-                      {isContractEffectiveByState
-                        ? 'Действует (состояние «Подписан»).'
-                        : 'Не действует. Действующим договор становится при состоянии «Подписан» — признак выставляется автоматически при сохранении.'}
-                    </Text>
+                  <Form.Item label='Статус договора'>
+                    <Switch
+                      checkedChildren='Действует'
+                      unCheckedChildren='Не действует'
+                      checked={isContractEffectiveByState}
+                      disabled
+                    />
                   </Form.Item>
                 </Col>
               </Row>

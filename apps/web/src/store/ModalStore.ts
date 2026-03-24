@@ -1,8 +1,11 @@
-import { FormInstance } from 'antd';
+import type { ReactNode } from 'react';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 export type ModalType = 'fileForm' | 'positionForm' | 'contactForm' | 'confirm' | 'withDescription' | 'patentAreaForm';
+
+/** Внешний вид кнопок в `ConfirmModal` (поле `type` в сторе занято под выбор компонента модалки). */
+export type ConfirmModalAppearance = 'delete' | 'warning' | 'info' | 'success';
 
 export interface ModalState {
   open: boolean;
@@ -14,6 +17,8 @@ export interface ModalState {
   onCancel: (data?: any) => void;
   modalData?: any;
   loading?: boolean;
+  content?: ReactNode;
+  confirmAppearance?: ConfirmModalAppearance;
 
   openModal: (config: ModalConfig) => void;
   closeModal: () => void;
@@ -30,6 +35,8 @@ export interface ModalConfig {
   onCancel: () => void;
   modalData?: any;
   loading?: boolean;
+  content?: ReactNode;
+  confirmAppearance?: ConfirmModalAppearance;
 }
 
 const initialState = {
@@ -43,6 +50,8 @@ const initialState = {
   onCancel: () => {},
   modalData: {},
   loading: false,
+  content: undefined,
+  confirmAppearance: undefined,
 };
 
 export const useModalStore = create<ModalState>()(
@@ -61,6 +70,8 @@ export const useModalStore = create<ModalState>()(
           onCancel: config.onCancel,
           modalData: config.modalData,
           loading: config.loading || false,
+          content: config.content,
+          confirmAppearance: config.confirmAppearance,
         });
       },
 

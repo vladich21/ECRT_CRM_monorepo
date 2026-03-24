@@ -1,26 +1,37 @@
 import { ReactNode } from 'react';
 import { Button, Space } from 'antd';
 
+import type { ConfirmModalAppearance } from '../../../store/ModalStore';
 import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface ConfirmModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   content?: ReactNode;
-  type?: 'delete' | 'warning' | 'info' | 'success';
+  /** Стилизация кнопок (если не задано, используется `confirmAppearance` или значение по умолчанию). */
+  type?: 'delete' | 'warning' | 'info' | 'success' | 'confirm';
+  confirmAppearance?: ConfirmModalAppearance;
   okText?: string;
   cancelText?: string;
   onConfirm: () => void | Promise<void>;
   loading?: boolean;
+  modalData?: unknown;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   content,
-  type = 'info',
+  type: typeProp = 'info',
+  confirmAppearance,
   okText,
   cancelText = 'Отмена',
   onConfirm,
   loading = false,
-  ...layoutProps
+  open,
+  title,
+  onCancel,
+  modalData: _modalData,
+  ..._rest
 }) => {
+  const type: ConfirmModalProps['type'] =
+    confirmAppearance ?? (typeProp === 'confirm' || !typeProp ? 'info' : typeProp);
   const getButtonProps = () => {
     switch (type) {
       case 'delete':
@@ -49,7 +60,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   const footer = (
     <Space>
-      <Button onClick={layoutProps.onCancel} disabled={loading}>
+      <Button onClick={onCancel} disabled={loading}>
         {cancelText}
       </Button>
       <Button {...getButtonProps()} onClick={onConfirm} loading={loading} />
@@ -57,7 +68,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   );
 
   return (
-    <BaseModal {...layoutProps} footer={footer}>
+    <BaseModal open={open} title={title} onCancel={onCancel} footer={footer}>
       {content}
     </BaseModal>
   );

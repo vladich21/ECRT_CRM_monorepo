@@ -1,11 +1,21 @@
-import { useCallback } from 'react';
+import { useCallback, type ReactNode, type SyntheticEvent } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
+import type { ConfirmModalAppearance } from '../store/ModalStore';
 import { ModalType, useModalStore } from '../store/ModalStore';
 import { NotificationType } from './useNotification';
 
 export const CONFIRM_MODAL_DEFAULT_REDIRECT_MS = 1000;
+
+export type OpenConfirmModalOverrides = {
+  title?: string;
+  content?: ReactNode;
+  okText?: string;
+  cancelText?: string;
+  confirmAppearance?: ConfirmModalAppearance;
+};
+
 interface UseDeleteOptions<TData = void, TError = Error, TVariables = string> {
   mutation: UseMutationResult<TData, TError, TVariables>;
   successMessage?: string | ((data: TData) => string);
@@ -15,6 +25,8 @@ interface UseDeleteOptions<TData = void, TError = Error, TVariables = string> {
   redirectReplace?: boolean;
   redirectDelayMs?: number;
   modalType?: ModalType;
+  /** Заголовок по умолчанию, если в `handleOpenModal` не передан `title`. */
+  defaultModalTitle?: string;
   getMutationProps: () => TVariables;
   showNotification: (type: NotificationType, title: string, description?: string) => void;
   onSuccess?: (data: TData) => void;
@@ -24,7 +36,8 @@ interface UseDeleteReturn {
   isPending: boolean;
   isSuccess: boolean;
   isError: boolean;
-  handleOpenModal: () => void;
+  /** Допускает прямой `onClick={handleOpenModal}`: событие мыши игнорируется. */
+  handleOpenModal: (arg?: OpenConfirmModalOverrides | SyntheticEvent) => void;
   handleCloseModal: () => void;
   onConfirm: () => void;
   onCancel: () => void;
@@ -41,6 +54,7 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
   redirectReplace = false,
   redirectDelayMs,
   modalType = 'confirm',
+  defaultModalTitle = 'Вы уверены?',
   getMutationProps,
   showNotification,
   onSuccess,
@@ -97,13 +111,19 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
     showNotification,
     successMessage,
   ]);
-  const handleOpenModal = () => {
+  const handleOpenModal = (arg?: OpenConfirmModalOverrides | SyntheticEvent) => {
+    const overrides =
+      arg && typeof arg === 'object' && 'nativeEvent' in arg ? undefined : (arg as OpenConfirmModalOverrides | undefined);
     openModal({
-      title: 'Вы уверены?',
+      title: overrides?.title ?? defaultModalTitle,
       type: modalType,
       onConfirm,
       onCancel,
       loading: isPending || false,
+      content: overrides?.content,
+      okText: overrides?.okText,
+      cancelText: overrides?.cancelText,
+      confirmAppearance: overrides?.confirmAppearance,
     });
   };
   return {
