@@ -1,7 +1,8 @@
-import { Contract, ContractStage } from '../../../../../../types/contract';
-import { formatDate } from '../data';
 import { MetricRow } from '../../../../../../components/ui/MetricCard';
 import { getTagColorByData } from '../../../../../../helpers/getTagColorByData';
+import { Contract, ContractStage } from '../../../../../../types/contract';
+import { formatDate } from '../data';
+
 const formatDateValue = (date: string | null | undefined): string => {
   return date ? formatDate(date) : '-';
 };

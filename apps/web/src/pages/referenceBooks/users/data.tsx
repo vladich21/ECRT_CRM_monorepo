@@ -1,4 +1,5 @@
 import { Tag } from 'antd';
+
 import { Department, Position, User } from '../../../types/user';
 
 export const initialFormValues = {

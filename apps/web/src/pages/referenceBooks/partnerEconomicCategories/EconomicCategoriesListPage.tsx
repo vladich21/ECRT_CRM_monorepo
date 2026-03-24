@@ -1,20 +1,22 @@
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { PartnerEconomicCategory } from '../../../types/partner';
 import { useEffect, useState } from 'react';
-import { useNotification } from '../../../customhooks/useNotification';
-import { useModalStore } from '../../../store/ModalStore';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+
 import {
   useCreatePartnerEconomicCategory,
   useDeletePartnerEconomicCategory,
   usePartnerEconomicCategories,
   useUpdatePartnerEconomicCategory,
 } from '../../../api/partners/partnerEconomicCategoryApiHooks';
-import { getNameById } from '../../../helpers/getNameById';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useMutateByModal } from '../../../customhooks/useMutateByModal';
+import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
+import { getNameById } from '../../../helpers/getNameById';
+import { useModalStore } from '../../../store/ModalStore';
+import { PartnerEconomicCategory } from '../../../types/partner';
+
 type ActionType = 'edit' | 'delete' | 'add' | '';
 const PartnerEconomicCategoriesListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();

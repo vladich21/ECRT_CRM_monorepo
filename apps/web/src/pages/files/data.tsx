@@ -1,5 +1,5 @@
-import { getNameById } from '../../helpers/getNameById';
 import { FilePreviewLink } from '../../components/filePreview/FilePreviewModal';
+import { getNameById } from '../../helpers/getNameById';
 
 export const getColumnsData = (users: { id: string; name: string }[]) => [
   {

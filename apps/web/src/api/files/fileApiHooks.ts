@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MyFile } from '../../types/files';
+
 import { fileApi } from '../../api/files/fileApi';
 import { isValidUuid } from '../../helpers/isValidUuid';
+import { MyFile } from '../../types/files';
 
 interface FileWithId {
   id: string;

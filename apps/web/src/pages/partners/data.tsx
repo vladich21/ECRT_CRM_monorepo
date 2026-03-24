@@ -1,8 +1,9 @@
+import { Space, Tag } from 'antd';
 import { ColumnType } from 'antd/es/table';
-import { Partner } from '../../types/partner';
-import { Tag, Space } from 'antd';
+
 import { ReferenceData } from '../../api/hooks/useReferences';
 import { getNameById } from '../../helpers/getNameById';
+import { Partner } from '../../types/partner';
 
 export const initialFormValues = {
   name: '',

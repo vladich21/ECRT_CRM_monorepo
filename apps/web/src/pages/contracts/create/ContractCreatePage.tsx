@@ -1,29 +1,32 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Form, Input, Button, Select, Switch, Space, Row, Col, Divider, InputNumber, DatePicker } from 'antd';
 import {
-  SaveOutlined,
-  FileTextOutlined,
-  UserOutlined,
-  TeamOutlined,
-  ProjectOutlined,
   CalculatorOutlined,
   CalendarOutlined,
-  NumberOutlined,
-  TagOutlined,
-  UnorderedListOutlined,
   CheckCircleOutlined,
+  FileTextOutlined,
+  NumberOutlined,
+  ProjectOutlined,
+  SaveOutlined,
+  TagOutlined,
+  TeamOutlined,
+  UnorderedListOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { useReferenceData } from '../../../api/hooks/useReferences';
+import { Button, Col, DatePicker, Divider, Form, Input, InputNumber, Row, Select, Space } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+import type { CreateContractPayload } from '../../../api/contracts/contractApi';
 import { useCreateContract } from '../../../api/contracts/contractApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useReferenceData } from '../../../api/hooks/useReferences';
 import { BackButton } from '../../../components/backButton/BackButton';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import { initialFormValues } from '../list/data';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
 import { numberFormatter, numberParser } from '../../../helpers/numberFormatters';
+import { initialFormValues } from '../list/data';
 import styles from './ContractCreatePage.module.scss';
+
 const { Option } = Select;
 const { TextArea } = Input;
 export default function ContractCreatePage() {
@@ -75,34 +78,56 @@ export default function ContractCreatePage() {
     });
   };
   const handleAmountChange = (value: number | null) => {
-    const vatRate = form.getFieldValue('vat_rate') || 0;
-    if (value && vatRate) {
-      calculateAmounts(value, vatRate);
+    const vatRate = form.getFieldValue('vat_rate');
+    if (value != null && vatRate != null) {
+      calculateAmounts(value, Number(vatRate));
     }
   };
   const handleVatRateChange = (value: number | null) => {
-    const amountExclVal = form.getFieldValue('amount_excl_vat') || 0;
-    if (value && amountExclVal) {
-      calculateAmounts(amountExclVal, value);
+    const amountExclVal = form.getFieldValue('amount_excl_vat');
+    if (value != null && amountExclVal != null) {
+      calculateAmounts(Number(amountExclVal), value);
     }
   };
   const isSubmittingRef = useRef(false);
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: Record<string, unknown>) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
-    const payload = {
-      ...values,
-      partner_id: values.partner_id,
-      responsible_id: values.responsible_id,
-      project_id: values.project_id || null,
-      contract_type_id: values.contract_type_id || null,
-      date_signed: values.date_signed ? values.date_signed.format('YYYY-MM-DD') : null,
-      start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : null,
-      end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : null,
-      amount_excl_vat: Number(values.amount_excl_vat) || 0,
-      vat_rate: Number(values.vat_rate) || 0,
-      amount_vat: Number(values.amount_vat) || 0,
-      amount_incl_vat: Number(values.amount_incl_vat) || 0,
+    const strOrNull = (v: unknown): string | null => {
+      if (v == null || typeof v !== 'string') return null;
+      const t = v.trim();
+      return t.length ? t : null;
+    };
+    const numOrNull = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+    const payload: CreateContractPayload = {
+      number: strOrNull(values.number),
+      cipher: strOrNull(values.cipher),
+      name: strOrNull(values.name),
+      description: strOrNull(values.description),
+      partner_id: (values.partner_id as string | undefined) || null,
+      responsible_id: (values.responsible_id as string | undefined) || null,
+      project_id: (values.project_id as string | undefined) || null,
+      contract_type_id: (values.contract_type_id as string | undefined) || null,
+      category_id: (values.category_id as string | undefined) || null,
+      date_signed: values.date_signed
+        ? (values.date_signed as { format: (f: string) => string }).format('YYYY-MM-DD')
+        : null,
+      start_date: values.start_date
+        ? (values.start_date as { format: (f: string) => string }).format('YYYY-MM-DD')
+        : null,
+      end_date: values.end_date
+        ? (values.end_date as { format: (f: string) => string }).format('YYYY-MM-DD')
+        : null,
+      amount_excl_vat: numOrNull(values.amount_excl_vat),
+      vat_rate: numOrNull(values.vat_rate),
+      amount_vat: numOrNull(values.amount_vat),
+      amount_incl_vat: numOrNull(values.amount_incl_vat),
+      state_id: (values.state_id as string | undefined) || null,
+      is_active: values.is_active as boolean | undefined,
     };
     mutate(payload, {
       onSettled: () => {
@@ -159,11 +184,7 @@ export default function ContractCreatePage() {
 
           <Row gutter={16}>
             <Col xs={24} md={4}>
-              <Form.Item
-                label='Номер договора'
-                name='number'
-                rules={[{ required: true, message: 'Введите номер договора' }]}
-              >
+              <Form.Item label='Номер договора' name='number'>
                 <Input placeholder='№123-Д' prefix={<NumberOutlined />} />
               </Form.Item>
             </Col>
@@ -175,11 +196,7 @@ export default function ContractCreatePage() {
             </Col>
 
             <Col xs={24} md={16}>
-              <Form.Item
-                label='Название'
-                name='name'
-                rules={[{ required: true, message: 'Введите название договора' }]}
-              >
+              <Form.Item label='Название' name='name'>
                 <Input placeholder='Введите название договора' />
               </Form.Item>
             </Col>
@@ -195,7 +212,7 @@ export default function ContractCreatePage() {
 
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item label='Партнёр' name='partner_id' rules={[{ required: true, message: 'Выберите партнёра' }]}>
+              <Form.Item label='Партнёр' name='partner_id'>
                 <Select
                   placeholder='Выберите партнёра'
                   allowClear
@@ -241,11 +258,7 @@ export default function ContractCreatePage() {
             </Col>
 
             <Col xs={24} md={8}>
-              <Form.Item
-                label='Ответственный'
-                name='responsible_id'
-                rules={[{ required: true, message: 'Выберите ответственного' }]}
-              >
+              <Form.Item label='Ответственный' name='responsible_id'>
                 <Select
                   placeholder='Выберите ответственного'
                   allowClear
@@ -276,11 +289,7 @@ export default function ContractCreatePage() {
               </Divider>
               <Row gutter={16}>
                 <Col xs={24}>
-                  <Form.Item
-                    label='Сумма без НДС'
-                    name='amount_excl_vat'
-                    rules={[{ required: true, message: 'Введите сумму без НДС' }]}
-                  >
+                  <Form.Item label='Сумма без НДС' name='amount_excl_vat'>
                     <InputNumber
                       placeholder='0.00'
                       style={{ width: '100%' }}
@@ -294,11 +303,7 @@ export default function ContractCreatePage() {
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
-                  <Form.Item
-                    label='Ставка НДС (%)'
-                    name='vat_rate'
-                    rules={[{ required: true, message: 'Введите ставку НДС' }]}
-                  >
+                  <Form.Item label='Ставка НДС (%)' name='vat_rate'>
                     <Space.Compact block style={{ width: '100%' }}>
                       <InputNumber
                         placeholder='0'
@@ -345,11 +350,7 @@ export default function ContractCreatePage() {
               </Divider>
               <Row gutter={16}>
                 <Col xs={24}>
-                  <Form.Item
-                    label='Дата начала'
-                    name='start_date'
-                    rules={[{ required: true, message: 'Выберите дату начала' }]}
-                  >
+                  <Form.Item label='Дата начала' name='start_date'>
                     <DatePicker placeholder='Выберите дату начала' style={{ width: '100%' }} format='DD.MM.YYYY' />
                   </Form.Item>
                 </Col>
@@ -359,11 +360,7 @@ export default function ContractCreatePage() {
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
-                  <Form.Item
-                    label='Дата подписания'
-                    name='date_signed'
-                    rules={[{ required: true, message: 'Выберите дату подписания' }]}
-                  >
+                  <Form.Item label='Дата подписания' name='date_signed'>
                     <DatePicker placeholder='Выберите дату подписания' style={{ width: '100%' }} format='DD.MM.YYYY' />
                   </Form.Item>
                 </Col>
@@ -376,11 +373,7 @@ export default function ContractCreatePage() {
               </Divider>
               <Row gutter={16}>
                 <Col xs={24}>
-                  <Form.Item
-                    label='Категория'
-                    name='category_id'
-                    rules={[{ required: true, message: 'Выберите категорию' }]}
-                  >
+                  <Form.Item label='Категория' name='category_id'>
                     <Select placeholder='Выберите категорию' suffixIcon={<TagOutlined />}>
                       {referenceBooks?.contractCategories?.map(category => (
                         <Option key={category.id} value={category.id}>
@@ -418,11 +411,6 @@ export default function ContractCreatePage() {
                         </Option>
                       ))}
                     </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24}>
-                  <Form.Item label='Активен' name='is_active' valuePropName='checked' initialValue={true}>
-                    <Switch checkedChildren='Активен' unCheckedChildren='Не активен' defaultChecked />
                   </Form.Item>
                 </Col>
               </Row>

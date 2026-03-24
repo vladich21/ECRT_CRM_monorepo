@@ -1,24 +1,26 @@
+import { useEffect, useMemo, useState } from 'react';
+import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useMemo, useEffect, useState } from 'react';
-import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { useNotification } from '../../../customhooks/useNotification';
-import { Contract } from '../../../types/contract';
-import { useContracts } from '../../../api/contracts/contractApiHooks';
+
 import type { ContractsListParams } from '../../../api/contracts/contractApi';
-import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
+import { useContracts } from '../../../api/contracts/contractApiHooks';
+import { useReferenceData } from '../../../api/hooks/useReferences';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { NotFound } from '../../../components/notFound/NotFound';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
+import { useNotification } from '../../../customhooks/useNotification';
+import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
+import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { Contract } from '../../../types/contract';
+import { useContractListFilters } from '../hooks/useContractListFilters';
+import { buildContractsListNavSnapshot, parseContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 import { ContractCard } from './ContractCard';
 import { ContractFiltersModal } from './ContractFiltersModal';
-import { FILTER_TABS, type ContractListReferences, type FilterTab } from './ContractsListPage.types';
-import { useContractListFilters } from '../hooks/useContractListFilters';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
-import { buildContractsListNavSnapshot, parseContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 import styles from './ContractsListPage.module.scss';
+import { FILTER_TABS, type ContractListReferences, type FilterTab } from './ContractsListPage.types';
+
 const SEARCH_DEBOUNCE_MS = 350;
 function validateAmountFilters(filters: { amountMin: number | null; amountMax: number | null }): string | null {
   if (filters.amountMin != null && filters.amountMax != null && filters.amountMin > filters.amountMax) {

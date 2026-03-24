@@ -1,5 +1,5 @@
-import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
+
 export function formatStageFormDateToIso(value: unknown): string {
   if (value && dayjs.isDayjs(value)) {
     return (value as Dayjs).format('YYYY-MM-DD');

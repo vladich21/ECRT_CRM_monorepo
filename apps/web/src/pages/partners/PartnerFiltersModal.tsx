@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Button, Modal, Select } from 'antd';
+
 import styles from './PartnersListPage.module.scss';
+
 export type PartnerFilters = {
   typeIds: string[];
   statusIds: string[];

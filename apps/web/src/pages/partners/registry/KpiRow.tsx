@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
-import { FileTextOutlined, BarChartOutlined, SafetyCertificateOutlined, CalendarOutlined } from '@ant-design/icons';
+import { BarChartOutlined, CalendarOutlined, FileTextOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+
 import styles from './KpiRow.module.scss';
+
 interface KpiRowProps {
   contractsCount: number;
   totalVolume: string;

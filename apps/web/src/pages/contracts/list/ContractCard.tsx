@@ -1,10 +1,12 @@
-import { Tag, Tooltip } from 'antd';
 import { CalendarOutlined, DollarOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
-import { Contract } from '../../../types/contract';
-import { getNameById } from '../../../helpers/getNameById';
-import { getEntityById } from '../../../helpers/getEntityById';
+import { Tag, Tooltip } from 'antd';
+
 import type { ReferenceData } from '../../../api/hooks/useReferences';
+import { getEntityById } from '../../../helpers/getEntityById';
+import { getNameById } from '../../../helpers/getNameById';
+import { Contract } from '../../../types/contract';
 import styles from './ContractsListPage.module.scss';
+
 type Refs = Pick<ReferenceData, 'partners' | 'contractStates' | 'contractCategories'> | null;
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';

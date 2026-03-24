@@ -1,7 +1,8 @@
-import { Button, Form, Input, Space } from 'antd';
-import { BaseModal, BaseModalProps } from '../BaseModal';
 import { useEffect } from 'react';
+import { Button, Form, Input, Space } from 'antd';
+
 import { ModalState } from '../../../store/ModalStore';
+import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface PositionFormModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   type: 'edit' | 'add';

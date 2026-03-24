@@ -1,5 +1,5 @@
-import { Modal, ModalProps } from 'antd';
 import { ReactNode } from 'react';
+import { Modal, ModalProps } from 'antd';
 
 export interface BaseModalProps extends Omit<ModalProps, 'footer'> {
   open: boolean;

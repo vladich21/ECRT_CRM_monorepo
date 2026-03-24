@@ -1,21 +1,23 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
-import { PlusOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { BackButton } from '../../components/backButton/BackButton';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { NotFound } from '../../components/notFound/NotFound';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePartners } from '../../api/partners/partnerApiHooks';
-import SupplierCard from './registry/SupplierCard';
-import { PartnerFiltersModal, type PartnerFilters, EMPTY_FILTERS } from './PartnerFiltersModal';
-import type { Partner } from '../../types/partner';
-import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
-import { useServerTablePagination } from '../../hooks/useServerTablePagination';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
+import { BackButton } from '../../components/backButton/BackButton';
+import { NotFound } from '../../components/notFound/NotFound';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { EMPTY_DELETION_TAB_COUNTS, type DeletionScope } from '../../constants/deletionScope';
-import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
+import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
+import { useServerTablePagination } from '../../hooks/useServerTablePagination';
+import type { Partner } from '../../types/partner';
+import { EMPTY_FILTERS, PartnerFiltersModal, type PartnerFilters } from './PartnerFiltersModal';
 import styles from './PartnersListPage.module.scss';
+import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
+import SupplierCard from './registry/SupplierCard';
+import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
+
 const SEARCH_DEBOUNCE_MS = 350;
 export default function PartnersListPage() {
   const navigate = useNavigate();

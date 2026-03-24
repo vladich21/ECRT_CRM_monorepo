@@ -1,10 +1,12 @@
-import { Card, Descriptions, Progress, Avatar, Typography, Space, Statistic, Tag, Alert, Divider } from 'antd';
 import { WarningOutlined } from '@ant-design/icons';
-import type { Contract, ContractStage } from '../../../../../types/contract';
+import { Alert, Avatar, Card, Descriptions, Divider, Progress, Space, Statistic, Tag, Typography } from 'antd';
+
 import type { ReferenceData } from '../../../../../api/hooks/useReferences';
 import { getNameById } from '../../../../../helpers/getNameById';
-import { buildDetailItems } from './contractInfoItems';
+import type { Contract, ContractStage } from '../../../../../types/contract';
 import styles from './ContractDetailsAside.module.scss';
+import { buildDetailItems } from './contractInfoItems';
+
 const { Text } = Typography;
 type AsideReferences = Partial<Pick<ReferenceData, 'partners' | 'users' | 'contractStates' | 'contractCategories'>>;
 type ContractDetailsAsideProps = {

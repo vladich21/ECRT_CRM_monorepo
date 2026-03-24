@@ -1,5 +1,6 @@
 import type { Project } from '../../../../types/referenceTypes';
 import type { ProjectAdvancedFilters, ProjectFilterTab } from '../ProjectsListPage.types';
+
 export function countActiveProjectFilters(filters: ProjectAdvancedFilters): number {
   let c = 0;
   if (filters.managerId) c++;

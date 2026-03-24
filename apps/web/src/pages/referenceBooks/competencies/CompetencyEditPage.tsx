@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button, Row, Col, Divider, ColorPicker, Tag, Modal } from 'antd';
 import { HighlightOutlined, SaveOutlined, TagOutlined } from '@ant-design/icons';
-import { useNotification } from '../../../customhooks/useNotification';
-import { Loader } from '../../../components/loader/Loader';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { usePartnerCompetenceById, useUpdatePartnerCompetence } from '../../../api/partners/partnerCompetenceApiHooks';
-import { partnerCompetenceUpdateFormMapper } from '../../../helpers/mappers/competenceUpdateFormMapper';
-import { getHexColor } from '../../../helpers/getHexColor';
+import { Button, Col, ColorPicker, Divider, Form, Input, Modal, Row, Tag } from 'antd';
 import { useWatch } from 'antd/es/form/Form';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import { usePartnerCompetenceById, useUpdatePartnerCompetence } from '../../../api/partners/partnerCompetenceApiHooks';
+import { Loader } from '../../../components/loader/Loader';
+import { NotFound } from '../../../components/notFound/NotFound';
+import { useNotification } from '../../../customhooks/useNotification';
+import { getChangedFields } from '../../../helpers/getChangedFields';
+import { getHexColor } from '../../../helpers/getHexColor';
+import { partnerCompetenceUpdateFormMapper } from '../../../helpers/mappers/competenceUpdateFormMapper';
 import styles from './CompetencyFormPage.module.scss';
+
 export default function PartnerCompetenceEditPage() {
   const { competenceId } = useParams();
   const navigate = useNavigate();

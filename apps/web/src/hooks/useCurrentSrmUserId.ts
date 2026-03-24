@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import useAuthStore from '../store/AuthStore';
+
 import { userApi } from '../api/users/userApi';
+import useAuthStore from '../store/AuthStore';
 
 export const useCurrentSrmUserId = (): string | undefined => {
   const { user } = useAuthStore();

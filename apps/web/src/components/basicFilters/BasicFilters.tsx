@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Card, Button, Tag, Row, Col, Dropdown, Modal, Form } from 'antd';
-import { FilterOutlined, SettingOutlined, CloseOutlined } from '@ant-design/icons';
-import { renderFilterField } from './widgets/FilterField';
+import { CloseOutlined, FilterOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Dropdown, Form, Modal, Row, Tag } from 'antd';
+
 import styles from './BasicFilters.module.scss';
+import { renderFilterField } from './widgets/FilterField';
 
 export interface FilterFieldConfig {
   key: string;

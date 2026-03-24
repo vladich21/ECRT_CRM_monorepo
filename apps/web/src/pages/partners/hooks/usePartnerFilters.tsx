@@ -1,4 +1,5 @@
-import { TeamOutlined, CalculatorOutlined, FileTextOutlined, UserOutlined, NumberOutlined } from '@ant-design/icons';
+import { CalculatorOutlined, FileTextOutlined, NumberOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { FilterFieldConfig } from '../../../components/basicFilters/BasicFilters';
 

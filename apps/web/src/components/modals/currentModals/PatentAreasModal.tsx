@@ -1,8 +1,9 @@
-import { Button, Form, Input, Space } from 'antd';
-import { BaseModal, BaseModalProps } from '../BaseModal';
 import { useEffect } from 'react';
-import { ModalState } from '../../../store/ModalStore';
+import { Button, Form, Input, Space } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
+
+import { ModalState } from '../../../store/ModalStore';
+import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface PatentFormModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   type: 'edit' | 'add';

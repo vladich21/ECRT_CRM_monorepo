@@ -1,5 +1,5 @@
-import { apiClient } from '../clients';
 import { User } from '../../types/user';
+import { apiClient } from '../clients';
 
 interface CheckLoginResponse {
   tempCodeSent?: boolean;

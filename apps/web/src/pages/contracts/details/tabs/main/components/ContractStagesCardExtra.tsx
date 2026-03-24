@@ -1,6 +1,8 @@
-import { Button, Tooltip } from 'antd';
 import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
+
 import styles from '../ContractMainInfoTab.module.scss';
+
 type ContractStagesCardExtraProps = {
   activeFiltersCount: number;
   onOpenFilters: () => void;

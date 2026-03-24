@@ -1,11 +1,11 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { EditOutlined, IdcardOutlined, MailOutlined, PhoneOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import { EditOutlined, MailOutlined, PhoneOutlined, TeamOutlined, IdcardOutlined } from '@ant-design/icons';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { useUserById } from '../../../api/users/userApiHooks';
-import { NotFound } from '../../../components/notFound/NotFound';
 import { Loader } from '../../../components/loader/Loader';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import { NotFound } from '../../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import styles from './UserDetails.module.scss';
 

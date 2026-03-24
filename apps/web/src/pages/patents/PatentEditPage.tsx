@@ -1,29 +1,32 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button, Select, Row, Col, Divider, DatePicker } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  CloseOutlined,
-  SaveOutlined,
-  FileTextOutlined,
-  TeamOutlined,
-  UserOutlined,
+  BankOutlined,
   CalendarOutlined,
+  CloseOutlined,
+  FileTextOutlined,
+  GlobalOutlined,
   NumberOutlined,
   ProjectOutlined,
-  BankOutlined,
-  GlobalOutlined,
+  SaveOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
+import { Button, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import { useContractById } from '../../api/contracts/contractApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePatentById, useUpdatePatent } from '../../api/patents/patentApiHooks';
-import { useNotification } from '../../customhooks/useNotification';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../customhooks/useNotification';
+import { formReferenceId } from '../../helpers/formReferenceId';
 import { getEntityById } from '../../helpers/getEntityById';
 import { getNameById } from '../../helpers/getNameById';
 import { patentUpdateFormMapper } from '../../helpers/mappers/patentUpdateFormMapper';
 import styles from './PatentFormPage.module.scss';
+
 const { Option } = Select;
 const { TextArea } = Input;
 const STATUS_STYLE = {
@@ -91,31 +94,51 @@ export default function PatentEditPage() {
       form.setFieldValue('project_code', '');
     }
   };
+
+  const watchName = Form.useWatch('name', form);
+  const watchIntellectPropId = Form.useWatch('intellectprop_id', form);
+  const watchStatusId = Form.useWatch('status_id', form);
+  const watchDepartmentId = Form.useWatch('department_id', form);
+  const watchRegNumber = Form.useWatch('registration_number', form);
+
+  const incomeContractMissingFromPicker =
+    Boolean(patent?.contract_id) &&
+    !(referenceBooks?.contracts ?? []).some(row => row.id === patent?.contract_id);
+  const incomeContractFetchId = incomeContractMissingFromPicker && patent?.contract_id ? patent.contract_id : '';
+  const { data: incomeContractFetched } = useContractById(incomeContractFetchId);
+  const incomeContractOptions = useMemo(() => {
+    const options = [...(referenceBooks?.contracts ?? [])];
+    if (incomeContractFetched && !options.some(row => row.id === incomeContractFetched.id)) {
+      options.unshift(incomeContractFetched);
+    }
+    return options;
+  }, [referenceBooks?.contracts, incomeContractFetched]);
+
   if (isReferencesLoading || isPatentLoading) {
     return <Loader />;
   }
-  if (isReferencesError || !referenceBooks || isPatentError) {
+  if (isReferencesError || !referenceBooks || isPatentError || !patent) {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
-  if (!patent) return <NotFound errorMessage='РИД не найден' />;
-  const st = patent.is_deleted ? STATUS_STYLE.deleted : STATUS_STYLE.active;
-  const wName = Form.useWatch('name', form) as string | undefined;
-  const wIntellectPropId = Form.useWatch('intellectprop_id', form) as string | undefined;
-  const wStatusId = Form.useWatch('status_id', form) as string | undefined;
-  const wDepartmentId = Form.useWatch('department_id', form) as string | undefined;
-  const wRegNumber = Form.useWatch('registration_number', form) as string | undefined;
-  const headerName = (wName ?? patent.name) || '';
-  const headerRegNumber = (wRegNumber ?? patent.registration_number) || '';
-  const ipTypeName =
-    getNameById(wIntellectPropId ?? patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
-  const statusName = getNameById(wStatusId ?? patent.status_id, referenceBooks?.patentStatuses) || '';
-  const deptName = getNameById(wDepartmentId ?? patent.department_id, referenceBooks?.departments) || '';
+
+  const recordStatusBadge = patent.is_deleted ? STATUS_STYLE.deleted : STATUS_STYLE.active;
+  const headerName = (watchName ?? patent.name) || '';
+  const headerRegNumber = (watchRegNumber ?? patent.registration_number) || '';
+  const intellectpropId = formReferenceId(watchIntellectPropId, patent.intellectprop_id);
+  const patentStatusId = formReferenceId(watchStatusId, patent.status_id);
+  const departmentId = formReferenceId(watchDepartmentId, patent.department_id);
+  const ipTypeName = getNameById(intellectpropId, referenceBooks.patentIntellectProps) || '';
+  const statusName = getNameById(patentStatusId, referenceBooks.patentStatuses) || '';
+  const deptName = getNameById(departmentId, referenceBooks.departments) || '';
   return (
     <DetailPageHeader
       title={`Редактирование: РИД ${headerRegNumber || '—'}`}
       backLabel='Реестр РИД'
       onBack={() => navigate(-1)}
-      statusBadge={{ label: st.label, color: st.color }}
+      statusBadge={{
+        label: recordStatusBadge.label,
+        color: recordStatusBadge.color,
+      }}
       metaItems={[
         headerName ? (
           <span key='name' className={hStyles.metaText}>
@@ -465,9 +488,9 @@ export default function PatentEditPage() {
                         placeholder='Выберите договор'
                         allowClear
                       >
-                        {referenceBooks?.contracts?.map(contract => (
-                          <Option key={contract.id} value={contract.id}>
-                            {contract.number}
+                        {incomeContractOptions.map(row => (
+                          <Option key={row.id} value={row.id}>
+                            {row.number || row.name || row.id}
                           </Option>
                         ))}
                       </Select>

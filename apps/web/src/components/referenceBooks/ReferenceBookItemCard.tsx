@@ -1,6 +1,8 @@
-import { Button, Tooltip } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
+
 import styles from './ReferenceBookItemCard.module.scss';
+
 type Props = {
   title: string;
   metaText?: string;

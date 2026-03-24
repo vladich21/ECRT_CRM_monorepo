@@ -1,4 +1,5 @@
 import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
+
 import styles from './ComplianceCards.module.scss';
 
 export interface ComplianceItem {

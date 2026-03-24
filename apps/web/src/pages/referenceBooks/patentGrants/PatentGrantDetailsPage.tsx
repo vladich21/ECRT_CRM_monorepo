@@ -1,13 +1,13 @@
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { CalendarOutlined, CopyrightOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Space } from 'antd';
-import { DeleteOutlined, EditOutlined, CopyrightOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+
 import { useDeletePatentGrant, usePatentGrantById } from '../../../api/patents/patentGrantsApiHooks';
-import { NotFound } from '../../../components/notFound/NotFound';
 import { Loader } from '../../../components/loader/Loader';
-import { useNotification } from '../../../customhooks/useNotification';
+import { NotFound } from '../../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
 
 export default function PatentGrantDetailsPage() {
   const { grantId } = useParams();

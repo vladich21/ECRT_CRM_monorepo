@@ -1,16 +1,17 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { UseMutationResult } from '@tanstack/react-query';
-import { useModalStore } from '../store/ModalStore';
+import { useNavigate } from 'react-router-dom';
+
+import { ModalType, useModalStore } from '../store/ModalStore';
 import { NotificationType } from './useNotification';
-import { ModalType } from '../store/ModalStore';
+
 export const CONFIRM_MODAL_DEFAULT_REDIRECT_MS = 1000;
 interface UseDeleteOptions<TData = void, TError = Error, TVariables = string> {
   mutation: UseMutationResult<TData, TError, TVariables>;
-  successMessage?: string;
+  successMessage?: string | ((data: TData) => string);
   errorMessage?: string;
   redirectPath?: string;
-  redirectState?: unknown;
+  redirectState?: unknown | ((data: TData) => unknown);
   redirectReplace?: boolean;
   redirectDelayMs?: number;
   modalType?: ModalType;
@@ -61,15 +62,18 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
     }
     mutate(mutationProps, {
       onSuccess: data => {
-        showNotification('success', 'Успех', successMessage);
+        const message =
+          typeof successMessage === 'function' ? successMessage(data) : (successMessage ?? 'Элемент успешно удалён');
+        showNotification('success', 'Успех', message);
         closeModal();
         onSuccess?.(data);
         if (redirectPath) {
           const delay = redirectDelayMs ?? CONFIRM_MODAL_DEFAULT_REDIRECT_MS;
           window.setTimeout(() => {
+            const nextState = typeof redirectState === 'function' ? redirectState(data) : redirectState;
             navigate(redirectPath, {
               replace: redirectReplace,
-              ...(redirectState !== undefined ? { state: redirectState } : {}),
+              ...(nextState !== undefined ? { state: nextState } : {}),
             });
           }, delay);
         }

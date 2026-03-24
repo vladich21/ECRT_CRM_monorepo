@@ -1,7 +1,8 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
+
+import { isValidUuid } from '../../helpers/isValidUuid';
 import { PartnerContact } from '../../types/partner';
 import { partnerContactApi } from './partnerContactApi';
-import { isValidUuid } from '../../helpers/isValidUuid';
 
 export const usePartnerContacts = (partnerId?: string): UseQueryResult<PartnerContact[], Error> => {
   return useQuery<PartnerContact[], Error>({

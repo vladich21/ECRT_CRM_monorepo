@@ -1,13 +1,13 @@
 import {
-  HomeOutlined,
-  TruckOutlined,
   CopyrightOutlined,
-  SafetyCertificateOutlined,
+  HomeOutlined,
   ProjectOutlined,
+  SafetyCertificateOutlined,
+  TruckOutlined,
 } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 
-export const items = [
+const menuItems = [
   {
     key: '/',
     icon: <HomeOutlined />,
@@ -114,3 +114,5 @@ export const items = [
     ],
   },
 ];
+
+export { menuItems };

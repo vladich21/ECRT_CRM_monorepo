@@ -1,7 +1,19 @@
+import type { DeletionScope, DeletionTabCounts } from '../../constants/deletionScope';
 import { Contract } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
 import { apiClient } from '../clients';
-import type { DeletionScope, DeletionTabCounts } from '../../constants/deletionScope';
+
+/** Поля при создании: все необязательны; пустые значения можно передавать как null. Бэкенд выставит черновик по справочнику. */
+export type CreateContractPayload = Partial<{
+  [K in keyof Omit<Contract, 'id' | 'created_at' | 'updated_at'>]:
+    | Omit<Contract, 'id' | 'created_at' | 'updated_at'>[K]
+    | null;
+}>;
+
+/** Ответ DELETE /contracts/:id — черновик удаляется из БД, остальные помечаются is_deleted. */
+export type ContractDeleteResult =
+  | { deletion_mode: 'soft'; contract: Contract }
+  | { deletion_mode: 'hard'; id: string };
 
 export type ContractListTabParam = 'all' | 'active' | 'draft' | 'inactive';
 
@@ -63,6 +75,10 @@ export const contractApi = {
     });
     return response.data;
   },
+  /**
+   * Справочник договоров для селектов (РИД и др.): только не удалённые и действующие
+   * (на бэкенде is_active — подписанные по state).
+   */
   getContractsForReference: async (): Promise<ContractsListResponse> => {
     const response = await apiClient.get('/contracts', {
       params: { for_reference: 1 },
@@ -81,7 +97,7 @@ export const contractApi = {
     const response = await apiClient.get(`/contracts/${contractId}`);
     return response.data[0];
   },
-  addContract: async (data: Omit<Contract, 'id' | 'created_at' | 'updated_at'>): Promise<Contract> => {
+  addContract: async (data: CreateContractPayload): Promise<Contract> => {
     const response = await apiClient.post(`/contracts`, data);
     return response.data[0];
   },
@@ -89,10 +105,9 @@ export const contractApi = {
     const response = await apiClient.put(`/contracts/${contractId}`, data);
     return response.data[0];
   },
-  deleteContract: async (contractId: string): Promise<Contract> => {
+  deleteContract: async (contractId: string): Promise<ContractDeleteResult> => {
     const response = await apiClient.delete(`/contracts/${contractId}`);
-    const body = response.data;
-    return Array.isArray(body) ? body[0] : body;
+    return response.data as ContractDeleteResult;
   },
   restoreContract: async (contractId: string): Promise<Contract> => {
     const response = await apiClient.put(`/contracts/${contractId}/restore`);

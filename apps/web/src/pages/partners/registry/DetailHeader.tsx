@@ -1,20 +1,22 @@
-import { Button, Tooltip } from 'antd';
 import {
+  AimOutlined,
   ArrowLeftOutlined,
+  BellOutlined,
   CheckCircleFilled,
-  StopFilled,
   ClockCircleFilled,
+  DeleteOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
   InboxOutlined,
   StarFilled,
-  AimOutlined,
-  EnvironmentOutlined,
-  BellOutlined,
-  EditOutlined,
-  DeleteOutlined,
+  StopFilled,
 } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
+
 import type { PartnerDetailExtras, PartnerRegistryStatus } from '../../../types/partnerRegistry';
 import { STATUS_CONFIG, TYPE_CONFIG } from '../partnerRegistryConfig';
 import styles from './DetailHeader.module.scss';
+
 const STATUS_ICONS: Record<PartnerRegistryStatus, React.ReactNode> = {
   active: <CheckCircleFilled />,
   potential: <ClockCircleFilled />,

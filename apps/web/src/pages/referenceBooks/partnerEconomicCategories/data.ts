@@ -1,4 +1,5 @@
 import { ColumnType } from 'antd/es/table';
+
 import { PartnerEconomicCategory } from '../../../types/partner';
 
 export const columns: ColumnType<PartnerEconomicCategory>[] = [

@@ -1,9 +1,10 @@
-import { useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
-import { NotificationType } from './useNotification';
-import { ModalType, useModalStore } from '../store/ModalStore';
+import { useNavigate } from 'react-router-dom';
+
 import { isObject } from '../helpers/typeGuards/isObject';
+import { ModalType, useModalStore } from '../store/ModalStore';
+import { NotificationType } from './useNotification';
 
 interface UseEditOptions<TData = void, TError = Error, TVariables = any> {
   isEdit: boolean;

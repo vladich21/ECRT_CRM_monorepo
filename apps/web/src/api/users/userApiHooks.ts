@@ -1,6 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { userApi } from './userApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { User } from '../../types/user';
+import { userApi } from './userApi';
+
 type UpdateUserInput = {
   id: string;
   data: Partial<User>;

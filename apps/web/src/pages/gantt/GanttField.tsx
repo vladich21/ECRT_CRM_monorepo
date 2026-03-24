@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Gantt, ITask, ILink, Willow } from '@svar-ui/react-gantt';
+import { Gantt, ILink, ITask, Willow } from '@svar-ui/react-gantt';
+
 import '@svar-ui/react-gantt/all.css';
-import { Card, Row, Col, Button, Space, Typography, Statistic } from 'antd';
+
 import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  TeamOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
+import { Button, Card, Col, Row, Space, Statistic, Typography } from 'antd';
 
 const { Title, Text } = Typography;
 

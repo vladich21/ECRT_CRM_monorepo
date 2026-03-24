@@ -1,7 +1,9 @@
-import { Tag } from 'antd';
 import { CalendarOutlined, RightOutlined } from '@ant-design/icons';
+import { Tag } from 'antd';
+
 import { PatentGrant } from '../../../types/patent';
 import styles from './PatentGrantsListPage.module.scss';
+
 function formatDate(dateStr?: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }

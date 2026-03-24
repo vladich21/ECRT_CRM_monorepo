@@ -1,5 +1,6 @@
-import { Reference } from '../../../types/referenceTypes';
 import { useCallback, useRef } from 'react';
+
+import { Reference } from '../../../types/referenceTypes';
 
 interface UseMentionsProps {
   editorRef: React.RefObject<HTMLDivElement | null>;

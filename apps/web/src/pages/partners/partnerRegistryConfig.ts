@@ -1,4 +1,5 @@
 import type { PartnerRegistryStatus } from '../../types/partnerRegistry';
+
 export const STATUS_CONFIG: Record<
   PartnerRegistryStatus,
   {

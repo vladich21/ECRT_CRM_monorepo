@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, type DependencyList, type MutableRefObject } from 'react';
 import type { Location, NavigateFunction } from 'react-router-dom';
+
 type NavigationStateRecord = Record<string, unknown>;
 export function useListReturnFromDetail<RestoredListState>(options: {
   location: Location;

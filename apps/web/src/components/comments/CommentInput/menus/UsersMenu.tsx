@@ -1,7 +1,8 @@
-import React, { memo, useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { Loader } from '../../../loader/Loader';
-import { Reference } from '../../../../types/referenceTypes';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { useReferenceData } from '../../../../api/hooks/useReferences';
+import { Reference } from '../../../../types/referenceTypes';
+import { Loader } from '../../../loader/Loader';
 import { UserListItem } from '../components/UsersListItem';
 import styles from './UsersMenu.module.scss';
 

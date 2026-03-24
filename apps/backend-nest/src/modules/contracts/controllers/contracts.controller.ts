@@ -113,8 +113,8 @@ export class ContractsController {
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    const row = await this.service.remove(id);
-    if (!row) throw new NotFoundException(`Договор ${id} не найден`);
-    return [row];
+    const result = await this.service.remove(id);
+    if (!result) throw new NotFoundException(`Договор ${id} не найден`);
+    return result;
   }
 }

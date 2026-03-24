@@ -1,9 +1,10 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ReactNode } from 'react';
 import { Layout, Menu, theme } from 'antd';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+
 import ProfileButton from '../components/profileButton/ProfileButton';
 import useAuthStore from '../store/AuthStore';
-import { items } from './data';
+import { menuItems } from './data';
 import styles from './styles.module.scss';
 
 const { Header, Content } = Layout;
@@ -32,7 +33,13 @@ function MainLayout({ children }: MainLayoutProps) {
           <img src='/logo_min.png' alt='Логотип' />
         </div>
 
-        <Menu theme='dark' mode='horizontal' selectedKeys={getSelectedKeys()} items={items} className={styles.menu} />
+        <Menu
+          theme='dark'
+          mode='horizontal'
+          selectedKeys={getSelectedKeys()}
+          items={menuItems}
+          className={styles.menu}
+        />
 
         <div className={styles.profileSection}>
           <ProfileButton

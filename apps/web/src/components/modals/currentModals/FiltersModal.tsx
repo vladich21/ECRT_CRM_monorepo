@@ -1,7 +1,8 @@
-import { Button, Col, Form, Row } from 'antd';
 import { ReactNode } from 'react';
-import { BaseModal, BaseModalProps } from '../BaseModal';
+import { Button, Col, Form, Row } from 'antd';
+
 import { FilterFieldConfig } from '../../basicFilters/BasicFilters';
+import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface FiltersModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   form: any;

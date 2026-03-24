@@ -1,4 +1,5 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
+
 import { PatentArea } from '../../types/patent';
 import { patentAreasApi } from './patentAreasApi';
 

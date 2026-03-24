@@ -1,31 +1,33 @@
-import { useOutletContext } from 'react-router-dom';
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { Alert, Card, Form, Row, Typography } from 'antd';
 import dayjs from 'dayjs';
-import type { ContractStage } from '../../../../../types/contract';
-import { NotFound } from '../../../../../components/notFound/NotFound';
-import { Loader } from '../../../../../components/loader/Loader';
+import { useOutletContext } from 'react-router-dom';
+
 import { useReferenceData } from '../../../../../api/hooks/useReferences';
-import { buildMainInfoItems } from './contractInfoItems';
+import { Loader } from '../../../../../components/loader/Loader';
+import { NotFound } from '../../../../../components/notFound/NotFound';
+import type { ContractStage } from '../../../../../types/contract';
+import pageStyles from '../../ContractDetails.module.scss';
 import { StageCard } from '../stages/StageCard';
 import { syncContractStageStateId } from '../stages/utils/stageHelpers';
-import pageStyles from '../../ContractDetails.module.scss';
-import { CONTRACT_MAIN_INFO_REFERENCE_TYPES } from './constants/mainInfoReferenceKeys';
 import { ContractMainInfoSummaryCard } from './components/ContractMainInfoSummaryCard';
-import { ContractStagesCardExtra } from './components/ContractStagesCardExtra';
-import { ContractStagesToolbar } from './components/ContractStagesToolbar';
 import { ContractStageFiltersModal } from './components/ContractStageFiltersModal';
 import { ContractStageFormModal } from './components/ContractStageFormModal';
+import { ContractStagesCardExtra } from './components/ContractStagesCardExtra';
+import { ContractStagesToolbar } from './components/ContractStagesToolbar';
+import { CONTRACT_MAIN_INFO_REFERENCE_TYPES } from './constants/mainInfoReferenceKeys';
+import { buildMainInfoItems } from './contractInfoItems';
+import {
+  DEFAULT_STAGE_LIST_FILTERS,
+  INITIAL_CONTRACT_MAIN_INFO_UI,
+  type ContractMainInfoOutletContext,
+  type StageListFilters,
+} from './types/contractMainInfoTab.types';
 import { computeMainTabStagesSync } from './utils/computeMainTabStagesSync';
 import { countActiveStageListFilters, filterAndSortStagesForMainTab } from './utils/filterStagesForMainTab';
 import { applyBulkExpandCollapseForStages } from './utils/stageExpandedIdsBulkToggle';
 import { coerceStageFormNumber, formatStageFormDateToIso } from './utils/stageFormValues';
-import {
-  type ContractMainInfoOutletContext,
-  DEFAULT_STAGE_LIST_FILTERS,
-  INITIAL_CONTRACT_MAIN_INFO_UI,
-  type StageListFilters,
-} from './types/contractMainInfoTab.types';
+
 const { Text } = Typography;
 export function ContractMainInfoTab() {
   const { contract, stages: outletStages = [] } = useOutletContext<ContractMainInfoOutletContext>();

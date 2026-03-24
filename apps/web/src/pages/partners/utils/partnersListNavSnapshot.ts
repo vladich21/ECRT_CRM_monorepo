@@ -1,6 +1,6 @@
+import { EMPTY_FILTERS, type PartnerFilters } from '../PartnerFiltersModal';
 import type { PartnerListTab } from '../PartnersListPage.types';
-import type { PartnerFilters } from '../PartnerFiltersModal';
-import { EMPTY_FILTERS } from '../PartnerFiltersModal';
+
 const TABS: PartnerListTab[] = ['all', 'ready', 'in_progress', 'deleted'];
 function isPartnerTab(candidate: unknown): candidate is PartnerListTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);

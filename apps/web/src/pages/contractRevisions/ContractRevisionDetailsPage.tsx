@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Descriptions, Button, Tag } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
+import { Button, Descriptions, Tag } from 'antd';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { useContractRevisionById } from '../../api/contractRevisions/contractRevisionsApiHooks';
-import { NotFound } from '../../components/notFound/NotFound';
-import { Loader } from '../../components/loader/Loader';
-import { formatDate } from '../../helpers/formatDate';
+import { useContractStages } from '../../api/contractStages/contractStagesApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { getNameById } from '../../helpers/getNameById';
 import BasicTable from '../../components/basicTable/BasicTable';
+import { Loader } from '../../components/loader/Loader';
+import { NotFound } from '../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
+import { formatDate } from '../../helpers/formatDate';
+import { getNameById } from '../../helpers/getNameById';
 import { ContractStage } from '../../types/contract';
 import { getStageColumnsData } from '../contracts/details/tabs/stages/data';
-import { useContractStages } from '../../api/contractStages/contractStagesApiHooks';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import styles from './ContractRevisionDetailsPage.module.scss';
+
 const TAB_ITEMS = [
   { key: 'info', label: 'Информация' },
   { key: 'stages', label: 'Этапы' },

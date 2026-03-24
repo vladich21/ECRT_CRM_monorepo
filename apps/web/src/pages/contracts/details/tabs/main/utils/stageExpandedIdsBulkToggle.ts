@@ -1,4 +1,5 @@
 import type { ContractStage } from '../../../../../../types/contract';
+
 export function applyBulkExpandCollapseForStages(
   visibleStages: ContractStage[],
   previousExpandedByStageId: Record<string, boolean>,

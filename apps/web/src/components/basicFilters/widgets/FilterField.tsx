@@ -1,9 +1,9 @@
-import Search from 'antd/es/input/Search';
-import { FilterFieldConfig } from '../BasicFilters';
-import { Checkbox, DatePicker, Input, InputNumber, Select, Space, Tag } from 'antd';
-
 import { SearchOutlined } from '@ant-design/icons';
+import { Checkbox, DatePicker, Input, InputNumber, Select, Space, Tag } from 'antd';
+import Search from 'antd/es/input/Search';
 import dayjs from 'dayjs';
+
+import { FilterFieldConfig } from '../BasicFilters';
 
 export const renderFilterField = (
   field: FilterFieldConfig,

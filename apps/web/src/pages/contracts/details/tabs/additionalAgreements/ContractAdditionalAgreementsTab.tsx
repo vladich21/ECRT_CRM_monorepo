@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { Alert, Button, Card, Space, Table, Tag, Typography } from 'antd';
 import { FileAddOutlined, LinkOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useOutletContext } from 'react-router-dom';
+
 import type { Contract } from '../../../../../types/contract';
 import styles from './ContractSupplementTabs.module.scss';
+
 const { Text, Title } = Typography;
 export const DEMO_ADDITIONAL_AGREEMENTS: {
   id: string;

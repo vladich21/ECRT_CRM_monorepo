@@ -1,26 +1,27 @@
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from 'antd';
 import {
   CalendarOutlined,
   DeleteOutlined,
   EditOutlined,
-  UndoOutlined,
   NumberOutlined,
   ProjectOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
-import { useDeleteProject, useRestoreProject, useProjectById } from '../../../api/projects/projectApiHooks';
+import { Button } from 'antd';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
-import { NotFound } from '../../../components/notFound/NotFound';
+import { useDeleteProject, useProjectById, useRestoreProject } from '../../../api/projects/projectApiHooks';
 import { Loader } from '../../../components/loader/Loader';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { getNameById } from '../../../helpers/getNameById';
-import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
-import styles from './ProjectDetails.module.scss';
+import { NotFound } from '../../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../../constants/deletionScope';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useNotification } from '../../../customhooks/useNotification';
+import { getNameById } from '../../../helpers/getNameById';
+import styles from './ProjectDetails.module.scss';
+import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 import type { ProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
+
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }

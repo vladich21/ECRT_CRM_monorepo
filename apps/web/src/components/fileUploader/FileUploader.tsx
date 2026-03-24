@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, Button, message, List, Space, Typography } from 'antd';
-import { InboxOutlined, DeleteOutlined, PaperClipOutlined, ClearOutlined } from '@ant-design/icons';
+import React, { useCallback, useState } from 'react';
+import { ClearOutlined, DeleteOutlined, InboxOutlined, PaperClipOutlined } from '@ant-design/icons';
+import { Button, List, message, Space, Typography, Upload } from 'antd';
+
 import { ACCEPT_FILE_TYPES } from '../../constants/fileFormats';
 
 const { Dragger } = Upload;

@@ -1,27 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
-import { projectApi } from '../projects/projectApi';
-import { userApi } from '../users/userApi';
-import { departmentApi } from '../departments/departmentApi';
-import { positionApi } from '../positions/positionApi';
-import { roleApi } from '../roles/roleApi';
-import { partnerTypeApi } from '../partners/partnerTypeApi';
-import { partnerStatusApi } from '../partners/partnerStatusApi';
-import { partnerCompetenceApi } from '../partners/partnerCompetenceApi';
-import { PartnerCompetence, PartnerStatus, PartnerType } from '../../types/partner';
-import { contractApi } from '../contracts/contractApi';
-import { Reference } from '../../types/referenceTypes';
-import { partnerApi } from '../partners/partnerApi';
-import { patentStatusesApi } from '../patents/patentStatusApi';
-import { patentIntellectPropsApi } from '../patents/patentIntellectPropsApi';
+
 import { Contract, ContractStageState, ContractState, ContractType } from '../../types/contract';
-import { partnerEconomicCategoryApi } from '../partners/partnerEconomicCategoryApi';
-import { partnerCategoryApi } from '../partners/partnerCategoryApi';
-import { PartnerCategory } from '../../types/partner';
-import { patentApi } from '../patents/patentApi';
+import { PartnerCategory, PartnerCompetence, PartnerStatus, PartnerType } from '../../types/partner';
 import { PatentArea } from '../../types/patent';
-import { patentAreasApi } from '../patents/patentAreasApi';
+import { Reference } from '../../types/referenceTypes';
+import { contractApi } from '../contracts/contractApi';
 import { contractTypeApi } from '../contracts/contractTypeApi';
 import { contractStageStateApi } from '../contractStages/contractStageStatesApi';
+import { departmentApi } from '../departments/departmentApi';
+import { partnerApi } from '../partners/partnerApi';
+import { partnerCategoryApi } from '../partners/partnerCategoryApi';
+import { partnerCompetenceApi } from '../partners/partnerCompetenceApi';
+import { partnerEconomicCategoryApi } from '../partners/partnerEconomicCategoryApi';
+import { partnerStatusApi } from '../partners/partnerStatusApi';
+import { partnerTypeApi } from '../partners/partnerTypeApi';
+import { patentApi } from '../patents/patentApi';
+import { patentAreasApi } from '../patents/patentAreasApi';
+import { patentIntellectPropsApi } from '../patents/patentIntellectPropsApi';
+import { patentStatusesApi } from '../patents/patentStatusApi';
+import { positionApi } from '../positions/positionApi';
+import { projectApi } from '../projects/projectApi';
+import { roleApi } from '../roles/roleApi';
+import { userApi } from '../users/userApi';
 
 export type ReferenceType =
   | 'departments'
@@ -116,6 +116,7 @@ const referenceApiMethods = {
   partnerTypes: partnerTypeApi.getPartnerTypes,
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,
+  /** Договоры для привязки в формах: только действующие (подписанные), см. getContractsForReference. */
   contracts: () => contractApi.getContractsForReference().then(r => r.data),
   contractStates: contractApi.getContractsStates,
   contractCategories: contractApi.getContractsCategories,

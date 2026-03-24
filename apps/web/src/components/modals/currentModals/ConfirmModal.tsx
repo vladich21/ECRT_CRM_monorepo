@@ -1,5 +1,6 @@
-import { Button, Space } from 'antd';
 import { ReactNode } from 'react';
+import { Button, Space } from 'antd';
+
 import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface ConfirmModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {

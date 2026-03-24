@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { partnerTypeApi } from './partnerTypeApi';
+
 import { PartnerType } from '../../types/partner';
+import { partnerTypeApi } from './partnerTypeApi';
 
 export const usePartnerTypes = (preview?: number): UseQueryResult<PartnerType[], Error> => {
   return useQuery<PartnerType[], Error>({

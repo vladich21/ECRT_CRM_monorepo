@@ -1,26 +1,28 @@
-import { useState, useEffect } from 'react';
-import { App, Avatar, Button, Form, Input, Select } from 'antd';
+import { useEffect, useState } from 'react';
 import {
-  UserOutlined,
+  CameraOutlined,
+  CloseOutlined,
+  EditOutlined,
+  IdcardOutlined,
+  LogoutOutlined,
   MailOutlined,
   PhoneOutlined,
-  EditOutlined,
   SaveOutlined,
-  CloseOutlined,
-  LogoutOutlined,
   TeamOutlined,
-  IdcardOutlined,
-  CameraOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import useAuthStore, { useAuthStore as useAuthStoreFull } from '../../store/AuthStore';
-import { UseLogout } from '../../customhooks/useLogout';
-import { useUpdateUser } from '../../api/users/userApiHooks';
+import { App, Avatar, Button, Form, Input, Select } from 'antd';
+
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { useNotification } from '../../customhooks/useNotification';
-import { userUpdateFormMapper } from '../../helpers/mappers/userUpdateFormMapper';
-import { getChangedFields } from '../../helpers/getChangedFields';
+import { useUpdateUser } from '../../api/users/userApiHooks';
 import { Loader } from '../../components/loader/Loader';
+import { UseLogout } from '../../customhooks/useLogout';
+import { useNotification } from '../../customhooks/useNotification';
+import { getChangedFields } from '../../helpers/getChangedFields';
+import { userUpdateFormMapper } from '../../helpers/mappers/userUpdateFormMapper';
+import useAuthStore, { useAuthStore as useAuthStoreFull } from '../../store/AuthStore';
 import styles from './Profile.module.scss';
+
 const { Option } = Select;
 const ProfilePage = () => {
   const { modal } = App.useApp();

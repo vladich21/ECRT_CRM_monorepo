@@ -1,11 +1,13 @@
 import { Typography } from 'antd';
-import type { Contract } from '../../../../../types/contract';
+
 import type { ReferenceData } from '../../../../../api/hooks/useReferences';
 import { getEntityById } from '../../../../../helpers/getEntityById';
 import { getNameById } from '../../../../../helpers/getNameById';
-import { formatDate } from '../stages/data';
-import { getContractStateTagClass } from '../../../utils/contractStateUtils';
+import type { Contract } from '../../../../../types/contract';
 import listStyles from '../../../list/ContractsListPage.module.scss';
+import { getContractStateTagClass } from '../../../utils/contractStateUtils';
+import { formatDate } from '../stages/data';
+
 const { Text } = Typography;
 type MainInfoRefs = Partial<
   Pick<ReferenceData, 'partners' | 'projects' | 'users' | 'contractCategories' | 'contractTypes'>

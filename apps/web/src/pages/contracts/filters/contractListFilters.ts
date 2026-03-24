@@ -1,8 +1,7 @@
-import type { Contract } from '../../../types/contract';
-import type { ContractState } from '../../../types/contract';
-import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types';
-import type { ContractListReferences } from '../list/ContractsListPage.types';
+import type { Contract, ContractState } from '../../../types/contract';
+import type { AdvancedFilters, ContractListReferences, FilterTab } from '../list/ContractsListPage.types';
 import { isContractDraft } from '../utils/contractStateUtils';
+
 export function filterByTab(
   contracts: Contract[],
   tab: FilterTab,

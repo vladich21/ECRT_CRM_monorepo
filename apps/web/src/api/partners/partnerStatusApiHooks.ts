@@ -1,4 +1,5 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
+
 import { PartnerStatus } from '../../types/partner';
 import { partnerStatusApi } from './partnerStatusApi';
 

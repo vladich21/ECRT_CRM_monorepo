@@ -1,15 +1,17 @@
-import { useNavigate, useParams } from 'react-router-dom';
-import { Spin } from 'antd';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { useNotification } from '../../../customhooks/useNotification';
 import { useEffect, useState } from 'react';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { PatentGrant } from '../../../types/patent';
-import { usePatentGrants, useDeletePatentGrant } from '../../../api/patents/patentGrantsApiHooks';
+import { Spin } from 'antd';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import { useDeletePatentGrant, usePatentGrants } from '../../../api/patents/patentGrantsApiHooks';
+import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useNotification } from '../../../customhooks/useNotification';
+import { PatentGrant } from '../../../types/patent';
 import styles from './PatentGrantsListPage.module.scss';
+
 function formatDate(dateStr?: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '';
 }

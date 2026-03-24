@@ -1,23 +1,24 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button, Select, Switch, Row, Col, Divider } from 'antd';
 import {
-  SaveOutlined,
-  TeamOutlined,
-  UserOutlined,
   ApartmentOutlined,
   IdcardOutlined,
   SafetyCertificateOutlined,
+  SaveOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { useNotification } from '../../../customhooks/useNotification';
-import { Loader } from '../../../components/loader/Loader';
-import { getChangedFields } from '../../../helpers/getChangedFields';
+import { Button, Col, Divider, Form, Input, Row, Select, Switch } from 'antd';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { useDepartmentById, useUpdateDepartment } from '../../../api/departments/departmentsApiHooks';
-import { departmentUpdateFormMapper } from '../../../helpers/mappers/departmentUpdateFormMapper';
+import { useReferenceData } from '../../../api/hooks/useReferences';
 import { BackButton } from '../../../components/backButton/BackButton';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
+import { getChangedFields } from '../../../helpers/getChangedFields';
+import { departmentUpdateFormMapper } from '../../../helpers/mappers/departmentUpdateFormMapper';
 import styles from './DepartmentFormPage.module.scss';
 
 const { Option } = Select;

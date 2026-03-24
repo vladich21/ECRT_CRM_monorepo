@@ -1,10 +1,11 @@
+import { Descriptions, Space, Tag, Typography } from 'antd';
 import { useOutletContext } from 'react-router-dom';
-import { Descriptions, Tag, Space, Typography } from 'antd';
-import { PatentGrant } from '../../../../types/patent';
-import { NotFound } from '../../../../components/notFound/NotFound';
-import { Loader } from '../../../../components/loader/Loader';
+
 import { useReferenceData } from '../../../../api/hooks/useReferences';
+import { Loader } from '../../../../components/loader/Loader';
+import { NotFound } from '../../../../components/notFound/NotFound';
 import { getNameById } from '../../../../helpers/getNameById';
+import { PatentGrant } from '../../../../types/patent';
 import styles from './PatentGrantMainInfoTab.module.scss';
 
 const { Text } = Typography;

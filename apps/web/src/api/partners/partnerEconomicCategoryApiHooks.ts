@@ -1,4 +1,5 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
+
 import { PartnerEconomicCategory } from '../../types/partner';
 import { partnerEconomicCategoryApi } from './partnerEconomicCategoryApi';
 

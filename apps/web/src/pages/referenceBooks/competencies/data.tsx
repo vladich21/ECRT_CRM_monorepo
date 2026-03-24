@@ -1,5 +1,6 @@
 import { Tag } from 'antd';
 import { ColumnType } from 'antd/es/table';
+
 import { PartnerCompetence } from '../../../types/partner';
 
 export const initialColors = {

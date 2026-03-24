@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { Button, DatePicker, Modal, Select } from 'antd';
 import type { Dayjs } from 'dayjs';
+
 import styles from './UsersListPage.module.scss';
+
 export type UserFilters = {
   departmentId: string | null;
   positionId: string | null;

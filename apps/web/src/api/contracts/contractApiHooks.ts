@@ -1,7 +1,14 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { contractApi, ContractsListParams, ContractsListResponse } from './contractApi';
+
 import { Contract } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
+import {
+  contractApi,
+  ContractDeleteResult,
+  ContractsListParams,
+  ContractsListResponse,
+  CreateContractPayload,
+} from './contractApi';
 
 export type { ContractsListParams };
 
@@ -45,14 +52,10 @@ export const useContractById = (contractId: string): UseQueryResult<Contract, Er
   });
 };
 
-export const useCreateContract = (): UseMutationResult<
-  Contract,
-  Error,
-  Omit<Contract, 'id' | 'created_at' | 'updated_at'>
-> => {
+export const useCreateContract = (): UseMutationResult<Contract, Error, CreateContractPayload> => {
   const queryClient = useQueryClient();
-  return useMutation<Contract, Error, Omit<Contract, 'id' | 'created_at' | 'updated_at'>>({
-    mutationFn: (data: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) => contractApi.addContract(data),
+  return useMutation<Contract, Error, CreateContractPayload>({
+    mutationFn: (data: CreateContractPayload) => contractApi.addContract(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
     },
@@ -84,12 +87,15 @@ export const useUpdateContract = (): UseMutationResult<
   });
 };
 
-export const useDeleteContract = (): UseMutationResult<Contract, Error, string, unknown> => {
+export const useDeleteContract = (): UseMutationResult<ContractDeleteResult, Error, string, unknown> => {
   const queryClient = useQueryClient();
-  return useMutation<Contract, Error, string>({
+  return useMutation<ContractDeleteResult, Error, string>({
     mutationFn: (contractId: string) => contractApi.deleteContract(contractId),
-    onSuccess: () => {
+    onSuccess: (result, contractId) => {
       queueMicrotask(() => {
+        if (result.deletion_mode === 'hard') {
+          queryClient.removeQueries({ queryKey: ['contracts', contractId] });
+        }
         queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
       });
     },

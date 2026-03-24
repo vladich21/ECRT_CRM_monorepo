@@ -1,6 +1,8 @@
-import { Button, Input, Tooltip, Typography } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { Button, Input, Tooltip, Typography } from 'antd';
+
 import styles from '../ContractMainInfoTab.module.scss';
+
 const { Text } = Typography;
 type ContractStagesToolbarProps = {
   stageSearch: string;

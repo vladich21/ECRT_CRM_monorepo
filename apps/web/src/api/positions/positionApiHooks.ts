@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { positionApi } from './positionApi';
+
 import { Position } from '../../types/referenceTypes';
+import { positionApi } from './positionApi';
 
 export const usePositions = (preview?: number): UseQueryResult<Position[], Error> => {
   return useQuery<Position[], Error>({

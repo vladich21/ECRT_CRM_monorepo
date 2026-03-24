@@ -1,22 +1,24 @@
-import { Spin } from 'antd';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { PatentArea } from '../../../types/patent';
 import { useEffect, useState } from 'react';
-import { useNotification } from '../../../customhooks/useNotification';
-import { useModalStore } from '../../../store/ModalStore';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { Spin } from 'antd';
+
 import {
   useCreatePatentArea,
   useDeletePatentArea,
   usePatentAreas,
   useUpdatePatentArea,
 } from '../../../api/patents/patentAreasApiHooks';
-import { getNameById } from '../../../helpers/getNameById';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useMutateByModal } from '../../../customhooks/useMutateByModal';
+import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
+import { getNameById } from '../../../helpers/getNameById';
+import { useModalStore } from '../../../store/ModalStore';
+import { PatentArea } from '../../../types/patent';
 import styles from './PatentAreasListPage.module.scss';
+
 type ActionType = 'edit' | 'delete' | 'add' | '';
 const PatentAreasListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();

@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
+
 import { Partner } from '../../../types/partner';
+
 export const useFilteredPartners = (partners: Partner[], filters: Record<string, any>) => {
   const filteredPartners = useMemo(() => {
     if (!partners.length) return [];

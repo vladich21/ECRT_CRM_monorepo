@@ -1,9 +1,11 @@
 import { Descriptions, Space, Typography } from 'antd';
-import { Partner } from '../../../types/partner';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { renderCompetenceTag } from '../../../components/ui/renderTag';
 import { getEntityById } from '../../../helpers/getEntityById';
+import { Partner } from '../../../types/partner';
 import styles from './PartnerMainInfo.module.scss';
+
 const { Text } = Typography;
 interface PartnersMainInfoProps {
   partner?: Partner;

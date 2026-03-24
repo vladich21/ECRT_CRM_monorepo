@@ -1,6 +1,6 @@
 import React from 'react';
+import { CloseOutlined, SettingOutlined } from '@ant-design/icons';
 import { Menu, Space } from 'antd';
-import { SettingOutlined, CloseOutlined } from '@ant-design/icons';
 
 interface AdvancedFiltersMenuProps {
   onOpenAdvanced: () => void;

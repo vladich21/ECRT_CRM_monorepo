@@ -26,7 +26,7 @@ export const handleExport = (
   columns: any = [],
 ) => {
   try {
-    let exportData = enableExpandable ? flattenTreeData(data) : data;
+    const exportData = enableExpandable ? flattenTreeData(data) : data;
 
     // Создаем массив для данных Excel
     const excelData: any[][] = [];

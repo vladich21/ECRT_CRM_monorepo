@@ -1,24 +1,11 @@
 import { Routes, Route } from "react-router-dom";
-import NotFound from "../pages/NotFound";
-import LoginPage from "../pages/auth/LoginPage";
+
+import CommentsList from "../components/comments/CommentsList";
+import { EntityFilesTab } from "../components/entityFiles/EntityFilesTab";
 import MainLayout from "../layouts/MainLayout";
-import PrivateRoute from "./PrivateRoute";
-import HomePage from "../pages/home/HomePage";
-import ProfilePage from "../pages/profile/Profile";
-import UsersListPage from "../pages/referenceBooks/users/UsersListPage";
-import UserCreatePage from "../pages/referenceBooks/users/UserCreatePage";
-import UserEditPage from "../pages/referenceBooks/users/UserEditPage";
-import UserDetailsPage from "../pages/referenceBooks/users/UserDetailsPage";
-import DepartmentsListPage from "../pages/referenceBooks/departaments/DepartmentsListPage";
-import DepartmentDetailsPage from "../pages/referenceBooks/departaments/DepartmentDetailsPage";
-import DepartmentEditPage from "../pages/referenceBooks/departaments/DepartmentEditPage";
-import DepartmentCreatePage from "../pages/referenceBooks/departaments/DepartmentCreatePage";
-import PositionsListPage from "../pages/referenceBooks/positions/PositionsListPage";
-import ProjectsListPage from "../pages/referenceBooks/projects/ProjectsListPage";
-import ProjectDetailsPage from "../pages/referenceBooks/projects/ProjectDetailsPage";
+import LoginPage from "../pages/auth/LoginPage";
 import ProjectEditPage from "../pages/referenceBooks/projects/ProjectEditPage";
 import ProjectCreatePage from "../pages/referenceBooks/projects/ProjectCreatePage";
-import PatentsListPage from "../pages/patents/PatentsListPage";
 import PartnersListPage from "../pages/partners/PartnersListPage";
 import PartnerDetailsPage from "../pages/partners/PartnerDetailsPage";
 import PartnerCreatePage from "../pages/partners/PartnerCreatePage";
@@ -38,12 +25,10 @@ import { ContractMainInfoTab } from "../pages/contracts/details/tabs/main/Contra
 import { ContractFilesTab } from "../pages/contracts/details/tabs/files/ContractFilesTab";
 import { ContractAdditionalAgreementsTab } from "../pages/contracts/details/tabs/additionalAgreements/ContractAdditionalAgreementsTab";
 import { ContractHistoryTab } from "../pages/contracts/details/tabs/history/ContractHistoryTab";
-import { EntityFilesTab } from "../components/entityFiles/EntityFilesTab";
 import PatentCreatePage from "../pages/patents/PatentCreatePage";
 import PatentEditPage from "../pages/patents/PatentEditPage";
 import PatentDetailsPage from "../pages/patents/PatentDetailsPage";
 import { PatentMainInfoTab } from "../pages/patents/detailsTabs/PatentMainInfoTab";
-import CommentsList from "../components/comments/CommentsList";
 import PartnerEconomicCategoriesListPage from "../pages/referenceBooks/partnerEconomicCategories/EconomicCategoriesListPage";
 import ContractTypesListPage from "../pages/referenceBooks/contractTypes/ContractTypesListPage";
 import PatentGrantsListPage from "../pages/referenceBooks/patentGrants/PatentGrantsListPage";
@@ -53,6 +38,24 @@ import PatentGrantDetailsPage from "../pages/referenceBooks/patentGrants/PatentG
 import { PatentGrantMainInfoTab } from "../pages/referenceBooks/patentGrants/detailsTabs/PatentGrantMainInfoTab";
 import PatentAreasListPage from "../pages/referenceBooks/patentAreas/PatentAreasListPage";
 import GanttsPage from "../pages/gantt/GanttsPage";
+import HomePage from "../pages/home/HomePage";
+import NotFound from "../pages/NotFound";
+import PatentsListPage from "../pages/patents/PatentsListPage";
+import ProfilePage from "../pages/profile/Profile";
+import DepartmentCreatePage from "../pages/referenceBooks/departaments/DepartmentCreatePage";
+import DepartmentDetailsPage from "../pages/referenceBooks/departaments/DepartmentDetailsPage";
+import DepartmentEditPage from "../pages/referenceBooks/departaments/DepartmentEditPage";
+import DepartmentsListPage from "../pages/referenceBooks/departaments/DepartmentsListPage";
+import PositionsListPage from "../pages/referenceBooks/positions/PositionsListPage";
+import ProjectDetailsPage from "../pages/referenceBooks/projects/ProjectDetailsPage";
+import ProjectsListPage from "../pages/referenceBooks/projects/ProjectsListPage";
+import UserCreatePage from "../pages/referenceBooks/users/UserCreatePage";
+import UserDetailsPage from "../pages/referenceBooks/users/UserDetailsPage";
+import UserEditPage from "../pages/referenceBooks/users/UserEditPage";
+import UsersListPage from "../pages/referenceBooks/users/UsersListPage";
+
+import PrivateRoute from "./PrivateRoute";
+
 const Private = ({ children }: {
     children: React.ReactNode;
 }) => (<PrivateRoute>{children}</PrivateRoute>);

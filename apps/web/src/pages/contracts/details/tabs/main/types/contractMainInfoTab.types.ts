@@ -1,4 +1,5 @@
 import type { Contract, ContractStage } from '../../../../../../types/contract';
+
 export type ContractMainInfoOutletContext = {
   contract: Contract;
   stages: ContractStage[];

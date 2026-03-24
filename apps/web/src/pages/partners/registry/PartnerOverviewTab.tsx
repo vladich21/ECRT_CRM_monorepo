@@ -1,11 +1,11 @@
 import { useOutletContext } from 'react-router-dom';
-import type { Partner } from '../../../types/partner';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
+import type { Partner } from '../../../types/partner';
 import PartnersMainInfo from '../detailsTabs/PartnerMainInfo';
-import KpiRow from './KpiRow';
-import ComplianceCards from './ComplianceCards';
-import type { ComplianceItem } from './ComplianceCards';
+import ComplianceCards, { type ComplianceItem } from './ComplianceCards';
 import DetailSidebar from './DetailSidebar';
+import KpiRow from './KpiRow';
 import styles from './PartnerOverviewTab.module.scss';
 
 export default function PartnerOverviewTab() {

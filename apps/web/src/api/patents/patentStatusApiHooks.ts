@@ -1,4 +1,5 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
+
 import { Reference } from '../../types/referenceTypes';
 import { patentStatusesApi } from './patentStatusApi';
 

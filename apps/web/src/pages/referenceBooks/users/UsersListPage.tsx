@@ -1,18 +1,20 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useMemo, useState, useEffect, useCallback } from 'react';
-import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { useUsers } from '../../../api/users/userApiHooks';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
-import { User } from '../../../types/user';
-import { useNotification } from '../../../customhooks/useNotification';
-import { NotFound } from '../../../components/notFound/NotFound';
+import { useUsers } from '../../../api/users/userApiHooks';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import UserCard from './registry/UserCard';
-import { UserFiltersModal, EMPTY_USER_FILTERS, type UserFilters } from './UserFiltersModal';
+import { useNotification } from '../../../customhooks/useNotification';
+import { User } from '../../../types/user';
 import { useFilteredUsers } from './hooks/useFilteredUsers';
+import UserCard from './registry/UserCard';
+import { EMPTY_USER_FILTERS, UserFiltersModal, type UserFilters } from './UserFiltersModal';
 import styles from './UsersListPage.module.scss';
+
 const DEFAULT_PAGE_SIZE = 20;
 type FilterTab = 'all' | 'active' | 'inactive';
 const FILTER_TABS: {

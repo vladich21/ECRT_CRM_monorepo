@@ -1,5 +1,6 @@
-import { Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
+import { Avatar } from 'antd';
+
 import styles from './styles.module.scss';
 
 interface IProfileButton {

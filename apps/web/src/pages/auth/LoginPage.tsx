@@ -1,19 +1,21 @@
-import { Button, Form, Alert, Image } from 'antd';
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { useAuthStore } from '../../store/AuthStore';
-import { authLoadingScreenStore } from '../../store/authLoadingScreenStore';
+import { Alert, Button, Form, Image } from 'antd';
+import { useNavigate } from 'react-router-dom';
+
 import { authApi } from '../../api/auth/authApi';
+import { authLoadingScreenStore } from '../../store/authLoadingScreenStore';
+import { useAuthStore } from '../../store/AuthStore';
 import type { User } from '../../types/user';
-import {
-  type FormValues,
-  type LoginState,
-  INITIAL_LOGIN_STATE,
-  STEP_TITLES,
-  STEP_BUTTON_LABELS,
-} from './LoginPage.types';
 import { LoginFormFields } from './LoginFormFields';
 import styles from './LoginPage.module.scss';
+import {
+  INITIAL_LOGIN_STATE,
+  STEP_BUTTON_LABELS,
+  STEP_TITLES,
+  type FormValues,
+  type LoginState,
+} from './LoginPage.types';
+
 function LoginPage() {
   const navigate = useNavigate();
   const storeLogin = useAuthStore(s => s.login);

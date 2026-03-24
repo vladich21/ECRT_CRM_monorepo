@@ -1,5 +1,5 @@
-import { BaseModal, BaseModalProps } from '../BaseModal';
 import FileUpload, { FileWithId } from '../../fileUploader/FileUploader';
+import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface FileModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   isLoading: boolean;

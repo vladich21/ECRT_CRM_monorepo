@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { Button } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+
 import styles from './DetailPageHeader.module.scss';
+
 interface TabItem {
   key: string;
   label: ReactNode;

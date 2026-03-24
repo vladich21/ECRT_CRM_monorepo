@@ -1,19 +1,21 @@
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { PartnerStatus } from '../../../types/partner';
 import { useEffect, useState } from 'react';
-import { useNotification } from '../../../customhooks/useNotification';
-import { useModalStore } from '../../../store/ModalStore';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+
 import {
   useCreatePartnerStatus,
   useDeletePartnerStatus,
   usePartnerStatuses,
   useUpdatePartnerStatus,
 } from '../../../api/partners/partnerStatusApiHooks';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useMutateByModal } from '../../../customhooks/useMutateByModal';
+import { useNotification } from '../../../customhooks/useNotification';
 import { getNameById } from '../../../helpers/getNameById';
+import { useModalStore } from '../../../store/ModalStore';
+import { PartnerStatus } from '../../../types/partner';
+
 type ActionType = 'edit' | 'delete' | 'add' | '';
 const PartnerStatusesListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();

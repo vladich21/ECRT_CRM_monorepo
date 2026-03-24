@@ -1,6 +1,8 @@
 import { Tabs } from 'antd';
+
 import type { ContractDetailsTabItem, ContractDetailsTabKey } from '../../utils/contractDetailsUtils';
 import styles from '../ContractDetails.module.scss';
+
 type ContractDetailsTabsProps = {
   activeTab: ContractDetailsTabKey;
   tabs: ContractDetailsTabItem[];

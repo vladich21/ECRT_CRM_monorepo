@@ -1,22 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Spin } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Position } from '../../../types/referenceTypes';
+import { Button, Input, Spin } from 'antd';
+
 import {
   useCreatePosition,
   useDeletePosition,
   usePositions,
   useUpdatePosition,
 } from '../../../api/positions/positionApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
-import { useModalStore } from '../../../store/ModalStore';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { getNameById } from '../../../helpers/getNameById';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useMutateByModal } from '../../../customhooks/useMutateByModal';
+import { useNotification } from '../../../customhooks/useNotification';
+import { getNameById } from '../../../helpers/getNameById';
+import { useModalStore } from '../../../store/ModalStore';
+import { Position } from '../../../types/referenceTypes';
 import { PositionCard } from './PositionCard';
 import styles from './PositionsListPage.module.scss';
+
 const SEARCH_DEBOUNCE_MS = 350;
 type ActionType = 'edit' | 'delete' | 'add' | '';
 const PositionsListPage: React.FC = () => {

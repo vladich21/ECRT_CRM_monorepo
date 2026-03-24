@@ -1,7 +1,8 @@
 import { memo } from 'react';
-import { Reference } from '../../../../types/referenceTypes';
-import { Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
+import { Avatar } from 'antd';
+
+import { Reference } from '../../../../types/referenceTypes';
 import styles from './UsersListItem.module.scss';
 
 interface UserListItemProps {

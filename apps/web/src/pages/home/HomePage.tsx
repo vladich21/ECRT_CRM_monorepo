@@ -1,15 +1,17 @@
-import { Card, Col, Row, Statistic, List, Typography, Space } from 'antd';
 import {
-  FileTextOutlined,
-  CopyrightOutlined,
-  ProjectOutlined,
-  ArrowUpOutlined,
   ArrowDownOutlined,
-  TeamOutlined,
+  ArrowUpOutlined,
   CalendarOutlined,
+  CopyrightOutlined,
+  FileTextOutlined,
+  ProjectOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
+import { Card, Col, List, Row, Space, Statistic, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
+
 import styles from './styles.module.scss';
+
 const { Text } = Typography;
 function HomePage() {
   const navigate = useNavigate();

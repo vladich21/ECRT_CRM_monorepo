@@ -1,12 +1,12 @@
-import { Tag } from 'antd';
-import { Progress } from 'antd';
 import {
+  BankOutlined,
+  CalendarOutlined,
   EnvironmentOutlined,
   RightOutlined,
-  BankOutlined,
   SafetyCertificateOutlined,
-  CalendarOutlined,
 } from '@ant-design/icons';
+import { Progress, Tag } from 'antd';
+
 import type { Partner } from '../../../types/partner';
 import styles from './SupplierCard.module.scss';
 

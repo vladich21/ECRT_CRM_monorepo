@@ -1,29 +1,31 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Select, Row, Col, Divider, DatePicker } from 'antd';
 import {
-  SaveOutlined,
-  FileTextOutlined,
-  TeamOutlined,
-  UserOutlined,
+  BankOutlined,
   CalendarOutlined,
+  FileTextOutlined,
   NumberOutlined,
   ProjectOutlined,
-  BankOutlined,
+  SaveOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
+import { Button, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+import { useNavigate } from 'react-router-dom';
+
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useCreatePatent } from '../../api/patents/patentApiHooks';
-import { useNotification } from '../../customhooks/useNotification';
+import { useCreatePatentArea } from '../../api/patents/patentAreasApiHooks';
 import { BackButton } from '../../components/backButton/BackButton';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import { getEntityById } from '../../helpers/getEntityById';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { SelectWithQuickAdd } from '../../components/selectWithQuickAdd/SelectWithQuickAdd';
 import { useMutateByModal } from '../../customhooks/useMutateByModal';
+import { useNotification } from '../../customhooks/useNotification';
+import { getEntityById } from '../../helpers/getEntityById';
 import { PatentArea } from '../../types/patent';
-import { useCreatePatentArea } from '../../api/patents/patentAreasApiHooks';
 import styles from './PatentFormPage.module.scss';
+
 const { Option } = Select;
 const { TextArea } = Input;
 export default function PatentCreatePage() {

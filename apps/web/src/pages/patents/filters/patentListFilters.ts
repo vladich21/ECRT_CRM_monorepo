@@ -1,6 +1,7 @@
 import type { Patent } from '../../../types/patent';
-import type { PatentAdvancedFilters } from '../PatentsListPage.types';
 import type { ReferenceDataForPatents } from '../data';
+import type { PatentAdvancedFilters } from '../PatentsListPage.types';
+
 export function filterByAdvanced(patents: Patent[], filters: PatentAdvancedFilters): Patent[] {
   let result = patents;
   if (filters.departmentId != null) {

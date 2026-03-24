@@ -1,14 +1,14 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { ApartmentOutlined, EditOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import { EditOutlined, TeamOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { useDepartmentById } from '../../../api/departments/departmentsApiHooks';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { Loader } from '../../../components/loader/Loader';
 import { useReferenceData } from '../../../api/hooks/useReferences';
-import { getNameById } from '../../../helpers/getNameById';
+import { Loader } from '../../../components/loader/Loader';
+import { NotFound } from '../../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import { getNameById } from '../../../helpers/getNameById';
 import styles from './DepartmentDetails.module.scss';
 
 export default function DepartmentDetailsPage() {

@@ -1,4 +1,5 @@
 import type { InputNumberProps } from 'antd';
+
 export const STAGE_BUDGET_INPUT_NUMBER_PROPS: Pick<
   InputNumberProps<number>,
   'min' | 'step' | 'formatter' | 'parser'

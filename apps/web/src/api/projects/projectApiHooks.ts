@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { projectApi, ProjectsListParams, ProjectsListResponse } from './projectApi';
+
 import { Project } from '../../types/referenceTypes';
+import { projectApi, ProjectsListParams, ProjectsListResponse } from './projectApi';
 
 export type { ProjectsListParams };
 

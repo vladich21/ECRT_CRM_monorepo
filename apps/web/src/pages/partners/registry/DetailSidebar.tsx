@@ -1,7 +1,9 @@
+import { EnvironmentOutlined, GlobalOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
-import { PhoneOutlined, MailOutlined, GlobalOutlined, EnvironmentOutlined } from '@ant-design/icons';
+
 import type { Partner } from '../../../types/partner';
 import styles from './DetailSidebar.module.scss';
+
 const STATUS_COLORS: Record<string, string> = {
   Активный: '#52c41a',
   Потенциальный: '#1677ff',

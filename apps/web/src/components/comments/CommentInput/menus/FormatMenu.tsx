@@ -1,5 +1,6 @@
-import { Button, Tooltip } from 'antd';
 import { OrderedListOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
+
 import styles from './FormatMenu.module.scss';
 
 interface FormatMenuProps {

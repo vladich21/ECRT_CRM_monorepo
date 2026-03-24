@@ -1,7 +1,8 @@
+import { CalendarOutlined, FileTextOutlined, NumberOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
 import { Tag, Tooltip } from 'antd';
-import { CalendarOutlined, FileTextOutlined, RightOutlined, TeamOutlined, NumberOutlined } from '@ant-design/icons';
-import { Patent } from '../../types/patent';
+
 import { getNameById } from '../../helpers/getNameById';
+import { Patent } from '../../types/patent';
 import type { ReferenceDataForPatents } from './data';
 import styles from './PatentsListPage.module.scss';
 

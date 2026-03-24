@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { Alert, Card, Timeline, Typography } from 'antd';
 import {
+  CalendarOutlined,
+  CheckCircleOutlined,
   EditOutlined,
   FileOutlined,
   UserSwitchOutlined,
-  CalendarOutlined,
-  CheckCircleOutlined,
 } from '@ant-design/icons';
+import { Alert, Card, Timeline, Typography } from 'antd';
+import { useOutletContext } from 'react-router-dom';
+
 import type { Contract } from '../../../../../types/contract';
 import styles from '../additionalAgreements/ContractSupplementTabs.module.scss';
+
 const { Text, Title } = Typography;
 type OutletContext = {
   contract: Contract;

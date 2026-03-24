@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { message } from 'antd';
+
 import { ACCEPT_FILE_TYPES } from '../../../constants/fileFormats';
 
 export interface AttachedFile {

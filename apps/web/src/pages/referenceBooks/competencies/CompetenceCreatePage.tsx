@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
+import { HighlightOutlined, SaveOutlined, TagOutlined } from '@ant-design/icons';
+import { Button, Col, ColorPicker, Divider, Form, Input, Modal, Row, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Row, Col, Divider, ColorPicker, Tag, Modal } from 'antd';
-import { SaveOutlined, TagOutlined, HighlightOutlined } from '@ant-design/icons';
-import { useNotification } from '../../../customhooks/useNotification';
-import { initialColors, initialFormValues } from './data';
+
 import { useCreatePartnerCompetence } from '../../../api/partners/partnerCompetenceApiHooks';
+import { useNotification } from '../../../customhooks/useNotification';
 import { getHexColor } from '../../../helpers/getHexColor';
 import styles from './CompetencyFormPage.module.scss';
+import { initialColors, initialFormValues } from './data';
+
 export default function PartnerCompetenceCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();

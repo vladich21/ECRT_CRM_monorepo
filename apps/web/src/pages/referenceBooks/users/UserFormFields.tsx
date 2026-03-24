@@ -1,14 +1,16 @@
-import { Form, Input, Select, Row, Col, Divider, Switch } from 'antd';
 import {
-  UserOutlined,
+  IdcardOutlined,
   MailOutlined,
   PhoneOutlined,
-  TeamOutlined,
-  IdcardOutlined,
   SafetyCertificateOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
+import { Col, Divider, Form, Input, Row, Select, Switch } from 'antd';
+
 import type { ReferenceData } from '../../../api/hooks/useReferences';
 import styles from './UserFormPage.module.scss';
+
 const { Option } = Select;
 interface UserFormFieldsProps {
   form: ReturnType<typeof Form.useForm>[0];

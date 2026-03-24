@@ -1,30 +1,31 @@
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Button, Tooltip } from 'antd';
 import {
-  EditOutlined,
-  DeleteOutlined,
-  UndoOutlined,
-  BankOutlined,
-  StarFilled,
   AimOutlined,
+  BankOutlined,
   CheckCircleFilled,
   ClockCircleFilled,
+  DeleteOutlined,
+  EditOutlined,
+  StarFilled,
+  UndoOutlined,
 } from '@ant-design/icons';
-import { useDeletePartner, useRestorePartner, usePartnerById } from '../../api/partners/partnerApiHooks';
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { NotFound } from '../../components/notFound/NotFound';
-import { Loader } from '../../components/loader/Loader';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../customhooks/useNotification';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
-import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
-import { useFilesByEntity } from '../../api/files/fileApiHooks';
+import { Button, Tooltip } from 'antd';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+
 import { useContracts } from '../../api/contracts/contractApiHooks';
-import { PARTNERS_REGISTRY_PATH } from './constants/routes';
+import { useFilesByEntity } from '../../api/files/fileApiHooks';
+import { useReferenceData } from '../../api/hooks/useReferences';
+import { useDeletePartner, usePartnerById, useRestorePartner } from '../../api/partners/partnerApiHooks';
+import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
+import { Loader } from '../../components/loader/Loader';
+import { NotFound } from '../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../constants/deletionScope';
+import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import { useNotification } from '../../customhooks/useNotification';
+import { PARTNERS_REGISTRY_PATH } from './constants/routes';
 import type { PartnerListTab } from './PartnersListPage.types';
 import type { PartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
+
 const STATUS_COLORS: Record<string, string> = {
   Активный: '#52c41a',
   Потенциальный: '#1677ff',

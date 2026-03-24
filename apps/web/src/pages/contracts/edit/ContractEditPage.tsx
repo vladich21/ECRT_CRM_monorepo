@@ -1,38 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button, Select, Switch, Row, Col, Divider, InputNumber, DatePicker, Space } from 'antd';
 import {
-  CloseOutlined,
-  SaveOutlined,
-  FileTextOutlined,
-  UserOutlined,
-  TeamOutlined,
-  ProjectOutlined,
   CalculatorOutlined,
   CalendarOutlined,
-  NumberOutlined,
-  TagOutlined,
-  UnorderedListOutlined,
   CheckCircleOutlined,
+  CloseOutlined,
+  FileTextOutlined,
+  NumberOutlined,
+  ProjectOutlined,
+  SaveOutlined,
+  TagOutlined,
+  TeamOutlined,
+  UnorderedListOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { useNotification } from '../../../customhooks/useNotification';
-import { Loader } from '../../../components/loader/Loader';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { NotFound } from '../../../components/notFound/NotFound';
+import { Button, Col, DatePicker, Divider, Form, Input, InputNumber, Row, Select, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+
 import { useContractById, useUpdateContract } from '../../../api/contracts/contractApiHooks';
+import { useReferenceData } from '../../../api/hooks/useReferences';
+import { Loader } from '../../../components/loader/Loader';
+import { NotFound } from '../../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
+import { getChangedFields } from '../../../helpers/getChangedFields';
+import { getEntityById } from '../../../helpers/getEntityById';
+import { formReferenceId } from '../../../helpers/formReferenceId';
+import { getNameById } from '../../../helpers/getNameById';
 import { contractUpdateFormMapper } from '../../../helpers/mappers/contractUpdateFormMapper';
 import { numberFormatter, numberParser } from '../../../helpers/numberFormatters';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
-import { formatDate } from '../details/tabs/stages/data';
-import { getContractStateTagClass } from '../utils/contractStateUtils';
-import tagStyles from '../list/ContractsListPage.module.scss';
 import styles from '../create/ContractCreatePage.module.scss';
+import { formatDate } from '../details/tabs/stages/data';
+import tagStyles from '../list/ContractsListPage.module.scss';
+import { getContractStateTagClass, isContractSignedState } from '../utils/contractStateUtils';
+
 const { Option } = Select;
+const { Text } = Typography;
 const { TextArea } = Input;
 export default function ContractEditPage() {
   const { contractId } = useParams();
@@ -53,15 +56,14 @@ export default function ContractEditPage() {
     isError: isUpdateError,
     isSuccess: isUpdateSuccess,
   } = useUpdateContract();
-  const wNumber = Form.useWatch('number', form) as string | undefined;
-  const wCipher = Form.useWatch('cipher', form) as string | undefined;
-  const wName = Form.useWatch('name', form) as string | undefined;
-  const wCategoryId = Form.useWatch('category_id', form) as string | undefined;
-  const wContractTypeId = Form.useWatch('contract_type_id', form) as string | undefined;
-  const wStateId = Form.useWatch('state_id', form) as string | undefined;
-  const wPartnerId = Form.useWatch('partner_id', form) as string | undefined;
-  const wIsActive = Form.useWatch('is_active', form) as boolean | undefined;
-  const wDateSigned = Form.useWatch('date_signed', form) as unknown;
+  const watchContractNumber = Form.useWatch('number', form);
+  const watchCipher = Form.useWatch('cipher', form);
+  const watchContractName = Form.useWatch('name', form);
+  const watchCategoryId = Form.useWatch('category_id', form);
+  const watchContractTypeId = Form.useWatch('contract_type_id', form);
+  const watchStateId = Form.useWatch('state_id', form);
+  const watchPartnerId = Form.useWatch('partner_id', form);
+  const watchDateSigned = Form.useWatch('date_signed', form);
   const handleBack = () => {
     navigate(`/contracts/${contractId}`);
   };
@@ -130,22 +132,24 @@ export default function ContractEditPage() {
   if (isReferencesError || isContractError || !contract || !referenceBooks) {
     return <NotFound errorMessage='Не найден договор или справочник' />;
   }
-  const headerNumber = wNumber ?? contract.number ?? '';
-  const headerCipher = wCipher ?? contract.cipher ?? '';
+  const headerNumber = (watchContractNumber ?? contract.number) || '';
+  const headerCipher = (watchCipher ?? contract.cipher) || '';
   const title = `Договор №${headerNumber || '—'}${headerCipher ? ` (${headerCipher})` : ''}`;
-  const contractState = getEntityById(wStateId ?? contract.state_id, referenceBooks?.contractStates);
-  const contractCategoryName =
-    getNameById(wCategoryId ?? contract.category_id, referenceBooks?.contractCategories ?? []) ?? '';
-  const contractTypeName =
-    getNameById(wContractTypeId ?? contract.contract_type_id, referenceBooks?.contractTypes ?? []) ?? '';
-  const partnerName = getNameById(wPartnerId ?? contract.partner_id, referenceBooks?.partners ?? []) ?? '';
-  const headerName = (wName ?? contract.name) || '';
-  const isActive = wIsActive ?? contract.is_active ?? false;
-  const signedText = (() => {
-    const v = wDateSigned ?? contract.date_signed;
-    if (!v) return '';
-    if (dayjs.isDayjs(v)) return v.format('DD.MM.YYYY');
-    if (typeof v === 'string') return formatDate(v);
+  const stateId = formReferenceId(watchStateId, contract.state_id);
+  const categoryId = formReferenceId(watchCategoryId, contract.category_id);
+  const contractTypeId = formReferenceId(watchContractTypeId, contract.contract_type_id);
+  const partnerId = formReferenceId(watchPartnerId, contract.partner_id);
+  const contractState = getEntityById(stateId, referenceBooks?.contractStates);
+  const contractCategoryName = getNameById(categoryId, referenceBooks?.contractCategories ?? []) ?? '';
+  const contractTypeName = getNameById(contractTypeId, referenceBooks?.contractTypes ?? []) ?? '';
+  const partnerName = getNameById(partnerId, referenceBooks?.partners ?? []) ?? '';
+  const headerName = (watchContractName ?? contract.name) || '';
+  const isContractEffectiveByState = isContractSignedState(stateId, referenceBooks?.contractStates);
+  const signedDateLabel = (() => {
+    const dateSignedValue = watchDateSigned ?? contract.date_signed;
+    if (!dateSignedValue) return '';
+    if (dayjs.isDayjs(dateSignedValue)) return dateSignedValue.format('DD.MM.YYYY');
+    if (typeof dateSignedValue === 'string') return formatDate(dateSignedValue);
     return '';
   })();
   return (
@@ -154,14 +158,14 @@ export default function ContractEditPage() {
       titleSuffix={
         <>
           {contractTypeName ? <span className={hStyles.metaText}>{contractTypeName}</span> : null}
-          {signedText ? <span className={hStyles.metaText}>Подписан: {signedText}</span> : null}
+          {signedDateLabel ? <span className={hStyles.metaText}>Подписан: {signedDateLabel}</span> : null}
         </>
       }
       backLabel='Договоры'
       onBack={handleBack}
       statusBadge={{
-        label: isActive ? 'Действует' : 'Не действует',
-        color: isActive ? '#52c41a' : '#ff4d4f',
+        label: isContractEffectiveByState ? 'Действует' : 'Не действует',
+        color: isContractEffectiveByState ? '#52c41a' : '#ff4d4f',
       }}
       metaItems={[
         headerName ? (
@@ -497,8 +501,12 @@ export default function ContractEditPage() {
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
-                  <Form.Item label='Активен' name='is_active' valuePropName='checked'>
-                    <Switch checkedChildren='Активен' unCheckedChildren='Не активен' />
+                  <Form.Item label='Действие договора'>
+                    <Text type='secondary'>
+                      {isContractEffectiveByState
+                        ? 'Действует (состояние «Подписан»).'
+                        : 'Не действует. Действующим договор становится при состоянии «Подписан» — признак выставляется автоматически при сохранении.'}
+                    </Text>
                   </Form.Item>
                 </Col>
               </Row>

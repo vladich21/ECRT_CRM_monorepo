@@ -1,8 +1,10 @@
 import { Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
 import type { FormInstance } from 'antd/es/form';
+
 import type { ReferenceData } from '../../../../../../api/hooks/useReferences';
 import { STAGE_BUDGET_INPUT_NUMBER_PROPS } from '../constants/budgetInputNumberProps';
 import styles from '../ContractMainInfoTab.module.scss';
+
 type ContractStageFormModalProps = {
   open: boolean;
   isEditing: boolean;

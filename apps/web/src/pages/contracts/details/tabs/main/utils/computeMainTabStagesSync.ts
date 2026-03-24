@@ -1,7 +1,8 @@
-import type { ContractStage } from '../../../../../../types/contract';
 import type { ReferenceData } from '../../../../../../api/hooks/useReferences';
+import type { ContractStage } from '../../../../../../types/contract';
 import { buildDemoContractStages } from '../../stages/buildDemoContractStages';
 import { syncContractStageStateId } from '../../stages/utils/stageHelpers';
+
 export type MainTabStagesSyncResult =
   | {
       kind: 'from_api';

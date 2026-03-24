@@ -1,16 +1,17 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Button, Tooltip, message, Tag } from 'antd';
-import { SendOutlined, PaperClipOutlined, CloseOutlined, EditOutlined, MessageOutlined } from '@ant-design/icons';
-import styles from './CommentInput.module.scss';
-import { FormatMenu } from './menus/FormatMenu';
-import { UsersMenu } from './menus/UsersMenu';
-import { useMentions } from '../hooks/useMentions';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CloseOutlined, EditOutlined, MessageOutlined, PaperClipOutlined, SendOutlined } from '@ant-design/icons';
+import { Button, message, Tag, Tooltip } from 'antd';
+
 import { getUserIdsFromString } from '../../../helpers/getDataUserIds';
-import { useFormatText } from '../hooks/useFormatText';
-import { useFiles } from '../hooks/useFiles';
 import { getNicknameFromText } from '../../../helpers/getNicknameFromText';
 import { isNicknameInProgress } from '../../../helpers/isNicknameInProgress';
 import { Comment } from '../../../types/comments';
+import { useFiles } from '../hooks/useFiles';
+import { useFormatText } from '../hooks/useFormatText';
+import { useMentions } from '../hooks/useMentions';
+import styles from './CommentInput.module.scss';
+import { FormatMenu } from './menus/FormatMenu';
+import { UsersMenu } from './menus/UsersMenu';
 
 interface CommentInputProps {
   onSubmit: (comment: Partial<Comment>) => void;

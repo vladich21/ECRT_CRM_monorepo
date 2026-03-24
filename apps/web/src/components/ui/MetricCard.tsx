@@ -1,5 +1,6 @@
 import React from 'react';
-import { Col, Typography, Progress } from 'antd';
+import { Col, Progress, Typography } from 'antd';
+
 import styles from './MetricCard.module.scss';
 
 const { Text } = Typography;

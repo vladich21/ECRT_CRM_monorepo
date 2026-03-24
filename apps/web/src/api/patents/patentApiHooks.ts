@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
+
 import { Patent } from '../../types/patent';
+import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
 
 export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
 

@@ -1,5 +1,6 @@
-import { Button } from 'antd';
 import { RightOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+
 import type { RecentContractItem } from '../../../types/partnerRegistry';
 import styles from './RecentContracts.module.scss';
 

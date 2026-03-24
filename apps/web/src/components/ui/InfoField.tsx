@@ -1,5 +1,6 @@
 import React from 'react';
 import { Col, Typography } from 'antd';
+
 import styles from './InfoField.module.scss';
 
 const { Text } = Typography;

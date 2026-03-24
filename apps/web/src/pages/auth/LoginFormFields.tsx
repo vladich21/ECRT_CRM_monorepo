@@ -1,6 +1,7 @@
 import { Button, Form, Input } from 'antd';
-import type { Step } from './LoginPage.types';
+
 import styles from './LoginPage.module.scss';
+import type { Step } from './LoginPage.types';
 
 type Props = {
   step: Step;

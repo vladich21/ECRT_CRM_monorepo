@@ -1,28 +1,29 @@
 import { useRef, useState } from 'react';
-import { Upload, Card, Typography, Button, Tooltip, Spin } from 'antd';
 import {
-  InboxOutlined,
+  CalendarOutlined,
   CloudUploadOutlined,
-  FilePdfOutlined,
-  FileWordOutlined,
+  DeleteOutlined,
   FileExcelOutlined,
   FileImageOutlined,
   FileOutlined,
-  DeleteOutlined,
+  FilePdfOutlined,
+  FileWordOutlined,
+  InboxOutlined,
   UserOutlined,
-  CalendarOutlined,
 } from '@ant-design/icons';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button, Card, Spin, Tooltip, Typography, Upload } from 'antd';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { useParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { fileApi } from '../../api/files/fileApi';
-import { useFilesByEntity, useDeleteFile } from '../../api/files/fileApiHooks';
+import { useDeleteFile, useFilesByEntity } from '../../api/files/fileApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { getNameById } from '../../helpers/getNameById';
-import { useNotification } from '../../customhooks/useNotification';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
-import { triggerFileDownload } from '../filePreview/FilePreviewModal';
+import { useNotification } from '../../customhooks/useNotification';
+import { getNameById } from '../../helpers/getNameById';
 import type { MyFile } from '../../types/files';
+import { triggerFileDownload } from '../filePreview/FilePreviewModal';
 import styles from './EntityFilesTab.module.scss';
 
 const { Text, Title } = Typography;

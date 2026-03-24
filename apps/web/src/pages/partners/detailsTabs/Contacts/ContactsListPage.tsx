@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react';
-import { useNotification } from '../../../../customhooks/useNotification';
 import { Button, Spin } from 'antd';
-import { useConfirmByModal } from '../../../../customhooks/useConfirmByModal';
-import { useMutateByModal } from '../../../../customhooks/useMutateByModal';
-import { useModalStore } from '../../../../store/ModalStore';
-import { getEntityById } from '../../../../helpers/getEntityById';
-import type { PartnerContact } from '../../../../types/partner';
-import { initialPartnerContactValues } from './data';
+import { useParams } from 'react-router-dom';
+
 import {
   useCreatePartnerContact,
   useDeletePartnerContact,
   usePartnerContacts,
   useUpdatePartnerContact,
 } from '../../../../api/partners/partnerContactApiHooks';
+import { useConfirmByModal } from '../../../../customhooks/useConfirmByModal';
+import { useMutateByModal } from '../../../../customhooks/useMutateByModal';
+import { useNotification } from '../../../../customhooks/useNotification';
+import { getEntityById } from '../../../../helpers/getEntityById';
+import { useModalStore } from '../../../../store/ModalStore';
+import type { PartnerContact } from '../../../../types/partner';
 import ContactCard from './ContactCard';
-import { useParams } from 'react-router-dom';
 import styles from './ContactsListPage.module.scss';
+import { initialPartnerContactValues } from './data';
+
 type ActionType = 'edit' | 'delete' | 'add' | '';
 const PartnerContactsListPage: React.FC = () => {
   const { partnerId } = useParams();

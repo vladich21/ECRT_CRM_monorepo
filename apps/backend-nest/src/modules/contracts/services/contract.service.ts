@@ -1,8 +1,8 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
-import { contracts, refContractStates } from '../../../database/schema';
+import { contracts, patents, refContractStates } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
@@ -83,13 +83,24 @@ export class ContractsService {
     return Number(result[0]?.value ?? 0);
   }
 
+  /** Условия AND: не удалён; опционально партнёр; для справочника — только действующие (подписанные). */
+  private contractsListBaseWhere(
+    partnerFilter?: SQL,
+    options?: { referenceSignedContractsOnly?: boolean },
+  ): SQL {
+    const parts: SQL[] = [eq(contracts.isDeleted, false)];
+    if (partnerFilter) parts.push(partnerFilter);
+    if (options?.referenceSignedContractsOnly) parts.push(eq(contracts.isActive, true));
+    return parts.length === 1 ? parts[0] : and(...parts)!;
+  }
+
   private async getContractsRows(
     preview: boolean,
     partnerFilter?: SQL,
     pagination?: PaginationParams,
+    options?: { referenceSignedContractsOnly?: boolean },
   ) {
-    const notDeleted = eq(contracts.isDeleted, false);
-    const baseWhere = partnerFilter ? and(partnerFilter, notDeleted)! : notDeleted;
+    const baseWhere = this.contractsListBaseWhere(partnerFilter, options);
 
     if (preview) {
       let query: any = this.db.db
@@ -134,7 +145,31 @@ export class ContractsService {
           ilike(refContractStates.name, '%чернов%'),
         ),
       );
-    return rows.map((r) => r.id).filter(Boolean) as string[];
+    return rows.map(row => row.id).filter(Boolean) as string[];
+  }
+
+  /** ID состояний «подписан» (как на фронте isContractSignedState). */
+  private async getSignedStateIds(): Promise<string[]> {
+    const rows = await this.db.db
+      .select({ id: refContractStates.id })
+      .from(refContractStates)
+      .where(
+        or(sql`lower(${refContractStates.code}) = 'signed'`, ilike(refContractStates.name, '%подписан%')),
+      );
+    return rows.map(row => row.id).filter(Boolean) as string[];
+  }
+
+  private async resolveIsActiveFromStateId(stateId: string | null): Promise<boolean> {
+    if (!stateId) return false;
+    const signedIds = await this.getSignedStateIds();
+    return signedIds.includes(stateId);
+  }
+
+  /** Совпадает с фильтром вкладки «Черновики» в списке договоров. */
+  private async rowHasDraftState(stateId: string | null): Promise<boolean> {
+    if (!stateId) return false;
+    const draftIds = await this.getDraftStateIds();
+    return draftIds.includes(stateId);
   }
 
   private contractListTabCondition(tab: ContractListTab, draftIds: string[]): SQL | undefined {
@@ -198,7 +233,7 @@ export class ContractsService {
 
   async create(data: Record<string, unknown>) {
     this.logger.debug('Создание договора');
-    const map: Record<string, string> = {
+    const requestFieldToColumn: Record<string, string> = {
       number: 'number',
       cipher: 'cipher',
       name: 'name',
@@ -216,12 +251,48 @@ export class ContractsService {
       end_date: 'endDate',
       date_signed: 'dateSigned',
       state_id: 'stateId',
-      is_active: 'isActive',
     };
+    const emptyMeansNull = new Set([
+      'number',
+      'cipher',
+      'name',
+      'description',
+      'partnerId',
+      'projectId',
+      'responsibleId',
+      'categoryId',
+      'contractTypeId',
+      'amountExclVat',
+      'vatRate',
+      'amountVat',
+      'amountInclVat',
+      'startDate',
+      'endDate',
+      'dateSigned',
+    ]);
     const insertData: Record<string, unknown> = {};
-    for (const [snake, camel] of Object.entries(map)) {
-      if (data[snake] !== undefined) insertData[camel] = data[snake];
+    for (const [requestKey, columnKey] of Object.entries(requestFieldToColumn)) {
+      let rawValue = data[requestKey];
+      if (rawValue === undefined) continue;
+      if (rawValue === '' || rawValue === null) {
+        if (columnKey === 'stateId') continue;
+        if (emptyMeansNull.has(columnKey)) insertData[columnKey] = null;
+        continue;
+      }
+      insertData[columnKey] = rawValue;
     }
+    let stateId = insertData.stateId;
+    if (stateId == null || stateId === '') {
+      const draftIds = await this.getDraftStateIds();
+      stateId = draftIds[0];
+    }
+    if (!stateId) {
+      throw new BadRequestException(
+        'Не задано состояние договора и в справочнике не найдено состояние с кодом draft (черновик)',
+      );
+    }
+    insertData.stateId = stateId;
+    insertData.isActive = await this.resolveIsActiveFromStateId(String(stateId));
     const [row] = await this.db.db.insert(contracts).values(insertData as any).returning();
     this.invalidateListCache();
     return row ? this.toResponse(row) : null;
@@ -240,15 +311,17 @@ export class ContractsService {
     );
 
     if (forReference) {
-      const key = this.cacheKeyAll(!!preview);
+      const key = `contracts:for_reference:signed:${preview ? '1' : '0'}`;
       const cached = this.getValidCache(key);
       if (cached) return { data: cached.data, total: cached.total };
-      const rows = await this.getContractsRows(!!preview);
+      const rows = await this.getContractsRows(!!preview, undefined, undefined, {
+        referenceSignedContractsOnly: true,
+      });
       const result = {
         data: this.mapContractsRows(rows, !!preview),
         total: rows.length,
       };
-      this.setListCache(this.cacheKeyAll(!!preview), result);
+      this.setListCache(key, result);
       return result;
     }
 
@@ -367,7 +440,15 @@ export class ContractsService {
 
   async update(id: string, data: Record<string, unknown>) {
     this.logger.debug(`Обновление договора id: ${id}`);
-    const map: Record<string, string> = {
+    const existingContractRows = await this.db.db
+      .select({ stateId: contracts.stateId })
+      .from(contracts)
+      .where(eq(contracts.id, id))
+      .limit(1);
+    const existingContract = existingContractRows[0];
+    if (!existingContract) return null;
+
+    const requestFieldToColumn: Record<string, string> = {
       number: 'number',
       cipher: 'cipher',
       name: 'name',
@@ -385,27 +466,60 @@ export class ContractsService {
       end_date: 'endDate',
       date_signed: 'dateSigned',
       state_id: 'stateId',
-      is_active: 'isActive',
     };
-    const updateObj: Record<string, unknown> = { updatedAt: new Date() };
-    for (const [snake, camel] of Object.entries(map)) {
-      if (data[snake] !== undefined) updateObj[camel] = data[snake];
+    const updatePayload: Record<string, unknown> = { updatedAt: new Date() };
+    for (const [requestKey, columnKey] of Object.entries(requestFieldToColumn)) {
+      if (data[requestKey] !== undefined) updatePayload[columnKey] = data[requestKey];
     }
-    await this.db.db.update(contracts).set(updateObj).where(eq(contracts.id, id));
+
+    const stateIdSentInRequest = data.state_id;
+    const hasNewStateIdInRequest =
+      stateIdSentInRequest !== undefined && stateIdSentInRequest !== null && stateIdSentInRequest !== '';
+    const resolvedStateIdForActiveFlag = hasNewStateIdInRequest
+      ? String(stateIdSentInRequest)
+      : existingContract.stateId != null
+        ? String(existingContract.stateId)
+        : null;
+
+    updatePayload.isActive = await this.resolveIsActiveFromStateId(resolvedStateIdForActiveFlag);
+    await this.db.db.update(contracts).set(updatePayload).where(eq(contracts.id, id));
     this.invalidateListCache();
     return this.findOne(id);
   }
 
-  async remove(id: string) {
+  /**
+   * Черновик — физическое удаление строки.
+   * Любой другой статус — мягкое удаление (is_deleted).
+   */
+  async remove(
+    id: string,
+  ): Promise<{ deletion_mode: 'soft'; contract: unknown } | { deletion_mode: 'hard'; id: string } | null> {
+    const contractRows = await this.db.db.select().from(contracts).where(eq(contracts.id, id)).limit(1);
+    const contractRow = contractRows[0];
+    if (!contractRow) return null;
+
+    const isDraftContract = await this.rowHasDraftState(contractRow.stateId);
+    if (isDraftContract) {
+      this.logger.debug(`Жёсткое удаление черновика договора id: ${id}`);
+      // РИД с patent.contract_id на этот договор: снять ссылку до физического удаления строки договора.
+      await this.db.db
+        .update(patents)
+        .set({ contractId: null, updatedAt: new Date() })
+        .where(eq(patents.contractId, id));
+      await this.db.db.delete(contracts).where(eq(contracts.id, id));
+      this.invalidateListCache();
+      return { deletion_mode: 'hard', id: String(contractRow.id) };
+    }
+
     this.logger.debug(`Мягкое удаление договора id: ${id}`);
-    const row = await this.findOne(id);
-    if (!row) return null;
     await this.db.db
       .update(contracts)
       .set({ isDeleted: true, updatedAt: new Date() })
       .where(eq(contracts.id, id));
     this.invalidateListCache();
-    return this.findOne(id);
+    const contractAfterSoftDelete = await this.findOne(id);
+    if (!contractAfterSoftDelete) return null;
+    return { deletion_mode: 'soft', contract: contractAfterSoftDelete };
   }
 
   async restore(id: string) {
@@ -427,10 +541,10 @@ export class ContractsService {
       cipher: row.cipher ?? '',
       name: row.name ?? '',
       description: row.description ?? '',
-      partner_id: String(row.partnerId),
+      partner_id: row.partnerId ? String(row.partnerId) : '',
       project_id: row.projectId ? String(row.projectId) : '',
       responsible_id: row.responsibleId ? String(row.responsibleId) : '',
-      category_id: String(row.categoryId),
+      category_id: row.categoryId ? String(row.categoryId) : '',
       contract_type_id: row.contractTypeId ? String(row.contractTypeId) : '',
       amount_excl_vat: parseFloat(String(row.amountExclVat ?? 0)),
       vat_rate: parseFloat(String(row.vatRate ?? 0)),

@@ -1,7 +1,9 @@
-import { Form, Input, Select, Row, Col, Divider, DatePicker } from 'antd';
-import { FileTextOutlined, NumberOutlined, CalendarOutlined, CopyrightOutlined } from '@ant-design/icons';
+import { CalendarOutlined, CopyrightOutlined, FileTextOutlined, NumberOutlined } from '@ant-design/icons';
+import { Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+
 import { Reference } from '../../../types/referenceTypes';
 import styles from './PatentGrantFormPage.module.scss';
+
 const { Option } = Select;
 const { TextArea } = Input;
 interface PatentGrantFormFieldsProps {

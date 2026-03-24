@@ -1,5 +1,5 @@
-import type { PatentAdvancedFilters, PatentFilterTab } from '../PatentsListPage.types';
-import { DEFAULT_PATENT_FILTERS } from '../PatentsListPage.types';
+import { DEFAULT_PATENT_FILTERS, type PatentAdvancedFilters, type PatentFilterTab } from '../PatentsListPage.types';
+
 const TABS: PatentFilterTab[] = ['all', 'active', 'deleted'];
 function isPatentTab(candidate: unknown): candidate is PatentFilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);

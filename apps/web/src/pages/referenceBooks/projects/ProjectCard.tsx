@@ -1,8 +1,10 @@
-import { Tag } from 'antd';
 import { CalendarOutlined, RightOutlined, UserOutlined } from '@ant-design/icons';
+import { Tag } from 'antd';
+
 import { Project } from '../../../types/referenceTypes';
-import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 import styles from './ProjectsListPage.module.scss';
+import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
+
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }

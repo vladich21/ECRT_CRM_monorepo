@@ -1,24 +1,26 @@
-import { useMemo, useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Input, Pagination, Spin } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { useProjectsList } from '../../../api/projects/projectApiHooks';
-import type { ProjectsListParams } from '../../../api/projects/projectApi';
+import { Button, Input, Pagination, Spin } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
-import { getNameById } from '../../../helpers/getNameById';
-import { NotFound } from '../../../components/notFound/NotFound';
+import type { ProjectsListParams } from '../../../api/projects/projectApi';
+import { useProjectsList } from '../../../api/projects/projectApiHooks';
 import { BackButton } from '../../../components/backButton/BackButton';
+import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
+import { getNameById } from '../../../helpers/getNameById';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
+import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import type { Project } from '../../../types/referenceTypes';
 import { useProjectListFilters } from './hooks/useProjectListFilters';
 import { ProjectCard } from './ProjectCard';
 import { ProjectFiltersModal } from './ProjectFiltersModal';
-import { PROJECT_FILTER_TABS, type ProjectFilterTab } from './ProjectsListPage.types';
-import type { Project } from '../../../types/referenceTypes';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
-import { buildProjectsListNavSnapshot, parseProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
 import styles from './ProjectsListPage.module.scss';
+import { PROJECT_FILTER_TABS, type ProjectFilterTab } from './ProjectsListPage.types';
+import { buildProjectsListNavSnapshot, parseProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
+
 const SEARCH_DEBOUNCE_MS = 350;
 const EMPTY_TAB_COUNTS: Record<ProjectFilterTab, number> = {
   all: 0,

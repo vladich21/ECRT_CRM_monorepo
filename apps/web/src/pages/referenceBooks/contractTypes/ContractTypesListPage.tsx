@@ -1,20 +1,22 @@
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ContractType } from '../../../types/contract';
 import { useEffect, useState } from 'react';
-import { useNotification } from '../../../customhooks/useNotification';
-import { useModalStore } from '../../../store/ModalStore';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+
 import {
+  useContractTypes,
   useCreateContractType,
   useDeleteContractType,
-  useContractTypes,
   useUpdateContractType,
 } from '../../../api/contracts/contractTypeApiHooks';
-import { getNameById } from '../../../helpers/getNameById';
+import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useMutateByModal } from '../../../customhooks/useMutateByModal';
+import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
+import { getNameById } from '../../../helpers/getNameById';
+import { useModalStore } from '../../../store/ModalStore';
+import { ContractType } from '../../../types/contract';
+
 type ActionType = 'edit' | 'delete' | 'add' | '';
 const ContractTypesListPage: React.FC = () => {
   const { contextHolder, showNotification } = useNotification();

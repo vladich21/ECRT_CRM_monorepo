@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { Contract } from '../../../types/contract';
 import dayjs from 'dayjs';
+
+import { Contract } from '../../../types/contract';
 
 export const useFilteredContracts = (contracts: Contract[], filters: Record<string, any>) => {
   const filteredContracts = useMemo(() => {

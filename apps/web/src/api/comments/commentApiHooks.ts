@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { commentApi } from './commentApi';
+
 import { Comment } from '../../types/comments';
+import { commentApi } from './commentApi';
 
 export const useComments = (entity_type: string, entityId?: string): UseQueryResult<Comment[], Error> => {
   return useQuery<Comment[], Error>({

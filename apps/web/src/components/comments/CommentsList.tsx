@@ -1,22 +1,23 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { message } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MessageOutlined } from '@ant-design/icons';
-import CommentInput from './CommentInput/CommentInput';
-import CommentComponent from './Comment';
+import { useQueryClient } from '@tanstack/react-query';
+import { message } from 'antd';
 import { useParams } from 'react-router-dom';
+
 import { useComments, useCreateComment, useUpdateComment } from '../../api/comments/commentApiHooks';
-import { useCurrentSrmUserId } from '../../hooks/useCurrentSrmUserId';
-import { Loader } from '../loader/Loader';
-import { NotFound } from '../notFound/NotFound';
+import { fileApi } from '../../api/files/fileApi';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useNotification } from '../../customhooks/useNotification';
-import { Comment } from '../../types/comments';
-import { fileApi } from '../../api/files/fileApi';
-import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentSrmUserId } from '../../hooks/useCurrentSrmUserId';
 import { useAuthStore } from '../../store/AuthStore';
 import { useModalStore } from '../../store/ModalStore';
+import { Comment } from '../../types/comments';
 import { buildCommentTree } from '../../utils/buildCommentTree';
 import { getCommentAuthorName } from '../../utils/getCommentAuthorName';
+import { Loader } from '../loader/Loader';
+import { NotFound } from '../notFound/NotFound';
+import CommentComponent from './Comment';
+import CommentInput from './CommentInput/CommentInput';
 import styles from './CommentsList.module.scss';
 
 interface CommentsListProps {

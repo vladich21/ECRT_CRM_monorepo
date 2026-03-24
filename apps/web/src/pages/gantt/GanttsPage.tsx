@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Divider, Spin, Tabs } from 'antd';
+
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { NotFound } from '../../components/notFound/NotFound';
-import { GanttField } from './GanttField';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
+import { GanttField } from './GanttField';
 import styles from './GanttsPage.module.scss';
+
 export interface CounterType {
   active?: number;
   deleted?: number;

@@ -1,5 +1,5 @@
-import { Comment } from '../types/comments';
 import { useAuthStore } from '../store/AuthStore';
+import { Comment } from '../types/comments';
 import { getCommentAuthorName } from '../utils/getCommentAuthorName';
 
 interface User {

@@ -1,5 +1,6 @@
-import type { TablePaginationConfig } from 'antd/es/table';
 import { useCallback, useState } from 'react';
+import type { TablePaginationConfig } from 'antd/es/table';
+
 const DEFAULT_PAGE_SIZE = 50;
 const DEFAULT_PAGE_SIZE_OPTIONS = ['20', '50', '100'];
 export interface UseServerTablePaginationOptions {

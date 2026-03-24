@@ -1,8 +1,9 @@
 import { Button, DatePicker, Modal, Select } from 'antd';
 import type { Dayjs } from 'dayjs';
-import type { ProjectAdvancedFilters } from './ProjectsListPage.types';
-import { END_DATE_PRESENCE_OPTIONS } from './ProjectsListPage.types';
+
 import styles from './ProjectsListPage.module.scss';
+import { END_DATE_PRESENCE_OPTIONS, type ProjectAdvancedFilters } from './ProjectsListPage.types';
+
 type SelectOption = {
   label: string;
   value: string;

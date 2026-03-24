@@ -1,6 +1,7 @@
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
-import type { ProjectAdvancedFilters, ProjectFilterTab, ProjectEndDatePresenceFilter } from '../ProjectsListPage.types';
+import dayjs, { type Dayjs } from 'dayjs';
+
+import type { ProjectAdvancedFilters, ProjectEndDatePresenceFilter, ProjectFilterTab } from '../ProjectsListPage.types';
+
 const TABS: ProjectFilterTab[] = ['all', 'active', 'completed', 'pending', 'paused', 'cancelled', 'deleted'];
 function isProjectTab(candidate: unknown): candidate is ProjectFilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);

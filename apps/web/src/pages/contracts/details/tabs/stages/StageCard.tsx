@@ -1,26 +1,28 @@
 import React from 'react';
-import { Card, Tag, Button, Row, Col, Typography, Popconfirm } from 'antd';
 import {
-  UpOutlined,
-  DownOutlined,
-  EditOutlined,
-  DeleteOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  EditOutlined,
   ExclamationCircleOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
+import { Button, Card, Col, Popconfirm, Row, Tag, Typography } from 'antd';
+
 import { ContractStage } from '../../../../../types/contract';
-import {
-  getStageStatus,
-  getStageStatusDisplay,
-  calculateDaysUntilDeadline,
-  calculateBudgetDeviation,
-  getDeadlineCountdownTone,
-  getDeadlineCountdownTagStyle,
-  pluralDaysRu,
-} from './utils/stageHelpers';
 import styles from '../../ContractDetails.module.scss';
 import { StageInfoItem } from './StageInfoItem';
+import {
+  calculateBudgetDeviation,
+  calculateDaysUntilDeadline,
+  getDeadlineCountdownTagStyle,
+  getDeadlineCountdownTone,
+  getStageStatus,
+  getStageStatusDisplay,
+  pluralDaysRu,
+} from './utils/stageHelpers';
+
 const { Text } = Typography;
 const iconComponents = {
   CheckCircleOutlined,

@@ -1,19 +1,19 @@
-import { Button } from 'antd';
-
-import { useNotification } from '../../customhooks/useNotification';
-import { useDeleteFile, useFilesByEntity, useUploadFiles } from '../../api/files/fileApiHooks';
 import { useEffect, useState } from 'react';
-import { useModalStore } from '../../store/ModalStore';
+import { Button } from 'antd';
+import { useParams } from 'react-router-dom';
+
+import { useDeleteFile, useFilesByEntity, useUploadFiles } from '../../api/files/fileApiHooks';
+import { useReferenceData } from '../../api/hooks/useReferences';
+import { BackButton } from '../../components/backButton/BackButton';
+import BasicTable from '../../components/basicTable/BasicTable';
+import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useMutateByModal } from '../../customhooks/useMutateByModal';
+import { useNotification } from '../../customhooks/useNotification';
+import { useModalStore } from '../../store/ModalStore';
 import { MyFile } from '../../types/files';
-import BasicTable from '../../components/basicTable/BasicTable';
-import { getColumnsData } from './data';
-import { useParams } from 'react-router-dom';
-import { useReferenceData } from '../../api/hooks/useReferences';
 import NotFound from '../NotFound';
-import { BackButton } from '../../components/backButton/BackButton';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
+import { getColumnsData } from './data';
 import styles from './FilesListPage.module.scss';
 
 interface FilesListPageProps {

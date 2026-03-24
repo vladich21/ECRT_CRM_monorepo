@@ -1,7 +1,6 @@
+import { EMPTY_DELETION_TAB_COUNTS, type DeletionScope, type DeletionTabCounts } from '../../constants/deletionScope';
 import { Partner } from '../../types/partner';
 import { apiClient } from '../clients';
-import type { DeletionScope, DeletionTabCounts } from '../../constants/deletionScope';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../constants/deletionScope';
 
 export type PartnersTabCounts = {
   all: number;

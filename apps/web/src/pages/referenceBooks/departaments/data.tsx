@@ -1,6 +1,7 @@
 import { Tag } from 'antd';
-import { getNameById } from '../../../helpers/getNameById';
+
 import { ReferenceData } from '../../../api/hooks/useReferences';
+import { getNameById } from '../../../helpers/getNameById';
 
 // Начальные значения формы
 export const initialFormValues = {

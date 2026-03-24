@@ -1,13 +1,15 @@
-import { useNavigate } from 'react-router-dom';
-import { PartnerCompetence } from '../../../types/partner';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { useNotification } from '../../../customhooks/useNotification';
 import { useEffect, useState } from 'react';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useNavigate } from 'react-router-dom';
+
 import { useDeletePartnerCompetence, usePartnerCompetencies } from '../../../api/partners/partnerCompetenceApiHooks';
+import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useNotification } from '../../../customhooks/useNotification';
+import { PartnerCompetence } from '../../../types/partner';
+
 export default function PartnerCompetencesListPage() {
   const navigate = useNavigate();
   const { data: partnerCompetences = [], isLoading, isError } = usePartnerCompetencies();

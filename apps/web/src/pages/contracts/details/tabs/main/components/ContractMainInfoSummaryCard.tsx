@@ -1,8 +1,9 @@
-import { Button, Card, Collapse, Descriptions, Progress, Typography } from 'antd';
-import { UpOutlined, DownOutlined } from '@ant-design/icons';
-import type { DescriptionsProps } from 'antd';
+import { DownOutlined, UpOutlined } from '@ant-design/icons';
+import { Button, Card, Collapse, Descriptions, Progress, Typography, type DescriptionsProps } from 'antd';
+
 import type { Contract } from '../../../../../../types/contract';
 import tabStyles from '../ContractMainInfoTab.module.scss';
+
 const { Text } = Typography;
 type ContractMainInfoSummaryCardProps = {
   contract: Contract;

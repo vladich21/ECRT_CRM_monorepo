@@ -1,23 +1,24 @@
 import React, { useState } from 'react';
-import { Avatar, Button, Dropdown, Menu } from 'antd';
 import {
-  UserOutlined,
-  DownloadOutlined,
-  MoreOutlined,
-  MessageOutlined,
-  EditOutlined,
   DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  MessageOutlined,
+  MoreOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { triggerFileDownload } from '../filePreview/FilePreviewModal';
-import { Comment } from '../../types/comments';
+import { useQueryClient } from '@tanstack/react-query';
+import { Avatar, Button, Dropdown, Menu } from 'antd';
+
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
-import { useQueryClient } from '@tanstack/react-query';
 import { useCommentHelpers } from '../../hooks/useCommentHelpers';
-import { formatFileSize } from '../../utils/formatFileSize';
+import { Comment } from '../../types/comments';
 import { getRelativeTime } from '../../utils/formatDate';
+import { formatFileSize } from '../../utils/formatFileSize';
 import { scrollToElement } from '../../utils/scrollToElement';
+import { triggerFileDownload } from '../filePreview/FilePreviewModal';
 import styles from './Comment.module.scss';
 
 interface CommentProps {

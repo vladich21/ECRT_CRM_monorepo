@@ -1,7 +1,6 @@
+import { EMPTY_DELETION_TAB_COUNTS, type DeletionScope, type DeletionTabCounts } from '../../constants/deletionScope';
 import { Project } from '../../types/referenceTypes';
 import { apiClient } from '../clients';
-import type { DeletionScope, DeletionTabCounts } from '../../constants/deletionScope';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../constants/deletionScope';
 
 export type ProjectListTabParam = 'all' | 'active' | 'completed' | 'pending' | 'paused' | 'cancelled';
 

@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
-import type { PatentAdvancedFilters, PatentFilterTab } from '../PatentsListPage.types';
-import { DEFAULT_PATENT_FILTERS } from '../PatentsListPage.types';
+import { useCallback, useMemo, useState } from 'react';
+
 import { countActivePatentFilters } from '../filters/patentListFilters';
+import { DEFAULT_PATENT_FILTERS, type PatentAdvancedFilters, type PatentFilterTab } from '../PatentsListPage.types';
+
 export function usePatentListFilters() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<PatentFilterTab>('all');

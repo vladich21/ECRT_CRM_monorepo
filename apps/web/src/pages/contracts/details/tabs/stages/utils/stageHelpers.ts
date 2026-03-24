@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
+
 import { ContractStage } from '../../../../../../types/contract';
+
 export type StageComputedStatus = 'planned' | 'in_progress' | 'completed' | 'overdue';
 export function getStageStatusFromDates(stage: ContractStage): {
   status: StageComputedStatus;

@@ -1,4 +1,5 @@
 import { ColumnType } from 'antd/es/table';
+
 import { ContractType } from '../../../types/contract';
 
 export const columns: ColumnType<ContractType>[] = [

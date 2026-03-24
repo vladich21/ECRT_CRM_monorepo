@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
+import { CloudDownloadOutlined, SaveOutlined } from '@ant-design/icons';
+import { Button, Form } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { Form, Button } from 'antd';
-import { SaveOutlined, CloudDownloadOutlined } from '@ant-design/icons';
+
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { useNotification } from '../../customhooks/useNotification';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import { useCreatePartner, usePartnerByInn } from '../../api/partners/partnerApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import { useCreatePartner, usePartnerByInn } from '../../api/partners/partnerApiHooks';
-import { initialFormValues } from './data';
+import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../customhooks/useNotification';
 import { partnerUploadFormMapper } from '../../helpers/mappers/partnerUploadFormMapper';
+import { initialFormValues } from './data';
 import { PartnerFormFields } from './PartnerFormFields';
 import styles from './PartnerFormPage.module.scss';
+
 export default function PartnerCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();

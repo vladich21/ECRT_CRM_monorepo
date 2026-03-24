@@ -1,18 +1,20 @@
-import { Form, Input, Select, Switch, Space, Row, Col, Divider, Tag, Tooltip, Button } from 'antd';
 import {
-  PhoneOutlined,
-  MailOutlined,
+  BankOutlined,
+  CloudDownloadOutlined,
+  EnvironmentOutlined,
+  ExceptionOutlined,
+  ExperimentOutlined,
   GlobalOutlined,
   IdcardOutlined,
+  MailOutlined,
+  PhoneOutlined,
   SafetyCertificateOutlined,
-  BankOutlined,
-  ExperimentOutlined,
-  EnvironmentOutlined,
-  CloudDownloadOutlined,
-  ExceptionOutlined,
 } from '@ant-design/icons';
+import { Button, Col, Divider, Form, Input, Row, Select, Space, Switch, Tag, Tooltip } from 'antd';
+
 import { PartnerCompetence } from '../../types/partner';
 import styles from './PartnerFormPage.module.scss';
+
 const { Option } = Select;
 const { TextArea } = Input;
 interface PartnerFormFieldsProps {

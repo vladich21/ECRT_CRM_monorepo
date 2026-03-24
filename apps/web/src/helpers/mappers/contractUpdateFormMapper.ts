@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+
 import { Contract } from '../../types/contract';
 
 export const contractUpdateFormMapper = (contractData: Contract) => {
@@ -19,7 +20,6 @@ export const contractUpdateFormMapper = (contractData: Contract) => {
     contract_type_id: contractData.contract_type_id || null,
     responsible_id: contractData.responsible_id || null,
     project_id: contractData.project_id || null,
-    is_active: contractData.is_active ?? true,
     state_id: contractData.state_id || null,
   };
   return values;

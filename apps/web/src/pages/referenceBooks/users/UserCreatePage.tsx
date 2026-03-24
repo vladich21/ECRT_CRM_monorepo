@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Form, Button } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
+import { Button, Form } from 'antd';
+import { useNavigate } from 'react-router-dom';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useCreateUser } from '../../../api/users/userApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
 import { initialFormValues } from './data';
 import { UserFormFields } from './UserFormFields';
 import styles from './UserFormPage.module.scss';
+
 export default function UserCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();

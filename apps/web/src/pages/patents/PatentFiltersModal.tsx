@@ -1,6 +1,8 @@
 import { Button, Modal, Select } from 'antd';
-import type { PatentAdvancedFilters } from './PatentsListPage.types';
+
 import styles from './PatentsListPage.module.scss';
+import type { PatentAdvancedFilters } from './PatentsListPage.types';
+
 type SelectOption = {
   label: string;
   value: string;

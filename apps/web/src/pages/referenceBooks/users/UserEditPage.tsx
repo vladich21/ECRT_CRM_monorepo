@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Button } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
+import { Button, Form } from 'antd';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useUpdateUser, useUserById } from '../../../api/users/userApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
+import { Loader } from '../../../components/loader/Loader';
+import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
+import { getChangedFields } from '../../../helpers/getChangedFields';
 import { userUpdateFormMapper } from '../../../helpers/mappers/userUpdateFormMapper';
 import { UserFormFields } from './UserFormFields';
-import { Loader } from '../../../components/loader/Loader';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { NotFound } from '../../../components/notFound/NotFound';
 import styles from './UserFormPage.module.scss';
+
 export default function UserEditPage() {
   const params = useParams();
   const userId = params?.userId as string | undefined;

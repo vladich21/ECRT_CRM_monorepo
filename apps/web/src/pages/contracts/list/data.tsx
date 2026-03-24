@@ -1,10 +1,12 @@
-import { ColumnType } from 'antd/es/table';
-import { Contract } from '../../../types/contract';
 import { Tag } from 'antd';
+import { ColumnType } from 'antd/es/table';
+
 import { ReferenceData } from '../../../api/hooks/useReferences';
+import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
 import { getTagColorByData } from '../../../helpers/getTagColorByData';
-import { getEntityById } from '../../../helpers/getEntityById';
+import { Contract } from '../../../types/contract';
+
 export const initialFormValues = {
   number: '',
   cipher: '',
@@ -13,14 +15,13 @@ export const initialFormValues = {
   description: '',
   start_date: null,
   end_date: null,
-  amount_excl_vat: 0,
-  vat_rate: 0,
-  amount_vat: 0,
-  amount_incl_vat: 0,
+  amount_excl_vat: null,
+  vat_rate: null,
+  amount_vat: null,
+  amount_incl_vat: null,
   category_id: null,
   responsible_id: null,
   project_id: null,
-  is_active: true,
   state_id: null,
 };
 export const getColumnsData = (
@@ -45,7 +46,7 @@ export const getColumnsData = (
     dataIndex: 'date_signed',
     key: 'date_signed',
     width: 120,
-    render: (date: string) => new Date(date).toLocaleDateString('ru-RU'),
+    render: (date: string) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
   },
   {
     title: 'Партнёр',

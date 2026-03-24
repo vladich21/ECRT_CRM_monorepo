@@ -1,7 +1,9 @@
-import { Button } from 'antd';
 import { DeleteOutlined, EditOutlined, IdcardOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+
 import type { Position } from '../../../types/referenceTypes';
 import styles from './PositionsListPage.module.scss';
+
 type Props = {
   position: Position;
   onEdit: (position: Position) => void;

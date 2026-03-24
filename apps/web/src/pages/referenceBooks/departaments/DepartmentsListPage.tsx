@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+
 import { useDepartments } from '../../../api/departments/departmentsApiHooks';
-import { getColumnsData } from './data';
-import BasicTable from '../../../components/basicTable/BasicTable';
-import { Department } from '../../../types/referenceTypes';
 import { useReferenceData } from '../../../api/hooks/useReferences';
+import BasicTable from '../../../components/basicTable/BasicTable';
 import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
+import { Department } from '../../../types/referenceTypes';
+import { getColumnsData } from './data';
 
 export default function DepartmentsListPage() {
   const navigate = useNavigate();

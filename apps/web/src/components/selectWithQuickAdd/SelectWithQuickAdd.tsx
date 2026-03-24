@@ -1,7 +1,8 @@
 import React from 'react';
-import { Select, SelectProps } from 'antd';
 import { GlobalOutlined, PlusOutlined } from '@ant-design/icons';
+import { Select, SelectProps } from 'antd';
 import { Option } from 'antd/es/mentions';
+
 import { Reference } from '../../types/referenceTypes';
 import styles from './SelectWithQuickAdd.module.scss';
 

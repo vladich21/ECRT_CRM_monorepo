@@ -1,4 +1,5 @@
 import { Space, Typography } from 'antd';
+
 import { getNameById } from '../helpers/getNameById';
 import { Reference } from '../types/referenceTypes';
 

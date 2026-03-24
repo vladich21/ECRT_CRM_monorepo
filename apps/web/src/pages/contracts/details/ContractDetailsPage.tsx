@@ -1,21 +1,23 @@
-import { useLocation, useNavigate, Outlet, useParams } from 'react-router-dom';
-import { Button } from 'antd';
 import { DeleteOutlined, EditOutlined, UndoOutlined } from '@ant-design/icons';
-import { useDeleteContract, useRestoreContract, useContractById } from '../../../api/contracts/contractApiHooks';
+import { Button } from 'antd';
+import { useLayoutEffect } from 'react';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+
+import { useContractById, useDeleteContract, useRestoreContract } from '../../../api/contracts/contractApiHooks';
+import { useContractStages } from '../../../api/contractStages/contractStagesApiHooks';
+import { useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import type { DeletionScope } from '../../../constants/deletionScope';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
-import { ContractDetailsAside } from './tabs/main/ContractDetailsAside';
-import styles from './ContractDetails.module.scss';
-import { isContractDraft, getContractStateTagClass } from '../utils/contractStateUtils';
-import { useFilesByEntity } from '../../../api/files/fileApiHooks';
-import { formatDate } from './tabs/stages/data';
+import { CONTRACTS_REGISTRY_PATH, getContractEditPath } from '../constants/routes';
+import tagStyles from '../list/ContractsListPage.module.scss';
+import type { FilterTab } from '../list/ContractsListPage.types';
 import {
   CONTRACT_DETAILS_TABS,
   getActiveContractDetailsTab,
@@ -24,17 +26,21 @@ import {
   shouldShowDeadlineBanner,
   type ContractDetailsTabKey,
 } from '../utils/contractDetailsUtils';
-import tagStyles from '../list/ContractsListPage.module.scss';
-import { useContractStages } from '../../../api/contractStages/contractStagesApiHooks';
-import { DEMO_ADDITIONAL_AGREEMENTS } from './tabs/additionalAgreements/ContractAdditionalAgreementsTab';
-import { CONTRACTS_REGISTRY_PATH, getContractEditPath } from '../constants/routes';
-import type { FilterTab } from '../list/ContractsListPage.types';
-import type { DeletionScope } from '../../../constants/deletionScope';
+import type { ContractDeleteResult } from '../../../api/contracts/contractApi';
 import type { ContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
+import { getContractStateTagClass } from '../utils/contractStateUtils';
+import styles from './ContractDetails.module.scss';
+import { DEMO_ADDITIONAL_AGREEMENTS } from './tabs/additionalAgreements/ContractAdditionalAgreementsTab';
+import { ContractDetailsAside } from './tabs/main/ContractDetailsAside';
+import { formatDate } from './tabs/stages/data';
+
 export default function ContractDetailsPage() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [contractId]);
   const { contextHolder, showNotification } = useNotification();
   const navState = location.state as {
     from?: string;
@@ -70,15 +76,21 @@ export default function ContractDetailsPage() {
   const { data: stagesData } = useContractStages(contractId ?? '');
   const deleteContractMutation = useDeleteContract();
   const restoreContractMutation = useRestoreContract();
-  const { handleOpenModal } = useConfirmByModal({
+  const { handleOpenModal } = useConfirmByModal<ContractDeleteResult>({
     mutation: deleteContractMutation,
-    successMessage: 'Договор успешно удалён',
+    successMessage: (data: ContractDeleteResult) =>
+      data.deletion_mode === 'hard'
+        ? 'Черновик удалён безвозвратно'
+        : 'Договор перемещён в удалённые',
     errorMessage: 'Не удалось удалить договор',
     getMutationProps: () => contractId!,
     showNotification,
     redirectPath: CONTRACTS_REGISTRY_PATH,
     redirectReplace: true,
-    redirectState: { deletionScope: 'deleted' as const },
+    redirectState: (data: ContractDeleteResult) =>
+      data.deletion_mode === 'hard'
+        ? { deletionScope: 'active' as const }
+        : { deletionScope: 'deleted' as const },
   });
   const { handleOpenModal: openRestoreModal } = useConfirmByModal({
     mutation: restoreContractMutation,
@@ -102,10 +114,6 @@ export default function ContractDetailsPage() {
     navigate(getContractEditPath(contractId!), { state: { from } });
   };
   const handleDelete = () => {
-    if (isContractDraft(contract?.state_id, referenceBooks?.contractStates)) {
-      showNotification('error', 'Ошибка', 'Черновики удалять нельзя');
-      return;
-    }
     handleOpenModal();
   };
   const handleTabChange = (tabKey: string) => {

@@ -1,4 +1,5 @@
 import { ColumnType } from 'antd/es/table';
+
 import { PatentGrant } from '../../../types/patent';
 
 export const columns: ColumnType<PatentGrant>[] = [

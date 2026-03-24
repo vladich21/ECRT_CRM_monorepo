@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { departmentApi } from './departmentApi';
+
 import { Department } from '../../types/referenceTypes';
+import { departmentApi } from './departmentApi';
 
 export const useDepartments = (preview?: number): UseQueryResult<Department[], Error> => {
   return useQuery<Department[], Error>({

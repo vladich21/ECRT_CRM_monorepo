@@ -1,22 +1,24 @@
-import { useMemo, useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Input, Pagination, Spin } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Input, Pagination, Spin } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePatentsList, type PatentsDeletedScope } from '../../api/patents/patentApiHooks';
-import { NotFound } from '../../components/notFound/NotFound';
 import { BackButton } from '../../components/backButton/BackButton';
+import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
+import { useServerTablePagination } from '../../hooks/useServerTablePagination';
+import type { Patent } from '../../types/patent';
+import type { ReferenceDataForPatents } from './data';
 import { usePatentListFilters } from './hooks/usePatentListFilters';
 import { PatentCard } from './PatentCard';
 import { PatentFiltersModal } from './PatentFiltersModal';
-import { PATENT_FILTER_TABS, type PatentFilterTab } from './PatentsListPage.types';
-import type { ReferenceDataForPatents } from './data';
-import type { Patent } from '../../types/patent';
-import { buildPatentsListNavSnapshot, parsePatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
 import styles from './PatentsListPage.module.scss';
+import { PATENT_FILTER_TABS, type PatentFilterTab } from './PatentsListPage.types';
+import { buildPatentsListNavSnapshot, parsePatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
+
 const SEARCH_DEBOUNCE_MS = 350;
 function tabToDeletedScope(tab: PatentFilterTab): PatentsDeletedScope {
   if (tab === 'deleted') return 'deleted';

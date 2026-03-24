@@ -1,7 +1,8 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
+
+import { isValidUuid } from '../../helpers/isValidUuid';
 import { Partner } from '../../types/partner';
 import { partnerApi, PartnerListParams, PartnersListResponse } from './partnerApi';
-import { isValidUuid } from '../../helpers/isValidUuid';
 
 export function usePartners(
   filters?: PartnerListParams,

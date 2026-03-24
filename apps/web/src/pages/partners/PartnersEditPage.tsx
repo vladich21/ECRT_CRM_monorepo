@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
+import { BankOutlined, CloseOutlined, CloudDownloadOutlined, SaveOutlined } from '@ant-design/icons';
+import { Button, Form, Input } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button } from 'antd';
-import { CloseOutlined, SaveOutlined, BankOutlined, CloudDownloadOutlined } from '@ant-design/icons';
+
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { useNotification } from '../../customhooks/useNotification';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
-import { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
-import { Loader } from '../../components/loader/Loader';
-import { getChangedFields } from '../../helpers/getChangedFields';
 import { usePartnerById, usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
+import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../customhooks/useNotification';
+import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper } from '../../helpers/mappers/partnerUploadFormMapper';
 import { PartnerFormFields } from './PartnerFormFields';
 import styles from './PartnerFormPage.module.scss';
+
 export default function PartnerEditPage() {
   const { partnerId } = useParams();
   const navigate = useNavigate();

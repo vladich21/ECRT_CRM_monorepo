@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+
 import { Patent } from '../../types/patent';
 import { getEntityById } from '../getEntityById';
 

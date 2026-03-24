@@ -1,11 +1,13 @@
 import React from 'react';
-import { Typography, Tag } from 'antd';
 import { CalendarOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
-import { ContractStage } from '../../../../../types/contract';
+import { Tag, Typography } from 'antd';
+
 import { getNameById } from '../../../../../helpers/getNameById';
-import { formatDate } from './data';
-import { getDeadlineCountdownTone, getDeadlineCountdownTagStyle, pluralDaysRu } from './utils/stageHelpers';
+import { ContractStage } from '../../../../../types/contract';
 import styles from '../../ContractDetails.module.scss';
+import { formatDate } from './data';
+import { getDeadlineCountdownTagStyle, getDeadlineCountdownTone, pluralDaysRu } from './utils/stageHelpers';
+
 const { Text } = Typography;
 interface StageInfoItemProps {
   type: 'dates' | 'budget' | 'responsible';

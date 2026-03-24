@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
-import type { ProjectAdvancedFilters, ProjectFilterTab } from '../ProjectsListPage.types';
-import { DEFAULT_PROJECT_FILTERS } from '../ProjectsListPage.types';
+import { useCallback, useMemo, useState } from 'react';
+
 import { countActiveProjectFilters } from '../filters/projectListFilters';
+import { DEFAULT_PROJECT_FILTERS, type ProjectAdvancedFilters, type ProjectFilterTab } from '../ProjectsListPage.types';
+
 export function useProjectListFilters() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ProjectFilterTab>('all');

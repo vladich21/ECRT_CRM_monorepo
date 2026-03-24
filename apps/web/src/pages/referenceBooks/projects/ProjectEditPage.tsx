@@ -1,25 +1,27 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Button, Select, DatePicker, Row, Col, Divider } from 'antd';
 import {
-  SaveOutlined,
-  ProjectOutlined,
   BarcodeOutlined,
   CalendarOutlined,
-  UserOutlined,
   EditOutlined,
+  ProjectOutlined,
+  SaveOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { useNotification } from '../../../customhooks/useNotification';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
-import { Loader } from '../../../components/loader/Loader';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { NotFound } from '../../../components/notFound/NotFound';
+import { Button, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import dayjs from 'dayjs';
-import { projectUpdateFormMapper } from '../../../helpers/mappers/projectUpdateFormMapper';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useProjectById, useUpdateProject } from '../../../api/projects/projectApiHooks';
-import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
+import { Loader } from '../../../components/loader/Loader';
+import { NotFound } from '../../../components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
+import { getChangedFields } from '../../../helpers/getChangedFields';
+import { projectUpdateFormMapper } from '../../../helpers/mappers/projectUpdateFormMapper';
 import styles from './ProjectFormPage.module.scss';
+import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
+
 const { Option } = Select;
 const { TextArea } = Input;
 export default function ProjectEditPage() {

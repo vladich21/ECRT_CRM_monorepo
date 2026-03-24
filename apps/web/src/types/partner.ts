@@ -1,4 +1,5 @@
 import { Reference } from './referenceTypes';
+
 export interface Partner {
   id: string;
   short_name: string;

@@ -1,12 +1,14 @@
+import { CalendarOutlined, CheckCircleOutlined, DollarOutlined, NumberOutlined } from '@ant-design/icons';
+import { Progress, Tag, Tooltip } from 'antd';
 import { ColumnType } from 'antd/es/table';
-import { ContractRevision, ContractStage } from '../../../../../types/contract';
-import { Tag, Progress, Tooltip } from 'antd';
+
 import { ReferenceData } from '../../../../../api/hooks/useReferences';
-import { CalendarOutlined, DollarOutlined, NumberOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { getTagColorByData } from '../../../../../helpers/getTagColorByData';
 import { getEntityById } from '../../../../../helpers/getEntityById';
 import { getNameById } from '../../../../../helpers/getNameById';
+import { getTagColorByData } from '../../../../../helpers/getTagColorByData';
+import { ContractRevision, ContractStage } from '../../../../../types/contract';
 import styles from './data.module.scss';
+
 export const getStageColumnsData = (
   references: Pick<ReferenceData, 'contractStageStates' | 'contracts'>,
 ): ColumnType<ContractStage>[] => [

@@ -1,18 +1,21 @@
 import {
-  FileTextOutlined,
   CalendarOutlined,
+  FileTextOutlined,
   NumberOutlined,
   SafetyCertificateOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { Loader } from '../../../components/loader/Loader';
+import { useOutletContext } from 'react-router-dom';
+
+import { useContractById } from '../../../api/contracts/contractApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
+import { Loader } from '../../../components/loader/Loader';
+import { NotFound } from '../../../components/notFound/NotFound';
+import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
 import { Patent } from '../../../types/patent';
-import { useOutletContext } from 'react-router-dom';
-import { getEntityById } from '../../../helpers/getEntityById';
 import styles from './PatentMainInfoTab.module.scss';
+
 function formatDate(dateString: string) {
   return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '—';
 }
@@ -38,6 +41,14 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
     'patentStatuses',
     'patentAreas',
   ]);
+  const incomeContractInPicker = (referenceBooks?.contracts ?? []).some(
+    row => row.id === patent.contract_id,
+  );
+  const fetchIncomeContractById =
+    Boolean(patent.contract_id && referenceBooks && !incomeContractInPicker);
+  const { data: incomeContractFetched } = useContractById(
+    fetchIncomeContractById ? patent.contract_id : '',
+  );
   if (isReferencesLoading) return <Loader />;
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не подгрузились справочники' />;
@@ -47,13 +58,15 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const deptName = getNameById(patent.department_id, referenceBooks?.departments);
   const projectName = getNameById(patent.project_id, referenceBooks?.projects);
   const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
-  const contract = referenceBooks.contracts?.find(el => el.id === patent.contract_id);
+  const incomeContract =
+    referenceBooks.contracts?.find(row => row.id === patent.contract_id) ??
+    (incomeContractFetched?.id === patent.contract_id ? incomeContractFetched : undefined);
   const authorNames = (patent.author_ids ?? [])
-    .map(id => referenceBooks?.users?.find(user => user.id === id)?.name)
-    .filter(Boolean) as string[];
+    .map(id => referenceBooks.users?.find(user => user.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
   const areaNames = (patent.area_ids ?? [])
-    .map(id => referenceBooks?.patentAreas?.find(area => area.id === id)?.name)
-    .filter(Boolean) as string[];
+    .map(id => referenceBooks.patentAreas?.find(area => area.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
   return (
     <div className={styles.layout}>
       <div className={styles.leftColumn}>
@@ -210,14 +223,14 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Договор (доходный)</span>
-              <span className={contract ? styles.infoValue : styles.infoValueMuted}>
-                {contract ? contract.number : 'Не указан'}
+              <span className={incomeContract ? styles.infoValue : styles.infoValueMuted}>
+                {incomeContract?.number ?? 'Не указан'}
               </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Шифр договора</span>
-              <span className={contract?.cipher ? styles.infoValue : styles.infoValueMuted}>
-                {contract?.cipher || 'Не указан'}
+              <span className={incomeContract?.cipher ? styles.infoValue : styles.infoValueMuted}>
+                {incomeContract?.cipher ?? 'Не указан'}
               </span>
             </div>
           </div>

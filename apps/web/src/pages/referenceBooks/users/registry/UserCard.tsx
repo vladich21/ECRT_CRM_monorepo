@@ -1,7 +1,9 @@
+import { MailOutlined, RightOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
-import { RightOutlined, MailOutlined } from '@ant-design/icons';
+
 import type { User } from '../../../types/user';
 import styles from './UserCard.module.scss';
+
 interface UserCardProps {
   user: User;
   onClick: (user: User) => void;

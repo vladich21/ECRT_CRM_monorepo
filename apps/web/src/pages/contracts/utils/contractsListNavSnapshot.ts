@@ -1,6 +1,7 @@
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
+
 import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types';
+
 const TABS: FilterTab[] = ['all', 'active', 'draft', 'inactive', 'deleted'];
 function isFilterTab(candidate: unknown): candidate is FilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);

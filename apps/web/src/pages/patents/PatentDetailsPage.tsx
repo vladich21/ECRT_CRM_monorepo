@@ -1,18 +1,20 @@
-import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { DeleteOutlined, EditOutlined, TeamOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import { DeleteOutlined, EditOutlined, UndoOutlined, TeamOutlined } from '@ant-design/icons';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+
+import { useReferenceData } from '../../api/hooks/useReferences';
 import { useDeletePatent, usePatentById, useRestorePatent } from '../../api/patents/patentApiHooks';
 import { usePatentGrants } from '../../api/patents/patentGrantsApiHooks';
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { NotFound } from '../../components/notFound/NotFound';
 import { Loader } from '../../components/loader/Loader';
+import { NotFound } from '../../components/notFound/NotFound';
 import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../customhooks/useNotification';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import { useNotification } from '../../customhooks/useNotification';
 import { getNameById } from '../../helpers/getNameById';
+import styles from './PatentDetails.module.scss';
 import type { ActionType } from './PatentsListPage';
 import type { PatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
-import styles from './PatentDetails.module.scss';
+
 type PatentTab = 'main' | 'files' | 'comments' | 'grants';
 function getActiveTabFromPath(pathname: string): PatentTab {
   if (pathname.includes('/files')) return 'files';

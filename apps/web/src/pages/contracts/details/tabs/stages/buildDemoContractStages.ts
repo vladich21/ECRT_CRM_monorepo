@@ -1,5 +1,6 @@
 import type { ContractStage } from '../../../../../types/contract';
 import { syncContractStageStateId } from './utils/stageHelpers';
+
 type StageStateRef = {
   id: string;
   code: string;

@@ -1,21 +1,22 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Select, Switch, Row, Col, Divider } from 'antd';
 import {
-  SaveOutlined,
-  TeamOutlined,
-  UserOutlined,
   ApartmentOutlined,
   IdcardOutlined,
   SafetyCertificateOutlined,
+  SaveOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
+import { Button, Col, Divider, Form, Input, Row, Select, Switch } from 'antd';
+import { useNavigate } from 'react-router-dom';
+
+import { useCreateDepartment } from '../../../api/departments/departmentsApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
-import { useNotification } from '../../../customhooks/useNotification';
 import { BackButton } from '../../../components/backButton/BackButton';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import { useCreateDepartment } from '../../../api/departments/departmentsApiHooks';
+import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
 import { initialFormValues } from './data';
 import styles from './DepartmentFormPage.module.scss';
 

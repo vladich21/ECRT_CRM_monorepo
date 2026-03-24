@@ -1,4 +1,5 @@
 import type { Dayjs } from 'dayjs';
+
 export type ProjectFilterTab = 'all' | 'active' | 'completed' | 'pending' | 'paused' | 'cancelled' | 'deleted';
 export type ProjectEndDatePresenceFilter = 'any' | 'set' | 'empty';
 export type ProjectAdvancedFilters = {

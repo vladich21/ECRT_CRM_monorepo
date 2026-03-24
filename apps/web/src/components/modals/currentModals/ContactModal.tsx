@@ -1,8 +1,9 @@
-import { Button, Form, FormInstance, Input, Switch, Space, Row, Col } from 'antd';
-import { BaseModal, BaseModalProps } from '../BaseModal';
 import { useEffect } from 'react';
-import { ModalState } from '../../../store/ModalStore';
+import { Button, Col, Form, FormInstance, Input, Row, Space, Switch } from 'antd';
+
 import { getChangedFields } from '../../../helpers/getChangedFields';
+import { ModalState } from '../../../store/ModalStore';
+import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface PartnerContactFormModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   type: 'edit' | 'add';

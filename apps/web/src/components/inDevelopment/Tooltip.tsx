@@ -1,5 +1,5 @@
-import { Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 
 export const InDevelopmentTooltip = () => (
   <Tooltip title='Функционал находится в разработке'>

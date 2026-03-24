@@ -1,7 +1,8 @@
 import { Button, DatePicker, InputNumber, Modal, Select } from 'antd';
 import type { Dayjs } from 'dayjs';
-import type { AdvancedFilters } from './ContractsListPage.types';
+
 import styles from './ContractsListPage.module.scss';
+import type { AdvancedFilters } from './ContractsListPage.types';
 
 type SelectOption = { label: string; value: string };
 

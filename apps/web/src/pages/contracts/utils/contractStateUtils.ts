@@ -1,11 +1,25 @@
 import { ContractState } from '../../../types/contract';
+
 export function isContractDraft(stateId: string | undefined, contractStates: ContractState[] | undefined): boolean {
   if (!stateId || !contractStates?.length) return false;
-  const state = contractStates.find(s => s.id === stateId);
-  if (!state) return false;
-  const code = state.code?.toLowerCase();
-  const name = (state.name ?? '').toLowerCase();
-  return code === 'draft' || name.includes('чернов');
+  const contractState = contractStates.find(state => state.id === stateId);
+  if (!contractState) return false;
+  const stateCode = contractState.code?.toLowerCase();
+  const stateName = (contractState.name ?? '').toLowerCase();
+  return stateCode === 'draft' || stateName.includes('чернов');
+}
+
+/** Должно совпадать с SQL в ContractsService.getSignedStateIds: подписан → действующий (is_active). */
+export function isContractSignedState(
+  stateId: string | undefined,
+  contractStates: ContractState[] | undefined,
+): boolean {
+  if (!stateId || !contractStates?.length) return false;
+  const contractState = contractStates.find(state => state.id === stateId);
+  if (!contractState) return false;
+  const stateCode = contractState.code?.toLowerCase();
+  const stateName = (contractState.name ?? '').toLowerCase();
+  return stateCode === 'signed' || stateName.includes('подписан');
 }
 export function getContractStateTagClass(code: string | undefined): string {
   if (!code) return 'tagStateDefault';

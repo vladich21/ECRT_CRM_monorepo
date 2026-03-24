@@ -1,7 +1,9 @@
+import { DeleteOutlined, EditOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
-import { EditOutlined, DeleteOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
+
 import type { PartnerContact } from '../../../../types/partner';
 import styles from './ContactCard.module.scss';
+
 interface ContactCardProps {
   contact: PartnerContact;
   onEdit: (contact: PartnerContact) => void;
