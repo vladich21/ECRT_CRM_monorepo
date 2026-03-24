@@ -292,7 +292,6 @@ export const partnerContacts = pgTable('partner_contacts', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
-  isDeleted: boolean('is_deleted').notNull().default(false),
 });
 
 export const files = pgTable(
