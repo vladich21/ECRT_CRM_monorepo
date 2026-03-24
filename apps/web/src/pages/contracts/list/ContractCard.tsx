@@ -36,10 +36,19 @@ export function ContractCard({ contract, refs, onClick }: Props) {
     >
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
-          <Tooltip title={contract.name}>
-            <span className={styles.name}>№ {contract.number || '—'}</span>
-          </Tooltip>
-          {contract.cipher && <span className={styles.metaText}>Шифр: {contract.cipher}</span>}
+          <span className={styles.name}>№ {contract.number || '—'}</span>
+          <div className={styles.cipherNameGroup}>
+            {contract.cipher ? <span className={styles.metaText}>Шифр: {contract.cipher}</span> : null}
+            <Tooltip title={contract.name?.trim() ? contract.name : undefined}>
+              <span className={styles.contractName}>{contract.name?.trim() || '—'}</span>
+            </Tooltip>
+          </div>
+        </div>
+        <div className={styles.metaRow} style={{ marginTop: 2 }}>
+          <span className={styles.metaText}>
+            <CalendarOutlined style={{ fontSize: 14 }} />
+            Подписан: {formatDate(contract.date_signed ?? '')}
+          </span>
         </div>
         <div className={styles.metaRow}>
           <Tag color={st.color} style={{ fontSize: 14 }}>
