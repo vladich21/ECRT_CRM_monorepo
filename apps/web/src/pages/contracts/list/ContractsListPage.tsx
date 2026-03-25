@@ -226,7 +226,7 @@ export default function ContractsListPage() {
                 <div className={styles.filterTabsRight}>
                   <Input.Search
                     className={styles.searchInTabsRow}
-                    placeholder='Поиск по номеру, названию, партнёру...'
+                    placeholder='Поиск по номеру, названию, контрагенту...'
                     allowClear
                     enterButton={false}
                     prefix={<SearchOutlined className={styles.searchIcon} />}

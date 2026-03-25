@@ -1,8 +1,9 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, desc, eq, gte, isNotNull, isNull, lte, sql } from 'drizzle-orm';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
+  contracts,
   partners,
   projects,
   refSupplierEvaluationCriteria,
@@ -15,6 +16,7 @@ import type { PaginationParams } from '../../../common/pagination';
 import { SUPPLIER_BLOCK_REASONS } from '../domain/supplier-evaluation.enums';
 import type { SupplierEvaluationCategory } from '../domain/supplier-evaluation.enums';
 import {
+  REEVALUATION_SOON_WINDOW_DAYS,
   categoryFromWeightedScore,
   nextReevaluationDateForCategory,
 } from '../domain/supplier-evaluation.rules';
@@ -40,8 +42,12 @@ export interface SupplierEvaluationQueryFilters {
   status: SupplierEvaluationListStatusFilter;
   createdBy?: string;
   category?: SupplierEvaluationCategory;
-  /** Календарный год даты evaluated_at */
+  /** Календарный год даты evaluated_at (игнорируется, если задан диапазон evaluatedAtFrom / evaluatedAtTo). */
   evaluatedYear?: number;
+  /** Нижняя граница evaluated_at (YYYY-MM-DD), включительно */
+  evaluatedAtFrom?: string;
+  /** Верхняя граница evaluated_at (YYYY-MM-DD), включительно */
+  evaluatedAtTo?: string;
   uiStatus?: SupplierEvaluationUiStatusFilter;
   sortField?: SupplierEvaluationListSortField;
   sortDir?: SupplierEvaluationListSortDir;
@@ -54,6 +60,8 @@ export interface SupplierEvaluationTabCountFilters {
   createdBy?: string;
   category?: SupplierEvaluationCategory;
   evaluatedYear?: number;
+  evaluatedAtFrom?: string;
+  evaluatedAtTo?: string;
 }
 
 export type SupplierEvaluationTabCounts = Record<SupplierEvaluationUiStatusFilter, number>;
@@ -72,6 +80,54 @@ export class SupplierEvaluationsService {
   private readonly logger = new Logger(SupplierEvaluationsService.name);
 
   constructor(private readonly db: DatabaseService) {}
+
+  /** Проекты из неудалённых договоров с контрагентом (для селекта «Новая оценка»). */
+  async findContractProjectOptionsForPartner(partnerId: string) {
+    const rows = await this.db.db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        code: projects.code,
+      })
+      .from(contracts)
+      .innerJoin(projects, eq(contracts.projectId, projects.id))
+      .where(
+        and(
+          eq(contracts.partnerId, partnerId),
+          eq(contracts.isDeleted, false),
+          eq(projects.isDeleted, false),
+        )!,
+      )
+      .groupBy(projects.id, projects.name, projects.code)
+      .orderBy(asc(projects.name));
+
+    return rows.map((r) => ({
+      id: String(r.id),
+      label: (r.name ?? r.code ?? String(r.id)).trim() || String(r.id),
+    }));
+  }
+
+  async deleteEvaluation(evaluationId: string) {
+    const existing = await this.db.db
+      .select({ id: supplierEvaluations.id })
+      .from(supplierEvaluations)
+      .where(eq(supplierEvaluations.id, evaluationId))
+      .limit(1);
+    if (!existing[0]) {
+      throw new NotFoundException(`Оценка ${evaluationId} не найдена`);
+    }
+
+    await this.db.db.transaction(async (tx) => {
+      await tx
+        .delete(supplierEvaluationCriterionScores)
+        .where(eq(supplierEvaluationCriterionScores.evaluationId, evaluationId));
+      await tx
+        .update(supplierPartnerProjectBlocks)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(supplierPartnerProjectBlocks.sourceEvaluationId, evaluationId));
+      await tx.delete(supplierEvaluations).where(eq(supplierEvaluations.id, evaluationId));
+    });
+  }
 
   async findCriteriaCatalog() {
     const rows = await this.db.db
@@ -131,6 +187,8 @@ export class SupplierEvaluationsService {
       createdBy: filters.createdBy,
       category: filters.category,
       evaluatedYear: filters.evaluatedYear,
+      evaluatedAtFrom: filters.evaluatedAtFrom,
+      evaluatedAtTo: filters.evaluatedAtTo,
       status: 'all',
     };
     const entries = await Promise.all(
@@ -214,6 +272,7 @@ export class SupplierEvaluationsService {
     this.validateEvaluatedAt(dto.evaluated_at);
 
     await this.assertPartnerAndProjectExist(dto.partner_id, dto.project_id);
+    await this.assertProjectLinkedViaPartnerContracts(dto.partner_id, dto.project_id);
 
     const criteriaRows = await this.db.db
       .select()
@@ -387,7 +446,13 @@ export class SupplierEvaluationsService {
     if (filters.category) {
       parts.push(eq(supplierEvaluations.category, filters.category));
     }
-    if (filters.evaluatedYear != null && Number.isFinite(filters.evaluatedYear)) {
+    const hasDateRange = Boolean(filters.evaluatedAtFrom?.trim() || filters.evaluatedAtTo?.trim());
+    if (hasDateRange) {
+      const from = filters.evaluatedAtFrom?.trim();
+      const to = filters.evaluatedAtTo?.trim();
+      if (from) parts.push(gte(supplierEvaluations.evaluatedAt, from));
+      if (to) parts.push(lte(supplierEvaluations.evaluatedAt, to));
+    } else if (filters.evaluatedYear != null && Number.isFinite(filters.evaluatedYear)) {
       const y = filters.evaluatedYear;
       parts.push(gte(supplierEvaluations.evaluatedAt, `${y}-01-01`));
       parts.push(lte(supplierEvaluations.evaluatedAt, `${y}-12-31`));
@@ -411,7 +476,7 @@ export class SupplierEvaluationsService {
           parts.push(isNotNull(supplierEvaluations.nextReevaluationDate));
           parts.push(sql`${supplierEvaluations.nextReevaluationDate} >= CURRENT_DATE`);
           parts.push(
-            sql`${supplierEvaluations.nextReevaluationDate} <= CURRENT_DATE + INTERVAL '30 days'`,
+            sql`${supplierEvaluations.nextReevaluationDate} <= CURRENT_DATE + (${REEVALUATION_SOON_WINDOW_DAYS}::integer * INTERVAL '1 day')`,
           );
           break;
         case 'current':
@@ -419,7 +484,7 @@ export class SupplierEvaluationsService {
             sql`NOT (${supplierEvaluations.category} = 'D' AND ${supplierEvaluations.nextReevaluationDate} IS NULL)`,
           );
           parts.push(
-            sql`(${supplierEvaluations.nextReevaluationDate} IS NULL OR ${supplierEvaluations.nextReevaluationDate} > CURRENT_DATE + INTERVAL '30 days')`,
+            sql`(${supplierEvaluations.nextReevaluationDate} IS NULL OR ${supplierEvaluations.nextReevaluationDate} > CURRENT_DATE + (${REEVALUATION_SOON_WINDOW_DAYS}::integer * INTERVAL '1 day'))`,
           );
           break;
         default:
@@ -463,6 +528,16 @@ export class SupplierEvaluationsService {
       .limit(1);
     if (!pr) {
       throw new BadRequestException('Проект не найден или удалён');
+    }
+  }
+
+  /** Оценка допускается только по проектам, с которыми у контрагента есть договор. */
+  private async assertProjectLinkedViaPartnerContracts(partnerId: string, projectId: string) {
+    const allowed = await this.findContractProjectOptionsForPartner(partnerId);
+    if (!allowed.some((o) => o.id === projectId)) {
+      throw new BadRequestException(
+        'Выберите проект из договоров с этим контрагентом. Проект не найден среди связей по договорам.',
+      );
     }
   }
 

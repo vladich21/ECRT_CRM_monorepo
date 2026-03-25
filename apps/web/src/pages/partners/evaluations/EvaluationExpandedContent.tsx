@@ -1,7 +1,8 @@
 import type { ThHTMLAttributes } from 'react';
-import { Alert, Button, Modal, Space, Table, Typography } from 'antd';
-import { ReloadOutlined, StopOutlined } from '@ant-design/icons';
+import { CalendarOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
+import { Alert, Button, Modal, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
 
 import {
   useDeactivateSupplierEvaluationBlock,
@@ -10,7 +11,14 @@ import {
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
 import type { SupplierEvaluationListItem, SupplierEvaluationScoreDetail } from '../../../types/supplierEvaluation';
-import { ScoreDots, getRowUiStatus, lineWeightedScore, scoreColor, weightPercent } from './supplierEvaluationUi';
+import {
+  ScoreDots,
+  calendarDaysUntil,
+  getRowUiStatus,
+  lineWeightedScore,
+  scoreColor,
+  weightPercent,
+} from './supplierEvaluationUi';
 
 const { Text } = Typography;
 
@@ -180,16 +188,45 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
                 gap: 8,
               }}
             >
-              <Space>
-                {rowPresentationState === 'overdue' && <Text type='danger'>Переоценка просрочена</Text>}
-                {rowPresentationState === 'soon' && <Text type='warning'>Скоро срок переоценки</Text>}
+              <div style={{ flex: 1, minWidth: 200 }}>
                 {rowPresentationState === 'blocked' && (
-                  <Text type='danger'>Требуется новая оценка после снятия блокировки</Text>
+                  <Text type='danger' style={{ display: 'block' }}>
+                    Требуется новая оценка после снятия блокировки
+                  </Text>
                 )}
-                {rowPresentationState === 'active' && (
-                  <Text type='secondary'>Следующая переоценка по плану</Text>
+                {rowPresentationState === 'overdue' && row.next_reevaluation_date && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <CalendarOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
+                    <Text type='danger' strong style={{ fontSize: 13 }}>
+                      Переоценка просрочена · {dayjs(row.next_reevaluation_date).format('DD.MM.YYYY')}
+                      {' '}
+                      <span style={{ fontWeight: 700 }}>
+                        ({Math.abs(calendarDaysUntil(row.next_reevaluation_date))} дн.)
+                      </span>
+                    </Text>
+                  </div>
                 )}
-              </Space>
+                {rowPresentationState === 'soon' && row.next_reevaluation_date && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <CalendarOutlined style={{ color: '#d48806', fontSize: 16 }} />
+                    <Text strong style={{ fontSize: 13, color: '#d48806' }}>
+                      Переоценка через {calendarDaysUntil(row.next_reevaluation_date)} дн. ·{' '}
+                      {dayjs(row.next_reevaluation_date).format('DD.MM.YYYY')}
+                    </Text>
+                  </div>
+                )}
+                {rowPresentationState === 'active' && row.next_reevaluation_date && (
+                  <div style={{ fontSize: 13 }}>
+                    <Text type='secondary'>Следующая переоценка по плану: </Text>
+                    <Text type='secondary'>{dayjs(row.next_reevaluation_date).format('DD.MM.YYYY')}</Text>
+                  </div>
+                )}
+                {rowPresentationState === 'active' && !row.next_reevaluation_date && (
+                  <Text type='secondary' style={{ fontSize: 13 }}>
+                    Плановая дата переоценки не задана
+                  </Text>
+                )}
+              </div>
               <Button type='primary' ghost icon={<ReloadOutlined />} onClick={() => onReevaluate(row.project_id)}>
                 Провести переоценку
               </Button>

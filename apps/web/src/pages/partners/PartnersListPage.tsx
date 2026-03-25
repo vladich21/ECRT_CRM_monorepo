@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePartners } from '../../api/partners/partnerApiHooks';
+import { fetchPartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApi';
+import { getPartnerSupplierEvalKpiQueryKey } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { BackButton } from '../../components/backButton/BackButton';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
@@ -76,6 +79,16 @@ export default function PartnersListPage() {
   } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies']);
   const partners = partnersData?.data ?? [];
   const total = partnersData?.total ?? 0;
+
+  const isInitialLoad = isRefsLoading || (isLoading && !partnersData);
+  const partnerEvalKpiQueries = useQueries({
+    queries: partners.map(partner => ({
+      queryKey: getPartnerSupplierEvalKpiQueryKey(partner.id),
+      queryFn: () => fetchPartnerSupplierEvalKpi(partner.id),
+      staleTime: 60 * 1000,
+      enabled: !isInitialLoad && partners.length > 0,
+    })),
+  });
   const tabCounts = partnersData?.tab_counts ?? {
     all: 0,
     ready: 0,
@@ -143,7 +156,6 @@ export default function PartnersListPage() {
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-  const isInitialLoad = isRefsLoading || (isLoading && !partnersData);
   const paginationConfig = getPaginationConfig(total);
   return (
     <div className={styles.wrap}>
@@ -224,8 +236,15 @@ export default function PartnersListPage() {
               {activeTab === 'deleted' ? 'Нет удалённых контрагентов' : 'Контрагенты не найдены'}
             </div>
           ) : (
-            partners.map(partner => (
-              <SupplierCard key={partner.id} partner={partner} references={references} onClick={handleCardClick} />
+            partners.map((partner, index) => (
+              <SupplierCard
+                key={partner.id}
+                partner={partner}
+                references={references}
+                evaluationKpi={partnerEvalKpiQueries[index]?.data}
+                evaluationKpiLoading={Boolean(partnerEvalKpiQueries[index]?.isPending)}
+                onClick={handleCardClick}
+              />
             ))
           )}
         </div>

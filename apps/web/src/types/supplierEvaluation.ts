@@ -53,6 +53,12 @@ export interface SupplierEvaluationListResponse {
   total: number;
 }
 
+/** GET /supplier-evaluations/partner-contract-projects */
+export interface SupplierEvaluationContractProjectOption {
+  id: string;
+  label: string;
+}
+
 export interface SupplierEvaluationBlock {
   id: string;
   partner_id: string;

@@ -7,6 +7,7 @@ import type {
   SupplierEvaluationSortField,
   SupplierEvaluationUiStatusParam,
 } from '../../types/supplierEvaluation';
+import { fetchPartnerSupplierEvalKpi } from './supplierEvaluationApi';
 import {
   supplierEvaluationApi,
   type SupplierEvaluationsStatusFilter,
@@ -14,12 +15,16 @@ import {
 
 const supplierEvaluationQueryKey = {
   criteria: ['supplier-evaluations', 'criteria'] as const,
+  partnerContractProjects: (partnerId: string) =>
+    ['supplier-evaluations', 'partner-contract-projects', partnerId] as const,
   tabCounts: (p: {
     partner_id?: string;
     project_id?: string;
     created_by?: string;
     category?: SupplierEvaluationCategory;
     evaluated_year?: number;
+    evaluated_at_from?: string;
+    evaluated_at_to?: string;
   }) => ['supplier-evaluations', 'tab-counts', p] as const,
   list: (p: {
     partner_id?: string;
@@ -28,6 +33,8 @@ const supplierEvaluationQueryKey = {
     created_by?: string;
     category?: SupplierEvaluationCategory;
     evaluated_year?: number;
+    evaluated_at_from?: string;
+    evaluated_at_to?: string;
     ui_status?: SupplierEvaluationUiStatusParam;
     sort_field?: SupplierEvaluationSortField;
     sort_dir?: SupplierEvaluationSortDir;
@@ -37,6 +44,8 @@ const supplierEvaluationQueryKey = {
   one: (id: string) => ['supplier-evaluations', id] as const,
   block: (partnerId: string, projectId: string) =>
     ['supplier-evaluations', 'block', partnerId, projectId] as const,
+  /** Активные оценки по партнёру → средний балл и ближайшая переоценка (общий кэш для вкладок и реестра). */
+  partnerKpi: (partnerId: string) => ['supplier-evaluations', 'partner-kpi', partnerId] as const,
 };
 
 export function useSupplierEvaluationCriteria() {
@@ -47,6 +56,15 @@ export function useSupplierEvaluationCriteria() {
   });
 }
 
+export function usePartnerContractProjectsForEvaluation(partnerId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: supplierEvaluationQueryKey.partnerContractProjects(partnerId),
+    queryFn: () => supplierEvaluationApi.getPartnerContractProjects(partnerId),
+    enabled: Boolean(partnerId) && enabled,
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useSupplierEvaluationTabCounts(
   params: {
     partner_id?: string;
@@ -54,6 +72,8 @@ export function useSupplierEvaluationTabCounts(
     created_by?: string;
     category?: SupplierEvaluationCategory;
     evaluated_year?: number;
+    evaluated_at_from?: string;
+    evaluated_at_to?: string;
   },
   enabled = true,
 ) {
@@ -73,6 +93,8 @@ export function useSupplierEvaluationsList(
     created_by?: string;
     category?: SupplierEvaluationCategory;
     evaluated_year?: number;
+    evaluated_at_from?: string;
+    evaluated_at_to?: string;
     ui_status?: SupplierEvaluationUiStatusParam;
     sort_field?: SupplierEvaluationSortField;
     sort_dir?: SupplierEvaluationSortDir;
@@ -117,6 +139,20 @@ export function useSupplierEvaluationBlock(partnerId: string, projectId: string,
   });
 }
 
+export function getPartnerSupplierEvalKpiQueryKey(partnerId: string) {
+  return supplierEvaluationQueryKey.partnerKpi(partnerId);
+}
+
+/** Средний балл и ближайшая дата переоценки по всем активным оценкам проектов контрагента. */
+export function usePartnerSupplierEvalKpi(partnerId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: supplierEvaluationQueryKey.partnerKpi(partnerId ?? ''),
+    queryFn: () => fetchPartnerSupplierEvalKpi(partnerId!),
+    enabled: Boolean(partnerId) && enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useCreateSupplierEvaluation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -131,6 +167,16 @@ export function useDeactivateSupplierEvaluationBlock() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (blockId: string) => supplierEvaluationApi.deactivateBlock(blockId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-evaluations'] });
+    },
+  });
+}
+
+export function useDeleteSupplierEvaluation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => supplierEvaluationApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplier-evaluations'] });
     },

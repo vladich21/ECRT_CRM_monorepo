@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Col, DatePicker, Form, Input, Modal, Row, Select, Space, Typography } from 'antd';
+import { Alert, Button, Col, DatePicker, Form, Input, Modal, Row, Select, Space, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { useProjectsPreview } from '../../../api/projects/projectApiHooks';
 import {
   useCreateSupplierEvaluation,
+  usePartnerContractProjectsForEvaluation,
   useSupplierEvaluationCriteria,
+  useSupplierEvaluationsList,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
 import { formatSrmUserName } from '../../../helpers/formatSrmUserName';
@@ -42,8 +43,22 @@ export default function NewSupplierEvaluationModal({
   onSuccess,
 }: Props) {
   const [form] = Form.useForm<{ evaluated_at: Dayjs; project_id: string; comment?: string }>();
+  const watchedProjectId = Form.useWatch('project_id', form);
   const { data: criteria = [], isLoading: criteriaLoading } = useSupplierEvaluationCriteria();
-  const { data: projects = [], isLoading: projectsLoading } = useProjectsPreview();
+  const { data: contractProjects = [], isLoading: projectsLoading } = usePartnerContractProjectsForEvaluation(
+    partnerId,
+    open,
+  );
+  const { data: activeForProject } = useSupplierEvaluationsList(
+    {
+      partner_id: partnerId,
+      project_id: watchedProjectId,
+      status: 'active',
+      limit: 1,
+      offset: 0,
+    },
+    open && Boolean(watchedProjectId),
+  );
   const createMut = useCreateSupplierEvaluation();
   const { showNotification, contextHolder } = useNotification();
   const currentUser = useAuthStore(s => s.user);
@@ -71,14 +86,15 @@ export default function NewSupplierEvaluationModal({
   );
   const previewCategory = categoryFromWeightedScore(weighted);
 
-  const projectOptions = useMemo(
-    () =>
-      projects.map(p => ({
-        value: p.id,
-        label: p.name || p.code || p.id,
-      })),
-    [projects],
-  );
+  const projectOptions = useMemo(() => {
+    const base = contractProjects.map(p => ({ value: p.id, label: p.label }));
+    if (initialProjectId && !base.some(o => o.value === initialProjectId)) {
+      return [{ value: initialProjectId, label: `Проект ${initialProjectId}` }, ...base];
+    }
+    return base;
+  }, [contractProjects, initialProjectId]);
+
+  const hasActiveEvaluationForProject = Boolean(activeForProject?.data?.length);
 
   const handleOk = async () => {
     try {
@@ -115,11 +131,30 @@ export default function NewSupplierEvaluationModal({
       styles={{ body: { paddingTop: 12 } }}
       destroyOnHidden
       okText='Сохранить оценку'
+      okButtonProps={{ disabled: projectOptions.length === 0 || !criteriaOrdered.length }}
       confirmLoading={createMut.isPending}
       onOk={handleOk}
     >
       {contextHolder}
       <Form form={form} layout='vertical' style={{ marginTop: 0 }}>
+        {!projectsLoading && contractProjects.length === 0 ? (
+          <Alert
+            type='warning'
+            showIcon
+            style={{ marginBottom: 12 }}
+            message='Нет проектов по договорам с этим контрагентом'
+            description='Оценку можно выставить только по проекту, который указан в действующем договоре с контрагентом.'
+          />
+        ) : null}
+        {hasActiveEvaluationForProject ? (
+          <Alert
+            type='info'
+            showIcon
+            style={{ marginBottom: 12 }}
+            message='По выбранному проекту уже есть актуальная оценка'
+            description='Новая оценка не создаст дубликат: текущая актуальная запись будет перенесена в архив (переоценка).'
+          />
+        ) : null}
         <Row gutter={[16, 8]}>
           <Col xs={24} sm={10} md={9}>
             <Form.Item

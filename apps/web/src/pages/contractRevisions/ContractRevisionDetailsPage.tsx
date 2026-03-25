@@ -99,7 +99,7 @@ export default function ContractRevisionDetailsPage() {
               {getNameById(revision.contract_type_id, referenceBooks?.contractTypes)}
             </Descriptions.Item>
 
-            <Descriptions.Item label='Партнёр'>
+            <Descriptions.Item label='Контрагент'>
               {getNameById(revision.partner_id, referenceBooks?.partners)}
             </Descriptions.Item>
 

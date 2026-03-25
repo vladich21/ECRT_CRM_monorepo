@@ -1,7 +1,12 @@
 import { apiClient } from '../clients';
+import {
+  computePartnerSupplierEvalKpi,
+  type PartnerSupplierEvalKpi,
+} from '../../utils/supplierEvaluationPartnerKpi';
 import type {
   CreateSupplierEvaluationPayload,
   SupplierEvaluationBlock,
+  SupplierEvaluationContractProjectOption,
   SupplierEvaluationCriterion,
   SupplierEvaluationDetail,
   SupplierEvaluationListResponse,
@@ -27,12 +32,22 @@ export const supplierEvaluationApi = {
     return Array.isArray(data) ? data : [];
   },
 
+  getPartnerContractProjects: async (partnerId: string): Promise<SupplierEvaluationContractProjectOption[]> => {
+    const { data } = await apiClient.get<SupplierEvaluationContractProjectOption[]>(
+      '/supplier-evaluations/partner-contract-projects',
+      { params: { partner_id: partnerId } },
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
   getTabCounts: async (params: {
     partner_id?: string;
     project_id?: string;
     created_by?: string;
     category?: SupplierEvaluationCategory;
     evaluated_year?: number;
+    evaluated_at_from?: string;
+    evaluated_at_to?: string;
   }): Promise<SupplierEvaluationTabCounts> => {
     const { data } = await apiClient.get<SupplierEvaluationTabCounts>('/supplier-evaluations/counts-by-tab', {
       params: compactParams({
@@ -41,6 +56,8 @@ export const supplierEvaluationApi = {
         created_by: params.created_by,
         category: params.category,
         evaluated_year: params.evaluated_year,
+        evaluated_at_from: params.evaluated_at_from,
+        evaluated_at_to: params.evaluated_at_to,
       }),
     });
     return (data && typeof data === 'object' ? data : {}) as SupplierEvaluationTabCounts;
@@ -54,6 +71,8 @@ export const supplierEvaluationApi = {
       created_by?: string;
       category?: SupplierEvaluationCategory;
       evaluated_year?: number;
+      evaluated_at_from?: string;
+      evaluated_at_to?: string;
       ui_status?: SupplierEvaluationUiStatusParam;
       sort_field?: SupplierEvaluationSortField;
       sort_dir?: SupplierEvaluationSortDir;
@@ -69,6 +88,8 @@ export const supplierEvaluationApi = {
         created_by: params.created_by,
         category: params.category,
         evaluated_year: params.evaluated_year,
+        evaluated_at_from: params.evaluated_at_from,
+        evaluated_at_to: params.evaluated_at_to,
         ui_status: params.ui_status === 'all' ? undefined : params.ui_status,
         sort_field: params.sort_field,
         sort_dir: params.sort_dir,
@@ -111,4 +132,19 @@ export const supplierEvaluationApi = {
     const row = Array.isArray(data) ? data[0] : null;
     return row ?? null;
   },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/supplier-evaluations/${id}`);
+  },
 };
+
+/** Активные оценки по контрагенту: средний балл и ближайшая дата переоценки по проектам. */
+export async function fetchPartnerSupplierEvalKpi(partnerId: string): Promise<PartnerSupplierEvalKpi> {
+  const res = await supplierEvaluationApi.getList({
+    partner_id: partnerId,
+    status: 'active',
+    limit: 500,
+    offset: 0,
+  });
+  return computePartnerSupplierEvalKpi(res.data);
+}

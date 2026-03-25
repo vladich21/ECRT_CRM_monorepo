@@ -218,9 +218,9 @@ export default function ContractCreatePage() {
 
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item label='Партнёр' name='partner_id'>
+              <Form.Item label='Контрагент' name='partner_id'>
                 <Select
-                  placeholder='Выберите партнёра'
+                  placeholder='Выберите контрагента'
                   allowClear
                   showSearch
                   optionFilterProp='children'

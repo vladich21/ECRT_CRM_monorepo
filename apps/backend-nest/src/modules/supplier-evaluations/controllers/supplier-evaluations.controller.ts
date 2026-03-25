@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -52,6 +53,15 @@ function parseEvaluatedYear(raw?: string): number | undefined {
   return Number.isFinite(y) && y >= 1990 && y <= 2100 ? y : undefined;
 }
 
+/** YYYY-MM-DD для фильтра по evaluated_at; невалидное значение отбрасывается. */
+function parseEvaluatedAtDate(raw?: string): string | undefined {
+  if (raw == null || raw.trim() === '') return undefined;
+  const s = raw.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined;
+  const t = Date.parse(`${s}T12:00:00.000Z`);
+  return Number.isFinite(t) ? s : undefined;
+}
+
 function parseSortField(raw?: string): 'evaluated_at' | 'weighted_score' | undefined {
   if (raw === 'weighted_score' || raw === 'evaluated_at') return raw;
   return undefined;
@@ -92,6 +102,15 @@ export class SupplierEvaluationsController {
     return [row];
   }
 
+  /** Проекты из договоров контрагента (для поля «Проект» при создании оценки). */
+  @Get('partner-contract-projects')
+  partnerContractProjects(@Query('partner_id') partnerId?: string) {
+    if (!partnerId?.trim()) {
+      throw new BadRequestException('Укажите partner_id');
+    }
+    return this.service.findContractProjectOptionsForPartner(partnerId.trim());
+  }
+
   /** Счётчики по вкладкам смысла строки (без учёта текстового поиска на фронте). */
   @Get('counts-by-tab')
   countsByTab(
@@ -100,6 +119,8 @@ export class SupplierEvaluationsController {
     @Query('created_by') createdBy?: string,
     @Query('category') categoryRaw?: string,
     @Query('evaluated_year') evaluatedYearRaw?: string,
+    @Query('evaluated_at_from') evaluatedAtFromRaw?: string,
+    @Query('evaluated_at_to') evaluatedAtToRaw?: string,
   ) {
     const category =
       categoryRaw && isSupplierEvaluationCategory(categoryRaw) ? categoryRaw : undefined;
@@ -109,6 +130,8 @@ export class SupplierEvaluationsController {
       createdBy: createdBy?.trim() || undefined,
       category,
       evaluatedYear: parseEvaluatedYear(evaluatedYearRaw),
+      evaluatedAtFrom: parseEvaluatedAtDate(evaluatedAtFromRaw),
+      evaluatedAtTo: parseEvaluatedAtDate(evaluatedAtToRaw),
     });
   }
 
@@ -120,6 +143,8 @@ export class SupplierEvaluationsController {
     @Query('created_by') createdBy?: string,
     @Query('category') categoryRaw?: string,
     @Query('evaluated_year') evaluatedYearRaw?: string,
+    @Query('evaluated_at_from') evaluatedAtFromRaw?: string,
+    @Query('evaluated_at_to') evaluatedAtToRaw?: string,
     @Query('ui_status') uiStatusRaw?: string,
     @Query('sort_field') sortFieldRaw?: string,
     @Query('sort_dir') sortDirRaw?: string,
@@ -137,6 +162,8 @@ export class SupplierEvaluationsController {
       createdBy: createdBy?.trim() || undefined,
       category,
       evaluatedYear: parseEvaluatedYear(evaluatedYearRaw),
+      evaluatedAtFrom: parseEvaluatedAtDate(evaluatedAtFromRaw),
+      evaluatedAtTo: parseEvaluatedAtDate(evaluatedAtToRaw),
       uiStatus,
       sortField: parseSortField(sortFieldRaw),
       sortDir: parseSortDir(sortDirRaw),
@@ -155,5 +182,11 @@ export class SupplierEvaluationsController {
     const row = await this.service.create(envelope.body, req.user?.user_id);
     if (!row) throw new BadRequestException('Не удалось создать оценку');
     return [row];
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.service.deleteEvaluation(id);
+    return [{ deleted: true }];
   }
 }

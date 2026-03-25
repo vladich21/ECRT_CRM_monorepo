@@ -270,9 +270,9 @@ export default function ContractEditPage() {
 
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item label='Партнёр' name='partner_id' rules={[{ required: true, message: 'Выберите партнёра' }]}>
+              <Form.Item label='Контрагент' name='partner_id' rules={[{ required: true, message: 'Выберите контрагента' }]}>
                 <Select
-                  placeholder='Выберите партнёра'
+                  placeholder='Выберите контрагента'
                   allowClear
                   showSearch
                   optionFilterProp='children'

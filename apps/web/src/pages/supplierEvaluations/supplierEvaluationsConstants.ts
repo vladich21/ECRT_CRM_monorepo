@@ -1,4 +1,41 @@
-import type { SupplierEvaluationCategory, SupplierEvaluationUiStatusParam } from '../../types/supplierEvaluation';
+import dayjs, { type Dayjs } from 'dayjs';
+
+import type {
+  SupplierEvaluationCategory,
+  SupplierEvaluationSortDir,
+  SupplierEvaluationSortField,
+  SupplierEvaluationUiStatusParam,
+} from '../../types/supplierEvaluation';
+
+/** Пресет сортировки списка в реестре оценок. */
+export type EvaluationRegistrySortPreset =
+  | 'evaluated_at_desc'
+  | 'evaluated_at_asc'
+  | 'weighted_score_asc'
+  | 'weighted_score_desc';
+
+export const EVALUATION_REGISTRY_SORT_OPTIONS: { value: EvaluationRegistrySortPreset; label: string }[] = [
+  { value: 'evaluated_at_desc', label: 'Сначала новые по дате' },
+  { value: 'evaluated_at_asc', label: 'Сначала старые по дате' },
+  { value: 'weighted_score_asc', label: 'Балл: слабые сверху' },
+  { value: 'weighted_score_desc', label: 'Балл: сильные сверху' },
+];
+
+export function evaluationRegistrySortToRequestParams(preset: EvaluationRegistrySortPreset): {
+  sort_field?: SupplierEvaluationSortField;
+  sort_dir?: SupplierEvaluationSortDir;
+} {
+  switch (preset) {
+    case 'evaluated_at_desc':
+      return { sort_field: 'evaluated_at', sort_dir: 'desc' };
+    case 'evaluated_at_asc':
+      return { sort_field: 'evaluated_at', sort_dir: 'asc' };
+    case 'weighted_score_asc':
+      return { sort_field: 'weighted_score', sort_dir: 'asc' };
+    case 'weighted_score_desc':
+      return { sort_field: 'weighted_score', sort_dir: 'desc' };
+  }
+}
 
 /** Фильтр по букве категории (A–D). */
 export const EVALUATION_CATEGORY_FILTER_OPTIONS: { value: 'all' | SupplierEvaluationCategory; label: string }[] = [
@@ -38,4 +75,20 @@ export function evaluationYearFilterToApi(yearFilterValue: string): number | und
   if (!yearFilterValue || yearFilterValue === EVALUATION_YEAR_FILTER_ALL) return undefined;
   const parsed = Number(yearFilterValue);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/** Быстрый выбор года для фильтра по дате оценки (вкладка контрагента): календарный год целиком. */
+export function supplierEvaluationEvaluatedAtRangePresets(): { label: string; value: [Dayjs, Dayjs] }[] {
+  const cy = dayjs().year();
+  const presets: { label: string; value: [Dayjs, Dayjs] }[] = [
+    { label: 'Текущий год', value: [dayjs().startOf('year'), dayjs().endOf('year')] },
+  ];
+  for (let back = 1; back <= 12; back += 1) {
+    const y = cy - back;
+    presets.push({
+      label: String(y),
+      value: [dayjs().year(y).startOf('year'), dayjs().year(y).endOf('year')],
+    });
+  }
+  return presets;
 }

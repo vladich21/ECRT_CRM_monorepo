@@ -1,0 +1,25 @@
+@use '../../components/pageLayout/listPageShared' as lp;
+
+.filtersBtnActive {
+  @include lp.filtersBtnActive;
+}
+
+.filtersBadge {
+  @include lp.filtersBadge;
+}
+
+.filtersModalGrid {
+  @include lp.filtersModalGrid;
+}
+
+.filtersModalField {
+  @include lp.filtersModalField;
+}
+
+.filtersModalLabel {
+  @include lp.filtersModalLabel;
+}
+
+.filtersModalControl {
+  @include lp.filtersModalControl;
+}

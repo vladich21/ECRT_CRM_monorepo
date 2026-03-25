@@ -1,5 +1,8 @@
 import type { SupplierEvaluationCategory } from './supplier-evaluation.enums';
 
+/** Окно «скоро переоценка» в фильтрах и UI (дней до срока включительно). Синхронно с фронтом supplierEvaluationUi. */
+export const REEVALUATION_SOON_WINDOW_DAYS = 20;
+
 /**
  * Категория по взвешенному баллу (шкала как в UI фильтра «Все категории»):
  * - A: ≥ 4.0

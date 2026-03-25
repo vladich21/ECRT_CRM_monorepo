@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { Dayjs } from 'dayjs';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Select, Table, Tag, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Modal, Table, Tag, Typography } from 'antd';
+import { DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { useOutletContext } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 
 import { useProjectsPreview } from '../../../api/projects/projectApiHooks';
 import {
+  useDeleteSupplierEvaluation,
   useSupplierEvaluationTabCounts,
   useSupplierEvaluationsList,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { useUsers } from '../../../api/users/userApiHooks';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { useNotification } from '../../../customhooks/useNotification';
 import { formatSrmUserName } from '../../../helpers/formatSrmUserName';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import type { Partner } from '../../../types/partner';
@@ -21,14 +24,17 @@ import type {
   SupplierEvaluationUiStatusParam,
 } from '../../../types/supplierEvaluation';
 import {
-  EVALUATION_CATEGORY_FILTER_OPTIONS,
   EVALUATION_UI_TABS,
-  EVALUATION_YEAR_FILTER_ALL,
-  EVALUATION_YEAR_OPTIONS,
-  evaluationYearFilterToApi,
+  supplierEvaluationEvaluatedAtRangePresets,
 } from '../../supplierEvaluations/supplierEvaluationsConstants';
 import listStyles from '../../supplierEvaluations/EvaluationsListShared.module.scss';
 import EvaluationExpandedContent from './EvaluationExpandedContent';
+import {
+  PartnerEvaluationsFiltersModal,
+  EMPTY_PARTNER_EVALUATIONS_LIST_FILTERS,
+  countActivePartnerEvaluationsFilters,
+  type PartnerEvaluationsListFilters,
+} from './PartnerEvaluationsFiltersModal';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
 import {
   CategoryTag,
@@ -42,13 +48,19 @@ const { Text } = Typography;
 
 export default function PartnerEvaluationsTab() {
   const queryClient = useQueryClient();
+  const { showNotification, contextHolder } = useNotification();
+  const deleteMut = useDeleteSupplierEvaluation();
   const partner = useOutletContext<Partner>();
   const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>('current');
-  const [evaluatedYearFilter, setEvaluatedYearFilter] = useState<string>(EVALUATION_YEAR_FILTER_ALL);
+  const [evaluatedAtRange, setEvaluatedAtRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<'all' | SupplierEvaluationCategory>('all');
   const [createdByUserId, setCreatedByUserId] = useState<string | undefined>(undefined);
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
   const [reevaluationProjectId, setReevaluationProjectId] = useState<string | undefined>();
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+  const [filtersDraft, setFiltersDraft] = useState<PartnerEvaluationsListFilters>(
+    EMPTY_PARTNER_EVALUATIONS_LIST_FILTERS,
+  );
 
   const { page, pageSize, handleTableChange, getPaginationConfig, resetPage } = useServerTablePagination({
     defaultPageSize: 20,
@@ -70,14 +82,20 @@ export default function PartnerEvaluationsTab() {
     [usersResponse?.data],
   );
 
+  const evaluatedAtFromIso = evaluatedAtRange?.[0]?.format('YYYY-MM-DD');
+  const evaluatedAtToIso = evaluatedAtRange?.[1]?.format('YYYY-MM-DD');
+
+  const evaluatedAtRangePresets = useMemo(() => supplierEvaluationEvaluatedAtRangePresets(), []);
+
   const tabCountRequestParams = useMemo(
     () => ({
       partner_id: partner.id,
-      evaluated_year: evaluationYearFilterToApi(evaluatedYearFilter),
+      evaluated_at_from: evaluatedAtFromIso,
+      evaluated_at_to: evaluatedAtToIso,
       category: categoryFilter === 'all' ? undefined : categoryFilter,
       created_by: createdByUserId,
     }),
-    [partner.id, evaluatedYearFilter, categoryFilter, createdByUserId],
+    [partner.id, evaluatedAtFromIso, evaluatedAtToIso, categoryFilter, createdByUserId],
   );
 
   const { data: tabCounts, isLoading: tabCountsLoading } = useSupplierEvaluationTabCounts(
@@ -90,20 +108,40 @@ export default function PartnerEvaluationsTab() {
       partner_id: partner.id,
       status: 'all' as const,
       ui_status: rowStatusTab === 'all' ? undefined : rowStatusTab,
-      evaluated_year: evaluationYearFilterToApi(evaluatedYearFilter),
+      evaluated_at_from: evaluatedAtFromIso,
+      evaluated_at_to: evaluatedAtToIso,
       category: categoryFilter === 'all' ? undefined : categoryFilter,
       created_by: createdByUserId,
       limit: pageSize,
       offset: (page - 1) * pageSize,
     }),
-    [partner.id, rowStatusTab, evaluatedYearFilter, categoryFilter, createdByUserId, page, pageSize],
+    [
+      partner.id,
+      rowStatusTab,
+      evaluatedAtFromIso,
+      evaluatedAtToIso,
+      categoryFilter,
+      createdByUserId,
+      page,
+      pageSize,
+    ],
   );
 
   const { data, isLoading, refetch } = useSupplierEvaluationsList(listParams, Boolean(partner.id));
 
+  const activeFiltersCount = useMemo(
+    () =>
+      countActivePartnerEvaluationsFilters({
+        evaluatedAtRange,
+        category: categoryFilter,
+        createdByUserId,
+      }),
+    [evaluatedAtRange, categoryFilter, createdByUserId],
+  );
+
   useEffect(() => {
     resetPage();
-  }, [partner.id, rowStatusTab, evaluatedYearFilter, categoryFilter, createdByUserId, resetPage]);
+  }, [partner.id, rowStatusTab, evaluatedAtFromIso, evaluatedAtToIso, categoryFilter, createdByUserId, resetPage]);
 
   const columns: ColumnsType<SupplierEvaluationListItem> = [
     Table.EXPAND_COLUMN,
@@ -132,10 +170,11 @@ export default function PartnerEvaluationsTab() {
       ),
     },
     {
-      title: 'Кат.',
+      title: 'Категория',
       key: 'cat',
-      width: 56,
+      width: 100,
       align: 'center',
+      onHeaderCell: () => ({ style: { textAlign: 'center' } }),
       render: (_, row) => <CategoryTag category={row.category} />,
     },
     {
@@ -165,25 +204,80 @@ export default function PartnerEvaluationsTab() {
         return <Tag color={color}>{text}</Tag>;
       },
     },
+    {
+      title: '',
+      key: 'actions',
+      width: 52,
+      align: 'center',
+      render: (_, row) => (
+        <Button
+          type='text'
+          danger
+          size='small'
+          icon={<DeleteOutlined />}
+          aria-label='Удалить оценку'
+          disabled={!!partner.is_deleted}
+          onClick={() => {
+            Modal.confirm({
+              title: 'Удалить оценку?',
+              content:
+                'Запись будет удалена без восстановления. Связанные блокировки по этой оценке будут сняты.',
+              okText: 'Удалить',
+              okButtonProps: { danger: true },
+              cancelText: 'Отмена',
+              onOk: async () => {
+                try {
+                  await deleteMut.mutateAsync(row.id);
+                  showNotification('success', 'Оценка удалена');
+                  void refetch();
+                  void queryClient.invalidateQueries({ queryKey: ['supplier-evaluations', 'partner-kpi', partner.id] });
+                } catch {
+                  showNotification('error', 'Не удалось удалить оценку');
+                }
+              },
+            });
+          }}
+        />
+      ),
+    },
   ];
 
   return (
     <div className={listStyles.wrap}>
+      {contextHolder}
       <PageHeader
         title='Оценки по проектам'
-        subtitle='Актуальные и архивные оценки контрагента по проектам'
         actions={
-          <Button
-            type='primary'
-            icon={<PlusOutlined />}
-            disabled={!!partner.is_deleted}
-            onClick={() => {
-              setReevaluationProjectId(undefined);
-              setEvaluationModalOpen(true);
-            }}
-          >
-            Новая оценка
-          </Button>
+          <>
+            <Button
+              icon={<FilterOutlined />}
+              className={activeFiltersCount > 0 ? listStyles.filtersBtnActive : undefined}
+              onClick={() => {
+                setFiltersDraft({
+                  evaluatedAtRange,
+                  category: categoryFilter,
+                  createdByUserId,
+                });
+                setFiltersModalOpen(true);
+              }}
+            >
+              Фильтр
+              {activeFiltersCount > 0 && (
+                <span className={listStyles.filtersBadge}>{activeFiltersCount}</span>
+              )}
+            </Button>
+            <Button
+              type='primary'
+              icon={<PlusOutlined />}
+              disabled={!!partner.is_deleted}
+              onClick={() => {
+                setReevaluationProjectId(undefined);
+                setEvaluationModalOpen(true);
+              }}
+            >
+              Новая оценка
+            </Button>
+          </>
         }
         filters={
           <div className={listStyles.filterSection}>
@@ -196,38 +290,12 @@ export default function PartnerEvaluationsTab() {
                     className={`${listStyles.filterTab} ${rowStatusTab === tab.key ? listStyles.filterTabActive : ''}`}
                     onClick={() => setRowStatusTab(tab.key)}
                   >
-                    {tab.label}
-                    <span style={{ opacity: 0.72, fontWeight: 500 }}>
-                      {' · '}
+                    {tab.label}{' '}
+                    <span className={listStyles.filterTabCount}>
                       {tabCountsLoading ? '…' : (tabCounts?.[tab.key] ?? 0)}
                     </span>
                   </button>
                 ))}
-              </div>
-              <div className={listStyles.filterTabsRight}>
-                <Select
-                  placeholder='Период'
-                  value={evaluatedYearFilter}
-                  onChange={setEvaluatedYearFilter}
-                  style={{ minWidth: 140 }}
-                  options={EVALUATION_YEAR_OPTIONS}
-                />
-                <Select<'all' | SupplierEvaluationCategory>
-                  value={categoryFilter}
-                  onChange={v => setCategoryFilter(v)}
-                  style={{ minWidth: 200 }}
-                  options={EVALUATION_CATEGORY_FILTER_OPTIONS}
-                />
-                <Select
-                  allowClear
-                  showSearch
-                  placeholder='Закупщик'
-                  optionFilterProp='label'
-                  value={createdByUserId}
-                  onChange={v => setCreatedByUserId(v)}
-                  style={{ minWidth: 220 }}
-                  options={buyerOptions}
-                />
               </div>
             </div>
           </div>
@@ -240,7 +308,12 @@ export default function PartnerEvaluationsTab() {
           loading={isLoading}
           columns={columns}
           dataSource={data?.data ?? []}
-          pagination={getPaginationConfig(data?.total ?? 0)}
+          tableLayout='fixed'
+          scroll={{ x: 1000 }}
+          pagination={{
+            ...getPaginationConfig(data?.total ?? 0),
+            className: listStyles.evaluationsTablePagination,
+          }}
           onChange={pagination => handleTableChange(pagination)}
           expandable={{
             expandedRowRender: record => (
@@ -258,6 +331,22 @@ export default function PartnerEvaluationsTab() {
         />
       </div>
 
+      <PartnerEvaluationsFiltersModal
+        open={filtersModalOpen}
+        draft={filtersDraft}
+        onUpdateDraft={patch => setFiltersDraft(prev => ({ ...prev, ...patch }))}
+        onClose={() => setFiltersModalOpen(false)}
+        onApply={() => {
+          setEvaluatedAtRange(filtersDraft.evaluatedAtRange);
+          setCategoryFilter(filtersDraft.category);
+          setCreatedByUserId(filtersDraft.createdByUserId);
+          setFiltersModalOpen(false);
+        }}
+        onResetDraft={() => setFiltersDraft(EMPTY_PARTNER_EVALUATIONS_LIST_FILTERS)}
+        buyerOptions={buyerOptions}
+        rangePresets={evaluatedAtRangePresets}
+      />
+
       <NewSupplierEvaluationModal
         open={evaluationModalOpen}
         onClose={() => setEvaluationModalOpen(false)}
@@ -265,6 +354,7 @@ export default function PartnerEvaluationsTab() {
         initialProjectId={reevaluationProjectId}
         onSuccess={() => {
           refetch();
+          void queryClient.invalidateQueries({ queryKey: ['supplier-evaluations', 'partner-kpi', partner.id] });
           void queryClient.invalidateQueries({
             predicate: query => Array.isArray(query.queryKey) && query.queryKey[0] === 'partners',
           });

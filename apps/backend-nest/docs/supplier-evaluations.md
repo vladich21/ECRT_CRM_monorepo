@@ -91,8 +91,8 @@
 | GET | `/criteria` | Список **активных** критериев (матрица). |
 | GET | `/blocks?partner_id=&project_id=` | Активная блокировка или `[]`. |
 | PUT | `/blocks/:id/deactivate` | Снять блокировку (`is_active = false`). |
-| GET | `/counts-by-tab` | Счётчики по вкладкам смысла строки. Query: как у списка, кроме `ui_status` и пагинации: `partner_id`, `project_id`, `created_by`, `category`, `evaluated_year`. Ответ: `{ all, current, archived, blocked, overdue, reeval_soon }` (числа). Без учёта текстового поиска на фронте. |
-| GET | `/` | Список оценок. Query: `partner_id`, `project_id`, `status` = `active` \| `archived` \| `all` (по умолчанию `all` в клиенте реестра), `created_by`, `category`, `evaluated_year`, `ui_status`, `sort_field` = `evaluated_at` \| `weighted_score`, `sort_dir` = `asc` \| `desc`, `limit`, `offset`. Ответ: `{ data, total }`. **Пагинация, фильтры и сортировка списка серверные.** |
+| GET | `/counts-by-tab` | Счётчики по вкладкам смысла строки. Query: как у списка, кроме `ui_status` и пагинации: `partner_id`, `project_id`, `created_by`, `category`, `evaluated_year`, опционально `evaluated_at_from` / `evaluated_at_to` (`YYYY-MM-DD`, границы включительно). Если задан хотя бы один из `evaluated_at_*`, фильтр по году не применяется. |
+| GET | `/` | Список оценок. Query: `partner_id`, `project_id`, `status` = `active` \| `archived` \| `all` (по умолчанию `all` в клиенте реестра), `created_by`, `category`, `evaluated_year`, `evaluated_at_from`, `evaluated_at_to` (см. выше), `ui_status`, `sort_field` = `evaluated_at` \| `weighted_score`, `sort_dir` = `asc` \| `desc`, `limit`, `offset`. Ответ: `{ data, total }`. **Пагинация, фильтры и сортировка списка серверные.** |
 | GET | `/:id` | Оценка + массив `scores` (с `criterion_code`, `criterion_name`). Ответ: массив из одного объекта `[row]` (как в других контроллерах проекта). |
 | POST | `/` | Новая оценка. Тело: **`{ "body": { ... } }`** (как у договоров). |
 

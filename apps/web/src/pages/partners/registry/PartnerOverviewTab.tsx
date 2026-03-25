@@ -4,7 +4,12 @@ import { useOutletContext } from 'react-router-dom';
 import { useContracts } from '../../../api/contracts/contractApiHooks';
 import type { ContractsListParams } from '../../../api/contracts/contractApi';
 import { useReferenceData } from '../../../api/hooks/useReferences';
+import { usePartnerSupplierEvalKpi } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import type { Partner } from '../../../types/partner';
+import {
+  formatNextReevaluationKpiValue,
+  isNextReevaluationInSoonWindow,
+} from '../evaluations/supplierEvaluationUi';
 import PartnersMainInfo from '../detailsTabs/PartnerMainInfo';
 import ComplianceCards, { type ComplianceItem } from './ComplianceCards';
 import DetailSidebar from './DetailSidebar';
@@ -41,6 +46,8 @@ export default function PartnerOverviewTab() {
   );
   const contractsTotal = contractsList?.total ?? 0;
 
+  const { data: supplierEvalKpi } = usePartnerSupplierEvalKpi(partner.id, Boolean(partner.id));
+
   const complianceItems: ComplianceItem[] = [
     {
       label: 'Юрид. проверка',
@@ -59,16 +66,15 @@ export default function PartnerOverviewTab() {
     },
   ];
 
-  const ratingScore = partner.rating != null ? partner.rating * 20 : 0;
-
   return (
     <div className={styles.layout}>
       <div className={styles.leftColumn}>
         <KpiRow
           contractsCount={isContractsCountLoading ? undefined : contractsTotal}
           totalVolume='—'
-          complianceScore={ratingScore}
-          nextAuditDate={partner.next_audit_date || undefined}
+          supplierEvalAvgScore={supplierEvalKpi?.avgScore ?? null}
+          nextEvaluationValue={formatNextReevaluationKpiValue(supplierEvalKpi?.nextReevaluationIso ?? null)}
+          nextEvaluationSoon={isNextReevaluationInSoonWindow(supplierEvalKpi?.nextReevaluationIso)}
         />
         <ComplianceCards items={complianceItems} />
         <PartnersMainInfo partner={partner} />

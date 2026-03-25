@@ -52,10 +52,10 @@ export function ContractFiltersModal({
     >
       <div className={styles.filtersModalGrid}>
         <div className={styles.filtersModalField}>
-          <span className={styles.filtersModalLabel}>Партнёр</span>
+          <span className={styles.filtersModalLabel}>Контрагент</span>
           <Select
             className={styles.filtersModalControl}
-            placeholder='Все партнёры'
+            placeholder='Все контрагенты'
             allowClear
             showSearch
             optionFilterProp='label'

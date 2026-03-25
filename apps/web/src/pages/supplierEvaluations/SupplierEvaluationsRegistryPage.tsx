@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Input, Select, Table, Tag, Typography } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Button, Input, Modal, Table, Tag, Typography } from 'antd';
+import { DeleteOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
@@ -8,6 +8,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { partnerApi } from '../../api/partners/partnerApi';
 import { useProjectsPreview } from '../../api/projects/projectApiHooks';
 import {
+  useDeleteSupplierEvaluation,
   useSupplierEvaluationTabCounts,
   useSupplierEvaluationsList,
 } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
@@ -16,13 +17,8 @@ import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { formatSrmUserName } from '../../helpers/formatSrmUserName';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
-import type {
-  SupplierEvaluationCategory,
-  SupplierEvaluationListItem,
-  SupplierEvaluationSortDir,
-  SupplierEvaluationSortField,
-  SupplierEvaluationUiStatusParam,
-} from '../../types/supplierEvaluation';
+import { useNotification } from '../../customhooks/useNotification';
+import type { SupplierEvaluationListItem, SupplierEvaluationUiStatusParam } from '../../types/supplierEvaluation';
 import EvaluationExpandedContent from '../partners/evaluations/EvaluationExpandedContent';
 import {
   CategoryTag,
@@ -33,10 +29,14 @@ import {
 } from '../partners/evaluations/supplierEvaluationUi';
 import listStyles from './EvaluationsListShared.module.scss';
 import {
-  EVALUATION_CATEGORY_FILTER_OPTIONS,
+  EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+  SupplierEvaluationsRegistryFiltersModal,
+  type EvaluationsRegistryAppliedFilters,
+} from './SupplierEvaluationsRegistryFiltersModal';
+import registryStyles from './SupplierEvaluationsRegistryPage.module.scss';
+import {
   EVALUATION_UI_TABS,
-  EVALUATION_YEAR_FILTER_ALL,
-  EVALUATION_YEAR_OPTIONS,
+  evaluationRegistrySortToRequestParams,
   evaluationYearFilterToApi,
 } from './supplierEvaluationsConstants';
 
@@ -45,44 +45,28 @@ const { Text } = Typography;
 const SEARCH_DEBOUNCE_MS = 350;
 const SEARCH_FETCH_LIMIT = 2000;
 
-type EvaluationRegistrySortPreset =
-  | 'evaluated_at_desc'
-  | 'evaluated_at_asc'
-  | 'weighted_score_asc'
-  | 'weighted_score_desc';
-
-const EVALUATION_REGISTRY_SORT_OPTIONS: { value: EvaluationRegistrySortPreset; label: string }[] = [
-  { value: 'evaluated_at_desc', label: 'Сначала новые по дате' },
-  { value: 'evaluated_at_asc', label: 'Сначала старые по дате' },
-  { value: 'weighted_score_asc', label: 'Балл: слабые сверху' },
-  { value: 'weighted_score_desc', label: 'Балл: сильные сверху' },
-];
-
-function evaluationRegistrySortToRequestParams(preset: EvaluationRegistrySortPreset): {
-  sort_field?: SupplierEvaluationSortField;
-  sort_dir?: SupplierEvaluationSortDir;
-} {
-  switch (preset) {
-    case 'evaluated_at_desc':
-      return { sort_field: 'evaluated_at', sort_dir: 'desc' };
-    case 'evaluated_at_asc':
-      return { sort_field: 'evaluated_at', sort_dir: 'asc' };
-    case 'weighted_score_asc':
-      return { sort_field: 'weighted_score', sort_dir: 'asc' };
-    case 'weighted_score_desc':
-      return { sort_field: 'weighted_score', sort_dir: 'desc' };
-  }
+function countActiveRegistryFilters(f: EvaluationsRegistryAppliedFilters): number {
+  let n = 0;
+  if (f.evaluatedYear !== EMPTY_EVALUATIONS_REGISTRY_FILTERS.evaluatedYear) n += 1;
+  if (f.category !== 'all') n += 1;
+  if (f.createdByUserId) n += 1;
+  return n;
 }
 
 export default function SupplierEvaluationsRegistryPage() {
   const navigate = useNavigate();
+  const { showNotification, contextHolder } = useNotification();
+  const deleteMut = useDeleteSupplierEvaluation();
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>('current');
-  const [evaluatedYearFilter, setEvaluatedYearFilter] = useState<string>(EVALUATION_YEAR_FILTER_ALL);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | SupplierEvaluationCategory>('all');
-  const [createdByUserId, setCreatedByUserId] = useState<string | undefined>(undefined);
-  const [listSortPreset, setListSortPreset] = useState<EvaluationRegistrySortPreset>('evaluated_at_desc');
+  const [appliedListFilters, setAppliedListFilters] = useState<EvaluationsRegistryAppliedFilters>(
+    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+  );
+  const [draftListFilters, setDraftListFilters] = useState<EvaluationsRegistryAppliedFilters>(
+    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+  );
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
 
   const { page, pageSize, handleTableChange, getPaginationConfig, resetPage } = useServerTablePagination({
     defaultPageSize: 20,
@@ -123,11 +107,11 @@ export default function SupplierEvaluationsRegistryPage() {
 
   const tabCountRequestParams = useMemo(
     () => ({
-      evaluated_year: evaluationYearFilterToApi(evaluatedYearFilter),
-      category: categoryFilter === 'all' ? undefined : categoryFilter,
-      created_by: createdByUserId,
+      evaluated_year: evaluationYearFilterToApi(appliedListFilters.evaluatedYear),
+      category: appliedListFilters.category === 'all' ? undefined : appliedListFilters.category,
+      created_by: appliedListFilters.createdByUserId,
     }),
-    [evaluatedYearFilter, categoryFilter, createdByUserId],
+    [appliedListFilters],
   );
 
   const { data: tabCounts, isLoading: tabCountsLoading } = useSupplierEvaluationTabCounts(
@@ -139,31 +123,50 @@ export default function SupplierEvaluationsRegistryPage() {
     const base = {
       status: 'all' as const,
       ui_status: rowStatusTab === 'all' ? undefined : rowStatusTab,
-      evaluated_year: evaluationYearFilterToApi(evaluatedYearFilter),
-      category: categoryFilter === 'all' ? undefined : categoryFilter,
-      created_by: createdByUserId,
-      ...evaluationRegistrySortToRequestParams(listSortPreset),
+      evaluated_year: evaluationYearFilterToApi(appliedListFilters.evaluatedYear),
+      category: appliedListFilters.category === 'all' ? undefined : appliedListFilters.category,
+      created_by: appliedListFilters.createdByUserId,
+      ...evaluationRegistrySortToRequestParams(appliedListFilters.sortPreset),
     };
     if (isSearchMode) {
       return { ...base, limit: SEARCH_FETCH_LIMIT, offset: 0 };
     }
     return { ...base, limit: pageSize, offset: (page - 1) * pageSize };
-  }, [
-    rowStatusTab,
-    evaluatedYearFilter,
-    categoryFilter,
-    createdByUserId,
-    isSearchMode,
-    listSortPreset,
-    page,
-    pageSize,
-  ]);
+  }, [rowStatusTab, appliedListFilters, isSearchMode, page, pageSize]);
 
-  const { data, isLoading } = useSupplierEvaluationsList(listParams, true);
+  const { data, isLoading, refetch } = useSupplierEvaluationsList(listParams, true);
+
+  const activeFiltersCount = useMemo(() => countActiveRegistryFilters(appliedListFilters), [appliedListFilters]);
+
+  const openFiltersModal = () => {
+    setDraftListFilters(appliedListFilters);
+    setIsFiltersModalOpen(true);
+  };
+
+  const closeFiltersModal = () => {
+    setIsFiltersModalOpen(false);
+  };
+
+  const applyFiltersFromModal = () => {
+    setAppliedListFilters(draftListFilters);
+    setIsFiltersModalOpen(false);
+    resetPage();
+  };
+
+  const resetFiltersFromModal = () => {
+    setDraftListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
+    setAppliedListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
+    setIsFiltersModalOpen(false);
+    resetPage();
+  };
+
+  const updateDraftListFilter = (patch: Partial<EvaluationsRegistryAppliedFilters>) => {
+    setDraftListFilters(prev => ({ ...prev, ...patch }));
+  };
 
   useEffect(() => {
     resetPage();
-  }, [rowStatusTab, evaluatedYearFilter, categoryFilter, createdByUserId, debouncedSearch, listSortPreset, resetPage]);
+  }, [rowStatusTab, appliedListFilters, debouncedSearch, resetPage]);
 
   const filteredRows = useMemo(() => {
     const rows = data?.data ?? [];
@@ -189,6 +192,9 @@ export default function SupplierEvaluationsRegistryPage() {
     {
       title: 'Контрагент',
       key: 'partner',
+      ellipsis: true,
+      onHeaderCell: () => ({ style: { textAlign: 'left' } }),
+      onCell: () => ({ style: { verticalAlign: 'top' } }),
       render: (_, row) => (
         <Link to={`/partners/${row.partner_id}/evaluations`}>
           {partnerNameById[row.partner_id] ?? row.partner_id}
@@ -198,35 +204,44 @@ export default function SupplierEvaluationsRegistryPage() {
     {
       title: 'Проект',
       key: 'project',
+      ellipsis: { showTitle: true },
+      onHeaderCell: () => ({ style: { textAlign: 'left' } }),
+      onCell: () => ({ style: { verticalAlign: 'top' } }),
       render: (_, row) => <Text strong>{projectNameById[row.project_id] ?? row.project_id}</Text>,
     },
     {
       title: 'Дата оценки',
       dataIndex: 'evaluated_at',
-      width: 110,
+      width: 118,
+      align: 'left',
+      onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '—'}</Text>,
     },
     {
       title: 'Закупщик',
       key: 'buyer',
-      width: 140,
+      width: 160,
+      align: 'left',
       ellipsis: true,
+      onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       render: (_, row) => (
         <Text type='secondary'>{row.created_by_name?.trim() ? row.created_by_name : '—'}</Text>
       ),
     },
     {
-      title: 'Кат.',
+      title: 'Категория',
       key: 'cat',
-      width: 56,
+      width: 100,
       align: 'center',
+      onHeaderCell: () => ({ style: { textAlign: 'center' } }),
       render: (_, row) => <CategoryTag category={row.category} />,
     },
     {
       title: 'Балл',
       key: 'score',
-      width: 80,
+      width: 88,
       align: 'right',
+      onHeaderCell: () => ({ style: { textAlign: 'right' } }),
       render: (_, row) => (
         <Text strong style={{ color: scoreColor(row.weighted_score) }}>
           {Number(row.weighted_score).toFixed(2)}
@@ -236,28 +251,79 @@ export default function SupplierEvaluationsRegistryPage() {
     {
       title: 'Переоценка',
       key: 'reeval',
-      width: 150,
+      width: 168,
+      align: 'left',
+      onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       render: (_, row) => formatReevaluationCell(row, getRowUiStatus(row)),
     },
     {
       title: 'Статус',
       key: 'st',
-      width: 140,
+      width: 132,
+      align: 'left',
+      onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       render: (_, row) => {
         const rowPresentationState = getRowUiStatus(row);
         const { text, color } = statusBadgeLabel(rowPresentationState);
         return <Tag color={color}>{text}</Tag>;
       },
     },
+    {
+      title: '',
+      key: 'actions',
+      width: 52,
+      align: 'center',
+      fixed: 'right',
+      onHeaderCell: () => ({ style: { textAlign: 'center' } }),
+      render: (_, row) => (
+        <Button
+          type='text'
+          danger
+          size='small'
+          icon={<DeleteOutlined />}
+          aria-label='Удалить оценку'
+          onClick={() => {
+            Modal.confirm({
+              title: 'Удалить оценку?',
+              content:
+                'Запись будет удалена без восстановления. Связанные блокировки по этой оценке будут сняты.',
+              okText: 'Удалить',
+              okButtonProps: { danger: true },
+              cancelText: 'Отмена',
+              onOk: async () => {
+                try {
+                  await deleteMut.mutateAsync(row.id);
+                  showNotification('success', 'Оценка удалена');
+                  void refetch();
+                } catch {
+                  showNotification('error', 'Не удалось удалить оценку');
+                }
+              },
+            });
+          }}
+        />
+      ),
+    },
   ];
 
   return (
-    <div className={listStyles.wrap} style={{ padding: '0 24px 24px' }}>
+    <div className={listStyles.wrap}>
+      {contextHolder}
       <BackButton path='/' />
 
       <PageHeader
         title='Реестр оценок поставщиков'
         subtitle='Все оценки по контрагентам и проектам'
+        actions={
+          <Button
+            icon={<FilterOutlined />}
+            onClick={openFiltersModal}
+            className={activeFiltersCount > 0 ? registryStyles.filtersBtnActive : undefined}
+          >
+            Фильтры
+            {activeFiltersCount > 0 && <span className={registryStyles.filtersBadge}>{activeFiltersCount}</span>}
+          </Button>
+        }
         filters={
           <div className={listStyles.filterSection}>
             <div className={listStyles.filterTabsRow}>
@@ -269,9 +335,8 @@ export default function SupplierEvaluationsRegistryPage() {
                     className={`${listStyles.filterTab} ${rowStatusTab === tab.key ? listStyles.filterTabActive : ''}`}
                     onClick={() => setRowStatusTab(tab.key)}
                   >
-                    {tab.label}
-                    <span style={{ opacity: 0.72, fontWeight: 500 }}>
-                      {' · '}
+                    {tab.label}{' '}
+                    <span className={listStyles.filterTabCount}>
                       {tabCountsLoading ? '…' : (tabCounts?.[tab.key] ?? 0)}
                     </span>
                   </button>
@@ -286,39 +351,23 @@ export default function SupplierEvaluationsRegistryPage() {
                   value={searchInput}
                   onChange={e => setSearchInput(e.target.value)}
                 />
-                <Select
-                  placeholder='Период'
-                  value={evaluatedYearFilter}
-                  onChange={setEvaluatedYearFilter}
-                  style={{ minWidth: 140 }}
-                  options={EVALUATION_YEAR_OPTIONS}
-                />
-                <Select<'all' | SupplierEvaluationCategory>
-                  value={categoryFilter}
-                  onChange={v => setCategoryFilter(v)}
-                  style={{ minWidth: 200 }}
-                  options={EVALUATION_CATEGORY_FILTER_OPTIONS}
-                />
-                <Select
-                  allowClear
-                  showSearch
-                  placeholder='Закупщик'
-                  optionFilterProp='label'
-                  value={createdByUserId}
-                  onChange={v => setCreatedByUserId(v)}
-                  style={{ minWidth: 220 }}
-                  options={buyerOptions}
-                />
-                <Select<EvaluationRegistrySortPreset>
-                  value={listSortPreset}
-                  onChange={v => setListSortPreset(v)}
-                  style={{ minWidth: 220 }}
-                  options={EVALUATION_REGISTRY_SORT_OPTIONS}
-                />
+                <span className={listStyles.resultCount}>
+                  Показано: <strong>{displayRows.length}</strong> из <strong>{total}</strong>
+                </span>
               </div>
             </div>
           </div>
         }
+      />
+
+      <SupplierEvaluationsRegistryFiltersModal
+        open={isFiltersModalOpen}
+        draft={draftListFilters}
+        onUpdateDraft={updateDraftListFilter}
+        onClose={closeFiltersModal}
+        onApply={applyFiltersFromModal}
+        onReset={resetFiltersFromModal}
+        buyerOptions={buyerOptions}
       />
 
       <div className={listStyles.tableCard} style={{ marginTop: 16 }}>
@@ -327,8 +376,12 @@ export default function SupplierEvaluationsRegistryPage() {
           loading={isLoading}
           columns={columns}
           dataSource={displayRows}
-          scroll={{ x: 1100 }}
-          pagination={getPaginationConfig(total)}
+          tableLayout='fixed'
+          scroll={{ x: 1200 }}
+          pagination={{
+            ...getPaginationConfig(total),
+            className: listStyles.evaluationsTablePagination,
+          }}
           onChange={pagination => handleTableChange(pagination)}
           expandable={{
             expandedRowRender: record => (

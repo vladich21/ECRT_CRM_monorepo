@@ -1,28 +1,34 @@
 import {
   AimOutlined,
   BankOutlined,
+  CalendarOutlined,
   CheckCircleFilled,
   ClockCircleFilled,
   DeleteOutlined,
   EditOutlined,
+  SafetyCertificateOutlined,
   StarFilled,
   UndoOutlined,
 } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { Button, Tag, Tooltip } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useContracts } from '../../api/contracts/contractApiHooks';
 import { useFilesByEntity } from '../../api/files/fileApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useDeletePartner, usePartnerById, useRestorePartner } from '../../api/partners/partnerApiHooks';
-import { useSupplierEvaluationsList } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
+import {
+  usePartnerSupplierEvalKpi,
+  useSupplierEvaluationsList,
+} from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../constants/deletionScope';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
+import { PartnerHeaderAvgScoreTag, PartnerNextEvalDateTags } from './evaluations/partnerEvalKpiDisplay';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
 import type { PartnerListTab } from './PartnersListPage.types';
 import type { PartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
@@ -59,6 +65,10 @@ export default function PartnerDetailsPage() {
     Boolean(partnerId),
   );
   const evaluationsTotal = evaluationsCountData?.total ?? 0;
+  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
+    partnerId,
+    Boolean(partnerId),
+  );
   const getActiveTabFromPath = () => {
     const path = location.pathname;
     if (path.includes('/contacts')) return 'contacts';
@@ -125,7 +135,7 @@ export default function PartnerDetailsPage() {
     { key: 'main', label: 'Основное' },
     { key: 'contacts', label: `Контактные лица (${contacts.length})` },
     { key: 'contracts', label: `Договоры (${contractsList?.total ?? 0})` },
-    { key: 'evaluations', label: `Оценки (${evaluationsTotal})` },
+    { key: 'evaluations', label: `Оценки проектов (${evaluationsTotal})` },
     { key: 'comments', label: 'Комментарии' },
     { key: 'files', label: `Файлы (${files.length})` },
   ];
@@ -239,6 +249,22 @@ export default function PartnerDetailsPage() {
               {partner.actual_address}
             </span>
           ),
+          <span key='eval-avg' className={hStyles.metaText}>
+            <SafetyCertificateOutlined />
+            <span style={{ opacity: 0.9 }}>Средняя оценка:</span>{' '}
+            <PartnerHeaderAvgScoreTag avgScore={partnerEvalKpi?.avgScore} loading={partnerEvalKpiLoading} />
+          </span>,
+          <span key='eval-next' className={hStyles.metaText}>
+            <CalendarOutlined />
+            <span style={{ opacity: 0.9 }}>Следующая оценка:</span>{' '}
+            {partnerEvalKpiLoading ? (
+              '…'
+            ) : partnerEvalKpi?.nextReevaluationIso ? (
+              <PartnerNextEvalDateTags nextIso={partnerEvalKpi.nextReevaluationIso} forDarkHeader />
+            ) : (
+              <Tag style={{ margin: 0, verticalAlign: 'middle' }}>—</Tag>
+            )}
+          </span>,
         ].filter(Boolean) as React.ReactNode[]
       }
       actions={

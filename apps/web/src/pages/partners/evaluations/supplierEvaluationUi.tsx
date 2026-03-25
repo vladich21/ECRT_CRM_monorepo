@@ -2,11 +2,10 @@ import type { ReactNode } from 'react';
 import { Tag } from 'antd';
 import dayjs from 'dayjs';
 
-import type { SupplierEvaluationScoreDetail } from '../../../types/supplierEvaluation';
-
 import type {
   SupplierEvaluationCategory,
   SupplierEvaluationListItem,
+  SupplierEvaluationScoreDetail,
 } from '../../../types/supplierEvaluation';
 
 /** Шаги балла как в макете supplier_eval_v3.html */
@@ -30,14 +29,35 @@ export function computeWeightedPreview(
 
 export type UiEvalRowStatus = 'blocked' | 'archived' | 'overdue' | 'soon' | 'active';
 
+/** Синхронно с backend supplier-evaluation.rules REEVALUATION_SOON_WINDOW_DAYS */
+export const REEVALUATION_SOON_WINDOW_DAYS = 20;
+
+/** Календарные дни до даты (отрицательное — просрочка). */
+export function calendarDaysUntil(isoDate: string): number {
+  return dayjs(isoDate).startOf('day').diff(dayjs().startOf('day'), 'day');
+}
+
+/** До плановой переоценки от 0 до REEVALUATION_SOON_WINDOW_DAYS дней включительно (подсветка KPI, таблица, вкладка). */
+export function isNextReevaluationInSoonWindow(nextIso: string | null | undefined): boolean {
+  if (!nextIso) return false;
+  const days = calendarDaysUntil(nextIso);
+  return days >= 0 && days <= REEVALUATION_SOON_WINDOW_DAYS;
+}
+
+export function formatEvaluatedAtRu(isoDate: string): string {
+  if (!isoDate) return '—';
+  const parts = isoDate.split('-');
+  if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+  return isoDate;
+}
+
 export function getRowUiStatus(row: SupplierEvaluationListItem): UiEvalRowStatus {
   if (row.status === 'archived') return 'archived';
   if (row.category === 'D' && !row.next_reevaluation_date) return 'blocked';
   if (row.next_reevaluation_date) {
-    const d = dayjs(row.next_reevaluation_date).endOf('day');
-    const diff = d.diff(dayjs(), 'day', true);
-    if (diff < 0) return 'overdue';
-    if (diff <= 30) return 'soon';
+    const days = calendarDaysUntil(row.next_reevaluation_date);
+    if (days < 0) return 'overdue';
+    if (days <= REEVALUATION_SOON_WINDOW_DAYS) return 'soon';
   }
   return 'active';
 }
@@ -112,20 +132,81 @@ export function statusBadgeLabel(status: UiEvalRowStatus): { text: string; color
   }
 }
 
-export function formatReevaluationCell(row: SupplierEvaluationListItem, ui: UiEvalRowStatus): ReactNode {
-  if (ui === 'blocked') return '—';
-  if (ui === 'archived') return <span style={{ color: '#bfbfbf' }}>Заменена</span>;
-  if (!row.next_reevaluation_date) return '—';
-  const d = dayjs(row.next_reevaluation_date);
-  const days = d.endOf('day').diff(dayjs(), 'day');
-  const dateStr = d.format('DD.MM.YYYY');
-  if (days < 0) return <span style={{ color: '#ff4d4f', fontWeight: 500 }}>{dateStr}</span>;
-  if (days <= 30)
+function daysRemainingSuffix(days: number): string {
+  if (days === 0) return 'сегодня';
+  return `осталось ${days} дн.`;
+}
+
+function nextReevaluationDisplay(nextIso: string) {
+  const days = calendarDaysUntil(nextIso);
+  const dateStr = dayjs(nextIso).format('DD.MM.YYYY');
+  return {
+    dateStr,
+    days,
+    overdue: days < 0,
+    soon: days >= 0 && days <= REEVALUATION_SOON_WINDOW_DAYS,
+  };
+}
+
+/**
+ * Колонка «Переоценка»: дата; если до срока ≤ REEVALUATION_SOON_WINDOW_DAYS календарных дней — жёлтая подсветка и скобки.
+ */
+export function formatNextReevaluationInline(nextIso: string | null): ReactNode {
+  if (!nextIso) return '—';
+  const { dateStr, days, overdue, soon } = nextReevaluationDisplay(nextIso);
+  if (overdue) {
     return (
-      <span style={{ color: '#faad14', fontWeight: 500 }}>
+      <span style={{ color: '#ff4d4f', fontWeight: 500 }}>
         {dateStr}{' '}
-        <span style={{ fontSize: 11 }}>({days} дн.)</span>
+        <span style={{ fontSize: 12, fontWeight: 500 }}>({Math.abs(days)} дн. проср.)</span>
       </span>
     );
+  }
+  if (soon) {
+    return (
+      <span style={{ color: '#d48806', fontWeight: 500 }}>
+        {dateStr}{' '}
+        <span style={{ fontSize: 12, fontWeight: 500 }}>({daysRemainingSuffix(days)})</span>
+      </span>
+    );
+  }
   return <span style={{ color: '#8c8c8c' }}>{dateStr}</span>;
+}
+
+/** Плитка KPI «Следующая оценка» — те же пороги и скобки, что в таблице. */
+export function formatNextReevaluationKpiValue(nextIso: string | null): ReactNode {
+  if (!nextIso) return '—';
+  const { dateStr, days, overdue, soon } = nextReevaluationDisplay(nextIso);
+  if (overdue) {
+    return (
+      <span style={{ color: '#ff4d4f' }}>
+        {dateStr}{' '}
+        <span style={{ fontSize: 16, fontWeight: 700 }}>({Math.abs(days)} дн. проср.)</span>
+      </span>
+    );
+  }
+  if (soon) {
+    return (
+      <span style={{ color: '#d48806' }}>
+        {dateStr}{' '}
+        <span style={{ fontSize: 16, fontWeight: 700 }}>({daysRemainingSuffix(days)})</span>
+      </span>
+    );
+  }
+  return dateStr;
+}
+
+export function formatReevaluationCell(row: SupplierEvaluationListItem, ui: UiEvalRowStatus): ReactNode {
+  if (ui === 'blocked') return '—';
+  if (ui === 'archived') {
+    const evalRu = formatEvaluatedAtRu(row.evaluated_at);
+    return (
+      <span style={{ color: '#8c8c8c' }}>
+        <span style={{ fontSize: 12, fontWeight: 500 }}>Заменена</span>
+        <span style={{ fontSize: 11, display: 'block', marginTop: 2 }}>оценка от {evalRu}</span>
+      </span>
+    );
+  }
+  if (!row.next_reevaluation_date) return '—';
+  return formatNextReevaluationInline(row.next_reevaluation_date);
 }

@@ -27,13 +27,13 @@ export const useContractFilters = () => {
     },
     {
       key: 'partner_id',
-      label: 'Партнёр',
+      label: 'Контрагент',
       type: 'select',
       options: referenceBooks?.partners?.map(partner => ({
         name: partner.name,
         id: partner.id,
       })),
-      placeholder: 'Выберите партнёра',
+      placeholder: 'Выберите контрагента',
       icon: <UserOutlined />,
     },
     {
