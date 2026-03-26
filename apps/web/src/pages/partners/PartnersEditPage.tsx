@@ -1,17 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
-import { BankOutlined, CloseOutlined, CloudDownloadOutlined, SaveOutlined } from '@ant-design/icons';
-import { Button, Form, Input } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
+import { Button, Form } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePartnerById, usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
+import { usePartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
 import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper } from '../../helpers/mappers/partnerUploadFormMapper';
+import type { Partner } from '../../types/partner';
+import {
+  partnerDetailHeaderBadges,
+  partnerDetailHeaderMetaItems,
+  partnerEditBadgeOptions,
+} from './partnerDetailHeaderContent';
+import { PARTNER_STATUS_BADGE_COLORS } from './partnerStatusBadgeColors';
 import { PartnerFormFields } from './PartnerFormFields';
 import styles from './PartnerFormPage.module.scss';
 
@@ -47,6 +55,48 @@ export default function PartnerEditPage() {
   const wInn = Form.useWatch('inn', form) as string | undefined;
   const wStatusId = Form.useWatch('status_id', form) as string | undefined;
   const wTypeIds = Form.useWatch('type_ids', form) as string[] | undefined;
+  const wActualAddress = Form.useWatch('actual_address', form) as string | undefined;
+  const wLegal = Form.useWatch('legal_check_passed', form) as boolean | undefined;
+  const wQuestionnaire = Form.useWatch('questionnaire_filled', form) as boolean | undefined;
+  const wInitial = Form.useWatch('initial_assessment_done', form) as boolean | undefined;
+  const wKey = Form.useWatch('is_key_supplier', form) as boolean | undefined;
+  const wTarget = Form.useWatch('is_targeted', form) as boolean | undefined;
+  const wCategoryId = Form.useWatch('category_id', form) as string | undefined;
+
+  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
+    partnerId,
+    Boolean(partnerId),
+  );
+
+  const displayPartner: Partner | null = useMemo(() => {
+    if (!partner) return null;
+    return {
+      ...partner,
+      inn: wInn ?? partner.inn,
+      short_name: wShortName ?? partner.short_name,
+      name: wName ?? partner.name,
+      type_ids: wTypeIds ?? partner.type_ids,
+      actual_address: wActualAddress ?? partner.actual_address,
+      is_key_supplier: wKey ?? partner.is_key_supplier,
+      is_targeted: wTarget ?? partner.is_targeted,
+      legal_check_passed: wLegal ?? partner.legal_check_passed,
+      questionnaire_filled: wQuestionnaire ?? partner.questionnaire_filled,
+      initial_assessment_done: wInitial ?? partner.initial_assessment_done,
+    };
+  }, [
+    partner,
+    wInn,
+    wShortName,
+    wName,
+    wTypeIds,
+    wActualAddress,
+    wKey,
+    wTarget,
+    wLegal,
+    wQuestionnaire,
+    wInitial,
+  ]);
+
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses) {
       form.setFieldsValue(partnerUpdateFormMapper(partner));
@@ -75,20 +125,21 @@ export default function PartnerEditPage() {
   if (isReferencesLoading || isPartnerLoading) {
     return <Loader />;
   }
-  if (isReferencesError || isPartnerError || !referenceBooks) {
+  if (isReferencesError || isPartnerError || !referenceBooks || !partner || !displayPartner) {
     return <NotFound errorMessage='Контрагент не найден' />;
   }
-  const headerTitle = (wShortName ?? partner?.short_name) || (wName ?? partner?.name) || 'Контрагент';
-  const statusName = referenceBooks?.partnerStatuses?.find(
-    status => String(status.id) === String(wStatusId ?? partner?.status_id),
+  const headerTitle = (displayPartner.short_name || displayPartner.name || 'Контрагент').trim() || 'Контрагент';
+  const categoryName =
+    referenceBooks.partnerCategories?.find(
+      c => String(c.id) === String(wCategoryId ?? partner.category_id),
+    )?.name ?? null;
+  const statusName = referenceBooks.partnerStatuses?.find(
+    status => String(status.id) === String(wStatusId ?? partner.status_id),
   )?.name;
-  const typeNames = (wTypeIds ?? partner?.type_ids ?? [])
-    .map(id => referenceBooks?.partnerTypes?.find(partnerType => String(partnerType.id) === String(id))?.name)
-    .filter(Boolean);
   const handleSave = async (values: any) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
-    const payload = getChangedFields(values, partnerUpdateFormMapper(partner!));
+    const payload = getChangedFields(values, partnerUpdateFormMapper(partner));
     payload.type_ids = values.type_ids ?? [];
     payload.competence_ids = values.competence_ids ?? [];
     mutate(
@@ -102,24 +153,27 @@ export default function PartnerEditPage() {
   };
   return (
     <DetailPageHeader
-      title={`Редактирование: ${headerTitle}`}
-      backLabel='Контрагенты'
+      title={headerTitle}
+      titleWeight='medium'
+      titleSuffix={
+        <span style={{ fontSize: 14, fontWeight: 500, opacity: 0.85 }}></span>
+      }
+      backLabel='Реестр контрагентов'
       onBack={() => navigate(-1)}
       statusBadge={
-        statusName ? { label: statusName, color: statusName === 'Активный' ? '#52c41a' : '#1677ff' } : undefined
+        partner.is_deleted
+          ? { label: 'Удалён', color: '#ff4d4f' }
+          : statusName
+            ? { label: statusName, color: PARTNER_STATUS_BADGE_COLORS[statusName] ?? '#1677ff' }
+            : undefined
       }
-      metaItems={[
-        (wInn ?? partner?.inn) && (
-          <span key='inn' className={hStyles.metaText}>
-            <BankOutlined /> ИНН {wInn ?? partner?.inn}
-          </span>
-        ),
-        typeNames.length > 0 && (
-          <span key='types' className={hStyles.metaText}>
-            {typeNames.join(', ')}
-          </span>
-        ),
-      ].filter(Boolean)}
+      badges={partnerDetailHeaderBadges(displayPartner, partnerEditBadgeOptions(displayPartner, partner, categoryName))}
+      metaItems={partnerDetailHeaderMetaItems(
+        displayPartner,
+        referenceBooks,
+        partnerEvalKpi,
+        partnerEvalKpiLoading,
+      )}
       actions={
         <>
           <Button icon={<CloseOutlined />} onClick={() => navigate(-1)} disabled={isUpdateLoading}>

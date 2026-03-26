@@ -33,6 +33,20 @@ $radius-lg: 8px;
   margin-left: 8px;
 }
 
+.detailHeaderSubtitle {
+  text-transform: none;
+  font-weight: 500;
+}
+
+.detailHeaderPartner {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.detailHeaderProjectChip {
+  font-weight: 500;
+}
+
 .pageHeader {
   background: #fff;
   border-bottom: 1px solid $border-light;

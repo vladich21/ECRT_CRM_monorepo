@@ -1,3 +1,56 @@
+import type { Contract } from '../../../types/contract';
+
+export type ReferenceProjectPreview = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+export function formatContractSignedDateRu(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString('ru-RU');
+}
+
+/** Строка для реестра: № … от … "…" */
+export function formatContractRegistryCardHeading(contract: Pick<Contract, 'number' | 'date_signed' | 'name'>): string {
+  const num = contract.number?.trim() || '—';
+  const date = formatContractSignedDateRu(contract.date_signed);
+  const name = contract.name?.trim();
+  let s = `№ ${num}`;
+  if (date) s += ` от ${date}`;
+  if (name) s += ` "${name}"`;
+  return s;
+}
+
+/** Шапка карточки: Договор №… от … "…" */
+export function formatContractDetailPageHeading(contract: Pick<Contract, 'number' | 'date_signed' | 'name'>): string {
+  const num = contract.number?.trim() || '—';
+  const date = formatContractSignedDateRu(contract.date_signed);
+  const name = contract.name?.trim();
+  let s = `Договор №${num}`;
+  if (date) s += ` от ${date}`;
+  if (name) s += ` "${name}"`;
+  return s;
+}
+
+/** Подпись проекта для чипа: «код — краткое имя». Если имя уже содержит код в начале, не дублируем. */
+export function formatProjectChipLabel(project: ReferenceProjectPreview | undefined): string | null {
+  if (!project) return null;
+  const code = project.code?.trim();
+  let name = project.name?.trim();
+  if (!code && !name) return null;
+  if (!code) return name ?? null;
+  if (!name) return code;
+  if (name === code) return code;
+
+  const prefix = `${code} - `;
+  while (name.startsWith(prefix)) {
+    name = name.slice(prefix.length).trimStart();
+  }
+  if (!name) return code;
+  return `${code} - ${name}`;
+}
+
 export type ContractDetailsTabKey = 'main' | 'additional-agreements' | 'files' | 'history';
 export type ContractDetailsTabItem = {
   key: ContractDetailsTabKey;

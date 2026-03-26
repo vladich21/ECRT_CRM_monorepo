@@ -16,6 +16,8 @@ interface StatusBadge {
 interface DetailPageHeaderProps {
   title: string;
   titleSuffix?: ReactNode;
+  /** Строка под заголовком (контрагент, реквизиты и т.п.) */
+  subtitle?: ReactNode;
   backLabel: string;
   onBack: () => void;
   statusBadge?: StatusBadge;
@@ -29,10 +31,13 @@ interface DetailPageHeaderProps {
   stickyHeader?: boolean;
   children?: ReactNode;
   contextHolder?: ReactNode;
+  /** 500 вместо 700 для заголовка карточки (контрагенты, РИД) */
+  titleWeight?: 'default' | 'medium';
 }
 export default function DetailPageHeader({
   title,
   titleSuffix,
+  subtitle,
   backLabel,
   onBack,
   statusBadge,
@@ -46,6 +51,7 @@ export default function DetailPageHeader({
   stickyHeader,
   children,
   contextHolder,
+  titleWeight = 'default',
 }: DetailPageHeaderProps) {
   return (
     <div className={styles.pageRoot}>
@@ -59,10 +65,16 @@ export default function DetailPageHeader({
         <div className={styles.companyRow}>
           <div className={styles.companyInfo}>
             <div className={styles.nameRow}>
-              <h1 className={styles.companyName}>{title}</h1>
+              <h1
+                className={`${styles.companyName} ${titleWeight === 'medium' ? styles.companyNameMedium : ''}`.trim()}
+              >
+                {title}
+              </h1>
               {titleSuffix && <div className={styles.titleSuffix}>{titleSuffix}</div>}
               {badges}
             </div>
+
+            {subtitle && <div className={styles.subtitle}>{subtitle}</div>}
 
             <div className={styles.metaRow}>
               {statusBadge && (

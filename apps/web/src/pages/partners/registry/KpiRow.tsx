@@ -1,21 +1,18 @@
 import { ReactNode } from 'react';
-import { BarChartOutlined, CalendarOutlined, FileTextOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { CalendarOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 
 import { scoreColor } from '../evaluations/supplierEvaluationUi';
+import ComplianceCards, { type ComplianceItem } from './ComplianceCards';
 import styles from './KpiRow.module.scss';
 
 interface KpiRowProps {
-  /** Число договоров партнёра (как на вкладке «Договоры»); пока грузится — undefined → «—». */
-  contractsCount?: number;
-  totalVolume: string;
-  /** Средний балл по актуальным оценкам проектов (шкала как в матрице); null — нет актуальных оценок. */
+  complianceItems: ComplianceItem[];
   supplierEvalAvgScore: number | null;
-  /** Ближайшая next_reevaluation_date среди актуальных оценок; форматирование снаружи. */
   nextEvaluationValue: ReactNode;
-  /** Жёлтая рамка плитки «Следующая оценка», если до срока переоценки ≤ окна «скоро». */
   nextEvaluationSoon?: boolean;
 }
-type KpiTileKey = 'contracts' | 'volume' | 'avgScore' | 'nextEval';
+
+type KpiTileKey = 'avgScore' | 'nextEval';
 
 interface KpiTile {
   key: KpiTileKey;
@@ -25,20 +22,12 @@ interface KpiTile {
 }
 
 export default function KpiRow({
-  contractsCount,
-  totalVolume,
+  complianceItems,
   supplierEvalAvgScore,
   nextEvaluationValue,
   nextEvaluationSoon,
 }: KpiRowProps) {
   const tiles: KpiTile[] = [
-    {
-      key: 'contracts',
-      icon: <FileTextOutlined />,
-      value: contractsCount === undefined ? '—' : contractsCount,
-      label: 'Договоров',
-    },
-    { key: 'volume', icon: <BarChartOutlined />, value: totalVolume, label: 'Общий объём' },
     {
       key: 'avgScore',
       icon: <SafetyCertificateOutlined />,
@@ -55,6 +44,9 @@ export default function KpiRow({
 
   return (
     <div className={styles.row}>
+      <div className={`${styles.tile} ${styles.tileWide}`}>
+        <ComplianceCards items={complianceItems} compact embedded />
+      </div>
       {tiles.map(kpi => (
         <div
           key={kpi.key}
@@ -67,8 +59,7 @@ export default function KpiRow({
                 style={
                   kpi.key === 'avgScore'
                     ? {
-                        color:
-                          supplierEvalAvgScore != null ? scoreColor(supplierEvalAvgScore) : '#8c8c8c',
+                        color: supplierEvalAvgScore != null ? scoreColor(supplierEvalAvgScore) : '#8c8c8c',
                       }
                     : undefined
                 }

@@ -54,6 +54,21 @@
   color: #fff;
   font-size: 20px;
   font-weight: 700;
+  line-height: 1.35;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.companyNameMedium {
+  font-weight: 500;
+}
+
+.subtitle {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 14px;
+  max-width: 960px;
 }
 
 .titleSuffix {

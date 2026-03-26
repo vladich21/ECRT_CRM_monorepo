@@ -117,6 +117,7 @@ export default function PatentCreatePage() {
       <BackButton />
       <PageHeader
         title='Создание нового РИД'
+        titleWeight='medium'
         subtitle='Заполните данные для создания объекта интеллектуальной собственности'
       />
 

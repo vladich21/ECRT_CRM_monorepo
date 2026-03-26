@@ -165,6 +165,7 @@ export default function PartnersListPage() {
 
       <PageHeader
         title='Реестр контрагентов'
+        titleWeight='medium'
         subtitle='Управление поставщиками и подрядчиками'
         actions={
           <>

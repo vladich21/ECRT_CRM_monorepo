@@ -1,7 +1,8 @@
 .row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.55fr) minmax(0, 0.55fr);
   gap: 12px;
+  align-items: stretch;
 }
 
 .tile {
@@ -9,6 +10,11 @@
   border-radius: 10px;
   padding: 16px 18px;
   border: 1px solid #f0f0f0;
+}
+
+.tileWide {
+  padding: 14px 16px;
+  min-width: 0;
 }
 
 .tileSoonReevaluation {
@@ -32,7 +38,7 @@
 .label {
   font-size: 14px;
   color: #8c8c8c;
-  margin-top: 2px;
+  margin-top: 6px;
 }
 
 .iconBox {

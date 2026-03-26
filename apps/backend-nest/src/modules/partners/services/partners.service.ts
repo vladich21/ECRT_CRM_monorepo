@@ -12,7 +12,9 @@ import {
   refPartnerTypes,
   refPartnerCompetencies,
   refPartnerCategories,
+  supplierPartnerProjectBlocks,
 } from '../../../database/schema';
+import { computePartnerIsApproved, inferPartnerCategoryKind } from '../domain/partner-approval.rules';
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
@@ -217,11 +219,26 @@ export class PartnersService {
       }
     }
 
-    const data = rows.map((row) => ({
-      ...this.toResponse(row),
-      type_ids: typeMap.get(String(row.id)) ?? [],
-      competence_ids: compMap.get(String(row.id)) ?? [],
-    }));
+    const partnerIds = rows.map((row) => String(row.id));
+    const categoryIds = [...new Set(rows.map((row) => row.categoryId).filter(Boolean))] as string[];
+
+    const [categoryNameById, blockedPartnerIds] = await Promise.all([
+      this.loadCategoryNamesByIds(categoryIds),
+      this.loadBlockedPartnerIds(partnerIds),
+    ]);
+
+    const data = rows.map((row) => {
+      const pid = String(row.id);
+      const catId = row.categoryId ? String(row.categoryId) : '';
+      const catName = catId ? categoryNameById.get(catId) ?? null : null;
+      const hasBlock = blockedPartnerIds.has(pid);
+      const extras = this.partnerApprovalExtras(row, catName, hasBlock);
+      return {
+        ...this.toResponse(row, extras),
+        type_ids: typeMap.get(pid) ?? [],
+        competence_ids: compMap.get(pid) ?? [],
+      };
+    });
 
     return {
       data,
@@ -249,7 +266,9 @@ export class PartnersService {
       .limit(1);
     const row = rows[0];
     if (!row) return null;
-    const [typeRows, compRows] = await Promise.all([
+    const pid = String(row.id);
+    const catId = row.categoryId ? String(row.categoryId) : '';
+    const [typeRows, compRows, categoryNameById, blockedPartnerIds] = await Promise.all([
       this.db.db
         .select({ typeId: relPartnersTypes.typeId })
         .from(relPartnersTypes)
@@ -258,9 +277,14 @@ export class PartnersService {
         .select({ competenceId: relPartnersCompetencies.competenceId })
         .from(relPartnersCompetencies)
         .where(eq(relPartnersCompetencies.partnerId, id)),
+      catId ? this.loadCategoryNamesByIds([catId]) : Promise.resolve(new Map<string, string>()),
+      this.loadBlockedPartnerIds([pid]),
     ]);
+    const catName = catId ? categoryNameById.get(catId) ?? null : null;
+    const hasBlock = blockedPartnerIds.has(pid);
+    const extras = this.partnerApprovalExtras(row, catName, hasBlock);
     return {
-      ...this.toResponse(row),
+      ...this.toResponse(row, extras),
       type_ids: typeRows.map((typeRow) => String(typeRow.typeId)).filter(Boolean),
       competence_ids: compRows.map((compRow) => String(compRow.competenceId)).filter(Boolean),
     };
@@ -494,8 +518,52 @@ export class PartnersService {
     };
   }
 
-  private toResponse(r: (typeof partners.$inferSelect)) {
-    const isApproved = !!(r.legalCheckPassed && r.questionnaireFilled && r.initialAssessmentDone);
+  private partnerApprovalExtras(
+    row: typeof partners.$inferSelect,
+    categoryName: string | null,
+    hasActiveEvaluationBlock: boolean,
+  ): { isApproved: boolean; hasActiveEvaluationBlock: boolean } {
+    const isApproved = computePartnerIsApproved({
+      kind: inferPartnerCategoryKind(categoryName),
+      legalCheckPassed: !!(row.legalCheckPassed ?? false),
+      questionnaireFilled: !!(row.questionnaireFilled ?? false),
+      initialAssessmentDone: !!(row.initialAssessmentDone ?? false),
+      hasActiveSupplierEvaluationBlock: hasActiveEvaluationBlock,
+    });
+    return { isApproved, hasActiveEvaluationBlock: hasActiveEvaluationBlock };
+  }
+
+  private async loadCategoryNamesByIds(categoryIds: string[]): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    if (categoryIds.length === 0) return map;
+    const catRows = await this.db.db
+      .select({ id: refPartnerCategories.id, name: refPartnerCategories.name })
+      .from(refPartnerCategories)
+      .where(inArray(refPartnerCategories.id, categoryIds));
+    for (const cr of catRows) {
+      map.set(String(cr.id), cr.name ?? '');
+    }
+    return map;
+  }
+
+  private async loadBlockedPartnerIds(partnerIds: string[]): Promise<Set<string>> {
+    if (partnerIds.length === 0) return new Set();
+    const blockRows = await this.db.db
+      .select({ partnerId: supplierPartnerProjectBlocks.partnerId })
+      .from(supplierPartnerProjectBlocks)
+      .where(
+        and(
+          inArray(supplierPartnerProjectBlocks.partnerId, partnerIds),
+          eq(supplierPartnerProjectBlocks.isActive, true),
+        )!,
+      );
+    return new Set(blockRows.map((b) => String(b.partnerId)));
+  }
+
+  private toResponse(
+    r: (typeof partners.$inferSelect),
+    extras: { isApproved: boolean; hasActiveEvaluationBlock: boolean },
+  ) {
     return {
       id: String(r.id),
       name: r.name ?? '',
@@ -517,7 +585,8 @@ export class PartnersService {
       legal_check_passed: r.legalCheckPassed ?? false,
       questionnaire_filled: r.questionnaireFilled ?? false,
       initial_assessment_done: r.initialAssessmentDone ?? false,
-      is_approved: isApproved,
+      is_approved: extras.isApproved,
+      has_active_evaluation_block: extras.hasActiveEvaluationBlock,
       rating: r.rating ? Number(r.rating) : null,
       next_audit_date: r.nextAuditDate ?? null,
       created_at: r.createdAt ? r.createdAt.toISOString() : '',

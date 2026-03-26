@@ -161,6 +161,7 @@ export default function PatentsListPage() {
 
       <PageHeader
         title='РИД'
+        titleWeight='medium'
         subtitle='Результаты интеллектуальной деятельности'
         actions={
           <>

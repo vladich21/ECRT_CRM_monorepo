@@ -1,13 +1,23 @@
-import { CalendarOutlined, DollarOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
-import { Tag, Tooltip } from 'antd';
+import { CalendarOutlined, DollarOutlined, RightOutlined, UserOutlined } from '@ant-design/icons';
+import { Tag } from 'antd';
 
 import type { ReferenceData } from '../../../api/hooks/useReferences';
 import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
 import { Contract } from '../../../types/contract';
+import {
+  formatContractRegistryCardHeading,
+  formatProjectChipLabel,
+} from '../utils/contractDetailsUtils';
 import styles from './ContractsListPage.module.scss';
 
-type Refs = Pick<ReferenceData, 'partners' | 'contractStates' | 'contractCategories'> | null;
+type Refs =
+  | Pick<
+      ReferenceData,
+      'partners' | 'contractStates' | 'contractCategories' | 'contractTypes' | 'projects'
+    >
+  | null;
+
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
@@ -20,7 +30,9 @@ type Props = {
 };
 export function ContractCard({ contract, refs, onClick }: Props) {
   const partnerName = refs?.partners?.find(partner => partner.id === contract.partner_id)?.name ?? '—';
-  const categoryName = getNameById(contract.category_id, refs?.contractCategories ?? []);
+  const contractTypeName = getNameById(contract.contract_type_id, refs?.contractTypes ?? []);
+  const projectEntity = getEntityById(contract.project_id, refs?.projects ?? []);
+  const projectLabel = formatProjectChipLabel(projectEntity);
   const stateEntity = getEntityById(contract.state_id, refs?.contractStates);
   const st = contract.is_active ? ACTIVE_STYLE : INACTIVE_STYLE;
   const periodStr =
@@ -28,6 +40,8 @@ export function ContractCard({ contract, refs, onClick }: Props) {
       ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' — ')
       : '—';
   const amountStr = contract.amount_incl_vat != null ? `${contract.amount_incl_vat.toLocaleString('ru-RU')} ₽` : '—';
+  const heading = formatContractRegistryCardHeading(contract);
+
   return (
     <div
       className={styles.card}
@@ -35,38 +49,29 @@ export function ContractCard({ contract, refs, onClick }: Props) {
       onClick={() => onClick(contract)}
     >
       <div className={styles.mainInfo}>
-        <div className={styles.nameRow}>
-          <span className={styles.name}>№ {contract.number || '—'}</span>
-          <div className={styles.cipherNameGroup}>
-            {contract.cipher ? <span className={styles.metaText}>Шифр: {contract.cipher}</span> : null}
-            <Tooltip title={contract.name?.trim() ? contract.name : undefined}>
-              <span className={styles.contractName}>{contract.name?.trim() || '—'}</span>
-            </Tooltip>
-          </div>
+        <div className={styles.cardHeading}>{heading}</div>
+        <div className={styles.partnerRow}>
+          <UserOutlined style={{ fontSize: 14, flexShrink: 0 }} />
+          <span className={styles.partnerNameUpper}>{partnerName}</span>
         </div>
-        <div className={styles.metaRow} style={{ marginTop: 2 }}>
-          <span className={styles.metaText}>
-            <CalendarOutlined style={{ fontSize: 14 }} />
-            Подписан: {formatDate(contract.date_signed ?? '')}
-          </span>
-        </div>
-        <div className={styles.metaRow}>
-          <Tag color={st.color} style={{ fontSize: 14 }}>
+        <div className={styles.chipsRow}>
+          <Tag color={st.color} style={{ fontSize: 14, marginInlineEnd: 0 }}>
             {st.label}
           </Tag>
-          {stateEntity && <Tag style={{ fontSize: 14 }}>{stateEntity.name}</Tag>}
+          {stateEntity ? (
+            <Tag style={{ fontSize: 14, marginInlineEnd: 0 }}>{stateEntity.name}</Tag>
+          ) : null}
+          {contractTypeName ? (
+            <Tag className={styles.typeChip} style={{ fontSize: 14, marginInlineEnd: 0 }}>
+              {contractTypeName}
+            </Tag>
+          ) : null}
+          {projectLabel ? (
+            <Tag className={styles.projectChip} style={{ fontSize: 14, marginInlineEnd: 0 }}>
+              {projectLabel}
+            </Tag>
+          ) : null}
         </div>
-        <div className={styles.metaRow} style={{ marginTop: 2 }}>
-          <span className={styles.metaText}>
-            <TeamOutlined style={{ fontSize: 14 }} />
-            {partnerName}
-          </span>
-        </div>
-        {categoryName && (
-          <div className={styles.metaRow} style={{ marginTop: 2 }}>
-            <span className={styles.tag}>{categoryName}</span>
-          </div>
-        )}
       </div>
 
       <div className={styles.metricsCol}>

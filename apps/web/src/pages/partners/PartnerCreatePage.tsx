@@ -105,6 +105,7 @@ export default function PartnerCreatePage() {
   return (
     <DetailPageHeader
       title='Создание нового контрагента'
+      titleWeight='medium'
       titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные контрагента</span>}
       backLabel='Контрагенты'
       onBack={() => navigate(-1)}

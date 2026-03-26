@@ -128,7 +128,7 @@ export default function ContractsListPage() {
     data: referenceBooks,
     isError: isRefsError,
     isLoading: isRefsLoading,
-  } = useReferenceData(['partners', 'contractStates', 'contractCategories']);
+  } = useReferenceData(['partners', 'contractStates', 'contractCategories', 'contractTypes', 'projects']);
   const contracts = data?.data ?? [];
   const total = data?.total ?? 0;
   const tabCounts = data?.tab_counts ?? {

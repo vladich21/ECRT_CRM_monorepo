@@ -93,6 +93,7 @@ export default function PatentDetailsPage() {
   return (
     <DetailPageHeader
       title={`РИД ${patent.registration_number || '—'}`}
+      titleWeight='medium'
       backLabel='Реестр РИД'
       onBack={handleBack}
       statusBadge={{ label: st.label, color: st.color }}

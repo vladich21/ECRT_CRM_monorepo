@@ -9,7 +9,7 @@ import { useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../../constants/deletionScope';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useNotification } from '../../../customhooks/useNotification';
@@ -20,6 +20,8 @@ import tagStyles from '../list/ContractsListPage.module.scss';
 import type { FilterTab } from '../list/ContractsListPage.types';
 import {
   CONTRACT_DETAILS_TABS,
+  formatContractDetailPageHeading,
+  formatProjectChipLabel,
   getActiveContractDetailsTab,
   getContractDetailsTabPath,
   getDaysUntilDate,
@@ -32,7 +34,6 @@ import { getContractStateTagClass, isContractDraft } from '../utils/contractStat
 import styles from './ContractDetails.module.scss';
 import { DEMO_ADDITIONAL_AGREEMENTS } from './tabs/additionalAgreements/ContractAdditionalAgreementsTab';
 import { ContractDetailsAside } from './tabs/main/ContractDetailsAside';
-import { formatDate } from './tabs/stages/data';
 
 export default function ContractDetailsPage() {
   const { contractId } = useParams();
@@ -70,6 +71,7 @@ export default function ContractDetailsPage() {
     'contractCategories',
     'contractTypes',
     'partners',
+    'projects',
     'users',
   ]);
   const { data: contractFiles = [] } = useFilesByEntity('contract', contractId!);
@@ -142,7 +144,10 @@ export default function ContractDetailsPage() {
   const daysUntilEnd = getDaysUntilDate(contract.end_date);
   const showDeadlineBanner = shouldShowDeadlineBanner(daysUntilEnd);
   const formattedEndDate = contract.end_date ? new Date(contract.end_date).toLocaleDateString('ru-RU') : '-';
-  const title = `Договор №${contract.number}${contract.cipher ? ` (${contract.cipher})` : ''}`;
+  const title = formatContractDetailPageHeading(contract);
+  const projectEntity = getEntityById(contract.project_id, referenceBooks?.projects);
+  const projectChipLabel = formatProjectChipLabel(projectEntity);
+  const hasHeaderSubtitle = !!(partnerName || contract.cipher || contractCategoryName);
   const headerTabs = tabsWithCounts.map(({ key, label, count }) => ({
     key,
     label: count !== undefined ? `${label} (${count})` : label,
@@ -150,13 +155,24 @@ export default function ContractDetailsPage() {
   return (
     <DetailPageHeader
       title={title}
-      titleSuffix={
-        <>
-          {contractTypeName ? <span className={hStyles.metaText}>{contractTypeName}</span> : null}
-          {contract.date_signed ? (
-            <span className={hStyles.metaText}>Подписан: {formatDate(contract.date_signed)}</span>
-          ) : null}
-        </>
+      subtitle={
+        hasHeaderSubtitle ? (
+          <div className={styles.detailHeaderSubtitle}>
+            {partnerName ? <span className={styles.detailHeaderPartner}>{partnerName}</span> : null}
+            {contract.cipher ? (
+              <span>
+                {partnerName ? ' · ' : null}
+                Шифр: {contract.cipher}
+              </span>
+            ) : null}
+            {contractCategoryName ? (
+              <span>
+                {partnerName || contract.cipher ? ' · ' : null}
+                Категория: {contractCategoryName}
+              </span>
+            ) : null}
+          </div>
+        ) : undefined
       }
       backLabel='Договоры'
       onBack={handleBack}
@@ -165,11 +181,6 @@ export default function ContractDetailsPage() {
         color: contract.is_deleted ? '#ff4d4f' : contract.is_active ? '#52c41a' : '#ff4d4f',
       }}
       metaItems={[
-        contract.name && (
-          <span key='name' className={hStyles.metaText}>
-            {contract.name}
-          </span>
-        ),
         contractState && (
           <span
             key='state'
@@ -178,14 +189,14 @@ export default function ContractDetailsPage() {
             {contractState.name}
           </span>
         ),
-        contractCategoryName && (
-          <span key='category' className={tagStyles.cardCategory}>
-            {contractCategoryName}
+        contractTypeName && (
+          <span key='type' className={tagStyles.cardCategory}>
+            {contractTypeName}
           </span>
         ),
-        partnerName && (
-          <span key='partner' className={hStyles.metaText}>
-            {partnerName}
+        projectChipLabel && (
+          <span key='project' className={`${tagStyles.cardCategory} ${styles.detailHeaderProjectChip}`}>
+            {projectChipLabel}
           </span>
         ),
       ].filter(Boolean)}

@@ -224,6 +224,51 @@ $tag-default-text: #1d4ed8;
   min-width: 0;
 }
 
+.cardHeading {
+  font-weight: 500;
+  font-size: 15px;
+  color: #141414;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.partnerRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #262626;
+  font-size: 14px;
+  margin-bottom: 10px;
+  min-width: 0;
+}
+
+.partnerNameUpper {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  min-width: 0;
+}
+
+.chipsRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.typeChip {
+  color: #595959 !important;
+  background: #fff !important;
+  border-color: #e8e8e8 !important;
+}
+
+.projectChip {
+  font-weight: 500;
+  color: #595959 !important;
+  background: #fff !important;
+  border-color: #e8e8e8 !important;
+}
+
 .nameRow {
   display: flex;
   align-items: center;

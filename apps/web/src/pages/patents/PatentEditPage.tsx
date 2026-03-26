@@ -133,6 +133,7 @@ export default function PatentEditPage() {
   return (
     <DetailPageHeader
       title={`Редактирование: РИД ${headerRegNumber || '—'}`}
+      titleWeight='medium'
       backLabel='Реестр РИД'
       onBack={() => navigate(-1)}
       statusBadge={{

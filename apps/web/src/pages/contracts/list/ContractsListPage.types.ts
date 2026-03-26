@@ -11,7 +11,10 @@ export type AdvancedFilters = {
   amountMin: number | null;
   amountMax: number | null;
 };
-export type ContractListReferences = Pick<ReferenceData, 'partners' | 'contractStates' | 'contractCategories'> | null;
+export type ContractListReferences = Pick<
+  ReferenceData,
+  'partners' | 'contractStates' | 'contractCategories' | 'contractTypes' | 'projects'
+> | null;
 export const DEFAULT_ADVANCED_FILTERS: AdvancedFilters = {
   partnerId: null,
   categoryId: null,

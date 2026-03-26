@@ -8,14 +8,27 @@ interface PageHeaderProps {
   actions?: ReactNode;
   filters?: ReactNode;
   transparentBlock?: boolean;
+  /** Средняя насыщенность заголовка списка (500 вместо 600) */
+  titleWeight?: 'default' | 'medium';
 }
-export function PageHeader({ title, subtitle, actions, filters, transparentBlock }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+  filters,
+  transparentBlock,
+  titleWeight = 'default',
+}: PageHeaderProps) {
   return (
     <div className={`${styles.pageBlock} ${transparentBlock ? styles.pageBlockTransparent : ''}`}>
       <header className={styles.pageHeader}>
         <div className={styles.pageHeaderContainer}>
           <div className={styles.pageHeaderLeft}>
-            <h1 className={styles.pageTitle}>{title}</h1>
+            <h1
+              className={`${styles.pageTitle} ${titleWeight === 'medium' ? styles.pageTitleMedium : ''}`.trim()}
+            >
+              {title}
+            </h1>
             {subtitle && <span className={styles.pageSubtitle}>{subtitle}</span>}
           </div>
 

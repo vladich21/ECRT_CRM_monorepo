@@ -24,6 +24,8 @@ export interface Partner {
   questionnaire_filled: boolean;
   initial_assessment_done: boolean;
   is_approved: boolean;
+  /** Активная блокировка по оценке (кат. D и т.п.); с сервера. */
+  has_active_evaluation_block?: boolean;
   rating: number | null;
   next_audit_date: string | null;
   created_at: string;
