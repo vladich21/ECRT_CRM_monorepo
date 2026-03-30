@@ -1,9 +1,3 @@
-/**
- * Цвета для JS (Ant Design `strokeColor`, инлайн там, где значение считается в рантайме).
- *
- * Статичные фоны/рамки верстки — в `.module.scss` или `styles/variables.scss`, без импорта этого файла из SCSS
- * (в Sass нельзя подтянуть TS). Дублируйте hex только если один и тот же токен нужен и в SCSS, и здесь.
- */
 export const APP_COLOR_ERROR = '#e84749';
 
 export const APP_COLOR_WARNING = '#faad14';

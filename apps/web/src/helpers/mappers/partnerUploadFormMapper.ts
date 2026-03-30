@@ -1,4 +1,4 @@
-interface CompanyApiResponse {
+export interface CompanyApiResponse {
   inn: string;
   ogrn: string;
   company: {

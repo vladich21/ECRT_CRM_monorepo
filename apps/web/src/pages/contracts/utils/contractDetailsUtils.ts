@@ -11,7 +11,6 @@ export function formatContractSignedDateRu(dateStr: string | null | undefined): 
   return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
-/** Строка для реестра: № … от … "…" */
 export function formatContractRegistryCardHeading(contract: Pick<Contract, 'number' | 'date_signed' | 'name'>): string {
   const num = contract.number?.trim() || '—';
   const date = formatContractSignedDateRu(contract.date_signed);
@@ -22,7 +21,6 @@ export function formatContractRegistryCardHeading(contract: Pick<Contract, 'numb
   return s;
 }
 
-/** Шапка карточки: Договор №… от … "…" */
 export function formatContractDetailPageHeading(contract: Pick<Contract, 'number' | 'date_signed' | 'name'>): string {
   const num = contract.number?.trim() || '—';
   const date = formatContractSignedDateRu(contract.date_signed);
@@ -33,7 +31,6 @@ export function formatContractDetailPageHeading(contract: Pick<Contract, 'number
   return s;
 }
 
-/** Подпись проекта для чипа: «код — краткое имя». Если имя уже содержит код в начале, не дублируем. */
 export function formatProjectChipLabel(project: ReferenceProjectPreview | undefined): string | null {
   if (!project) return null;
   const code = project.code?.trim();

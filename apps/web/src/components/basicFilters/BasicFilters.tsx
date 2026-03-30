@@ -86,9 +86,7 @@ export const UniversalFilters: React.FC<UniversalFiltersProps> = ({ filterConfig
 
   return (
     <Card size='small' className={styles.card}>
-      {/* 1. Верхняя строка - Активные фильтры слева, поиск и фильтры справа */}
       <div className={styles.topRow}>
-        {/* Левая часть - активные фильтры */}
         <div className={styles.activeFiltersContainer}>
           {hasActiveFilters && (
             <div className={styles.activeFiltersList}>
@@ -114,7 +112,6 @@ export const UniversalFilters: React.FC<UniversalFiltersProps> = ({ filterConfig
           )}
         </div>
 
-        {/* Правая часть - поиск и кнопка фильтров */}
         <div className={styles.controlsContainer}>
           {filterConfig.some(field => field.type === 'search') &&
             renderField(filterConfig.find(field => field.type === 'search')!)}
@@ -145,7 +142,6 @@ export const UniversalFilters: React.FC<UniversalFiltersProps> = ({ filterConfig
         </div>
       </div>
 
-      {/* 4. Модальное окно всех фильтров */}
       <Modal
         title='Все фильтры'
         open={isAdvancedOpen}

@@ -6,7 +6,6 @@ import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface ConfirmModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   content?: ReactNode;
-  /** Стилизация кнопок (если не задано, используется `confirmAppearance` или значение по умолчанию). */
   type?: 'delete' | 'warning' | 'info' | 'success' | 'confirm';
   confirmAppearance?: ConfirmModalAppearance;
   okText?: string;

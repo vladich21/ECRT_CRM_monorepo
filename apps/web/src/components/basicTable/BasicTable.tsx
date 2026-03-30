@@ -13,15 +13,6 @@ import { Button, Space, Table, TableProps } from 'antd';
 import styles from './BasicTable.module.scss';
 import { handleExport } from './handleExcelExport';
 
-interface TreeData {
-  id: number;
-  name: string;
-  short_name?: string;
-  parent_id: number;
-  children?: TreeData[];
-  [key: string]: any;
-}
-
 export interface BasicTableProps<T> extends TableProps<T> {
   data: T[];
   loading?: boolean;

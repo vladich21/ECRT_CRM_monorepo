@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { Button, Spin } from 'antd';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import {
   useCreatePartnerContact,
@@ -8,80 +8,76 @@ import {
   usePartnerContacts,
   useUpdatePartnerContact,
 } from '../../../../api/partners/partnerContactApiHooks';
-import { useConfirmByModal } from '../../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../../customhooks/useNotification';
 import { getEntityById } from '../../../../helpers/getEntityById';
-import { useModalStore } from '../../../../store/ModalStore';
 import type { PartnerContact } from '../../../../types/partner';
 import ContactCard from './ContactCard';
 import styles from './ContactsListPage.module.scss';
 import { initialPartnerContactValues } from './data';
 
-type ActionType = 'edit' | 'delete' | 'add' | '';
 const PartnerContactsListPage: React.FC = () => {
   const { partnerId } = useParams();
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = usePartnerContacts(partnerId!);
-  const [currentContactId, setCurrentContactId] = useState<string>('');
-  const [action, setAction] = useState<ActionType>('');
-  const modalProps = useModalStore();
+  const deleteIdRef = useRef('');
+  const editIdRef = useRef('');
   const deleteContactMutation = useDeletePartnerContact();
   const editContactMutation = useUpdatePartnerContact();
   const addContactMutation = useCreatePartnerContact();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteContactMutation,
-    successMessage: 'Контакт успешно удален',
-    errorMessage: 'Не удалось удалить контакт',
-    getMutationProps: () => ({ partnerId: partnerId!, contactId: currentContactId }),
-    showNotification,
-  });
-  const existingContact = getEntityById<PartnerContact>(currentContactId, data);
-  const hasPrimaryContact = data.some((c: PartnerContact) => c.is_primary);
-  const modalDataForContact =
-    action === 'add'
-      ? { ...initialPartnerContactValues, hasPrimaryContact, is_primary: false }
-      : { ...existingContact, hasPrimaryContact };
-  const { handleOpenModal: openMutateModal } = useMutateByModal<PartnerContact>({
-    isEdit: action === 'edit',
-    mutation: action === 'edit' ? editContactMutation : addContactMutation,
-    successMessage: `Контакт успешно ${action === 'edit' ? 'изменен' : 'добавлен'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} контакт`,
+  const { handleOpenModal: openEditModal } = useMutateByModal<PartnerContact>({
+    isEdit: true,
+    mutation: editContactMutation,
+    successMessage: 'Контакт успешно изменен',
+    errorMessage: 'Не удалось изменить контакт',
     modalType: 'contactForm',
-    modalData: modalDataForContact,
-    getMutationProps: () => (action === 'edit' ? { partnerId, contactId: currentContactId } : { partnerId }),
+    getModalData: () => {
+      const existing = getEntityById<PartnerContact>(editIdRef.current, data);
+      return {
+        ...existing,
+        hasPrimaryContact: data.some((c: PartnerContact) => c.is_primary),
+      };
+    },
+    getMutationProps: () => ({ partnerId: partnerId!, contactId: editIdRef.current }),
     showNotification,
   });
-  useEffect(() => {
-    if (action === 'delete') {
-      openDeleteModal();
-    } else if (action === 'edit' || action === 'add') {
-      openMutateModal();
-    }
-  }, [currentContactId, action]);
-  useEffect(() => {
-    if (!modalProps.open) {
-      setAction('');
-    }
-  }, [modalProps.open]);
-  const handleOpenAddModal = () => {
-    setAction('add');
-    setCurrentContactId('');
-  };
+  const { handleOpenModal: openAddModal } = useMutateByModal<PartnerContact>({
+    isEdit: false,
+    mutation: addContactMutation,
+    successMessage: 'Контакт успешно добавлен',
+    errorMessage: 'Не удалось добавить контакт',
+    modalType: 'contactForm',
+    getModalData: () => ({
+      ...initialPartnerContactValues,
+      hasPrimaryContact: data.some((c: PartnerContact) => c.is_primary),
+      is_primary: false,
+    }),
+    getMutationProps: () => ({ partnerId: partnerId! }),
+    showNotification,
+  });
   const onDelete = (contact: PartnerContact) => {
-    setAction('delete');
-    setCurrentContactId(contact.id);
+    deleteIdRef.current = contact.id;
+    openAntdDeleteConfirm({
+      mutation: deleteContactMutation,
+      getVariables: () => ({ partnerId: partnerId!, contactId: deleteIdRef.current }),
+      showNotification,
+      successMessage: 'Контакт успешно удален',
+      errorMessage: 'Не удалось удалить контакт',
+      navigate,
+    });
   };
   const onEdit = (contact: PartnerContact) => {
-    setAction('edit');
-    setCurrentContactId(contact.id);
+    editIdRef.current = contact.id;
+    openEditModal();
   };
   return (
     <div className={styles.wrapper}>
       {contextHolder}
       <div className={styles.header}>
         <h3 className={styles.title}>Контактные лица</h3>
-        <Button type='primary' onClick={handleOpenAddModal}>
+        <Button type='primary' onClick={() => openAddModal()}>
           Добавить контакт
         </Button>
       </div>

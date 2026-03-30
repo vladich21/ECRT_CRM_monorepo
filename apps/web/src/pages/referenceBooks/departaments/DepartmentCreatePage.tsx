@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import {
   ApartmentOutlined,
   IdcardOutlined,
@@ -20,47 +20,42 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { initialFormValues } from './data';
 import styles from './DepartmentFormPage.module.scss';
 
-const { Option } = Select;
 
 export default function DepartmentCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-  const notificationShownRef = useRef(false);
-
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['departments', 'users']);
 
-  const {
-    mutate,
-    isPending: isCreateLoading,
-    isError: isCreateError,
-    isSuccess: isCreateSuccess,
-  } = useCreateDepartment();
+  const { mutate, isPending: isCreateLoading } = useCreateDepartment();
 
-  useEffect(() => {
-    if (isCreateSuccess && !notificationShownRef.current) {
-      notificationShownRef.current = true;
-      showNotification('success', 'Успех', 'Отдел успешно создан');
-      setTimeout(() => navigate('/departments'), 1000);
-    } else if (isCreateError && !notificationShownRef.current) {
-      notificationShownRef.current = true;
-      showNotification('error', 'Ошибка', 'Не удалось создать отдел');
-    }
-  }, [isCreateError, isCreateSuccess, navigate, showNotification]);
+  const isSubmittingRef = useRef(false);
 
   const handleCreate = async (values: any) => {
-    notificationShownRef.current = false;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     const payload = {
       ...values,
       manager_id: values.manager_id || null,
       parent_id: values.parent_id || null,
     };
 
-    mutate(payload);
+    mutate(payload, {
+      onSuccess: () => {
+        showNotification('success', 'Успех', 'Отдел успешно создан');
+        setTimeout(() => navigate('/departments'), 1000);
+      },
+      onError: () => {
+        showNotification('error', 'Ошибка', 'Не удалось создать отдел');
+      },
+      onSettled: () => {
+        isSubmittingRef.current = false;
+      },
+    });
   };
 
   if (isReferencesLoading) {
@@ -135,9 +130,9 @@ export default function DepartmentCreatePage() {
                   suffixIcon={<UserOutlined />}
                 >
                   {referenceBooks?.users?.map(user => (
-                    <Option key={user.id} value={user.id} label={user.name}>
+                    <Select.Option key={user.id} value={user.id} label={user.name}>
                       {user.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -147,9 +142,9 @@ export default function DepartmentCreatePage() {
               <Form.Item label='Родительский отдел' name='parent_id'>
                 <Select placeholder='Выберите родительский отдел' allowClear suffixIcon={<ApartmentOutlined />}>
                   {referenceBooks?.departments?.map(dept => (
-                    <Option key={dept.id} value={dept.id}>
+                    <Select.Option key={dept.id} value={dept.id}>
                       {dept.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>

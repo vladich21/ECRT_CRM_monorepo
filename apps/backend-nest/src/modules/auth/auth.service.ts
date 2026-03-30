@@ -126,8 +126,6 @@ export class AuthService {
     await this.setAuthCookie(userId, res);
   }
 
-  // ─── Приватные ─────────────────────────────────────────────────────────────
-
   private async finishLogin(userId: string, res: Response): Promise<void> {
     await this.users.updateLastLogin(userId);
     await this.setAuthCookie(userId, res);

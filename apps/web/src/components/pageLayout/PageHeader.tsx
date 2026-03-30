@@ -8,7 +8,6 @@ interface PageHeaderProps {
   actions?: ReactNode;
   filters?: ReactNode;
   transparentBlock?: boolean;
-  /** Средняя насыщенность заголовка списка (500 вместо 600) */
   titleWeight?: 'default' | 'medium';
 }
 export function PageHeader({

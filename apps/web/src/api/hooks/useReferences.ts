@@ -116,7 +116,6 @@ const referenceApiMethods = {
   partnerTypes: partnerTypeApi.getPartnerTypes,
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,
-  /** Договоры для привязки в формах: только действующие (подписанные), см. getContractsForReference. */
   contracts: () => contractApi.getContractsForReference().then(r => r.data),
   contractStates: contractApi.getContractsStates,
   contractCategories: contractApi.getContractsCategories,

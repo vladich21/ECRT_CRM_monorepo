@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Spin } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 import {
   useCreatePosition,
@@ -10,25 +11,24 @@ import {
 } from '../../../api/positions/positionApiHooks';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getNameById } from '../../../helpers/getNameById';
-import { useModalStore } from '../../../store/ModalStore';
 import { Position } from '../../../types/referenceTypes';
 import { PositionCard } from './PositionCard';
 import styles from './PositionsListPage.module.scss';
 
 const SEARCH_DEBOUNCE_MS = 350;
-type ActionType = 'edit' | 'delete' | 'add' | '';
+
 const PositionsListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = usePositions();
-  const [currentPositionId, setCurrentPositionId] = useState<string>('');
-  const [action, setAction] = useState<ActionType>('');
+  const deleteIdRef = useRef('');
+  const editIdRef = useRef('');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const modalProps = useModalStore();
   useEffect(() => {
     const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(debounceTimerId);
@@ -41,47 +41,41 @@ const PositionsListPage: React.FC = () => {
   const deletePositionMutation = useDeletePosition();
   const editPositionMutation = useUpdatePosition();
   const addPositionMutation = useCreatePosition();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deletePositionMutation,
-    successMessage: 'Должность успешно удалена',
-    errorMessage: 'Не удалось удалить должность',
-    redirectPath: '/positions',
-    getMutationProps: () => currentPositionId,
-    showNotification,
-  });
-  const { handleOpenModal: openMutateModal } = useMutateByModal<Position>({
-    isEdit: action === 'edit',
-    mutation: action === 'edit' ? editPositionMutation : addPositionMutation,
-    successMessage: `Должность успешно ${action === 'edit' ? 'изменена' : 'добавлена'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} должность`,
+  const { handleOpenModal: openEditModal } = useMutateByModal<Position>({
+    isEdit: true,
+    mutation: editPositionMutation,
+    successMessage: 'Должность успешно изменена',
+    errorMessage: 'Не удалось изменить должность',
     modalType: 'positionForm',
-    modalData: { name: getNameById(currentPositionId, data) },
-    getMutationProps: action === 'edit' ? () => currentPositionId : () => undefined,
+    getModalData: () => ({ name: getNameById(editIdRef.current, data) }),
+    getMutationProps: () => editIdRef.current,
     showNotification,
   });
-  useEffect(() => {
-    if (action === 'delete') {
-      openDeleteModal();
-    } else if (action === 'edit' || action === 'add') {
-      openMutateModal();
-    }
-  }, [currentPositionId, action]);
-  useEffect(() => {
-    if (!modalProps.open) {
-      setAction('');
-    }
-  }, [modalProps.open]);
-  const handleOpenAddModal = () => {
-    setAction('add');
-    setCurrentPositionId('');
-  };
+  const { handleOpenModal: openAddModal } = useMutateByModal<Position>({
+    isEdit: false,
+    mutation: addPositionMutation,
+    successMessage: 'Должность успешно добавлена',
+    errorMessage: 'Не удалось добавить должность',
+    modalType: 'positionForm',
+    modalData: { name: '' },
+    getMutationProps: () => undefined,
+    showNotification,
+  });
   const onDelete = (position: Position) => {
-    setAction('delete');
-    setCurrentPositionId(position.id);
+    deleteIdRef.current = position.id;
+    openAntdDeleteConfirm({
+      mutation: deletePositionMutation,
+      getVariables: () => deleteIdRef.current,
+      showNotification,
+      successMessage: 'Должность успешно удалена',
+      errorMessage: 'Не удалось удалить должность',
+      navigate,
+      redirectPath: '/positions',
+    });
   };
   const onEdit = (position: Position) => {
-    setAction('edit');
-    setCurrentPositionId(position.id);
+    editIdRef.current = position.id;
+    openEditModal();
   };
   const total = data.length;
   return (
@@ -92,7 +86,7 @@ const PositionsListPage: React.FC = () => {
         title='Должности'
         subtitle='Справочник должностей'
         actions={
-          <Button type='primary' icon={<PlusOutlined />} onClick={handleOpenAddModal}>
+          <Button type='primary' icon={<PlusOutlined />} onClick={() => openAddModal()}>
             Добавить должность
           </Button>
         }

@@ -28,12 +28,10 @@ export const handleExport = (
   try {
     const exportData = enableExpandable ? flattenTreeData(data) : data;
 
-    // Создаем массив для данных Excel
     const excelData: any[][] = [];
 
-    // Сначала добавляем заголовки
     const headers: string[] = [];
-    columns?.forEach(column => {
+    columns?.forEach((column: any) => {
       const title = (column as any).title;
       if (title && (column as any).dataIndex) {
         headers.push(title);
@@ -41,10 +39,9 @@ export const handleExport = (
     });
     excelData.push(headers);
 
-    // Затем добавляем данные
-    exportData.forEach(item => {
+    exportData.forEach((item: any) => {
       const row: any[] = [];
-      columns?.forEach(column => {
+      columns?.forEach((column: any) => {
         const dataIndex = (column as any).dataIndex;
         const title = (column as any).title;
 
@@ -58,7 +55,6 @@ export const handleExport = (
                 value = renderedValue;
               }
             } catch {
-              // Оставляем оригинальное значение
             }
           }
 
@@ -68,10 +64,8 @@ export const handleExport = (
       excelData.push(row);
     });
 
-    // Создаем рабочую книгу и лист
     const worksheet = XLSX.utils.aoa_to_sheet(excelData);
 
-    // Создаем стили для заголовков и данных
     const headerStyle = {
       font: { bold: true, sz: 12 },
       fill: { fgColor: { rgb: 'F0F0F0' } },
@@ -93,11 +87,9 @@ export const handleExport = (
       },
     };
 
-    // Применяем стили ко всем ячейкам
     if (worksheet['!ref']) {
       const range = XLSX.utils.decode_range(worksheet['!ref']);
 
-      // Применяем стили к заголовкам (первая строка)
       for (let col = range.s.c; col <= range.e.c; col++) {
         const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
         if (!worksheet[cellAddress]) {
@@ -106,7 +98,6 @@ export const handleExport = (
         worksheet[cellAddress].s = headerStyle;
       }
 
-      // Применяем стили к данным (остальные строки)
       for (let row = range.s.r + 1; row <= range.e.r; row++) {
         for (let col = range.s.c; col <= range.e.c; col++) {
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
@@ -116,7 +107,6 @@ export const handleExport = (
         }
       }
 
-      // Автоподбор ширины столбцов с улучшенным алгоритмом
       const colWidths: number[] = [];
       const maxColumnWidth = 100; // Максимальная ширина в символах
 
@@ -129,11 +119,9 @@ export const handleExport = (
 
           if (cell && cell.v !== null && cell.v !== undefined) {
             const cellText = String(cell.v);
-            // Более точный расчет ширины с учетом разных символов
             let textWidth = 0;
             for (let i = 0; i < cellText.length; i++) {
               const char = cellText[i];
-              // Широкие символы (кириллица, заглавные) считаем как 1.2, узкие как 0.8
               if (/[A-ZА-Я0-9]/.test(char)) {
                 textWidth += 1.2;
               } else if (/[a-zа-я]/.test(char)) {
@@ -143,7 +131,6 @@ export const handleExport = (
               }
             }
 
-            // Для заголовков добавляем запас
             if (row === 0) {
               textWidth *= 1.3;
             }
@@ -154,7 +141,6 @@ export const handleExport = (
           }
         }
 
-        // Ограничиваем максимальную ширину и добавляем отступ
         colWidths.push(Math.min(maxWidth + 3, maxColumnWidth));
       }
 
@@ -164,7 +150,6 @@ export const handleExport = (
       }));
     }
 
-    // Настройки страницы
     worksheet['!pageSetup'] = {
       orientation: 'landscape',
       fitToPage: true,
@@ -172,7 +157,6 @@ export const handleExport = (
       fitToHeight: 0,
     };
 
-    // Задаем автоматические фильтры для заголовков
     if (worksheet['!ref']) {
       worksheet['!autofilter'] = {
         ref: worksheet['!ref'],

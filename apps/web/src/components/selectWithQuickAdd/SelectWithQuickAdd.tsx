@@ -1,7 +1,6 @@
 import React from 'react';
 import { GlobalOutlined, PlusOutlined } from '@ant-design/icons';
 import { Select, SelectProps } from 'antd';
-import { Option } from 'antd/es/mentions';
 
 import { Reference } from '../../types/referenceTypes';
 import styles from './SelectWithQuickAdd.module.scss';
@@ -47,16 +46,16 @@ export const SelectWithQuickAdd: React.FC<SelectWithQuickAddProps> = ({
         }
       }}
     >
-      <Option value='add-new' disabled style={{ cursor: 'pointer' }}>
+      <Select.Option value='add-new' disabled style={{ cursor: 'pointer' }}>
         <div className={styles.addOptionContainer} onClick={handleAddOptionClick}>
           <PlusOutlined />
           <span>{addText}</span>
         </div>
-      </Option>
+      </Select.Option>
       {references.map(area => (
-        <Option key={area.id.toString()} value={area.id.toString()}>
+        <Select.Option key={area.id.toString()} value={area.id.toString()}>
           {area.name}
-        </Option>
+        </Select.Option>
       ))}
     </Select>
   );

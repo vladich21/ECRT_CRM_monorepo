@@ -3,7 +3,6 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 import { PatentGrant } from '../../types/patent';
 import { patentGrantsApi } from './patentGrantsApi';
 
-// Получение списка патентных грантов
 export const usePatentGrants = (patentId?: string): UseQueryResult<PatentGrant[], Error> => {
   return useQuery<PatentGrant[], Error>({
     queryKey: ['patentGrants', patentId],
@@ -12,7 +11,6 @@ export const usePatentGrants = (patentId?: string): UseQueryResult<PatentGrant[]
   });
 };
 
-// Получение патентного гранта по ID
 export const usePatentGrantById = (grantId: string): UseQueryResult<PatentGrant, Error> => {
   return useQuery<PatentGrant, Error>({
     queryKey: ['patentGrants', grantId],
@@ -21,7 +19,6 @@ export const usePatentGrantById = (grantId: string): UseQueryResult<PatentGrant,
   });
 };
 
-// Создание патентного гранта
 type CreatePatentGrantInput = {
   patentId: string;
   data: Omit<PatentGrant, 'id' | 'patent_id' | 'created_at' | 'updated_at'>;
@@ -41,7 +38,6 @@ export const useCreatePatentGrant = (): UseMutationResult<PatentGrant, Error, Cr
   });
 };
 
-// Обновление патентного гранта
 export const useUpdatePatentGrant = (): UseMutationResult<
   PatentGrant,
   Error,
@@ -62,7 +58,6 @@ export const useUpdatePatentGrant = (): UseMutationResult<
   });
 };
 
-// Удаление патентного гранта
 export const useDeletePatentGrant = (): UseMutationResult<void, Error, string> => {
   const queryClient = useQueryClient();
 

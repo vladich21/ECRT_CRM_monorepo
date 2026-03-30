@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   useCreatePartnerType,
@@ -9,69 +10,64 @@ import {
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getNameById } from '../../../helpers/getNameById';
-import { useModalStore } from '../../../store/ModalStore';
 import { PartnerType } from '../../../types/partner';
 
-type ActionType = 'edit' | 'delete' | 'add' | '';
 const PartnerTypesListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
-  const { data = [], isLoading: loading } = usePartnerTypes();
-  const [currentPartnerTypeId, setCurrentPartnerTypeId] = useState<string>('');
-  const [action, setAction] = useState<ActionType>('');
-  const modalProps = useModalStore();
+  const { data = [] } = usePartnerTypes();
+  const deleteIdRef = useRef('');
+  const editIdRef = useRef('');
   const deletePartnerTypeMutation = useDeletePartnerType();
   const editPartnerTypeMutation = useUpdatePartnerType();
   const addPartnerTypeMutation = useCreatePartnerType();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deletePartnerTypeMutation,
-    successMessage: 'Тип контрагента успешно удален',
-    errorMessage: 'Не удалось удалить тип контрагента',
-    getMutationProps: () => currentPartnerTypeId,
-    showNotification,
-  });
-  const { handleOpenModal: openMutateModal } = useMutateByModal<PartnerType>({
-    isEdit: action === 'edit',
-    mutation: action === 'edit' ? editPartnerTypeMutation : addPartnerTypeMutation,
-    successMessage: `Тип контрагента успешно ${action === 'edit' ? 'изменен' : 'добавлен'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} тип контрагента`,
+  const { handleOpenModal: openEditModal } = useMutateByModal<PartnerType>({
+    isEdit: true,
+    mutation: editPartnerTypeMutation,
+    successMessage: 'Тип контрагента успешно изменен',
+    errorMessage: 'Не удалось изменить тип контрагента',
     modalType: 'positionForm',
-    modalData: { name: getNameById(currentPartnerTypeId, data), nameLabel: 'название типа контрагента' },
-    getMutationProps: action === 'edit' ? () => currentPartnerTypeId : () => undefined,
+    getModalData: () => ({
+      name: getNameById(editIdRef.current, data),
+      nameLabel: 'название типа контрагента',
+    }),
+    getMutationProps: () => editIdRef.current,
     showNotification,
   });
-  useEffect(() => {
-    if (action === 'delete') {
-      openDeleteModal();
-    } else if (action === 'edit' || action === 'add') {
-      openMutateModal();
-    }
-  }, [currentPartnerTypeId, action]);
-  useEffect(() => {
-    if (!modalProps.open) {
-      setAction('');
-    }
-  }, [modalProps.open]);
-  const handleOpenAddModal = () => {
-    setAction('add');
-    setCurrentPartnerTypeId('');
-  };
+  const { handleOpenModal: openAddModal } = useMutateByModal<PartnerType>({
+    isEdit: false,
+    mutation: addPartnerTypeMutation,
+    successMessage: 'Тип контрагента успешно добавлен',
+    errorMessage: 'Не удалось добавить тип контрагента',
+    modalType: 'positionForm',
+    modalData: { name: '', nameLabel: 'название типа контрагента' },
+    getMutationProps: () => undefined,
+    showNotification,
+  });
   const onDelete = ({ id }: { id: string }) => {
-    setAction('delete');
-    setCurrentPartnerTypeId(id);
+    deleteIdRef.current = id;
+    openAntdDeleteConfirm({
+      mutation: deletePartnerTypeMutation,
+      getVariables: () => deleteIdRef.current,
+      showNotification,
+      successMessage: 'Тип контрагента успешно удален',
+      errorMessage: 'Не удалось удалить тип контрагента',
+      navigate,
+    });
   };
   const onEdit = ({ id }: { id: string }) => {
-    setAction('edit');
-    setCurrentPartnerTypeId(id);
+    editIdRef.current = id;
+    openEditModal();
   };
   return (
     <ReferenceBookListPage
       title='Типы контрагентов'
       addButtonLabel='Добавить тип контрагента'
-      onAdd={handleOpenAddModal}
+      onAdd={() => openAddModal()}
       contextHolder={contextHolder}
     >
       <ReferenceBookCardList>

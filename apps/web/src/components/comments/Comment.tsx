@@ -9,9 +9,10 @@ import {
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, Button, Dropdown, Menu } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useNotification } from '../../customhooks/useNotification';
 import { useCommentHelpers } from '../../hooks/useCommentHelpers';
 import { Comment } from '../../types/comments';
@@ -50,6 +51,7 @@ const CommentComponent: React.FC<CommentProps> = ({
   entityId,
 }) => {
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const deleteCommentMutation = useDeleteComment();
   const [isHovered, setIsHovered] = useState(false);
@@ -63,20 +65,22 @@ const CommentComponent: React.FC<CommentProps> = ({
     }
   };
 
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteCommentMutation,
-    successMessage: 'Комментарий успешно удален',
-    errorMessage: 'Не удалось удалить комментарий',
-    getMutationProps: () => comment.id,
-    showNotification,
-    onSuccess: () => {
-      if (entityType && entityId) {
-        queryClient.invalidateQueries({
-          queryKey: ['comments', entityType, entityId],
-        });
-      }
-    },
-  });
+  const openDeleteModal = () =>
+    openAntdDeleteConfirm({
+      mutation: deleteCommentMutation,
+      getVariables: () => comment.id,
+      showNotification,
+      successMessage: 'Комментарий успешно удален',
+      errorMessage: 'Не удалось удалить комментарий',
+      navigate,
+      onMutationSuccess: () => {
+        if (entityType && entityId) {
+          queryClient.invalidateQueries({
+            queryKey: ['comments', entityType, entityId],
+          });
+        }
+      },
+    });
 
   const isEdited = comment.created_at !== comment.updated_at;
   const commentAuthorId = comment.created_by || comment.user_id;
@@ -108,7 +112,7 @@ const CommentComponent: React.FC<CommentProps> = ({
             key='delete'
             icon={<DeleteOutlined className={styles.deleteIcon} />}
             className={`${styles.menuItem} ${styles.menuItemDelete}`}
-            onClick={openDeleteModal}
+            onClick={() => openDeleteModal()}
           >
             Удалить
           </Menu.Item>

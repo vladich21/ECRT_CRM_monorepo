@@ -9,7 +9,6 @@ export function isContractDraft(stateId: string | undefined, contractStates: Con
   return stateCode === 'draft' || stateName.includes('чернов');
 }
 
-/** Должно совпадать с SQL в ContractsService.getSignedStateIds: подписан → действующий (is_active). */
 export function isContractSignedState(
   stateId: string | undefined,
   contractStates: ContractState[] | undefined,

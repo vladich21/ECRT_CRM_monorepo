@@ -21,7 +21,6 @@ import { getChangedFields } from '../../../helpers/getChangedFields';
 import { departmentUpdateFormMapper } from '../../../helpers/mappers/departmentUpdateFormMapper';
 import styles from './DepartmentFormPage.module.scss';
 
-const { Option } = Select;
 
 export default function DepartmentEditPage() {
   const { departmentId } = useParams();
@@ -41,25 +40,11 @@ export default function DepartmentEditPage() {
     isError: isReferencesError,
   } = useReferenceData(['departments', 'users']);
 
-  const {
-    mutate,
-    isPending: isUpdateLoading,
-    isError: isUpdateError,
-    isSuccess: isUpdateSuccess,
-  } = useUpdateDepartment();
+  const { mutate, isPending: isUpdateLoading } = useUpdateDepartment();
 
   useEffect(() => {
     if (department) form.setFieldsValue(departmentUpdateFormMapper(department));
   }, [department, form]);
-
-  useEffect(() => {
-    if (isUpdateSuccess) {
-      showNotification('success', 'Успех', 'Отдел успешно изменён');
-      setTimeout(() => navigate(-1), 1000);
-    } else if (isUpdateError) {
-      showNotification('error', 'Ошибка', 'Не удалось изменить отдел');
-    }
-  }, [isUpdateError, isUpdateSuccess]);
 
   if (isReferencesLoading || isDepartmentLoading) {
     return <Loader />;
@@ -75,7 +60,18 @@ export default function DepartmentEditPage() {
 
   const handleSave = async (values: any) => {
     const payload = getChangedFields(values, departmentUpdateFormMapper(department));
-    mutate({ id: departmentId!, data: payload });
+    mutate(
+      { id: departmentId!, data: payload },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Отдел успешно изменён');
+          setTimeout(() => navigate(-1), 1000);
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось изменить отдел');
+        },
+      },
+    );
   };
 
   const availableParentDepartments = referenceBooks.departments?.filter(dept => dept.id !== department.id) || [];
@@ -144,9 +140,9 @@ export default function DepartmentEditPage() {
                   suffixIcon={<UserOutlined />}
                 >
                   {referenceBooks.users?.map(user => (
-                    <Option key={user.id} value={user.id} label={user.name}>
+                    <Select.Option key={user.id} value={user.id} label={user.name}>
                       {user.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -156,9 +152,9 @@ export default function DepartmentEditPage() {
               <Form.Item label='Родительский отдел' name='parent_id'>
                 <Select placeholder='Выберите родительский отдел' allowClear suffixIcon={<ApartmentOutlined />}>
                   {availableParentDepartments.map(dept => (
-                    <Option key={dept.id} value={dept.id}>
+                    <Select.Option key={dept.id} value={dept.id}>
                       {dept.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>

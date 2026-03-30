@@ -1,6 +1,7 @@
 import { Button, DatePicker, InputNumber, Modal, Select } from 'antd';
 import type { Dayjs } from 'dayjs';
 
+import { parseThousandSeparatedNumber } from '../../../helpers/numberFormatters';
 import styles from './ContractsListPage.module.scss';
 import type { AdvancedFilters } from './ContractsListPage.types';
 
@@ -106,7 +107,7 @@ export function ContractFiltersModal({
               value={draftFilters.amountMin ?? undefined}
               onChange={value => onUpdateDraftFilter({ amountMin: value ?? null })}
               formatter={value => (value != null ? Number(value).toLocaleString('ru-RU') : '')}
-              parser={value => (value ? Number(String(value).replace(/\s/g, '')) : 0)}
+              parser={parseThousandSeparatedNumber}
             />
             <span className={styles.filtersModalAmountSep}>—</span>
             <InputNumber
@@ -116,7 +117,7 @@ export function ContractFiltersModal({
               value={draftFilters.amountMax ?? undefined}
               onChange={value => onUpdateDraftFilter({ amountMax: value ?? null })}
               formatter={value => (value != null ? Number(value).toLocaleString('ru-RU') : '')}
-              parser={value => (value ? Number(String(value).replace(/\s/g, '')) : 0)}
+              parser={parseThousandSeparatedNumber}
             />
             <span className={styles.filtersModalAmountUnit}>₽</span>
           </div>

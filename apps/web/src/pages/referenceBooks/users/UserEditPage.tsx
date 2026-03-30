@@ -23,18 +23,10 @@ export default function UserEditPage() {
   const [isFormChanged, setIsFormChanged] = useState(false);
   const { data: user, isLoading: isUserLoading, isError: isUserError } = useUserById(userId!);
   const { data: referenceBooks, isLoading, isError } = useReferenceData(['departments', 'positions', 'roles']);
-  const { mutate, isPending: isUpdateLoading, isError: isUpdateError, isSuccess: isUpdateSuccess } = useUpdateUser();
+  const { mutate, isPending: isUpdateLoading } = useUpdateUser();
   useEffect(() => {
     if (user) form.setFieldsValue(userUpdateFormMapper(user));
   }, [user, form]);
-  useEffect(() => {
-    if (isUpdateSuccess) {
-      showNotification('success', 'Успех', 'Пользователь успешно изменён');
-      setTimeout(() => navigate('/users'), 1000);
-    } else if (isUpdateError) {
-      showNotification('error', 'Ошибка', 'Не удалось изменить пользователя');
-    }
-  }, [isUpdateError, isUpdateSuccess, navigate, showNotification]);
   if (isLoading || isUserLoading) {
     return <Loader />;
   }
@@ -48,7 +40,18 @@ export default function UserEditPage() {
     if ('position_id' in payload) payload.position_id = toUuidOrNull(payload.position_id);
     if ('role_ids' in payload && Array.isArray(payload.role_ids))
       payload.role_ids = payload.role_ids.map(String).filter(id => id && id !== '');
-    mutate({ id: userId!, data: payload });
+    mutate(
+      { id: userId!, data: payload },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Пользователь успешно изменён');
+          setTimeout(() => navigate('/users'), 1000);
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось изменить пользователя');
+        },
+      },
+    );
   };
   return (
     <DetailPageHeader

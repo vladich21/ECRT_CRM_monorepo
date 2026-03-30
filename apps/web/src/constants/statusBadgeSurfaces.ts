@@ -1,7 +1,3 @@
-/**
- * Пастельные «поверхности» для Tag/таблиц через mutedTagStyle (inline).
- * Шапки детальных страниц — классы в `components/pageLayout/detailHeaderStatusBadge.module.scss`.
- */
 import type { CSSProperties } from 'react';
 
 import { APP_COLOR_SUCCESS, APP_COLOR_SUCCESS_BG, APP_COLOR_SUCCESS_BORDER } from './appColors';
@@ -13,8 +9,6 @@ export type StatusBadgeSurface = {
   borderColor: string;
   color: string;
 };
-
-// --- Базовые тона (карточки, сайдбар, таблицы) ---
 
 export const SURFACE_ACTIVE: StatusBadgeSurface = {
   background: APP_COLOR_SUCCESS_BG,
@@ -91,13 +85,11 @@ export function getPatentRecordSurface(isDeleted: boolean): StatusBadgeSurface {
   return isDeleted ? SURFACE_BLOCKED : SURFACE_ACTIVE;
 }
 
-/** Договор: удалён | действует | не действует. */
 export function getContractHeaderSurface(isDeleted: boolean, isActive: boolean): StatusBadgeSurface {
   if (isDeleted) return SURFACE_BLOCKED;
   return isActive ? SURFACE_ACTIVE : SURFACE_BLOCKED;
 }
 
-/** Список пользователей / карточки: «активен» (те же цвета, что activity-бейдж в шапке). */
 export const SURFACE_ACTIVITY_ACTIVE: StatusBadgeSurface = {
   background: 'rgba(82, 196, 26, 0.125)',
   borderColor: 'rgba(82, 196, 26, 0.314)',

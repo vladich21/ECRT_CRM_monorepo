@@ -23,7 +23,6 @@ import { userUpdateFormMapper } from '../../helpers/mappers/userUpdateFormMapper
 import useAuthStore, { useAuthStore as useAuthStoreFull } from '../../store/AuthStore';
 import styles from './Profile.module.scss';
 
-const { Option } = Select;
 const ProfilePage = () => {
   const { modal } = App.useApp();
   const { user } = useAuthStore(state => state);
@@ -32,12 +31,7 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
   const { data: referenceBooks, isLoading: isReferencesLoading } = useReferenceData(['departments', 'positions']);
-  const {
-    mutate: updateUser,
-    isPending: isUpdating,
-    isSuccess: isUpdateSuccess,
-    isError: isUpdateError,
-  } = useUpdateUser();
+  const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
   useEffect(() => {
     if (user) {
       const formData = {
@@ -48,37 +42,13 @@ const ProfilePage = () => {
       form.setFieldsValue(formData);
     }
   }, [user, form]);
-  useEffect(() => {
-    if (isUpdateSuccess) {
-      showNotification('success', 'Успех', 'Профиль успешно обновлён');
-      setIsEditing(false);
-      if (user && referenceBooks) {
-        const formValues = form.getFieldsValue();
-        const updatedUser = { ...user };
-        if (formValues.email !== undefined) updatedUser.email = formValues.email;
-        if (formValues.phone !== undefined) updatedUser.phone = formValues.phone;
-        if (formValues.department_id && referenceBooks.departments) {
-          const dept = referenceBooks.departments.find(d => d.id === String(formValues.department_id));
-          if (dept) updatedUser.department = dept;
-        }
-        if (formValues.position_id && referenceBooks.positions) {
-          const pos = referenceBooks.positions.find(p => p.id === String(formValues.position_id));
-          if (pos) updatedUser.position = pos;
-        }
-        useAuthStoreFull.getState().login(updatedUser);
-      }
-    }
-  }, [isUpdateSuccess]);
-  useEffect(() => {
-    if (isUpdateError) {
-      showNotification('error', 'Ошибка', 'Не удалось обновить профиль');
-    }
-  }, [isUpdateError, showNotification]);
   if (!user) {
     logout();
     return null;
   }
+
   if (isReferencesLoading) return <Loader />;
+
   const handleSave = async (values: any) => {
     if (!user) return;
     const payload = getChangedFields(values, userUpdateFormMapper(user));
@@ -87,12 +57,40 @@ const ProfilePage = () => {
       setIsEditing(false);
       return;
     }
-    updateUser({ id: user.id, data: payload });
+    updateUser(
+      { id: user.id, data: payload },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Профиль успешно обновлён');
+          setIsEditing(false);
+          if (user && referenceBooks) {
+            const formValues = form.getFieldsValue();
+            const updatedUser = { ...user };
+            if (formValues.email !== undefined) updatedUser.email = formValues.email;
+            if (formValues.phone !== undefined) updatedUser.phone = formValues.phone;
+            if (formValues.department_id && referenceBooks.departments) {
+              const dept = referenceBooks.departments.find(dept => dept.id === String(formValues.department_id));
+              if (dept) updatedUser.department = dept;
+            }
+            if (formValues.position_id && referenceBooks.positions) {
+              const position = referenceBooks.positions.find(position => position.id === String(formValues.position_id));
+              if (position) updatedUser.position = position;
+            }
+            useAuthStoreFull.getState().login(updatedUser);
+          }
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось обновить профиль');
+        },
+      },
+    );
   };
+
   const handleCancel = () => {
     form.setFieldsValue(userUpdateFormMapper(user));
     setIsEditing(false);
   };
+  
   const fullName = `${user?.last_name || ''} ${user?.first_name || ''} ${user?.middle_name || ''}`.trim();
   return (
     <div className={styles.pageRoot}>
@@ -128,12 +126,7 @@ const ProfilePage = () => {
                 </span>
               ))}
               <span
-                className={styles.statusBadge}
-                style={{
-                  background: user?.is_active ? 'rgba(82, 196, 26, 0.2)' : 'rgba(255, 77, 79, 0.2)',
-                  border: `1px solid ${user?.is_active ? 'rgba(82, 196, 26, 0.5)' : 'rgba(255, 77, 79, 0.5)'}`,
-                  color: user?.is_active ? '#52c41a' : '#ff4d4f',
-                }}
+                className={user?.is_active ? styles.statusBadgeActive : styles.statusBadgeInactive}
               >
                 {user?.is_active ? 'Активен' : 'Неактивен'}
               </span>
@@ -246,9 +239,9 @@ const ProfilePage = () => {
                     suffixIcon={<IdcardOutlined />}
                   >
                     {referenceBooks?.positions?.map(position => (
-                      <Option key={position.id} value={position.id}>
+                      <Select.Option key={position.id} value={position.id}>
                         {position.name}
-                      </Option>
+                      </Select.Option>
                     ))}
                   </Select>
                 </Form.Item>
@@ -267,9 +260,9 @@ const ProfilePage = () => {
                     suffixIcon={<TeamOutlined />}
                   >
                     {referenceBooks?.departments?.map(dept => (
-                      <Option key={dept.id} value={dept.id}>
+                      <Select.Option key={dept.id} value={dept.id}>
                         {dept.name}
-                      </Option>
+                      </Select.Option>
                     ))}
                   </Select>
                 </Form.Item>

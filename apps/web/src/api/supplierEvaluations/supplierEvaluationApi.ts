@@ -106,7 +106,6 @@ export const supplierEvaluationApi = {
     return row ?? null;
   },
 
-  /** Тело запроса оборачивается в `{ body }` в apiClient interceptor. */
   create: async (payload: CreateSupplierEvaluationPayload): Promise<SupplierEvaluationDetail | null> => {
     const { data } = await apiClient.post<SupplierEvaluationDetail[]>('/supplier-evaluations', payload);
     const row = Array.isArray(data) ? data[0] : null;
@@ -135,7 +134,6 @@ export const supplierEvaluationApi = {
   },
 };
 
-/** KPI контрагента по оценкам (один запрос вместо списка на 500 строк). */
 export async function fetchPartnerSupplierEvalKpi(partnerId: string): Promise<PartnerSupplierEvalKpi> {
   const { data } = await apiClient.get<{
     avg_score: number | null;

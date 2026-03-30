@@ -1,4 +1,3 @@
-// api/patentAreasApi.ts
 import { PatentArea } from '../../types/patent';
 import { apiClient } from '../clients';
 

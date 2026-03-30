@@ -44,14 +44,19 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
       content: 'Контрагент снова сможет участвовать в закупках по этому проекту.',
       okText: 'Снять',
       cancelText: 'Отмена',
-      onOk: async () => {
-        try {
-          await deactivateMut.mutateAsync(block.id);
-          showNotification('success', 'Блокировка снята');
-        } catch {
-          showNotification('error', 'Не удалось снять блокировку');
-        }
-      },
+      onOk: () =>
+        new Promise<void>((resolve, reject) => {
+          deactivateMut.mutate(block.id, {
+            onSuccess: () => {
+              showNotification('success', 'Блокировка снята');
+              resolve();
+            },
+            onError: () => {
+              showNotification('error', 'Не удалось снять блокировку');
+              reject();
+            },
+          });
+        }),
     });
   };
 

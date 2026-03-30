@@ -1,5 +1,7 @@
 import dayjs, { type Dayjs } from 'dayjs';
 
+import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '../../../../utils/listNavSnapshotShared';
+
 import type { ProjectAdvancedFilters, ProjectEndDatePresenceFilter, ProjectFilterTab } from '../ProjectsListPage.types';
 
 const TABS: ProjectFilterTab[] = ['all', 'active', 'completed', 'pending', 'paused', 'cancelled', 'deleted'];
@@ -16,13 +18,6 @@ function packRange(dayjsRange: [Dayjs, Dayjs] | null): [string, string] | null {
 function unpackRange(storedRange: [string, string] | null | undefined): [Dayjs, Dayjs] | null {
   if (!storedRange?.[0] || !storedRange?.[1]) return null;
   return [dayjs(storedRange[0]), dayjs(storedRange[1])];
-}
-
-function snapshotFormatVersion(raw: object): number | undefined {
-  const record = raw as Record<string, unknown>;
-  if (typeof record.version === 'number') return record.version;
-  if (typeof record.v === 'number') return record.v;
-  return undefined;
 }
 
 export type ProjectsListNavSnapshot = {
@@ -70,14 +65,13 @@ export function parseProjectsListNavSnapshot(raw: unknown): {
   page: number;
   pageSize: number;
 } | null {
-  if (!raw || typeof raw !== 'object' || snapshotFormatVersion(raw) !== 1) return null;
-  const snapshotRecord = raw as ProjectsListNavSnapshot;
+  const body = asListNavSnapshotV1Record(raw);
+  if (!body) return null;
+  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 20);
+  const snapshotRecord = body as unknown as ProjectsListNavSnapshot;
   const appliedSnapshot = snapshotRecord.applied;
-  const page = typeof snapshotRecord.page === 'number' && snapshotRecord.page >= 1 ? snapshotRecord.page : 1;
-  const pageSize =
-    typeof snapshotRecord.pageSize === 'number' && snapshotRecord.pageSize >= 1 ? snapshotRecord.pageSize : 20;
   return {
-    searchQuery: typeof snapshotRecord.searchQuery === 'string' ? snapshotRecord.searchQuery : '',
+    searchQuery,
     activeTab: isProjectTab(snapshotRecord.activeTab) ? snapshotRecord.activeTab : 'all',
     appliedFilters: {
       managerId: typeof appliedSnapshot?.managerId === 'string' ? appliedSnapshot.managerId : null,

@@ -89,7 +89,6 @@ export const useFormatText = ({ editorRef, setContent, maxHeight, minHeight }: U
       menuRef: React.RefObject<HTMLDivElement | null>,
       checkSelectionCallback: (result: SelectionResult) => void,
     ) => {
-      // Проверяем, что клик был вне нашего меню форматирования
       if (menuRef.current && menuRef.current.contains(e.target as Node)) {
         return;
       }

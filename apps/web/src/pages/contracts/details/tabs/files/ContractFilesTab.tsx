@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   CalendarOutlined,
   CloudUploadOutlined,
@@ -14,13 +14,13 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Card, Spin, Tooltip, Typography, Upload } from 'antd';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { fileApi } from '../../../../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity } from '../../../../../api/files/fileApiHooks';
 import { useReferenceData } from '../../../../../api/hooks/useReferences';
 import { triggerFileDownload } from '../../../../../components/filePreview/FilePreviewModal';
-import { useConfirmByModal } from '../../../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../../../customhooks/confirmDelete';
 import { useNotification } from '../../../../../customhooks/useNotification';
 import { getNameById } from '../../../../../helpers/getNameById';
 import type { MyFile } from '../../../../../types/files';
@@ -50,27 +50,14 @@ function formatDate(dateStr: string | null): string {
 }
 export function ContractFilesTab() {
   const { contractId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
-  const [currentFileId, setCurrentFileId] = useState<string>('');
+  const deleteFileIdRef = useRef('');
   const { contextHolder, showNotification } = useNotification();
   const { data: files = [], isLoading } = useFilesByEntity('contract', contractId!);
   const { data: referenceBooks } = useReferenceData(['users']);
   const deleteFileMutation = useDeleteFile();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteFileMutation,
-    successMessage: 'Файл успешно удалён',
-    errorMessage: 'Не удалось удалить файл',
-    getMutationProps: () => ({
-      entityType: 'contract',
-      entityId: contractId!,
-      fileId: currentFileId,
-    }),
-    showNotification,
-  });
-  useEffect(() => {
-    if (currentFileId) openDeleteModal();
-  }, [currentFileId]);
   const handleUpload = async (options: UploadRequestOption) => {
     const { file, onSuccess, onError } = options;
     const uploadFile = file as File;
@@ -182,10 +169,25 @@ export function ContractFilesTab() {
                         size='small'
                         danger
                         icon={<DeleteOutlined />}
-                        loading={deleteFileMutation.isPending && currentFileId === file.id}
+                        loading={
+                          deleteFileMutation.isPending &&
+                          deleteFileMutation.variables?.fileId === file.id
+                        }
                         onClick={e => {
                           e.stopPropagation();
-                          setCurrentFileId(file.id);
+                          deleteFileIdRef.current = file.id;
+                          openAntdDeleteConfirm({
+                            mutation: deleteFileMutation,
+                            getVariables: () => ({
+                              entityType: 'contract',
+                              entityId: contractId!,
+                              fileId: deleteFileIdRef.current,
+                            }),
+                            showNotification,
+                            successMessage: 'Файл успешно удалён',
+                            errorMessage: 'Не удалось удалить файл',
+                            navigate,
+                          });
                         }}
                       />
                     </Tooltip>

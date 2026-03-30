@@ -98,7 +98,6 @@ export class ContractsService {
     return Number(result[0]?.value ?? 0);
   }
 
-  /** Условия AND: не удалён; опционально партнёр; для справочника — только действующие (подписанные). */
   private contractsListBaseWhere(
     partnerFilter?: SQL,
     options?: { referenceSignedContractsOnly?: boolean },
@@ -163,7 +162,6 @@ export class ContractsService {
     return rows.map(row => row.id).filter(Boolean) as string[];
   }
 
-  /** ID состояний «подписан» (как на фронте isContractSignedState). */
   private async getSignedStateIds(): Promise<string[]> {
     const rows = await this.db.db
       .select({ id: refContractStates.id })
@@ -180,7 +178,6 @@ export class ContractsService {
     return signedIds.includes(stateId);
   }
 
-  /** Совпадает с фильтром вкладки «Черновики» в списке договоров. */
   private async rowHasDraftState(stateId: string | null): Promise<boolean> {
     if (!stateId) return false;
     const draftIds = await this.getDraftStateIds();
@@ -200,7 +197,6 @@ export class ContractsService {
     }
   }
 
-  /** null — невозможное условие (поиск только из спецсимволов) → пустой список */
   private async buildContractFilterParts(
     filters?: ContractQueryFilters,
   ): Promise<SQL[] | null> {
@@ -370,7 +366,6 @@ export class ContractsService {
 
     const draftIds = await this.getDraftStateIds();
 
-    /** Счётчики «Все / Действующие / …» — только не мягко удалённые (как список при deleted_scope=active). */
     const countForTab = async (tab: ContractListTab): Promise<number> => {
       const tabSql = this.contractListTabCondition(tab, draftIds);
       const parts = [
@@ -521,10 +516,6 @@ export class ContractsService {
     return updated;
   }
 
-  /**
-   * Черновик — физическое удаление строки.
-   * Любой другой статус — мягкое удаление (is_deleted).
-   */
   async remove(
     id: string,
   ): Promise<{ deletion_mode: 'soft'; contract: unknown } | { deletion_mode: 'hard'; id: string } | null> {
@@ -536,7 +527,6 @@ export class ContractsService {
     const isDraftContract = await this.rowHasDraftState(contractRow.stateId);
     if (isDraftContract) {
       this.logger.debug(`Жёсткое удаление черновика договора id: ${id}`);
-      // РИД с patent.contract_id на этот договор: снять ссылку до физического удаления строки договора.
       await this.db.db
         .update(patents)
         .set({ contractId: null, updatedAt: new Date() })

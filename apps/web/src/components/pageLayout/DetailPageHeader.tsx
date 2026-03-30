@@ -26,7 +26,6 @@ interface TabItem {
 interface DetailPageHeaderProps {
   title: string;
   titleSuffix?: ReactNode;
-  /** Строка под заголовком (контрагент, реквизиты и т.п.) */
   subtitle?: ReactNode;
   backLabel: string;
   onBack: () => void;
@@ -41,7 +40,6 @@ interface DetailPageHeaderProps {
   stickyHeader?: boolean;
   children?: ReactNode;
   contextHolder?: ReactNode;
-  /** 500 вместо 700 для заголовка карточки (контрагенты, РИД) */
   titleWeight?: 'default' | 'medium';
 }
 export default function DetailPageHeader({

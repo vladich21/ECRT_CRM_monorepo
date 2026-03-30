@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -7,7 +7,7 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useNotification } from '../../../customhooks/useNotification';
 import { PatentGrant } from '../../../types/patent';
 import styles from './PatentGrantsListPage.module.scss';
@@ -20,18 +20,8 @@ export default function PatentGrantsListPage() {
   const { patentId } = useParams();
   const { data: patentGrants = [], isLoading, isError } = usePatentGrants(patentId);
   const { contextHolder, showNotification } = useNotification();
-  const [currentGrantId, setCurrentGrantId] = useState('');
+  const deleteGrantIdRef = useRef('');
   const deletePatentGrantMutation = useDeletePatentGrant();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deletePatentGrantMutation,
-    successMessage: 'Патентный грант успешно удален',
-    errorMessage: 'Не удалось удалить патентный грант',
-    getMutationProps: () => currentGrantId,
-    showNotification,
-  });
-  useEffect(() => {
-    if (currentGrantId) openDeleteModal();
-  }, [currentGrantId]);
   const handleCardClick = (record: PatentGrant) => {
     navigate(`/patent-grants/${record.id}`, {
       state: { from: patentId },
@@ -41,7 +31,15 @@ export default function PatentGrantsListPage() {
     navigate(`/patent-grants/${record.id}/edit`, {});
   };
   const onDelete = (record: PatentGrant) => {
-    setCurrentGrantId(record.id);
+    deleteGrantIdRef.current = record.id;
+    openAntdDeleteConfirm({
+      mutation: deletePatentGrantMutation,
+      getVariables: () => deleteGrantIdRef.current,
+      showNotification,
+      successMessage: 'Патентный грант успешно удален',
+      errorMessage: 'Не удалось удалить патентный грант',
+      navigate,
+    });
   };
   if (isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;

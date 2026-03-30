@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useDeletePartnerCompetence, usePartnerCompetencies } from '../../../api/partners/partnerCompetenceApiHooks';
@@ -6,7 +6,7 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useNotification } from '../../../customhooks/useNotification';
 import { COMPETENCE_TAG_BG, COMPETENCE_TAG_BORDER, COMPETENCE_TAG_TEXT } from '../../../constants/competenceDisplay';
 import { PartnerCompetence } from '../../../types/partner';
@@ -15,23 +15,21 @@ export default function PartnerCompetencesListPage() {
   const navigate = useNavigate();
   const { data: partnerCompetences = [], isLoading, isError } = usePartnerCompetencies();
   const { contextHolder, showNotification } = useNotification();
-  const [currentCompetenceId, setCurrentCompetenceId] = useState('');
+  const deleteCompetenceIdRef = useRef('');
   const deletePartnerCompetenceMutation = useDeletePartnerCompetence();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deletePartnerCompetenceMutation,
-    successMessage: 'Компетенция партнера успешно удалена',
-    errorMessage: 'Не удалось удалить компетенцию партнера',
-    getMutationProps: () => currentCompetenceId,
-    showNotification,
-  });
-  useEffect(() => {
-    if (currentCompetenceId) openDeleteModal();
-  }, [currentCompetenceId]);
   const onEdit = (record: PartnerCompetence) => {
     navigate(`/competencies/${record.id}/edit`, {});
   };
   const onDelete = ({ id }: { id: number }) => {
-    setCurrentCompetenceId(id.toString());
+    deleteCompetenceIdRef.current = String(id);
+    openAntdDeleteConfirm({
+      mutation: deletePartnerCompetenceMutation,
+      getVariables: () => deleteCompetenceIdRef.current,
+      showNotification,
+      successMessage: 'Компетенция партнера успешно удалена',
+      errorMessage: 'Не удалось удалить компетенцию партнера',
+      navigate,
+    });
   };
   if (isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;

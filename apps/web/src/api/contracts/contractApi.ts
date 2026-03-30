@@ -3,14 +3,12 @@ import { Contract } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
 import { apiClient } from '../clients';
 
-/** Поля при создании: все необязательны; пустые значения можно передавать как null. Бэкенд выставит черновик по справочнику. */
 export type CreateContractPayload = Partial<{
   [K in keyof Omit<Contract, 'id' | 'created_at' | 'updated_at'>]:
     | Omit<Contract, 'id' | 'created_at' | 'updated_at'>[K]
     | null;
 }>;
 
-/** Ответ DELETE /contracts/:id — черновик удаляется из БД, остальные помечаются is_deleted. */
 export type ContractDeleteResult =
   | { deletion_mode: 'soft'; contract: Contract }
   | { deletion_mode: 'hard'; id: string };
@@ -75,10 +73,7 @@ export const contractApi = {
     });
     return response.data;
   },
-  /**
-   * Справочник договоров для селектов (РИД и др.): только не удалённые и действующие
-   * (на бэкенде is_active — подписанные по state).
-   */
+ 
   getContractsForReference: async (): Promise<ContractsListResponse> => {
     const response = await apiClient.get('/contracts', {
       params: { for_reference: 1 },

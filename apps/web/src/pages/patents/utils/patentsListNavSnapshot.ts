@@ -1,15 +1,10 @@
+import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '../../../utils/listNavSnapshotShared';
+
 import { DEFAULT_PATENT_FILTERS, type PatentAdvancedFilters, type PatentFilterTab } from '../PatentsListPage.types';
 
 const TABS: PatentFilterTab[] = ['all', 'active', 'deleted'];
 function isPatentTab(candidate: unknown): candidate is PatentFilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);
-}
-
-function snapshotFormatVersion(raw: object): number | undefined {
-  const record = raw as Record<string, unknown>;
-  if (typeof record.version === 'number') return record.version;
-  if (typeof record.v === 'number') return record.v;
-  return undefined;
 }
 
 export type PatentsListNavSnapshot = {
@@ -43,14 +38,13 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
   page: number;
   pageSize: number;
 } | null {
-  if (!raw || typeof raw !== 'object' || snapshotFormatVersion(raw) !== 1) return null;
-  const snapshotRecord = raw as PatentsListNavSnapshot;
+  const body = asListNavSnapshotV1Record(raw);
+  if (!body) return null;
+  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 50);
+  const snapshotRecord = body as unknown as PatentsListNavSnapshot;
   const appliedSnapshot = snapshotRecord.applied;
-  const page = typeof snapshotRecord.page === 'number' && snapshotRecord.page >= 1 ? snapshotRecord.page : 1;
-  const pageSize =
-    typeof snapshotRecord.pageSize === 'number' && snapshotRecord.pageSize >= 1 ? snapshotRecord.pageSize : 50;
   return {
-    searchQuery: typeof snapshotRecord.searchQuery === 'string' ? snapshotRecord.searchQuery : '',
+    searchQuery,
     activeTab: isPatentTab(snapshotRecord.activeTab) ? snapshotRecord.activeTab : 'all',
     appliedFilters: {
       departmentId: typeof appliedSnapshot?.departmentId === 'string' ? appliedSnapshot.departmentId : null,

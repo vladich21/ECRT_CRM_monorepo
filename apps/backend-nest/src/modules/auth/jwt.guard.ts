@@ -39,7 +39,6 @@ export class JwtGuard implements CanActivate {
 
     req.user = payload;
 
-    // Автопродление: если до истечения < 24 часов — перевыпускаем токен
     if (payload.exp) {
       const secondsLeft = payload.exp - Math.floor(Date.now() / 1000);
       if (secondsLeft < RENEW_THRESHOLD_SEC) {

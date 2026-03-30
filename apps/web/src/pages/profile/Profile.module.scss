@@ -91,6 +91,7 @@
   color: #69b1ff;
 }
 
+// Бейдж статуса аккаунта на тёмном хедере — светлые «стеклянные» тона, как у roleTag*
 .statusBadge {
   display: inline-flex;
   align-items: center;
@@ -99,6 +100,24 @@
   padding: 4px 14px;
   font-size: 13px;
   font-weight: 600;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.statusBadgeActive {
+  @extend .statusBadge;
+  background: rgba(183, 235, 143, 0.14);
+  border: 1px solid rgba(183, 235, 143, 0.4);
+  color: #d3f261;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.statusBadgeInactive {
+  @extend .statusBadge;
+  background: rgba(255, 163, 158, 0.12);
+  border: 1px solid rgba(255, 163, 158, 0.38);
+  color: #ffccc7;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .headerActions {

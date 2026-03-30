@@ -4,7 +4,6 @@ import { Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import { Reference } from '../../../types/referenceTypes';
 import styles from './PatentGrantFormPage.module.scss';
 
-const { Option } = Select;
 const { TextArea } = Input;
 interface PatentGrantFormFieldsProps {
   form: ReturnType<typeof Form.useForm>[0];
@@ -47,9 +46,9 @@ export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState 
                   suffixIcon={<CopyrightOutlined />}
                 >
                   {referenceBooks?.patents?.map((patent: Reference) => (
-                    <Option key={patent.id} value={patent.id}>
+                    <Select.Option key={patent.id} value={patent.id}>
                       {patent.name || `Патенг ${patent.id}`}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -65,9 +64,9 @@ export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState 
             <Col xs={24}>
               <Form.Item label='Статус' name='status' rules={[{ required: true, message: 'Выберите статус' }]}>
                 <Select placeholder='Выберите статус'>
-                  <Option value='Активный'>Активный</Option>
-                  <Option value='Истек'>Истек</Option>
-                  <Option value='Отозван'>Отозван</Option>
+                  <Select.Option value='Активный'>Активный</Select.Option>
+                  <Select.Option value='Истек'>Истек</Select.Option>
+                  <Select.Option value='Отозван'>Отозван</Select.Option>
                 </Select>
               </Form.Item>
             </Col>

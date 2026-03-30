@@ -11,7 +11,6 @@ import { Col, Divider, Form, Input, Row, Select, Switch } from 'antd';
 import type { ReferenceData } from '../../../api/hooks/useReferences';
 import styles from './UserFormPage.module.scss';
 
-const { Option } = Select;
 interface UserFormFieldsProps {
   form: ReturnType<typeof Form.useForm>[0];
   referenceBooks: ReferenceData | null;
@@ -96,9 +95,9 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
                 suffixIcon={<TeamOutlined />}
               >
                 {referenceBooks?.departments?.map(dept => (
-                  <Option key={dept.id} value={dept.id}>
+                  <Select.Option key={dept.id} value={dept.id}>
                     {dept.name}
-                  </Option>
+                  </Select.Option>
                 ))}
               </Select>
             </Form.Item>
@@ -118,9 +117,9 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
                 suffixIcon={<IdcardOutlined />}
               >
                 {referenceBooks?.positions?.map(position => (
-                  <Option key={position.id} value={position.id}>
+                  <Select.Option key={position.id} value={position.id}>
                     {position.name}
-                  </Option>
+                  </Select.Option>
                 ))}
               </Select>
             </Form.Item>
@@ -137,7 +136,7 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
             <Form.Item label='Роли' name='role_ids'>
               <Select mode='multiple' placeholder='Выберите роли' allowClear suffixIcon={<SafetyCertificateOutlined />}>
                 {referenceBooks?.roles?.map(role => (
-                  <Option key={role.id} value={role.id}>
+                  <Select.Option key={role.id} value={role.id}>
                     {(
                       role as {
                         role_name?: string;
@@ -150,7 +149,7 @@ export function UserFormFields({ form, referenceBooks }: UserFormFieldsProps) {
                         }
                       ).name ??
                       role.id}
-                  </Option>
+                  </Select.Option>
                 ))}
               </Select>
             </Form.Item>

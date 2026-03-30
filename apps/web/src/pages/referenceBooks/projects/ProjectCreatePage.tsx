@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import {
   BarcodeOutlined,
   CalendarOutlined,
@@ -20,39 +19,41 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { initialFormValues } from './data';
 import styles from './ProjectFormPage.module.scss';
 
-const { Option } = Select;
 const { TextArea } = Input;
 export default function ProjectCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-  const { mutate, isPending: isCreateLoading, isError: isCreateError, isSuccess: isCreateSuccess } = useCreateProject();
+  const { mutate, isPending: isCreateLoading } = useCreateProject();
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['users']);
-  useEffect(() => {
-    if (isCreateSuccess) {
-      showNotification('success', 'Успех', 'Проект успешно создан');
-      setTimeout(() => navigate(-1), 1000);
-    } else if (isCreateError) {
-      showNotification('error', 'Ошибка', 'Не удалось создать проект');
-    }
-  }, [isCreateError, isCreateSuccess, navigate, showNotification]);
   const handleCreate = async (values: any) => {
     const start_date = values.start_date ? values.start_date.format('YYYY-MM-DD') : '';
     const end_date = values.end_date ? values.end_date.format('YYYY-MM-DD') : '';
-    mutate({
-      code: values.code != null ? String(values.code) : '',
-      name: values.name ?? '',
-      short_name: values.short_name ?? '',
-      description: values.description ?? undefined,
-      start_date,
-      end_date: end_date || undefined,
-      manager_id: values.manager_id ?? undefined,
-      status: values.status ?? 'active',
-    } as Parameters<typeof mutate>[0]);
+    mutate(
+      {
+        code: values.code != null ? String(values.code) : '',
+        name: values.name ?? '',
+        short_name: values.short_name ?? '',
+        description: values.description ?? undefined,
+        start_date,
+        end_date: end_date || undefined,
+        manager_id: values.manager_id ?? undefined,
+        status: values.status ?? 'active',
+      } as Parameters<typeof mutate>[0],
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Проект успешно создан');
+          setTimeout(() => navigate(-1), 1000);
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось создать проект');
+        },
+      },
+    );
   };
   if (isReferencesLoading) {
     return <Loader />;
@@ -187,11 +188,11 @@ export default function ProjectCreatePage() {
                 initialValue='active'
               >
                 <Select placeholder='Выберите статус' suffixIcon={<EditOutlined />}>
-                  <Option value='active'>Активный</Option>
-                  <Option value='pending'>В ожидании</Option>
-                  <Option value='paused'>Приостановлен</Option>
-                  <Option value='completed'>Завершен</Option>
-                  <Option value='cancelled'>Отменен</Option>
+                  <Select.Option value='active'>Активный</Select.Option>
+                  <Select.Option value='pending'>В ожидании</Select.Option>
+                  <Select.Option value='paused'>Приостановлен</Select.Option>
+                  <Select.Option value='completed'>Завершен</Select.Option>
+                  <Select.Option value='cancelled'>Отменен</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -218,9 +219,9 @@ export default function ProjectCreatePage() {
                   suffixIcon={<UserOutlined />}
                 >
                   {referenceBooks?.users?.map(user => (
-                    <Option key={user.id} value={user.id} label={user.name}>
+                    <Select.Option key={user.id} value={user.id} label={user.name}>
                       {user.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>

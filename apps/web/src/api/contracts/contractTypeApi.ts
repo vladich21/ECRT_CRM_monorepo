@@ -1,4 +1,3 @@
-// api/contractTypeApi.ts
 import { ContractType } from '../../types/contract';
 import { apiClient } from '../clients';
 

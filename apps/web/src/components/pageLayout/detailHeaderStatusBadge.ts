@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 
 import badgeStyles from './detailHeaderStatusBadge.module.scss';
 
-/** Варианты бейджа в шапке детальной страницы — задаются только классами из SCSS. */
 export type DetailHeaderStatusBadgeVariant =
   | 'activityActive'
   | 'activityInactive'
@@ -49,10 +48,6 @@ export function detailHeaderVariantForPartnerStatusName(statusName: string): Det
   }
 }
 
-/**
- * UUID статуса из справочника → variant (приоритет над именем).
- * Заполнять при необходимости, если подписи в справочнике меняются.
- */
 export const PARTNER_STATUS_ID_TO_VARIANT: Partial<Record<string, DetailHeaderStatusBadgeVariant>> = {};
 
 export function detailHeaderVariantForPartnerStatus(

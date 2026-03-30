@@ -25,7 +25,6 @@ import { projectUpdateFormMapper } from '../../../helpers/mappers/projectUpdateF
 import styles from './ProjectFormPage.module.scss';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 
-const { Option } = Select;
 const { TextArea } = Input;
 export default function ProjectEditPage() {
   const { projectId } = useParams();
@@ -34,7 +33,7 @@ export default function ProjectEditPage() {
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
   const { data: project, isLoading: isProjectLoading, isError: isProjectError } = useProjectById(projectId!);
-  const { mutate, isPending: isUpdateLoading, isError: isUpdateError, isSuccess: isUpdateSuccess } = useUpdateProject();
+  const { mutate, isPending: isUpdateLoading } = useUpdateProject();
   const { data: referenceBooks, isLoading, isError } = useReferenceData(['users']);
   const wCode = Form.useWatch('code', form) as string | number | undefined;
   const wName = Form.useWatch('name', form) as string | undefined;
@@ -50,14 +49,6 @@ export default function ProjectEditPage() {
       });
     }
   }, [project, form]);
-  useEffect(() => {
-    if (isUpdateSuccess) {
-      showNotification('success', 'Успех', 'Проект успешно изменён');
-      setTimeout(() => navigate(-1), 1000);
-    } else if (isUpdateError) {
-      showNotification('error', 'Ошибка', 'Не удалось изменить проект');
-    }
-  }, [isUpdateError, isUpdateSuccess]);
   if (isLoading || isProjectLoading) {
     return <Loader />;
   }
@@ -72,7 +63,18 @@ export default function ProjectEditPage() {
     if (payload.end_date && dayjs.isDayjs(payload.end_date)) {
       payload.end_date = payload.end_date.format('YYYY-MM-DD');
     }
-    mutate({ id: projectId!, data: payload });
+    mutate(
+      { id: projectId!, data: payload },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Проект успешно изменён');
+          setTimeout(() => navigate(-1), 1000);
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось изменить проект');
+        },
+      },
+    );
   };
   const statusBadge = (() => {
     const s = (wStatus ?? (project as any)?.status) as string | undefined;
@@ -201,11 +203,11 @@ export default function ProjectEditPage() {
                     rules={[{ required: true, message: 'Выберите статус проекта' }]}
                   >
                     <Select placeholder='Выберите статус' suffixIcon={<EditOutlined />}>
-                      <Option value='active'>Активный</Option>
-                      <Option value='pending'>В ожидании</Option>
-                      <Option value='paused'>Приостановлен</Option>
-                      <Option value='completed'>Завершен</Option>
-                      <Option value='cancelled'>Отменен</Option>
+                      <Select.Option value='active'>Активный</Select.Option>
+                      <Select.Option value='pending'>В ожидании</Select.Option>
+                      <Select.Option value='paused'>Приостановлен</Select.Option>
+                      <Select.Option value='completed'>Завершен</Select.Option>
+                      <Select.Option value='cancelled'>Отменен</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -234,9 +236,9 @@ export default function ProjectEditPage() {
                       suffixIcon={<UserOutlined />}
                     >
                       {referenceBooks?.users?.map(user => (
-                        <Option key={user.id} value={user.id} label={user.name}>
+                        <Select.Option key={user.id} value={user.id} label={user.name}>
                           {user.name}
-                        </Option>
+                        </Select.Option>
                       ))}
                     </Select>
                   </Form.Item>

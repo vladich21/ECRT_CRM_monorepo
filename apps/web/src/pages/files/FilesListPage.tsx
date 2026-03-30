@@ -1,16 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { Button } from 'antd';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { useDeleteFile, useFilesByEntity, useUploadFiles } from '../../api/files/fileApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { BackButton } from '../../components/backButton/BackButton';
 import BasicTable from '../../components/basicTable/BasicTable';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../customhooks/useMutateByModal';
 import { useNotification } from '../../customhooks/useNotification';
-import { useModalStore } from '../../store/ModalStore';
 import { MyFile } from '../../types/files';
 import NotFound from '../NotFound';
 import { getColumnsData } from './data';
@@ -23,10 +22,10 @@ interface FilesListPageProps {
 
 const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', label }) => {
   const { [`${entityType}Id`]: entityId } = useParams();
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = useFilesByEntity(entityType, entityId!);
-  const [currentFileId, setCurrentFileId] = useState<string>('');
-  const modalProps = useModalStore();
+  const deleteFileIdRef = useRef('');
 
   const {
     data: referenceBooks,
@@ -37,13 +36,6 @@ const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', 
   const deleteFileMutation = useDeleteFile();
   const addFilesMutation = useUploadFiles({ entityType: entityType, entityId: entityId! });
 
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteFileMutation,
-    successMessage: 'Файл успешно удален',
-    errorMessage: 'Не удалось удалить файл',
-    getMutationProps: () => ({ entityType: entityType, entityId: entityId!, fileId: currentFileId }),
-    showNotification,
-  });
 
   const { handleOpenModal: openAddModal } = useMutateByModal<void, Error>({
     isEdit: false,
@@ -56,18 +48,20 @@ const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', 
     showNotification,
   });
 
-  useEffect(() => {
-    if (currentFileId) openDeleteModal();
-  }, [currentFileId]);
-
-  useEffect(() => {
-    if (!modalProps.open) {
-      setCurrentFileId('');
-    }
-  }, [modalProps.open]);
-
   const onDelete = (record: MyFile) => {
-    setCurrentFileId(record.id.toString());
+    deleteFileIdRef.current = record.id;
+    openAntdDeleteConfirm({
+      mutation: deleteFileMutation,
+      getVariables: () => ({
+        entityType: entityType,
+        entityId: entityId!,
+        fileId: deleteFileIdRef.current,
+      }),
+      showNotification,
+      successMessage: 'Файл успешно удален',
+      errorMessage: 'Не удалось удалить файл',
+      navigate,
+    });
   };
 
   if (isReferencesError) return <NotFound />;

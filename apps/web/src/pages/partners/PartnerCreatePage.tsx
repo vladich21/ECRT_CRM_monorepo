@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { CloudDownloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -9,9 +9,11 @@ import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
-import { partnerUploadFormMapper } from '../../helpers/mappers/partnerUploadFormMapper';
+import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
 import { initialFormValues } from './data';
+import type { PartnerFormRefs, PartnerFormSubmitValues } from './components/form';
 import { PartnerFormFields } from './PartnerFormFields';
+import type { Partner } from '../../types/partner';
 import styles from './PartnerFormPage.module.scss';
 
 export default function PartnerCreatePage() {
@@ -30,22 +32,10 @@ export default function PartnerCreatePage() {
     'competencies',
     'partnerEconomicCategories',
   ]);
-  const {
-    mutate,
-    isPending: isCreateLoading,
-    isError: isCreateError,
-    isSuccess: isCreateSuccess,
-    error: createError,
-  } = useCreatePartner();
+  const { mutate, isPending: isCreateLoading } = useCreatePartner();
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
-  useEffect(() => {
-    if (isCreateSuccess) {
-      showNotification('success', 'Успех', 'Контрагент успешно создан');
-      setTimeout(() => navigate(-1), 1000);
-    }
-  }, [isCreateSuccess, createError, navigate, showNotification]);
   const isSubmittingRef = useRef(false);
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: PartnerFormSubmitValues) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setErrorFields([]);
@@ -55,12 +45,16 @@ export default function PartnerCreatePage() {
       type_ids: values.type_ids || [],
       competence_ids: values.competence_ids || [],
       partner_economic_category_id: values.partner_economic_category_id,
-    };
+    } as Partner;
     mutate(payload, {
+      onSuccess: () => {
+        showNotification('success', 'Успех', 'Контрагент успешно создан');
+        setTimeout(() => navigate(-1), 1000);
+      },
       onSettled: () => {
         isSubmittingRef.current = false;
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         const message = error?.message || 'Не удалось создать контрагента';
         const isInnKppDuplicate = message.includes('ИНН и КПП');
         const isInnRequired = message.includes('ИНН обязателен');
@@ -88,7 +82,8 @@ export default function PartnerCreatePage() {
   const handleUploadByInn = async () => {
     getPartnerDataByInn(form.getFieldValue('inn'), {
       onSuccess: data => {
-        form.setFieldsValue(partnerUploadFormMapper(data as any));
+        const mapped = partnerUploadFormMapper(data as unknown as CompanyApiResponse);
+        if (mapped) form.setFieldsValue(mapped);
         showNotification('success', 'Успех', 'Контрагент успешно подгружен');
       },
       onError: () => {
@@ -140,7 +135,7 @@ export default function PartnerCreatePage() {
         >
           <PartnerFormFields
             form={form}
-            referenceBooks={referenceBooks}
+            referenceBooks={referenceBooks as PartnerFormRefs}
             disabled={isCreateLoading}
             getFieldStatus={getFieldStatus}
             onUploadByInn={handleUploadByInn}

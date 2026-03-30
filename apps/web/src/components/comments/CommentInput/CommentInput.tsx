@@ -230,14 +230,12 @@ const CommentInput: React.FC<CommentInputProps> = ({
 
   const searchText = useMemo(() => getNicknameFromText(content), [content]);
 
-  // Автофокус при открытии редактора
   useEffect(() => {
     if ((action === 'edit' || action === 'reply') && editorRef.current) {
       setTimeout(() => editorRef.current?.focus(), 100);
     }
   }, [action]);
 
-  // Управление контентом редактора
   useEffect(() => {
     if (!editorRef.current) return;
 
@@ -256,7 +254,6 @@ const CommentInput: React.FC<CommentInputProps> = ({
       className={`${styles.container} ${isFocused ? styles.focused : ''} ${disabled ? styles.disabled : ''} ${className}`}
       style={style}
     >
-      {/* Информация о текущем действии */}
       {(action === 'edit' || action === 'reply') && (
         <div className={styles.actionInfo}>
           <div className={styles.actionBody}>
@@ -266,7 +263,6 @@ const CommentInput: React.FC<CommentInputProps> = ({
                   <EditOutlined className={styles.actionTitleIcon} />
                   Редактирование комментария
                 </div>
-                {/* Показываем существующие файлы */}
                 {editingComment.files && editingComment.files.length > 0 && (
                   <div className={styles.editFilesSection}>
                     <div className={styles.editFilesLabel}>Прикрепленные файлы:</div>
@@ -382,7 +378,6 @@ const CommentInput: React.FC<CommentInputProps> = ({
         />
       </div>
 
-      {/* Отображение прикрепленных файлов */}
       {attachedFiles.length > 0 && (
         <div className={styles.attachedFiles}>
           {attachedFiles.map(attachedFile => (

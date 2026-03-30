@@ -1,9 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 import { isObject } from '../helpers/typeGuards/isObject';
 import { ModalType, useModalStore } from '../store/ModalStore';
+import { CONFIRM_MODAL_DEFAULT_REDIRECT_MS } from './confirmDelete/constants';
 import { NotificationType } from './useNotification';
 
 interface UseEditOptions<TData = void, TError = Error, TVariables = any> {
@@ -17,6 +18,7 @@ interface UseEditOptions<TData = void, TError = Error, TVariables = any> {
   modalTitle?: string;
   modalType: ModalType;
   modalData?: any;
+  getModalData?: () => any;
 }
 
 interface UseEditReturn<TData> {
@@ -42,23 +44,12 @@ export const useMutateByModal = <TData = void, TError = Error, TVariables = any>
   showNotification,
   modalTitle = 'Редактирование',
   modalData,
+  getModalData,
 }: UseEditOptions<TData, TError, TVariables>): UseEditReturn<TData> => {
-  const mutationProps = getMutationProps();
   const navigate = useNavigate();
   const { openModal, closeModal, open: isOpenModal } = useModalStore();
 
   const { mutate, isPending, isSuccess, isError, data } = mutation;
-
-  useEffect(() => {
-    if (!isSuccess) return;
-    if (redirectPath) {
-      const timeoutId = setTimeout(() => {
-        navigate(redirectPath);
-      }, 1000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isSuccess, successMessage]);
 
   const handleOpenModal = () => {
     openModal({
@@ -66,7 +57,7 @@ export const useMutateByModal = <TData = void, TError = Error, TVariables = any>
       type: modalType,
       onConfirm,
       onCancel,
-      modalData,
+      modalData: getModalData ? getModalData() : modalData,
       loading: isPending || false,
     });
   };
@@ -77,6 +68,7 @@ export const useMutateByModal = <TData = void, TError = Error, TVariables = any>
 
   const onConfirm = useCallback(
     (data: any) => {
+      const mutationProps = getMutationProps();
       if (!mutationProps && isEdit) {
         showNotification('error', 'Ошибка', 'Данные для редактирования не найдены');
         return;
@@ -90,6 +82,11 @@ export const useMutateByModal = <TData = void, TError = Error, TVariables = any>
           onSuccess: () => {
             showNotification('success', 'Успех', successMessage);
             closeModal();
+            if (redirectPath) {
+              window.setTimeout(() => {
+                navigate(redirectPath);
+              }, CONFIRM_MODAL_DEFAULT_REDIRECT_MS);
+            }
           },
           onError: () => {
             showNotification('error', 'Ошибка', errorMessage);
@@ -97,7 +94,17 @@ export const useMutateByModal = <TData = void, TError = Error, TVariables = any>
         },
       );
     },
-    [mutate],
+    [
+      closeModal,
+      errorMessage,
+      getMutationProps,
+      isEdit,
+      mutate,
+      navigate,
+      redirectPath,
+      showNotification,
+      successMessage,
+    ],
   );
 
   const onCancel = useCallback(() => {

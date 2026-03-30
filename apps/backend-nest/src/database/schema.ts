@@ -360,7 +360,6 @@ export const partners = pgTable('partners', {
   isDeleted: boolean('is_deleted').notNull().default(false),
 });
 
-/** Справочник критериев матрицы оценки поставщика (веса в долях, сумма активных = 1). См. docs/supplier-evaluations-db-design.md */
 export const refSupplierEvaluationCriteria = pgTable(
   'ref_supplier_evaluation_criteria',
   {
@@ -377,10 +376,6 @@ export const refSupplierEvaluationCriteria = pgTable(
   (t) => [uniqueIndex('ref_supplier_eval_criteria_code_uidx').on(t.code)],
 );
 
-/**
- * Оценка поставщика по проекту. status: active | archived (см. supplier-evaluation.enums.ts).
- * Частичный уникальный индекс (partner_id, project_id) WHERE status = 'active' — в SQL миграции, см. docs.
- */
 export const supplierEvaluations = pgTable(
   'supplier_evaluations',
   {
@@ -421,7 +416,6 @@ export const supplierEvaluationCriterionScores = pgTable(
   ],
 );
 
-/** Блокировка контрагента по конкретному проекту (категория D и др.). */
 export const supplierPartnerProjectBlocks = pgTable(
   'supplier_partner_project_blocks',
   {

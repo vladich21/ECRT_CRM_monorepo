@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -22,15 +21,7 @@ export default function UserCreatePage() {
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['departments', 'positions', 'roles']);
-  const { mutate, isPending: isCreateLoading, isError: isCreateError, isSuccess: isCreateSuccess } = useCreateUser();
-  useEffect(() => {
-    if (isCreateSuccess) {
-      showNotification('success', 'Успех', 'Пользователь успешно создан');
-      setTimeout(() => navigate('/users'), 1000);
-    } else if (isCreateError) {
-      showNotification('error', 'Ошибка', 'Не удалось создать пользователя');
-    }
-  }, [isCreateError, isCreateSuccess, navigate, showNotification]);
+  const { mutate, isPending: isCreateLoading } = useCreateUser();
   const handleCreate = async (values: Record<string, unknown>) => {
     const toUuidOrNull = (v: unknown) => (v != null && v !== '' ? String(v) : null);
     const roleIds = (values.role_ids ?? values.roles ?? []) as (string | number)[];
@@ -42,7 +33,15 @@ export default function UserCreatePage() {
       roles: undefined,
     };
     delete (payload as Record<string, unknown>).roles;
-    mutate(payload as any);
+    mutate(payload as any, {
+      onSuccess: () => {
+        showNotification('success', 'Успех', 'Пользователь успешно создан');
+        setTimeout(() => navigate('/users'), 1000);
+      },
+      onError: () => {
+        showNotification('error', 'Ошибка', 'Не удалось создать пользователя');
+      },
+    });
   };
   if (isReferencesLoading) {
     return <Loader />;

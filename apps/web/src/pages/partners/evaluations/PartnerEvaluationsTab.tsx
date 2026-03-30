@@ -259,16 +259,23 @@ export default function PartnerEvaluationsTab() {
               okText: 'Удалить',
               okButtonProps: { danger: true },
               cancelText: 'Отмена',
-              onOk: async () => {
-                try {
-                  await deleteMut.mutateAsync(row.id);
-                  showNotification('success', 'Оценка удалена');
-                  void refetch();
-                  void queryClient.invalidateQueries({ queryKey: ['supplier-evaluations', 'partner-kpi', partner.id] });
-                } catch {
-                  showNotification('error', 'Не удалось удалить оценку');
-                }
-              },
+              onOk: () =>
+                new Promise<void>((resolve, reject) => {
+                  deleteMut.mutate(row.id, {
+                    onSuccess: () => {
+                      showNotification('success', 'Оценка удалена');
+                      void refetch();
+                      void queryClient.invalidateQueries({
+                        queryKey: ['supplier-evaluations', 'partner-kpi', partner.id],
+                      });
+                      resolve();
+                    },
+                    onError: () => {
+                      showNotification('error', 'Не удалось удалить оценку');
+                      reject();
+                    },
+                  });
+                }),
             });
           }}
         />

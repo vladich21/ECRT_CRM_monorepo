@@ -79,10 +79,6 @@ export class ContractsController {
     return this.service.findAll(preview === '1', partnerId, pagination, { filters });
   }
 
-  /**
-   * Этапы договора: на фронте уже есть UI и моки при пустом ответе.
-   * Полноценного хранения этапов в БД пока нет — отдаём [], иначе GET давал 404.
-   */
   @Get(':id/stages')
   async findStages(@Param('id') id: string) {
     const row = await this.service.findOne(id);

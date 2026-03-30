@@ -1,17 +1,12 @@
 import dayjs, { type Dayjs } from 'dayjs';
 
+import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '../../../utils/listNavSnapshotShared';
+
 import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types';
 
 const TABS: FilterTab[] = ['all', 'active', 'draft', 'inactive', 'deleted'];
 function isFilterTab(candidate: unknown): candidate is FilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);
-}
-
-function snapshotFormatVersion(raw: object): number | undefined {
-  const record = raw as Record<string, unknown>;
-  if (typeof record.version === 'number') return record.version;
-  if (typeof record.v === 'number') return record.v;
-  return undefined;
 }
 
 export type ContractsListNavSnapshot = {
@@ -62,18 +57,17 @@ export function parseContractsListNavSnapshot(raw: unknown): {
   page: number;
   pageSize: number;
 } | null {
-  if (!raw || typeof raw !== 'object' || snapshotFormatVersion(raw) !== 1) return null;
-  const snapshotRecord = raw as ContractsListNavSnapshot;
+  const body = asListNavSnapshotV1Record(raw);
+  if (!body) return null;
+  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 20);
+  const snapshotRecord = body as unknown as ContractsListNavSnapshot;
   const appliedSnapshot = snapshotRecord.applied;
   const dateRange =
     appliedSnapshot?.dateRange?.[0] && appliedSnapshot?.dateRange?.[1]
       ? ([dayjs(appliedSnapshot.dateRange[0]), dayjs(appliedSnapshot.dateRange[1])] as [Dayjs, Dayjs])
       : null;
-  const page = typeof snapshotRecord.page === 'number' && snapshotRecord.page >= 1 ? snapshotRecord.page : 1;
-  const pageSize =
-    typeof snapshotRecord.pageSize === 'number' && snapshotRecord.pageSize >= 1 ? snapshotRecord.pageSize : 20;
   return {
-    searchQuery: typeof snapshotRecord.searchQuery === 'string' ? snapshotRecord.searchQuery : '',
+    searchQuery,
     activeTab: isFilterTab(snapshotRecord.activeTab) ? snapshotRecord.activeTab : 'all',
     appliedFilters: {
       partnerId: typeof appliedSnapshot?.partnerId === 'string' ? appliedSnapshot.partnerId : null,

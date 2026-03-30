@@ -14,12 +14,12 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Card, Spin, Tooltip, Typography, Upload } from 'antd';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { fileApi } from '../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity } from '../../api/files/fileApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useNotification } from '../../customhooks/useNotification';
 import { getNameById } from '../../helpers/getNameById';
 import type { MyFile } from '../../types/files';
@@ -58,6 +58,7 @@ function formatDate(dateStr: string | null): string {
 
 export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
   const params = useParams();
+  const navigate = useNavigate();
   const entityId = params[`${entityType}Id`] as string;
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
@@ -66,22 +67,22 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
   const { data: files = [], isLoading } = useFilesByEntity(entityType, entityId);
   const { data: referenceBooks } = useReferenceData(['users']);
   const deleteFileMutation = useDeleteFile();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteFileMutation,
-    successMessage: 'Файл успешно удалён',
-    errorMessage: 'Не удалось удалить файл',
-    getMutationProps: () => ({
-      entityType,
-      entityId,
-      fileId: pendingDeleteId.current,
-    }),
-    showNotification,
-  });
 
   const handleDelete = (e: React.MouseEvent, fileId: string) => {
     e.stopPropagation();
     pendingDeleteId.current = fileId;
-    openDeleteModal();
+    openAntdDeleteConfirm({
+      mutation: deleteFileMutation,
+      getVariables: () => ({
+        entityType,
+        entityId,
+        fileId: pendingDeleteId.current,
+      }),
+      showNotification,
+      successMessage: 'Файл успешно удалён',
+      errorMessage: 'Не удалось удалить файл',
+      navigate,
+    });
   };
 
   const handleUpload = async (options: UploadRequestOption) => {

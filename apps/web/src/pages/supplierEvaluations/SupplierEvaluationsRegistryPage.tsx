@@ -291,15 +291,20 @@ export default function SupplierEvaluationsRegistryPage() {
               okText: 'Удалить',
               okButtonProps: { danger: true },
               cancelText: 'Отмена',
-              onOk: async () => {
-                try {
-                  await deleteMut.mutateAsync(row.id);
-                  showNotification('success', 'Оценка удалена');
-                  void refetch();
-                } catch {
-                  showNotification('error', 'Не удалось удалить оценку');
-                }
-              },
+              onOk: () =>
+                new Promise<void>((resolve, reject) => {
+                  deleteMut.mutate(row.id, {
+                    onSuccess: () => {
+                      showNotification('success', 'Оценка удалена');
+                      void refetch();
+                      resolve();
+                    },
+                    onError: () => {
+                      showNotification('error', 'Не удалось удалить оценку');
+                      reject();
+                    },
+                  });
+                }),
             });
           }}
         />

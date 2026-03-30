@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   useCreatePartnerEconomicCategory,
@@ -9,76 +10,74 @@ import {
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
-import { useModalStore } from '../../../store/ModalStore';
 import { PartnerEconomicCategory } from '../../../types/partner';
 
-type ActionType = 'edit' | 'delete' | 'add' | '';
 const PartnerEconomicCategoriesListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
-  const { data = [], isLoading: loading } = usePartnerEconomicCategories();
-  const [currentCategoryId, setCurrentCategoryId] = useState<string>('');
-  const [action, setAction] = useState<ActionType>('');
-  const modalProps = useModalStore();
+  const { data = [] } = usePartnerEconomicCategories();
+  const deleteIdRef = useRef('');
+  const editIdRef = useRef('');
   const deleteCategoryMutation = useDeletePartnerEconomicCategory();
   const editCategoryMutation = useUpdatePartnerEconomicCategory();
   const addCategoryMutation = useCreatePartnerEconomicCategory();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteCategoryMutation,
-    successMessage: 'Экономическая категория успешно удалена',
-    errorMessage: 'Не удалось удалить экономическую категорию',
-    getMutationProps: () => currentCategoryId,
+  const { handleOpenModal: openEditModal } = useMutateByModal<PartnerEconomicCategory, Error>({
+    isEdit: true,
+    mutation: editCategoryMutation,
+    successMessage: 'Экономическая категория успешно изменена',
+    errorMessage: 'Не удалось изменить экономическую категорию',
+    modalType: 'withDescription',
+    getModalData: () => ({
+      name: getNameById(editIdRef.current, data),
+      code: getEntityById(editIdRef.current, data)?.code,
+      description: getEntityById(editIdRef.current, data)?.description,
+      nameLabel: 'название экономической категории контрагентов',
+      showCode: true,
+    }),
+    getMutationProps: () => editIdRef.current,
     showNotification,
   });
-  const { handleOpenModal: openMutateModal } = useMutateByModal<PartnerEconomicCategory, Error>({
-    isEdit: action === 'edit',
-    mutation: action === 'edit' ? editCategoryMutation : addCategoryMutation,
-    successMessage: `Экономическая категория успешно ${action === 'edit' ? 'изменена' : 'добавлена'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} экономическую категорию`,
+  const { handleOpenModal: openAddModal } = useMutateByModal<PartnerEconomicCategory, Error>({
+    isEdit: false,
+    mutation: addCategoryMutation,
+    successMessage: 'Экономическая категория успешно добавлена',
+    errorMessage: 'Не удалось добавить экономическую категорию',
     modalType: 'withDescription',
     modalData: {
-      name: getNameById(currentCategoryId, data),
-      code: getEntityById(currentCategoryId, data)?.code,
-      description: getEntityById(currentCategoryId, data)?.description,
+      name: '',
+      code: '',
+      description: '',
       nameLabel: 'название экономической категории контрагентов',
       showCode: true,
     },
-    getMutationProps: action === 'edit' ? () => currentCategoryId : () => undefined,
+    getMutationProps: () => undefined,
     showNotification,
   });
-  useEffect(() => {
-    if (action === 'delete') {
-      openDeleteModal();
-    } else if (action === 'edit' || action === 'add') {
-      openMutateModal();
-    }
-  }, [currentCategoryId, action]);
-  useEffect(() => {
-    if (!modalProps.open) {
-      setAction('');
-    }
-  }, [modalProps.open]);
-  const handleOpenAddModal = () => {
-    setAction('add');
-    setCurrentCategoryId('');
-  };
   const onDelete = ({ id }: { id: string }) => {
-    setAction('delete');
-    setCurrentCategoryId(id);
+    deleteIdRef.current = id;
+    openAntdDeleteConfirm({
+      mutation: deleteCategoryMutation,
+      getVariables: () => deleteIdRef.current,
+      showNotification,
+      successMessage: 'Экономическая категория успешно удалена',
+      errorMessage: 'Не удалось удалить экономическую категорию',
+      navigate,
+    });
   };
   const onEdit = ({ id }: { id: string }) => {
-    setAction('edit');
-    setCurrentCategoryId(id);
+    editIdRef.current = id;
+    openEditModal();
   };
   return (
     <ReferenceBookListPage
       title='Экономические категории контрагентов'
       addButtonLabel='Добавить экономическую категорию'
-      onAdd={handleOpenAddModal}
+      onAdd={() => openAddModal()}
       contextHolder={contextHolder}
     >
       <ReferenceBookCardList>

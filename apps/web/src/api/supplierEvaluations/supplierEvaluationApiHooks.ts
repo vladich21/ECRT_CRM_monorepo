@@ -44,7 +44,6 @@ const supplierEvaluationQueryKey = {
   one: (id: string) => ['supplier-evaluations', id] as const,
   block: (partnerId: string, projectId: string) =>
     ['supplier-evaluations', 'block', partnerId, projectId] as const,
-  /** Активные оценки по партнёру → средний балл и ближайшая переоценка (общий кэш для вкладок и реестра). */
   partnerKpi: (partnerId: string) => ['supplier-evaluations', 'partner-kpi', partnerId] as const,
 };
 
@@ -143,7 +142,6 @@ export function getPartnerSupplierEvalKpiQueryKey(partnerId: string) {
   return supplierEvaluationQueryKey.partnerKpi(partnerId);
 }
 
-/** Средний балл и ближайшая дата переоценки по всем активным оценкам проектов контрагента. */
 export function usePartnerSupplierEvalKpi(partnerId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: supplierEvaluationQueryKey.partnerKpi(partnerId ?? ''),

@@ -38,7 +38,7 @@ export const useUpdatePosition = (): UseMutationResult<Position, Error, { id: st
 
   return useMutation<Position, Error, { id: string; data: Partial<Position> }>({
     mutationFn: ({ id, data }: { id: string; data: Partial<Position> }) => positionApi.editPosition(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         predicate: query => {
           return query.queryKey.some(key => typeof key === 'string' && key === 'positions');

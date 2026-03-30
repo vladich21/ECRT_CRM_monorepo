@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   useContractTypes,
@@ -9,74 +10,70 @@ import {
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
-import { useModalStore } from '../../../store/ModalStore';
 import { ContractType } from '../../../types/contract';
 
-type ActionType = 'edit' | 'delete' | 'add' | '';
 const ContractTypesListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
-  const { data = [], isLoading: loading } = useContractTypes();
-  const [currentTypeId, setCurrentTypeId] = useState<string>('');
-  const [action, setAction] = useState<ActionType>('');
-  const modalProps = useModalStore();
+  const { data = [] } = useContractTypes();
+  const deleteIdRef = useRef('');
+  const editIdRef = useRef('');
   const deleteTypeMutation = useDeleteContractType();
   const editTypeMutation = useUpdateContractType();
   const addTypeMutation = useCreateContractType();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteTypeMutation,
-    successMessage: 'Тип договора успешно удален',
-    errorMessage: 'Не удалось удалить тип договора',
-    getMutationProps: () => currentTypeId,
+  const { handleOpenModal: openEditModal } = useMutateByModal<ContractType, Error>({
+    isEdit: true,
+    mutation: editTypeMutation,
+    successMessage: 'Тип договора успешно изменен',
+    errorMessage: 'Не удалось изменить тип договора',
+    modalType: 'withDescription',
+    getModalData: () => ({
+      name: getNameById(editIdRef.current, data),
+      description: getEntityById(editIdRef.current, data)?.description,
+      nameLabel: 'название типа договора',
+    }),
+    getMutationProps: () => editIdRef.current,
     showNotification,
   });
-  const { handleOpenModal: openMutateModal } = useMutateByModal<ContractType, Error>({
-    isEdit: action === 'edit',
-    mutation: action === 'edit' ? editTypeMutation : addTypeMutation,
-    successMessage: `Тип договора успешно ${action === 'edit' ? 'изменен' : 'добавлен'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} тип договора`,
+  const { handleOpenModal: openAddModal } = useMutateByModal<ContractType, Error>({
+    isEdit: false,
+    mutation: addTypeMutation,
+    successMessage: 'Тип договора успешно добавлен',
+    errorMessage: 'Не удалось добавить тип договора',
     modalType: 'withDescription',
     modalData: {
-      name: getNameById(currentTypeId, data),
-      description: getEntityById(currentTypeId, data)?.description,
+      name: '',
+      description: '',
       nameLabel: 'название типа договора',
     },
-    getMutationProps: action === 'edit' ? () => currentTypeId : () => undefined,
+    getMutationProps: () => undefined,
     showNotification,
   });
-  useEffect(() => {
-    if (action === 'delete') {
-      openDeleteModal();
-    } else if (action === 'edit' || action === 'add') {
-      openMutateModal();
-    }
-  }, [currentTypeId, action]);
-  useEffect(() => {
-    if (!modalProps.open) {
-      setAction('');
-    }
-  }, [modalProps.open]);
-  const handleOpenAddModal = () => {
-    setAction('add');
-    setCurrentTypeId('');
-  };
   const onDelete = ({ id }: { id: string }) => {
-    setAction('delete');
-    setCurrentTypeId(id);
+    deleteIdRef.current = id;
+    openAntdDeleteConfirm({
+      mutation: deleteTypeMutation,
+      getVariables: () => deleteIdRef.current,
+      showNotification,
+      successMessage: 'Тип договора успешно удален',
+      errorMessage: 'Не удалось удалить тип договора',
+      navigate,
+    });
   };
   const onEdit = ({ id }: { id: string }) => {
-    setAction('edit');
-    setCurrentTypeId(id);
+    editIdRef.current = id;
+    openEditModal();
   };
   return (
     <ReferenceBookListPage
       title='Типы договоров'
       addButtonLabel='Добавить тип договора'
-      onAdd={handleOpenAddModal}
+      onAdd={() => openAddModal()}
       contextHolder={contextHolder}
     >
       <ReferenceBookCardList>

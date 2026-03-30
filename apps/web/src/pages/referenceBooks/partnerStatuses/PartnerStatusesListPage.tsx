@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   useCreatePartnerStatus,
@@ -9,69 +10,64 @@ import {
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getNameById } from '../../../helpers/getNameById';
-import { useModalStore } from '../../../store/ModalStore';
 import { PartnerStatus } from '../../../types/partner';
 
-type ActionType = 'edit' | 'delete' | 'add' | '';
 const PartnerStatusesListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
-  const { data = [], isLoading: loading } = usePartnerStatuses();
-  const [currentPartnerStatusId, setCurrentPartnerStatusId] = useState<string>('');
-  const [action, setAction] = useState<ActionType>('');
-  const modalProps = useModalStore();
+  const { data = [] } = usePartnerStatuses();
+  const deleteIdRef = useRef('');
+  const editIdRef = useRef('');
   const deletePartnerStatusMutation = useDeletePartnerStatus();
   const editPartnerStatusMutation = useUpdatePartnerStatus();
   const addPartnerStatusMutation = useCreatePartnerStatus();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deletePartnerStatusMutation,
-    successMessage: 'Статус контрагента успешно удалён',
-    errorMessage: 'Не удалось удалить статус контрагента',
-    getMutationProps: () => currentPartnerStatusId,
-    showNotification,
-  });
-  const { handleOpenModal: openMutateModal } = useMutateByModal<PartnerStatus, Error>({
-    isEdit: action === 'edit',
-    mutation: action === 'edit' ? editPartnerStatusMutation : addPartnerStatusMutation,
-    successMessage: `Статус контрагента успешно ${action === 'edit' ? 'изменён' : 'добавлен'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} статус контрагента`,
+  const { handleOpenModal: openEditModal } = useMutateByModal<PartnerStatus, Error>({
+    isEdit: true,
+    mutation: editPartnerStatusMutation,
+    successMessage: 'Статус контрагента успешно изменён',
+    errorMessage: 'Не удалось изменить статус контрагента',
     modalType: 'positionForm',
-    modalData: { name: getNameById(currentPartnerStatusId, data), nameLabel: 'название статуса контрагента' },
-    getMutationProps: action === 'edit' ? () => currentPartnerStatusId : () => undefined,
+    getModalData: () => ({
+      name: getNameById(editIdRef.current, data),
+      nameLabel: 'название статуса контрагента',
+    }),
+    getMutationProps: () => editIdRef.current,
     showNotification,
   });
-  useEffect(() => {
-    if (action === 'delete') {
-      openDeleteModal();
-    } else if (action === 'edit' || action === 'add') {
-      openMutateModal();
-    }
-  }, [currentPartnerStatusId, action]);
-  useEffect(() => {
-    if (!modalProps.open) {
-      setAction('');
-    }
-  }, [modalProps.open]);
-  const handleOpenAddModal = () => {
-    setAction('add');
-    setCurrentPartnerStatusId('');
-  };
+  const { handleOpenModal: openAddModal } = useMutateByModal<PartnerStatus, Error>({
+    isEdit: false,
+    mutation: addPartnerStatusMutation,
+    successMessage: 'Статус контрагента успешно добавлен',
+    errorMessage: 'Не удалось добавить статус контрагента',
+    modalType: 'positionForm',
+    modalData: { name: '', nameLabel: 'название статуса контрагента' },
+    getMutationProps: () => undefined,
+    showNotification,
+  });
   const onDelete = ({ id }: { id: string }) => {
-    setAction('delete');
-    setCurrentPartnerStatusId(id);
+    deleteIdRef.current = id;
+    openAntdDeleteConfirm({
+      mutation: deletePartnerStatusMutation,
+      getVariables: () => deleteIdRef.current,
+      showNotification,
+      successMessage: 'Статус контрагента успешно удалён',
+      errorMessage: 'Не удалось удалить статус контрагента',
+      navigate,
+    });
   };
   const onEdit = ({ id }: { id: string }) => {
-    setAction('edit');
-    setCurrentPartnerStatusId(id);
+    editIdRef.current = id;
+    openEditModal();
   };
   return (
     <ReferenceBookListPage
       title='Статусы контрагентов'
       addButtonLabel='Добавить статус контрагента'
-      onAdd={handleOpenAddModal}
+      onAdd={() => openAddModal()}
       contextHolder={contextHolder}
     >
       <ReferenceBookCardList>

@@ -1,8 +1,3 @@
-/**
- * Установка пароля пользователю по email (argon2id).
- * Запуск: npx tsx scripts/set-password.ts <email> <password>
- * Пример: npx tsx scripts/set-password.ts v-koval@company.ru mysecret123
- */
 import * as argon2 from 'argon2';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';

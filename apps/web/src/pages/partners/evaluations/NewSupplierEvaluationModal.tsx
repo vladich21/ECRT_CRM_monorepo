@@ -103,31 +103,39 @@ export default function NewSupplierEvaluationModal({
 
   const hasActiveEvaluationForProject = Boolean(activeForProject?.data?.length);
 
-  const handleOk = async () => {
-    try {
-      const values = await form.validateFields();
-      const projectId = values.project_id;
+  const handleOk = () =>
+    form.validateFields().then(values => {
       if (!criteriaOrdered.length) return;
-      await createMut.mutateAsync({
-        partner_id: partnerId,
-        project_id: projectId,
-        evaluated_at: values.evaluated_at.format('YYYY-MM-DD'),
-        comment: values.comment?.trim() || undefined,
-        scores: criteriaOrdered.map(criterion => ({
-          criterion_id: criterion.id,
-          score: scores[criterion.id] ?? 4,
-        })),
+      return new Promise<void>((resolve, reject) => {
+        createMut.mutate(
+          {
+            partner_id: partnerId,
+            project_id: values.project_id,
+            evaluated_at: values.evaluated_at.format('YYYY-MM-DD'),
+            comment: values.comment?.trim() || undefined,
+            scores: criteriaOrdered.map(criterion => ({
+              criterion_id: criterion.id,
+              score: scores[criterion.id] ?? 4,
+            })),
+          },
+          {
+            onSuccess: () => {
+              onSuccess?.();
+              onClose();
+              resolve();
+            },
+            onError: (error: unknown) => {
+              const msg =
+                error && typeof error === 'object' && 'response' in error
+                  ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+                  : undefined;
+              if (msg) showNotification('error', 'Ошибка', String(msg));
+              reject(error);
+            },
+          },
+        );
       });
-      onSuccess?.();
-      onClose();
-    } catch (error: unknown) {
-      const msg =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      if (msg) showNotification('error', 'Ошибка', String(msg));
-    }
-  };
+    });
 
   return (
     <Modal

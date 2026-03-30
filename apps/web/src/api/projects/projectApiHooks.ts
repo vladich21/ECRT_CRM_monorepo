@@ -5,7 +5,6 @@ import { projectApi, type ProjectPreviewItem, ProjectsListParams, ProjectsListRe
 
 export type { ProjectsListParams };
 
-/** Справочник проектов для селектов (id, name, code). */
 export function useProjectsPreview(): UseQueryResult<ProjectPreviewItem[], Error> {
   return useQuery({
     queryKey: ['projects', 'preview'],

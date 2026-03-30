@@ -22,25 +22,12 @@ export default function PartnerCompetenceEditPage() {
     isLoading: isCompetenceLoading,
     isError: isCompetenceError,
   } = usePartnerCompetenceById(competenceId!);
-  const {
-    mutate,
-    isPending: isUpdateLoading,
-    isError: isUpdateError,
-    isSuccess: isUpdateSuccess,
-  } = useUpdatePartnerCompetence();
+  const { mutate, isPending: isUpdateLoading } = useUpdatePartnerCompetence();
   useEffect(() => {
     if (competence) {
       form.setFieldsValue(partnerCompetenceUpdateFormMapper(competence));
     }
   }, [competence, form]);
-  useEffect(() => {
-    if (isUpdateSuccess) {
-      showNotification('success', 'Успех', 'Компетенция партнера успешно изменена');
-      setTimeout(() => navigate(-1), 1000);
-    } else if (isUpdateError) {
-      showNotification('error', 'Ошибка', 'Не удалось изменить компетенцию партнера');
-    }
-  }, [isUpdateError, isUpdateSuccess, navigate, showNotification]);
   if (isCompetenceLoading) {
     return <Loader />;
   }
@@ -52,7 +39,18 @@ export default function PartnerCompetenceEditPage() {
   };
   const handleSave = async (values: { name: string }) => {
     const payload = getChangedFields(values, partnerCompetenceUpdateFormMapper(competence));
-    mutate({ id: competenceId!, data: payload });
+    mutate(
+      { id: competenceId!, data: payload },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Компетенция партнера успешно изменена');
+          setTimeout(() => navigate(-1), 1000);
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось изменить компетенцию партнера');
+        },
+      },
+    );
   };
   return (
     <>

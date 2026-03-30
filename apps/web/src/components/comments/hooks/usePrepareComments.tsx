@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { Comment, PreparedComment } from '../../../types/comments';
 
@@ -42,10 +42,6 @@ export const usePreparedComments = ({ comments }: UsePrepareCommentsProps): UseP
 
     return result;
   }, [comments]);
-
-  const renderComments = useCallback(() => {
-    return;
-  }, preparedComments);
 
   return {
     preparedComments,

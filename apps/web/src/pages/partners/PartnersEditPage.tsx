@@ -12,7 +12,7 @@ import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../..
 import { useNotification } from '../../customhooks/useNotification';
 import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
-import { partnerUploadFormMapper } from '../../helpers/mappers/partnerUploadFormMapper';
+import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
 import type { Partner } from '../../types/partner';
 import { mergePartnerSupplierEvalKpiWithUiMock } from './evaluations/partnerEvaluationsUiMock';
 import {
@@ -20,6 +20,7 @@ import {
   partnerDetailHeaderMetaItems,
   partnerEditBadgeOptions,
 } from './partnerDetailHeaderContent';
+import type { PartnerFormRefs, PartnerFormSubmitValues } from './components/form';
 import { PartnerFormFields } from './PartnerFormFields';
 import styles from './PartnerFormPage.module.scss';
 
@@ -41,13 +42,7 @@ export default function PartnerEditPage() {
     'competencies',
     'partnerEconomicCategories',
   ]);
-  const {
-    mutate,
-    isPending: isUpdateLoading,
-    isError: isUpdateError,
-    isSuccess: isUpdateSuccess,
-    error: updateError,
-  } = useUpdatePartner();
+  const { mutate, isPending: isUpdateLoading } = useUpdatePartner();
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
   const isSubmittingRef = useRef(false);
   const wName = Form.useWatch('name', form) as string | undefined;
@@ -107,19 +102,11 @@ export default function PartnerEditPage() {
       form.setFieldsValue(partnerUpdateFormMapper(partner, { is_archived: isArchived }));
     }
   }, [partner, referenceBooks, form]);
-  useEffect(() => {
-    if (isUpdateSuccess) {
-      showNotification('success', 'Успех', 'Контрагент успешно изменён');
-      setTimeout(() => navigate(-1), 1000);
-    } else if (isUpdateError) {
-      const message = (updateError as any)?.message || 'Не удалось изменить контрагента';
-      showNotification('error', 'Ошибка', message);
-    }
-  }, [isUpdateError, isUpdateSuccess, updateError]);
   const handleUploadByInn = async () => {
     getPartnerDataByInn(form.getFieldValue('inn'), {
       onSuccess: data => {
-        form.setFieldsValue(partnerUploadFormMapper(data as any));
+        const mapped = partnerUploadFormMapper(data as unknown as CompanyApiResponse);
+        if (mapped) form.setFieldsValue(mapped);
         showNotification('success', 'Успех', 'Контрагент успешно подгружен');
       },
       onError: () => {
@@ -141,7 +128,7 @@ export default function PartnerEditPage() {
   const statusName = referenceBooks.partnerStatuses?.find(
     status => String(status.id) === String(partner.status_id),
   )?.name;
-  const handleSave = async (values: any) => {
+  const handleSave = async (values: PartnerFormSubmitValues) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     const archiveEntry = referenceBooks.partnerStatuses?.find(s => (s.name ?? '').trim() === 'Архив');
@@ -152,6 +139,14 @@ export default function PartnerEditPage() {
     mutate(
       { id: partnerId!, data: payload },
       {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Контрагент успешно изменён');
+          setTimeout(() => navigate(-1), 1000);
+        },
+        onError: (error: Error) => {
+          const message = error?.message || 'Не удалось изменить контрагента';
+          showNotification('error', 'Ошибка', message);
+        },
         onSettled: () => {
           isSubmittingRef.current = false;
         },
@@ -215,7 +210,7 @@ export default function PartnerEditPage() {
         >
           <PartnerFormFields
             form={form}
-            referenceBooks={referenceBooks}
+            referenceBooks={referenceBooks as PartnerFormRefs}
             disabled={isUpdateLoading}
             onUploadByInn={handleUploadByInn}
             isLoadingInn={isLoadingInn}

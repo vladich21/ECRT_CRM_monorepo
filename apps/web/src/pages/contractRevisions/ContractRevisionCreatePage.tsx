@@ -21,7 +21,6 @@ import { getStageColumnsData } from '../contracts/details/tabs/stages/data';
 import styles from './ContractRevisionCreatePage.module.scss';
 
 const { TextArea } = Input;
-const { Option } = Select;
 export default function CreateContractRevisionPage() {
   const { contractId } = useParams();
   const navigate = useNavigate();
@@ -43,20 +42,7 @@ export default function CreateContractRevisionPage() {
     'contractStageStates',
     'contracts',
   ]);
-  const {
-    mutate,
-    isPending: isCreateLoading,
-    isError: isCreateError,
-    isSuccess: isCreateSuccess,
-  } = useCreateContractRevision();
-  useEffect(() => {
-    if (isCreateSuccess) {
-      showNotification('success', 'Успех', 'Договор успешно создан');
-      setTimeout(() => navigate(-1), 1000);
-    } else if (isCreateError) {
-      showNotification('error', 'Ошибка', 'Не удалось создать договор');
-    }
-  }, [isCreateError, isCreateSuccess, navigate, showNotification]);
+  const { mutate, isPending: isCreateLoading } = useCreateContractRevision();
   useEffect(() => {
     if (contract) {
       form.setFieldsValue({
@@ -115,7 +101,20 @@ export default function CreateContractRevisionPage() {
       contract_type_id: (values.contract_type_id as string) || contract!.contract_type_id,
       stages,
     } as Omit<ContractRevision, 'contract_id' | 'revision_number'>;
-    if (contractId) mutate({ contractId, data });
+    if (contractId) {
+      mutate(
+        { contractId, data },
+        {
+          onSuccess: () => {
+            showNotification('success', 'Успех', 'Договор успешно создан');
+            setTimeout(() => navigate(-1), 1000);
+          },
+          onError: () => {
+            showNotification('error', 'Ошибка', 'Не удалось создать договор');
+          },
+        },
+      );
+    }
   };
   const handleCancel = () => {
     navigate(`/contracts/${contractId}/revisions`);
@@ -123,7 +122,7 @@ export default function CreateContractRevisionPage() {
   if (isContractLoading || isReferencesLoading || isStagesLoading || isCreateLoading) {
     return <Loader />;
   }
-  if (isContractError || isReferencesError || !contract || isCreateError) {
+  if (isContractError || isReferencesError || !contract) {
     return <NotFound errorMessage='Договор не найден' />;
   }
   return (
@@ -181,9 +180,9 @@ export default function CreateContractRevisionPage() {
               <Form.Item name='partner_id' label='Партнер'>
                 <Select placeholder='Выберите партнера' loading={isReferencesLoading} allowClear>
                   {referenceBooks?.partners?.map(partner => (
-                    <Option key={partner.id} value={partner.id}>
+                    <Select.Option key={partner.id} value={partner.id}>
                       {partner.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -193,9 +192,9 @@ export default function CreateContractRevisionPage() {
               <Form.Item name='category_id' label='Категория'>
                 <Select placeholder='Выберите категорию' loading={isReferencesLoading} allowClear>
                   {referenceBooks?.contractCategories?.map(category => (
-                    <Option key={category.id} value={category.id}>
+                    <Select.Option key={category.id} value={category.id}>
                       {category.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -249,9 +248,9 @@ export default function CreateContractRevisionPage() {
               <Form.Item name='state_id' label='Состояние'>
                 <Select placeholder='Выберите состояние' loading={isReferencesLoading} allowClear>
                   {referenceBooks?.contractStates?.map(state => (
-                    <Option key={state.id} value={state.id}>
+                    <Select.Option key={state.id} value={state.id}>
                       {state.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>

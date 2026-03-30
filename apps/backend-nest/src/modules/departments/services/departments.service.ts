@@ -38,7 +38,6 @@ export class DepartmentsService {
     return this.toResponse(row);
   }
 
-  /** Формат ответа для фронтенда (snake_case) */
   private toResponse(row: (typeof departments.$inferSelect)) {
     return {
       id: String(row.id),

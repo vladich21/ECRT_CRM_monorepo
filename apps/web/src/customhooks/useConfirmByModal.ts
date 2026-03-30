@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 
 import type { ConfirmModalAppearance } from '../store/ModalStore';
 import { ModalType, useModalStore } from '../store/ModalStore';
+import type { DeleteMutationFeedbackConfig } from './confirmDelete/deleteMutationFeedback.types';
+import { runDeleteMutationWithFeedback } from './confirmDelete/runDeleteMutationWithFeedback';
 import { NotificationType } from './useNotification';
 
-export const CONFIRM_MODAL_DEFAULT_REDIRECT_MS = 1000;
+export { CONFIRM_MODAL_DEFAULT_REDIRECT_MS } from './confirmDelete/constants';
 
 export type OpenConfirmModalOverrides = {
   title?: string;
@@ -25,7 +27,6 @@ interface UseDeleteOptions<TData = void, TError = Error, TVariables = string> {
   redirectReplace?: boolean;
   redirectDelayMs?: number;
   modalType?: ModalType;
-  /** Заголовок по умолчанию, если в `handleOpenModal` не передан `title`. */
   defaultModalTitle?: string;
   getMutationProps: () => TVariables;
   showNotification: (type: NotificationType, title: string, description?: string) => void;
@@ -36,14 +37,10 @@ interface UseDeleteReturn {
   isPending: boolean;
   isSuccess: boolean;
   isError: boolean;
-  /** Допускает прямой `onClick={handleOpenModal}`: событие мыши игнорируется. */
   handleOpenModal: (arg?: OpenConfirmModalOverrides | SyntheticEvent) => void;
   handleCloseModal: () => void;
   onConfirm: () => void;
   onCancel: () => void;
-}
-interface ApiError {
-  message: string;
 }
 export const useConfirmByModal = <TData = void, TError = Error, TVariables = string>({
   mutation,
@@ -74,29 +71,19 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
       showNotification('error', 'Ошибка', 'ID не найден');
       return;
     }
-    mutate(mutationProps, {
-      onSuccess: data => {
-        const message =
-          typeof successMessage === 'function' ? successMessage(data) : (successMessage ?? 'Элемент успешно удалён');
-        showNotification('success', 'Успех', message);
-        closeModal();
-        onSuccess?.(data);
-        if (redirectPath) {
-          const delay = redirectDelayMs ?? CONFIRM_MODAL_DEFAULT_REDIRECT_MS;
-          window.setTimeout(() => {
-            const nextState = typeof redirectState === 'function' ? redirectState(data) : redirectState;
-            navigate(redirectPath, {
-              replace: redirectReplace,
-              ...(nextState !== undefined ? { state: nextState } : {}),
-            });
-          }, delay);
-        }
-      },
-      onError: error => {
-        const apiMessage = (error as any).response?.data?.message;
-        showNotification('error', 'Ошибка', apiMessage || (error as ApiError)?.message || errorMessage);
-      },
-    });
+    const feedback: DeleteMutationFeedbackConfig<TData> = {
+      showNotification,
+      successMessage: successMessage ?? 'Элемент успешно удалён',
+      errorMessage,
+      navigate,
+      redirectPath,
+      redirectState,
+      redirectReplace,
+      redirectDelayMs,
+      onAfterSuccessNotification: closeModal,
+      onMutationSuccess: onSuccess,
+    };
+    runDeleteMutationWithFeedback(mutate, mutationProps, feedback);
   }, [
     closeModal,
     errorMessage,

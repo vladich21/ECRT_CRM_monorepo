@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { SaveOutlined, TagOutlined } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Modal, Row } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -11,22 +10,20 @@ export default function PartnerCompetenceCreatePage() {
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-  const {
-    mutate,
-    isPending: isCreateLoading,
-    isError: isCreateError,
-    isSuccess: isCreateSuccess,
-  } = useCreatePartnerCompetence();
-  useEffect(() => {
-    if (isCreateSuccess) {
-      showNotification('success', 'Успех', 'Компетенция партнера успешно создана');
-      setTimeout(() => navigate(-1), 1000);
-    } else if (isCreateError) {
-      showNotification('error', 'Ошибка', 'Не удалось создать компетенцию партнера');
-    }
-  }, [isCreateError, isCreateSuccess, navigate, showNotification]);
+  const { mutate, isPending: isCreateLoading } = useCreatePartnerCompetence();
   const handleCreate = (values: { name: string }) => {
-    mutate({ name: values.name });
+    mutate(
+      { name: values.name },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Компетенция партнера успешно создана');
+          setTimeout(() => navigate(-1), 1000);
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось создать компетенцию партнера');
+        },
+      },
+    );
   };
   return (
     <>

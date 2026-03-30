@@ -23,29 +23,12 @@ export default function PatentGrantCreatePage() {
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['patents']);
-  const {
-    mutate,
-    isPending: isCreateLoading,
-    isError: isCreateError,
-    isSuccess: isCreateSuccess,
-  } = useCreatePatentGrant();
+  const { mutate, isPending: isCreateLoading } = useCreatePatentGrant();
   useEffect(() => {
     if (patentIdFromState && referenceBooks?.patents) {
       form.setFieldsValue({ patent_id: patentIdFromState });
     }
   }, [patentIdFromState, referenceBooks, form]);
-  useEffect(() => {
-    if (isCreateSuccess) {
-      showNotification('success', 'Успех', 'Патентный грант успешно создан');
-      if (patentIdFromState) {
-        setTimeout(() => navigate(`/patents/${patentIdFromState}/grants`), 1000);
-      } else {
-        setTimeout(() => navigate(-1), 1000);
-      }
-    } else if (isCreateError) {
-      showNotification('error', 'Ошибка', 'Не удалось создать патентный грант');
-    }
-  }, [isCreateError, isCreateSuccess, navigate, showNotification, patentIdFromState]);
   const handleCreate = async (values: any) => {
     const patentId = values.patent_id;
     if (!patentId) return;
@@ -57,7 +40,22 @@ export default function PatentGrantCreatePage() {
       renewal_date: values.renewal_date ? values.renewal_date.format('YYYY-MM-DD') : undefined,
       notes: values.notes,
     };
-    mutate({ patentId, data });
+    mutate(
+      { patentId, data },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Патентный грант успешно создан');
+          if (patentIdFromState) {
+            setTimeout(() => navigate(`/patents/${patentIdFromState}/grants`), 1000);
+          } else {
+            setTimeout(() => navigate(-1), 1000);
+          }
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось создать патентный грант');
+        },
+      },
+    );
   };
   if (isReferencesLoading) {
     return <Loader />;

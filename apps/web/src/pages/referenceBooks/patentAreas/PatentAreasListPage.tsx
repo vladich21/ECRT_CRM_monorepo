@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { Spin } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 import {
   useCreatePatentArea,
@@ -10,75 +11,67 @@ import {
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
 import { getNameById } from '../../../helpers/getNameById';
-import { useModalStore } from '../../../store/ModalStore';
 import { PatentArea } from '../../../types/patent';
 import styles from './PatentAreasListPage.module.scss';
 
-type ActionType = 'edit' | 'delete' | 'add' | '';
 const PatentAreasListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { contextHolder, showNotification } = useNotification();
   const { data = [], isLoading: loading } = usePatentAreas();
-  const [currentAreaId, setCurrentAreaId] = useState<string>('');
-  const [action, setAction] = useState<ActionType>('');
-  const modalProps = useModalStore();
+  const deleteIdRef = useRef('');
+  const editIdRef = useRef('');
   const deleteAreaMutation = useDeletePatentArea();
   const editAreaMutation = useUpdatePatentArea();
   const addAreaMutation = useCreatePatentArea();
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteAreaMutation,
-    successMessage: 'Область патентных заявок успешно удалена',
-    errorMessage: 'Не удалось удалить область патентных заявок',
-    getMutationProps: () => currentAreaId,
-    showNotification,
-  });
-  const { handleOpenModal: openMutateModal } = useMutateByModal<PatentArea, Error>({
-    isEdit: action === 'edit',
-    mutation: action === 'edit' ? editAreaMutation : addAreaMutation,
-    successMessage: `Область патентных заявок успешно ${action === 'edit' ? 'изменена' : 'добавлена'}`,
-    errorMessage: `Не удалось ${action === 'edit' ? 'изменить' : 'добавить'} область патентных заявок`,
+  const { handleOpenModal: openEditModal } = useMutateByModal<PatentArea, Error>({
+    isEdit: true,
+    mutation: editAreaMutation,
+    successMessage: 'Область патентных заявок успешно изменена',
+    errorMessage: 'Не удалось изменить область патентных заявок',
     modalType: 'patentAreaForm',
-    modalData: {
-      name: getNameById(currentAreaId, data),
-      description: getEntityById(currentAreaId, data)?.description,
-      code: getEntityById(currentAreaId, data)?.code,
-    },
-    getMutationProps: action === 'edit' ? () => currentAreaId : () => undefined,
+    getModalData: () => ({
+      name: getNameById(editIdRef.current, data),
+      description: getEntityById(editIdRef.current, data)?.description,
+      code: getEntityById(editIdRef.current, data)?.code,
+    }),
+    getMutationProps: () => editIdRef.current,
     showNotification,
   });
-  useEffect(() => {
-    if (action === 'delete') {
-      openDeleteModal();
-    } else if (action === 'edit' || action === 'add') {
-      openMutateModal();
-    }
-  }, [currentAreaId, action]);
-  useEffect(() => {
-    if (!modalProps.open) {
-      setAction('');
-    }
-  }, [modalProps.open]);
-  const handleOpenAddModal = () => {
-    setAction('add');
-    setCurrentAreaId('');
-  };
+  const { handleOpenModal: openAddModal } = useMutateByModal<PatentArea, Error>({
+    isEdit: false,
+    mutation: addAreaMutation,
+    successMessage: 'Область патентных заявок успешно добавлена',
+    errorMessage: 'Не удалось добавить область патентных заявок',
+    modalType: 'patentAreaForm',
+    modalData: { name: '', description: '', code: '' },
+    getMutationProps: () => undefined,
+    showNotification,
+  });
   const onDelete = ({ id }: { id: string }) => {
-    setAction('delete');
-    setCurrentAreaId(id);
+    deleteIdRef.current = id;
+    openAntdDeleteConfirm({
+      mutation: deleteAreaMutation,
+      getVariables: () => deleteIdRef.current,
+      showNotification,
+      successMessage: 'Область патентных заявок успешно удалена',
+      errorMessage: 'Не удалось удалить область патентных заявок',
+      navigate,
+    });
   };
   const onEdit = ({ id }: { id: string }) => {
-    setAction('edit');
-    setCurrentAreaId(id);
+    editIdRef.current = id;
+    openEditModal();
   };
   return (
     <ReferenceBookListPage
       title='Области патентных заявок'
       addButtonLabel='Добавить область патентных заявок'
-      onAdd={handleOpenAddModal}
+      onAdd={() => openAddModal()}
       contextHolder={contextHolder}
     >
       {loading ? (

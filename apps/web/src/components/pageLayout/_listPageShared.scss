@@ -149,7 +149,6 @@ $color-surface: #f8fafc;
   width: 100%;
 }
 
-// Левая полоса у карточек списка: обычная серая; с data-danger-stripe — красная (тоньше).
 $card-stripe-default: #c8c8c8;
 $card-stripe-danger: #e84749; // = constants/appColors APP_COLOR_ERROR
 $card-stripe-hover: #b3d0ff;

@@ -26,12 +26,7 @@ export default function PatentGrantEditPage() {
     isLoading: isReferencesLoading,
     isError: isReferencesError,
   } = useReferenceData(['patents']);
-  const {
-    mutate,
-    isPending: isUpdateLoading,
-    isError: isUpdateError,
-    isSuccess: isUpdateSuccess,
-  } = useUpdatePatentGrant();
+  const { mutate, isPending: isUpdateLoading } = useUpdatePatentGrant();
   useEffect(() => {
     if (patentGrant) {
       const formData = {
@@ -42,14 +37,6 @@ export default function PatentGrantEditPage() {
       form.setFieldsValue(formData);
     }
   }, [patentGrant, form]);
-  useEffect(() => {
-    if (isUpdateSuccess && patentGrant?.patent_id) {
-      showNotification('success', 'Успех', 'Патентный грант успешно изменён');
-      setTimeout(() => navigate(`/patents/${patentGrant.patent_id}/grants`), 1000);
-    } else if (isUpdateError) {
-      showNotification('error', 'Ошибка', 'Не удалось изменить патентный грант');
-    }
-  }, [isUpdateError, isUpdateSuccess, navigate, showNotification, patentGrant?.patent_id]);
   const handleSave = async (values: any) => {
     const payload = getChangedFields(values, patentGrant!);
     if (payload.grant_date && dayjs.isDayjs(payload.grant_date)) {
@@ -58,7 +45,21 @@ export default function PatentGrantEditPage() {
     if (payload.renewal_date && dayjs.isDayjs(payload.renewal_date)) {
       payload.renewal_date = payload.renewal_date.format('YYYY-MM-DD');
     }
-    mutate({ id: grantId!, data: payload });
+    const patentIdForRedirect = patentGrant?.patent_id;
+    mutate(
+      { id: grantId!, data: payload },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Патентный грант успешно изменён');
+          if (patentIdForRedirect) {
+            setTimeout(() => navigate(`/patents/${patentIdForRedirect}/grants`), 1000);
+          }
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось изменить патентный грант');
+        },
+      },
+    );
   };
   const handleBack = () => {
     navigate(-1);

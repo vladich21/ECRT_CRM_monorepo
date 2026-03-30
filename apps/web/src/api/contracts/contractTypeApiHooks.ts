@@ -33,7 +33,6 @@ export const useCreateContractType = (): UseMutationResult<ContractType, Error, 
   });
 };
 
-// 1.4. Обновление типа контракта
 export const useUpdateContractType = (): UseMutationResult<
   ContractType,
   Error,
@@ -54,7 +53,6 @@ export const useUpdateContractType = (): UseMutationResult<
   });
 };
 
-// Удаление типа контракта
 export const useDeleteContractType = (): UseMutationResult<void, Error, string> => {
   const queryClient = useQueryClient();
 
