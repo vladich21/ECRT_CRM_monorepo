@@ -81,8 +81,8 @@ export default function DetailHeader({
             <div
               className={styles.statusBadge}
               style={{
-                background: `${st.color}20`,
-                border: `1px solid ${st.color}50`,
+                background: st.background,
+                border: `1px solid ${st.borderColor}`,
                 color: st.color,
               }}
             >

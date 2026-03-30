@@ -1,17 +1,142 @@
-.container {
+@use '../../../styles/variables' as v;
+
+.card {
   width: 100%;
+  background: v.$bg-primary;
+  border-radius: 10px;
+  padding: 20px 20px 22px;
+  border: 1px solid v.$border-tertiary;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.section {
+  margin: 0;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: v.$font-lg;
+  font-weight: 700;
+  color: v.$text-secondary;
+  letter-spacing: -0.01em;
+}
+
+.sectionTitleIcon {
+  font-size: 18px;
+  color: v.$primary-color;
+  flex-shrink: 0;
+}
+
+.sectionDivider {
+  height: 0;
+  margin: 20px 0;
+  border: 0;
+  border-top: 1px solid v.$border-tertiary;
 }
 
 .descriptions {
   :global(.ant-descriptions-view table),
   :global(.ant-descriptions-item-label),
   :global(.ant-descriptions-item-content) {
-    background: #fff;
+    background: v.$bg-primary;
   }
 
   :global(.ant-descriptions-item-label) {
-    max-width: 250px;
-    width: 250px;
+    max-width: 220px;
+    width: 32%;
+    min-width: 140px;
     font-weight: 600;
+    color: v.$text-tertiary;
   }
+
+  :global(.ant-descriptions-item-content) {
+    color: v.$text-secondary;
+  }
+
+  :global(.ant-descriptions-row > th),
+  :global(.ant-descriptions-row > td) {
+    padding: 12px 14px;
+  }
+}
+
+.requisitesHint {
+  margin: -6px 0 14px;
+  font-size: v.$font-sm;
+  color: v.$text-quaternary;
+  line-height: 1.45;
+}
+
+.requisitesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .requisitesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.requisiteCell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: v.$bg-secondary;
+  border: 1px solid v.$border-tertiary;
+  min-height: 72px;
+  justify-content: center;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    border-color: v.$border-secondary;
+    background: v.$bg-tertiary;
+  }
+}
+
+.requisiteTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.requisiteLabel {
+  font-size: v.$font-sm;
+  font-weight: 600;
+  color: v.$text-quaternary;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.copyBtn {
+  flex-shrink: 0;
+  margin: -4px -6px -4px 0;
+  color: v.$text-quaternary;
+  transition: color 0.15s ease;
+
+  &:global(.ant-btn-icon-only) {
+    width: 28px;
+    height: 28px;
+  }
+
+  &:hover {
+    color: v.$primary-color;
+  }
+}
+
+.requisiteValue {
+  font-size: v.$font-lg;
+  font-weight: 600;
+  color: v.$text-secondary;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+  line-height: 1.35;
 }

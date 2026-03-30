@@ -51,7 +51,9 @@ export default function ContractRevisionDetailsPage() {
       backLabel='К договору'
       onBack={() => navigate(`/contracts/${contractId}`)}
       statusBadge={
-        revision.is_active ? { label: 'Текущая', color: '#52c41a' } : { label: 'Не активна', color: '#ff4d4f' }
+        revision.is_active
+          ? { label: 'Текущая', variant: 'activityActive' }
+          : { label: 'Не активна', variant: 'activityInactive' }
       }
       metaItems={[
         <span key='ver' className={hStyles.metaText}>

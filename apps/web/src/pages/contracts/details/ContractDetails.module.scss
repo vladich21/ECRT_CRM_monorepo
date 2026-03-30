@@ -8,7 +8,8 @@ $warning: #faad14;
 $warning-bg: #fffbe6;
 $warning-border: #ffe58f;
 $warning-dark: #d48806;
-$error: #ff4d4f;
+/* sync constants/appColors APP_COLOR_ERROR */
+$error: #e84749;
 $error-bg: #fff2f0;
 $error-dark: #cf1322;
 $purple: #722ed1;
@@ -45,6 +46,11 @@ $radius-lg: 8px;
 
 .detailHeaderProjectChip {
   font-weight: 500;
+}
+
+.restoreActionBtn:global(.ant-btn.ant-btn-primary) {
+  background: $success !important;
+  border-color: $success !important;
 }
 
 .pageHeader {
@@ -674,7 +680,7 @@ $radius-lg: 8px;
 }
 
 .statusInactive {
-  color: #ff4d4f;
+  color: $error;
 }
 
 .detailsSection {

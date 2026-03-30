@@ -13,7 +13,10 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useDeleteProject, useProjectById, useRestoreProject } from '../../../api/projects/projectApiHooks';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, {
+  detailHeaderVariantForProjectStatus,
+  detailPageHeaderStyles as hStyles,
+} from '../../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../../constants/deletionScope';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useNotification } from '../../../customhooks/useNotification';
@@ -33,13 +36,6 @@ function getInitials(name: string) {
     .join('')
     .toUpperCase();
 }
-const STATUS_TAG_CLASS: Record<string, string> = {
-  active: 'tagGreen',
-  completed: 'tagBlue',
-  pending: 'tagOrange',
-  paused: 'tagGray',
-  cancelled: 'tagRed',
-};
 export default function ProjectDetailsPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -79,7 +75,6 @@ export default function ProjectDetailsPage() {
   if (isError || !project) return <NotFound errorMessage='Проект не найден' />;
   const st = PROJECT_STATUS_CONFIG[project.status] ?? PROJECT_STATUS_CONFIG.active;
   const managerName = getNameById(project.manager_id, referenceBooks?.users) || '';
-  const tagClass = STATUS_TAG_CLASS[project.status] || 'tagGray';
   return (
     <DetailPageHeader
       title={project.name}
@@ -92,7 +87,11 @@ export default function ProjectDetailsPage() {
           },
         })
       }
-      statusBadge={project.is_deleted ? { label: 'Удалён', color: '#ff4d4f' } : { label: st.label, color: st.color }}
+      statusBadge={
+        project.is_deleted
+          ? { label: 'Удалён', variant: 'danger' }
+          : { label: st.label, variant: detailHeaderVariantForProjectStatus(project.status) }
+      }
       metaItems={[
         project.code && (
           <span key='code' className={hStyles.metaText}>
@@ -196,7 +195,21 @@ export default function ProjectDetailsPage() {
         <div className={styles.sidebar}>
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Статус</h3>
-            <span className={styles[tagClass]}>{st.label}</span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '2px 8px',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 500,
+                background: st.background,
+                border: `1px solid ${st.borderColor}`,
+                color: st.color,
+              }}
+            >
+              {st.label}
+            </span>
           </div>
 
           <div className={styles.card}>

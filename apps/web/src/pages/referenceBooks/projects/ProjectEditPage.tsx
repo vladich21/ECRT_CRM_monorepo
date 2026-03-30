@@ -15,7 +15,10 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useProjectById, useUpdateProject } from '../../../api/projects/projectApiHooks';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, {
+  detailHeaderVariantForProjectStatus,
+  detailPageHeaderStyles as hStyles,
+} from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getChangedFields } from '../../../helpers/getChangedFields';
 import { projectUpdateFormMapper } from '../../../helpers/mappers/projectUpdateFormMapper';
@@ -75,7 +78,7 @@ export default function ProjectEditPage() {
     const s = (wStatus ?? (project as any)?.status) as string | undefined;
     if (!s) return undefined;
     const st = (PROJECT_STATUS_CONFIG as any)[s] ?? PROJECT_STATUS_CONFIG.active;
-    return { label: st.label, color: st.color };
+    return { label: st.label, variant: detailHeaderVariantForProjectStatus(s) };
   })();
   const headerName = (wName ?? project.name ?? '').trim();
   const headerTitle = headerName || '—';

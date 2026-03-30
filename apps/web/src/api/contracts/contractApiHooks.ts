@@ -12,6 +12,12 @@ import {
 
 export type { ContractsListParams };
 
+function invalidatePartnerQueries(queryClient: ReturnType<typeof useQueryClient>): void {
+  queryClient.invalidateQueries({
+    predicate: q => q.queryKey.some(key => typeof key === 'string' && key === 'partners'),
+  });
+}
+
 export function useContracts(
   params?: ContractsListParams,
   page?: number,
@@ -58,6 +64,7 @@ export const useCreateContract = (): UseMutationResult<Contract, Error, CreateCo
     mutationFn: (data: CreateContractPayload) => contractApi.addContract(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
+      invalidatePartnerQueries(queryClient);
     },
   });
 };
@@ -97,6 +104,7 @@ export const useDeleteContract = (): UseMutationResult<ContractDeleteResult, Err
           queryClient.removeQueries({ queryKey: ['contracts', contractId] });
         }
         queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
+        invalidatePartnerQueries(queryClient);
       });
     },
   });
@@ -109,6 +117,7 @@ export const useRestoreContract = (): UseMutationResult<Contract, Error, string>
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['contracts', id] });
+      invalidatePartnerQueries(queryClient);
     },
   });
 };

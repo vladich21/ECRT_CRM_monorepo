@@ -103,7 +103,8 @@ export default function ContractsListPage() {
       partner_id: effectivePartnerId || undefined,
       search: debouncedSearch || undefined,
       list_tab: activeTab === 'deleted' ? 'all' : activeTab,
-      deleted_scope: activeTab === 'deleted' ? 'deleted' : 'all',
+      /** «Действующие» и др. — только не мягко удалённые; удалённые — отдельная вкладка (как в логике статуса контрагента). */
+      deleted_scope: activeTab === 'deleted' ? 'deleted' : 'active',
     };
     if (appliedFilters.categoryId) {
       base.category_id = appliedFilters.categoryId;

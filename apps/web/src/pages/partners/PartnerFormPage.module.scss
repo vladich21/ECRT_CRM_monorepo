@@ -1,4 +1,5 @@
 @use '../../components/pageLayout/formPageShared' as fp;
+@use '../../styles/variables' as v;
 
 .wrap {
   @include fp.formPageWrap;
@@ -13,8 +14,12 @@
   @include fp.formActions;
 }
 
-.competenceTag {
-  font-weight: bold;
+/* Специфичность выше одного класса `.ant-tag` у Ant Design — без `!important`. */
+:global(.ant-tag).competenceTag {
+  font-weight: 600;
+  background-color: v.$primary-color;
+  color: #fff;
+  border-color: v.$primary-color;
 }
 
 .competenceOptionContainer {
@@ -23,11 +28,8 @@
   gap: 8px;
 }
 
-.competenceOptionTag {
-  margin-right: 8px;
-  min-width: 60px;
-  text-align: center;
-  font-weight: bold;
+.competenceOptionLabel {
+  font-weight: 500;
 }
 
 .innInputContainer {

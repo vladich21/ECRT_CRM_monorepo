@@ -1,7 +1,8 @@
 import { MailOutlined, RightOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 
-import type { User } from '../../../types/user';
+import { getActiveInactiveSurface, mutedTagStyle } from '../../../../constants/statusBadgeSurfaces';
+import type { User } from '../../../../types/user';
 import styles from './UserCard.module.scss';
 
 interface UserCardProps {
@@ -12,13 +13,13 @@ function getFio(user: User): string {
   return [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ').trim() || '—';
 }
 export default function UserCard({ user, onClick }: UserCardProps) {
-  const statusColor = user.is_active ? '#52c41a' : '#8c8c8c';
   const statusLabel = user.is_active ? 'Активный' : 'Неактивный';
+  const statusSurface = getActiveInactiveSurface(user.is_active);
   const roleNames = user.roles?.map(r => r.role_name || r.id).filter(Boolean) ?? [];
   return (
     <div
       className={styles.card}
-      style={{ '--status-color': statusColor } as React.CSSProperties}
+      {...(!user.is_active ? { 'data-danger-stripe': true as const } : {})}
       onClick={() => onClick(user)}
     >
       <div className={styles.mainInfo}>
@@ -30,7 +31,7 @@ export default function UserCard({ user, onClick }: UserCardProps) {
           </span>
         </div>
         <div className={styles.metaRow}>
-          <Tag color={statusColor} style={{ fontSize: 14 }}>
+          <Tag bordered={false} style={mutedTagStyle(statusSurface, { fontSize: 14 })}>
             {statusLabel}
           </Tag>
         </div>

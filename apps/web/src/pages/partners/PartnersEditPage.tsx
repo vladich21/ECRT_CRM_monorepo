@@ -8,18 +8,18 @@ import { usePartnerById, usePartnerByInn, useUpdatePartner } from '../../api/par
 import { usePartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
 import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper } from '../../helpers/mappers/partnerUploadFormMapper';
 import type { Partner } from '../../types/partner';
+import { mergePartnerSupplierEvalKpiWithUiMock } from './evaluations/partnerEvaluationsUiMock';
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
   partnerEditBadgeOptions,
 } from './partnerDetailHeaderContent';
-import { PARTNER_STATUS_BADGE_COLORS } from './partnerStatusBadgeColors';
 import { PartnerFormFields } from './PartnerFormFields';
 import styles from './PartnerFormPage.module.scss';
 
@@ -53,7 +53,6 @@ export default function PartnerEditPage() {
   const wName = Form.useWatch('name', form) as string | undefined;
   const wShortName = Form.useWatch('short_name', form) as string | undefined;
   const wInn = Form.useWatch('inn', form) as string | undefined;
-  const wStatusId = Form.useWatch('status_id', form) as string | undefined;
   const wTypeIds = Form.useWatch('type_ids', form) as string[] | undefined;
   const wActualAddress = Form.useWatch('actual_address', form) as string | undefined;
   const wLegal = Form.useWatch('legal_check_passed', form) as boolean | undefined;
@@ -63,9 +62,13 @@ export default function PartnerEditPage() {
   const wTarget = Form.useWatch('is_targeted', form) as boolean | undefined;
   const wCategoryId = Form.useWatch('category_id', form) as string | undefined;
 
-  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
+  const { data: partnerEvalKpiRaw, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
     partnerId,
     Boolean(partnerId),
+  );
+  const partnerEvalKpi = useMemo(
+    () => mergePartnerSupplierEvalKpiWithUiMock(partnerId ?? '', partnerEvalKpiRaw),
+    [partnerId, partnerEvalKpiRaw],
   );
 
   const displayPartner: Partner | null = useMemo(() => {
@@ -99,7 +102,9 @@ export default function PartnerEditPage() {
 
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses) {
-      form.setFieldsValue(partnerUpdateFormMapper(partner));
+      const archiveEntry = referenceBooks.partnerStatuses.find(s => (s.name ?? '').trim() === 'Архив');
+      const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
+      form.setFieldsValue(partnerUpdateFormMapper(partner, { is_archived: isArchived }));
     }
   }, [partner, referenceBooks, form]);
   useEffect(() => {
@@ -134,12 +139,14 @@ export default function PartnerEditPage() {
       c => String(c.id) === String(wCategoryId ?? partner.category_id),
     )?.name ?? null;
   const statusName = referenceBooks.partnerStatuses?.find(
-    status => String(status.id) === String(wStatusId ?? partner.status_id),
+    status => String(status.id) === String(partner.status_id),
   )?.name;
   const handleSave = async (values: any) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
-    const payload = getChangedFields(values, partnerUpdateFormMapper(partner));
+    const archiveEntry = referenceBooks.partnerStatuses?.find(s => (s.name ?? '').trim() === 'Архив');
+    const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
+    const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived }));
     payload.type_ids = values.type_ids ?? [];
     payload.competence_ids = values.competence_ids ?? [];
     mutate(
@@ -155,16 +162,13 @@ export default function PartnerEditPage() {
     <DetailPageHeader
       title={headerTitle}
       titleWeight='medium'
-      titleSuffix={
-        <span style={{ fontSize: 14, fontWeight: 500, opacity: 0.85 }}></span>
-      }
       backLabel='Реестр контрагентов'
       onBack={() => navigate(-1)}
       statusBadge={
         partner.is_deleted
-          ? { label: 'Удалён', color: '#ff4d4f' }
+          ? { label: 'Удалён', variant: 'danger' }
           : statusName
-            ? { label: statusName, color: PARTNER_STATUS_BADGE_COLORS[statusName] ?? '#1677ff' }
+            ? { label: statusName, variant: detailHeaderVariantForPartnerStatusName(statusName) }
             : undefined
       }
       badges={partnerDetailHeaderBadges(displayPartner, partnerEditBadgeOptions(displayPartner, partner, categoryName))}
@@ -215,6 +219,8 @@ export default function PartnerEditPage() {
             disabled={isUpdateLoading}
             onUploadByInn={handleUploadByInn}
             isLoadingInn={isLoadingInn}
+            formMode='edit'
+            statusDisplayName={statusName ?? '—'}
           />
         </Form>
       </div>

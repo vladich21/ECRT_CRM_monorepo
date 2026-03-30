@@ -1,6 +1,6 @@
 import type { ThHTMLAttributes } from 'react';
 import { CalendarOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
-import { Alert, Button, Modal, Table, Typography } from 'antd';
+import { Alert, Button, Modal, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
@@ -19,6 +19,7 @@ import {
   scoreColor,
   weightPercent,
 } from './supplierEvaluationUi';
+import styles from './EvaluationExpandedContent.module.scss';
 
 const { Text } = Typography;
 
@@ -31,6 +32,7 @@ type Props = {
 export default function EvaluationExpandedContent({ row, partnerId, onReevaluate }: Props) {
   const { data: detail, isLoading } = useSupplierEvaluationDetail(row.id, true);
   const { data: block } = useSupplierEvaluationBlock(partnerId, row.project_id, row.status === 'active');
+  const projectBlockActive = Boolean(block?.is_active);
   const deactivateMut = useDeactivateSupplierEvaluationBlock();
   const { showNotification, contextHolder } = useNotification();
   const rowPresentationState = getRowUiStatus(row);
@@ -39,7 +41,7 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
     if (!block?.id) return;
     Modal.confirm({
       title: 'Снять блокировку?',
-      content: 'Контрагент снова сможет участвовать в закупках по этому проекту (по бизнес-процессу).',
+      content: 'Контрагент снова сможет участвовать в закупках по этому проекту.',
       okText: 'Снять',
       cancelText: 'Отмена',
       onOk: async () => {
@@ -68,17 +70,19 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
       key: 'criterionWeight',
       width: 90,
       align: 'right',
-      render: (_, r) => <Text type='secondary'>{weightPercent(r.criterion_weight ?? 0)}</Text>,
+      render: (_value, scoreDetail) => (
+        <Text type='secondary'>{weightPercent(scoreDetail.criterion_weight ?? 0)}</Text>
+      ),
     },
     {
       title: 'Балл',
       key: 'score',
       width: 200,
       align: 'right',
-      render: (_, r) => (
-        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <ScoreDots value={r.score} />
-          <Text strong>{r.score}</Text>
+      render: (_value, scoreDetail) => (
+        <span className={styles.scoreRow}>
+          <ScoreDots value={scoreDetail.score} />
+          <Text strong>{scoreDetail.score}</Text>
         </span>
       ),
     },
@@ -87,25 +91,30 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
       key: 'weightedLine',
       width: 100,
       align: 'right',
-      render: (_, r) => (
-        <Text strong style={{ color: '#1677ff' }}>
-          {lineWeightedScore(r).toFixed(3)}
+      render: (_value, scoreDetail) => (
+        <Text strong className={styles.weightedValue}>
+          {lineWeightedScore(scoreDetail).toFixed(3)}
         </Text>
       ),
     },
   ];
 
+  const actionBarClass =
+    rowPresentationState === 'soon'
+      ? `${styles.actionBar} ${styles.actionBarSoon}`
+      : `${styles.actionBar} ${styles.actionBarNeutral}`;
+
   return (
-    <div style={{ background: '#fafafa', padding: '12px 16px 16px 48px' }}>
+    <div className={styles.root}>
       {contextHolder}
       {isLoading || !detail ? (
         <Text type='secondary'>Загрузка деталей…</Text>
       ) : (
         <>
           {detail.created_by_name ? (
-            <Text type='secondary' style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
+            <Text type='secondary' className={styles.caption}>
               Закупщик:{' '}
-              <Text strong style={{ color: '#262626' }}>
+              <Text strong className={styles.captionName}>
                 {detail.created_by_name}
               </Text>
             </Text>
@@ -122,26 +131,23 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
                 cell: (p: ThHTMLAttributes<HTMLTableCellElement>) => (
                   <th
                     {...p}
-                    style={{
-                      ...p.style,
-                      fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: '#8c8c8c',
-                      background: '#f5f5f5',
-                    }}
+                    className={[styles.tableHeadCell, p.className].filter(Boolean).join(' ')}
                   />
                 ),
               },
             }}
             summary={() => (
               <Table.Summary fixed>
-                <Table.Summary.Row style={{ background: '#fff' }}>
+                <Table.Summary.Row className={styles.summaryRow}>
                   <Table.Summary.Cell index={0} colSpan={3}>
                     <Text strong>Итого</Text>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={3} align='right'>
-                    <Text strong style={{ fontSize: 15, color: scoreColor(detail.weighted_score) }}>
+                    <Text
+                      strong
+                      className={styles.totalScore}
+                      style={{ color: scoreColor(detail.weighted_score) }}
+                    >
                       {Number(detail.weighted_score).toFixed(2)}
                     </Text>
                   </Table.Summary.Cell>
@@ -155,7 +161,7 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
               showIcon
               message='Комментарий'
               description={detail.comment}
-              style={{ marginTop: 12 }}
+              className={styles.mt12}
             />
           ) : null}
 
@@ -163,7 +169,7 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
             <Alert
               type='error'
               showIcon
-              style={{ marginTop: 12 }}
+              className={styles.mt12}
               message='Контрагент заблокирован по этому проекту'
               action={
                 <Button size='small' danger icon={<StopOutlined />} onClick={handleDeactivateBlock}>
@@ -174,62 +180,64 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
           )}
 
           {row.status === 'active' && (
-            <div
-              style={{
-                marginTop: 12,
-                padding: 12,
-                background: rowPresentationState === 'soon' ? '#fffbe6' : '#fafafa',
-                border: `1px solid ${rowPresentationState === 'soon' ? '#ffe58f' : '#f0f0f0'}`,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 200 }}>
+            <div className={actionBarClass}>
+              <div className={styles.actionCol}>
                 {rowPresentationState === 'blocked' && (
-                  <Text type='danger' style={{ display: 'block' }}>
+                  <Text type='danger' className={styles.textBlock}>
                     Требуется новая оценка после снятия блокировки
                   </Text>
                 )}
                 {rowPresentationState === 'overdue' && row.next_reevaluation_date && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <CalendarOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
-                    <Text type='danger' strong style={{ fontSize: 13 }}>
-                      Переоценка просрочена · {dayjs(row.next_reevaluation_date).format('DD.MM.YYYY')}
-                      {' '}
-                      <span style={{ fontWeight: 700 }}>
+                  <div className={styles.flexGap}>
+                    <CalendarOutlined className={styles.iconOverdue} />
+                    <Text type='danger' strong className={styles.planNote}>
+                      Переоценка просрочена · {dayjs(row.next_reevaluation_date).format('DD.MM.YYYY')}{' '}
+                      <span className={styles.daysCount}>
                         ({Math.abs(calendarDaysUntil(row.next_reevaluation_date))} дн.)
                       </span>
                     </Text>
                   </div>
                 )}
                 {rowPresentationState === 'soon' && row.next_reevaluation_date && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <CalendarOutlined style={{ color: '#d48806', fontSize: 16 }} />
-                    <Text strong style={{ fontSize: 13, color: '#d48806' }}>
+                  <div className={styles.flexGap}>
+                    <CalendarOutlined className={styles.iconSoon} />
+                    <Text strong className={styles.textSoon}>
                       Переоценка через {calendarDaysUntil(row.next_reevaluation_date)} дн. ·{' '}
                       {dayjs(row.next_reevaluation_date).format('DD.MM.YYYY')}
                     </Text>
                   </div>
                 )}
                 {rowPresentationState === 'active' && row.next_reevaluation_date && (
-                  <div style={{ fontSize: 13 }}>
+                  <div className={styles.planNote}>
                     <Text type='secondary'>Следующая переоценка по плану: </Text>
                     <Text type='secondary'>{dayjs(row.next_reevaluation_date).format('DD.MM.YYYY')}</Text>
                   </div>
                 )}
                 {rowPresentationState === 'active' && !row.next_reevaluation_date && (
-                  <Text type='secondary' style={{ fontSize: 13 }}>
+                  <Text type='secondary' className={styles.planNote}>
                     Плановая дата переоценки не задана
                   </Text>
                 )}
               </div>
-              <Button type='primary' ghost icon={<ReloadOutlined />} onClick={() => onReevaluate(row.project_id)}>
-                Провести переоценку
-              </Button>
+              <Tooltip
+                title={
+                  projectBlockActive
+                    ? 'Сначала снимите блокировку по этому проекту — затем можно провести переоценку'
+                    : undefined
+                }
+              >
+                <span className={styles.inlineBlock}>
+                  <Button
+                    type='primary'
+                    ghost
+                    icon={<ReloadOutlined />}
+                    disabled={projectBlockActive}
+                    onClick={() => onReevaluate(row.project_id)}
+                  >
+                    Провести переоценку
+                  </Button>
+                </span>
+              </Tooltip>
             </div>
           )}
         </>

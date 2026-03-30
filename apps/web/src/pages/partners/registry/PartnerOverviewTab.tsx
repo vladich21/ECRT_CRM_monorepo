@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
+import { usePartnerContacts } from '../../../api/partners/partnerContactApiHooks';
 import { usePartnerSupplierEvalKpi } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import type { Partner } from '../../../types/partner';
-import {
-  formatNextReevaluationKpiValue,
-  isNextReevaluationInSoonWindow,
-} from '../evaluations/supplierEvaluationUi';
+
+import { mergePartnerSupplierEvalKpiWithUiMock } from '../evaluations/partnerEvaluationsUiMock';
+import { formatNextReevaluationKpiValue } from '../evaluations/supplierEvaluationUi';
 import PartnersMainInfo from '../detailsTabs/PartnerMainInfo';
 import DetailSidebar from './DetailSidebar';
 import KpiRow from './KpiRow';
@@ -22,7 +22,12 @@ export default function PartnerOverviewTab() {
     'partnerEconomicCategories',
   ]);
 
-  const { data: supplierEvalKpi } = usePartnerSupplierEvalKpi(partner.id, Boolean(partner.id));
+  const { data: supplierEvalKpiRaw } = usePartnerSupplierEvalKpi(partner.id, Boolean(partner.id));
+  const supplierEvalKpi = useMemo(
+    () => mergePartnerSupplierEvalKpiWithUiMock(partner.id, supplierEvalKpiRaw),
+    [partner.id, supplierEvalKpiRaw],
+  );
+  const { data: partnerContacts = [] } = usePartnerContacts(partner.id);
 
   const complianceItems = useMemo(
     () => [
@@ -52,12 +57,11 @@ export default function PartnerOverviewTab() {
           complianceItems={complianceItems}
           supplierEvalAvgScore={supplierEvalKpi?.avgScore ?? null}
           nextEvaluationValue={formatNextReevaluationKpiValue(supplierEvalKpi?.nextReevaluationIso ?? null)}
-          nextEvaluationSoon={isNextReevaluationInSoonWindow(supplierEvalKpi?.nextReevaluationIso)}
         />
         <PartnersMainInfo partner={partner} />
       </div>
 
-      <DetailSidebar partner={partner} references={references} />
+      <DetailSidebar partner={partner} references={references} contacts={partnerContacts} />
     </div>
   );
 }

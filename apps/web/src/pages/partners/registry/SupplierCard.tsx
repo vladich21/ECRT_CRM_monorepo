@@ -5,13 +5,12 @@ import {
   RightOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import type { CSSProperties } from 'react';
-import { Progress, Tag } from 'antd';
+import { Progress } from 'antd';
 
 import type { Partner } from '../../../types/partner';
 import type { PartnerSupplierEvalKpi } from '../../../utils/supplierEvaluationPartnerKpi';
 import { PartnerNextEvalDateTags } from '../evaluations/partnerEvalKpiDisplay';
-import { isNextReevaluationInSoonWindow, scoreColor } from '../evaluations/supplierEvaluationUi';
+import { scoreColor } from '../evaluations/supplierEvaluationUi';
 import styles from './SupplierCard.module.scss';
 
 interface SupplierCardProps {
@@ -19,42 +18,61 @@ interface SupplierCardProps {
   references?: {
     partnerStatuses?: Array<{ id: string; name: string }>;
     partnerTypes?: Array<{ id: string; name: string }>;
-    competencies?: Array<{ id: string; name: string; color_bg?: string; color_text?: string; color_border?: string }>;
+    competencies?: Array<{ id: string; name: string }>;
   };
   /** Сводка по активным оценкам проектов (средний балл и ближайшая переоценка). */
   evaluationKpi?: PartnerSupplierEvalKpi;
   evaluationKpiLoading?: boolean;
+  /** Подсказка под блоком «Следующая оценка» (например демо по дням до переоценки). */
+  evaluationKpiDaysHint?: string;
   onClick: (partner: Partner) => void;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  Активный: '#52c41a',
-  Потенциальный: '#1677ff',
-  Заблокирован: '#ff4d4f',
-  Архив: '#8c8c8c',
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  Активный: styles.tagActive,
+  Потенциальный: styles.tagPotential,
+  Заблокирован: styles.tagBlocked,
+  Архив: styles.tagArchive,
 };
+
+function statusBadgeClass(statusName: string): string {
+  return STATUS_BADGE_CLASS[statusName] ?? styles.tagFallback;
+}
+
+function projectsCountLabel(n: number): string {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'проект';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'проекта';
+  return 'проектов';
+}
 
 export default function SupplierCard({
   partner,
   references,
   evaluationKpi,
   evaluationKpiLoading,
+  evaluationKpiDaysHint,
   onClick,
 }: SupplierCardProps) {
   const statusName = references?.partnerStatuses?.find(s => s.id === partner.status_id)?.name ?? '—';
-  const statusColor = STATUS_COLORS[statusName] ?? '#1677ff';
   const typeNames = (partner.type_ids ?? [])
     .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
     .filter(Boolean);
 
   const avgScore = evaluationKpi?.avgScore ?? null;
+  const blockedCount = evaluationKpi?.blockedProjectCount ?? 0;
+  const reevalOverdue = evaluationKpi?.nextReevaluationOverdue ?? false;
+
+  const dangerStripe = blockedCount > 0 || reevalOverdue;
+
   const progressPercent = avgScore == null ? 0 : Math.min(100, Math.round((avgScore / 5) * 100));
   const scoreStroke = avgScore == null ? '#d9d9d9' : scoreColor(avgScore);
 
   return (
     <div
       className={styles.card}
-      style={{ '--status-color': statusColor } as CSSProperties}
+      {...(dangerStripe ? { 'data-danger-stripe': true as const } : {})}
       onClick={() => onClick(partner)}
     >
       <div className={styles.mainInfo}>
@@ -66,13 +84,17 @@ export default function SupplierCard({
           </span>
         </div>
         <div className={styles.metaRow}>
-          <Tag color={statusColor} style={{ fontSize: 14 }}>
-            {statusName}
-          </Tag>
+          <span className={`${styles.mutedTag} ${statusBadgeClass(statusName)}`}>{statusName}</span>
           {!evaluationKpiLoading && avgScore == null && (
-            <Tag color='default' style={{ fontSize: 14, margin: 0 }}>
-              Не оценён
-            </Tag>
+            <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>Не оценён</span>
+          )}
+          {!evaluationKpiLoading && reevalOverdue && avgScore != null && (
+            <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>Просрочена</span>
+          )}
+          {!evaluationKpiLoading && blockedCount > 0 && (
+            <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>
+              Заблокирован · {blockedCount} {projectsCountLabel(blockedCount)}
+            </span>
           )}
         </div>
         {typeNames.length > 0 && (
@@ -108,24 +130,23 @@ export default function SupplierCard({
             trailColor='#f0f0f0'
           />
         </div>
-        <div
-          className={
-            !evaluationKpiLoading && isNextReevaluationInSoonWindow(evaluationKpi?.nextReevaluationIso)
-              ? `${styles.contractsCount} ${styles.contractsCountSoon}`
-              : styles.contractsCount
-          }
-        >
+        <div className={styles.contractsCount}>
           <CalendarOutlined />
-          <span className={styles.nextEvalLine}>
-            <span className={styles.nextEvalLabel}>Следующая оценка:</span>{' '}
-            {evaluationKpiLoading ? (
-              '…'
-            ) : evaluationKpi?.nextReevaluationIso ? (
-              <PartnerNextEvalDateTags nextIso={evaluationKpi.nextReevaluationIso} />
-            ) : (
-              <Tag style={{ margin: 0 }}>—</Tag>
-            )}
-          </span>
+          <div className={styles.nextEvalCol}>
+            <span className={styles.nextEvalLine}>
+              <span className={styles.nextEvalLabel}>Следующая оценка:</span>{' '}
+              {evaluationKpiLoading ? (
+                '…'
+              ) : evaluationKpi?.nextReevaluationIso ? (
+                <PartnerNextEvalDateTags nextIso={evaluationKpi.nextReevaluationIso} layout='registry' />
+              ) : (
+                <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>—</span>
+              )}
+            </span>
+            {evaluationKpiDaysHint ? (
+              <div className={styles.evalKpiDaysHint}>{evaluationKpiDaysHint}</div>
+            ) : null}
+          </div>
         </div>
       </div>
 

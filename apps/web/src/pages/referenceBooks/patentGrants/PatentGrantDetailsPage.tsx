@@ -70,7 +70,7 @@ export default function PatentGrantDetailsPage() {
         patentGrant.status
           ? {
               label: patentGrant.status,
-              color: patentGrant.status === 'Активный' ? '#52c41a' : '#ff4d4f',
+              variant: patentGrant.status === 'Активный' ? 'success' : 'danger',
             }
           : undefined
       }

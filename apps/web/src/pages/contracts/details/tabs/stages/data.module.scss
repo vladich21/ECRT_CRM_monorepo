@@ -16,7 +16,7 @@
 }
 
 .budgetDeviation {
-  color: #ff4d4f;
+  color: #e84749;
 }
 
 .budgetDeviationPositive {
@@ -38,4 +38,47 @@
 .statusTagCentered {
   min-width: 90px;
   text-align: center;
+}
+
+/* Пастельные Tag — те же цвета, что statusBadgeSurfaces (без inline в TS). */
+.mutedStageTag {
+  margin: 0;
+  border: 1px solid;
+  font-size: 14px;
+}
+
+.tagNeutral {
+  background: #fafafa;
+  border-color: #e8e8e8;
+  color: #737373;
+}
+
+.tagPotential {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.tagSuccess {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+  color: #52c41a;
+}
+
+.tagWarning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.tagDanger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.tagArchive {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #4b5563;
 }

@@ -21,8 +21,6 @@ type Refs =
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
-const ACTIVE_STYLE = { color: '#52c41a', label: 'Действует' };
-const INACTIVE_STYLE = { color: '#ff4d4f', label: 'Не действует' };
 type Props = {
   contract: Contract;
   refs: Refs;
@@ -34,7 +32,8 @@ export function ContractCard({ contract, refs, onClick }: Props) {
   const projectEntity = getEntityById(contract.project_id, refs?.projects ?? []);
   const projectLabel = formatProjectChipLabel(projectEntity);
   const stateEntity = getEntityById(contract.state_id, refs?.contractStates);
-  const st = contract.is_active ? ACTIVE_STYLE : INACTIVE_STYLE;
+  const effectiveLabel = contract.is_active ? 'Действует' : 'Не действует';
+  const effectiveTagClass = contract.is_active ? styles.contractEffectiveTag : styles.contractInactiveTag;
   const periodStr =
     contract.start_date || contract.end_date
       ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' — ')
@@ -45,7 +44,7 @@ export function ContractCard({ contract, refs, onClick }: Props) {
   return (
     <div
       className={styles.card}
-      style={{ '--status-color': st.color } as React.CSSProperties}
+      {...(!contract.is_active ? { 'data-danger-stripe': true as const } : {})}
       onClick={() => onClick(contract)}
     >
       <div className={styles.mainInfo}>
@@ -55,21 +54,15 @@ export function ContractCard({ contract, refs, onClick }: Props) {
           <span className={styles.partnerNameUpper}>{partnerName}</span>
         </div>
         <div className={styles.chipsRow}>
-          <Tag color={st.color} style={{ fontSize: 14, marginInlineEnd: 0 }}>
-            {st.label}
+          <Tag bordered={false} className={effectiveTagClass}>
+            {effectiveLabel}
           </Tag>
-          {stateEntity ? (
-            <Tag style={{ fontSize: 14, marginInlineEnd: 0 }}>{stateEntity.name}</Tag>
-          ) : null}
+          {stateEntity ? <Tag className={styles.chipTight}>{stateEntity.name}</Tag> : null}
           {contractTypeName ? (
-            <Tag className={styles.typeChip} style={{ fontSize: 14, marginInlineEnd: 0 }}>
-              {contractTypeName}
-            </Tag>
+            <Tag className={`${styles.typeChip} ${styles.chipTight}`}>{contractTypeName}</Tag>
           ) : null}
           {projectLabel ? (
-            <Tag className={styles.projectChip} style={{ fontSize: 14, marginInlineEnd: 0 }}>
-              {projectLabel}
-            </Tag>
+            <Tag className={`${styles.projectChip} ${styles.chipTight}`}>{projectLabel}</Tag>
           ) : null}
         </div>
       </div>

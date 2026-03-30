@@ -1,5 +1,7 @@
 import type { Dayjs } from 'dayjs';
 
+import { PROJECT_STATUS_SURFACES, type StatusBadgeSurface } from '../../../constants/statusBadgeSurfaces';
+
 export type ProjectFilterTab = 'all' | 'active' | 'completed' | 'pending' | 'paused' | 'cancelled' | 'deleted';
 export type ProjectEndDatePresenceFilter = 'any' | 'set' | 'empty';
 export type ProjectAdvancedFilters = {
@@ -30,20 +32,14 @@ export const PROJECT_FILTER_TABS: {
   { key: 'cancelled', label: 'Отменённые' },
   { key: 'deleted', label: 'Удалённые' },
 ];
-export const PROJECT_STATUS_CONFIG: Record<
-  string,
-  {
-    color: string;
-    bg: string;
-    border: string;
-    label: string;
-  }
-> = {
-  active: { color: '#52c41a', bg: '#f6ffed', border: '#b7eb8f', label: 'Активный' },
-  completed: { color: '#1677ff', bg: '#e6f4ff', border: '#91caff', label: 'Завершён' },
-  pending: { color: '#faad14', bg: '#fffbe6', border: '#ffe58f', label: 'В ожидании' },
-  paused: { color: '#8c8c8c', bg: '#fafafa', border: '#d9d9d9', label: 'Приостановлен' },
-  cancelled: { color: '#ff4d4f', bg: '#fff2f0', border: '#ffccc7', label: 'Отменён' },
+export type ProjectStatusVisual = StatusBadgeSurface & { label: string };
+
+export const PROJECT_STATUS_CONFIG: Record<string, ProjectStatusVisual> = {
+  active: { label: 'Активный', ...PROJECT_STATUS_SURFACES.active },
+  completed: { label: 'Завершён', ...PROJECT_STATUS_SURFACES.completed },
+  pending: { label: 'В ожидании', ...PROJECT_STATUS_SURFACES.pending },
+  paused: { label: 'Приостановлен', ...PROJECT_STATUS_SURFACES.paused },
+  cancelled: { label: 'Отменён', ...PROJECT_STATUS_SURFACES.cancelled },
 };
 export const END_DATE_PRESENCE_OPTIONS: {
   label: string;

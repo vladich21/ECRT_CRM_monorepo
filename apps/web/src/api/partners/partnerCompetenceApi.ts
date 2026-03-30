@@ -2,10 +2,8 @@ import { PartnerCompetence } from '../../types/partner';
 import { apiClient } from '../clients';
 
 export const partnerCompetenceApi = {
-  getPartnerCompetencies: async (preview?: number): Promise<PartnerCompetence[]> => {
-    const response = await apiClient.get('/partner-competencies', {
-      params: { preview },
-    });
+  getPartnerCompetencies: async (): Promise<PartnerCompetence[]> => {
+    const response = await apiClient.get('/partner-competencies');
     return response.data;
   },
 
@@ -14,14 +12,14 @@ export const partnerCompetenceApi = {
     return response.data[0];
   },
 
-  addPartnerCompetence: async (data: PartnerCompetence): Promise<PartnerCompetence> => {
+  addPartnerCompetence: async (data: Pick<PartnerCompetence, 'name'>): Promise<PartnerCompetence> => {
     const response = await apiClient.post(`/partner-competencies`, data);
     return response.data[0];
   },
 
   editPartnerCompetence: async (
     partnerCompetenciesId: string,
-    data: Partial<PartnerCompetence>,
+    data: Partial<Pick<PartnerCompetence, 'name'>>,
   ): Promise<PartnerCompetence> => {
     const response = await apiClient.put(`/partner-competencies/${partnerCompetenciesId}`, data);
     return response.data[0];

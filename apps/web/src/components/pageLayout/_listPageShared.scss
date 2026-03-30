@@ -148,3 +148,25 @@ $color-surface: #f8fafc;
 @mixin filtersModalControl {
   width: 100%;
 }
+
+// Левая полоса у карточек списка: обычная серая; с data-danger-stripe — красная (тоньше).
+$card-stripe-default: #c8c8c8;
+$card-stripe-danger: #e84749; // = constants/appColors APP_COLOR_ERROR
+$card-stripe-hover: #b3d0ff;
+
+@mixin listCardDangerStripe {
+  border-left: 4px solid $card-stripe-default;
+
+  &:hover {
+    border-left-color: $card-stripe-hover;
+  }
+
+  &[data-danger-stripe] {
+    border-left-width: 3px;
+    border-left-color: $card-stripe-danger;
+
+    &:hover {
+      border-left-color: $card-stripe-danger;
+    }
+  }
+}

@@ -8,6 +8,7 @@ import ruRU from 'antd/locale/ru_RU';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import App from './App';
+import { antdThemeToken } from './antdAppTheme';
 
 import './main.css';
 
@@ -26,7 +27,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <ConfigProvider locale={ruRU}>
+        <ConfigProvider locale={ruRU} theme={{ token: antdThemeToken }}>
           <App />
         </ConfigProvider>
       </QueryClientProvider>

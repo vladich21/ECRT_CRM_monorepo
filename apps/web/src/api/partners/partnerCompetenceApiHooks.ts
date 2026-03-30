@@ -3,10 +3,10 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 import { PartnerCompetence } from '../../types/partner';
 import { partnerCompetenceApi } from './partnerCompetenceApi';
 
-export const usePartnerCompetencies = (preview?: number): UseQueryResult<PartnerCompetence[], Error> => {
+export const usePartnerCompetencies = (): UseQueryResult<PartnerCompetence[], Error> => {
   return useQuery<PartnerCompetence[], Error>({
     queryKey: ['competencies'],
-    queryFn: () => partnerCompetenceApi.getPartnerCompetencies(preview),
+    queryFn: () => partnerCompetenceApi.getPartnerCompetencies(),
   });
 };
 
@@ -18,11 +18,15 @@ export const usePartnerCompetenceById = (partnerCompetenceId: string): UseQueryR
   });
 };
 
-export const useCreatePartnerCompetence = (): UseMutationResult<PartnerCompetence, Error, PartnerCompetence> => {
+export const useCreatePartnerCompetence = (): UseMutationResult<
+  PartnerCompetence,
+  Error,
+  Pick<PartnerCompetence, 'name'>
+> => {
   const queryClient = useQueryClient();
 
-  return useMutation<PartnerCompetence, Error, PartnerCompetence>({
-    mutationFn: (data: PartnerCompetence) => partnerCompetenceApi.addPartnerCompetence(data),
+  return useMutation<PartnerCompetence, Error, Pick<PartnerCompetence, 'name'>>({
+    mutationFn: (data: Pick<PartnerCompetence, 'name'>) => partnerCompetenceApi.addPartnerCompetence(data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         predicate: query => {
@@ -36,12 +40,16 @@ export const useCreatePartnerCompetence = (): UseMutationResult<PartnerCompetenc
 export const useUpdatePartnerCompetence = (): UseMutationResult<
   PartnerCompetence,
   Error,
-  { id: string; data: Partial<PartnerCompetence> }
+  { id: string; data: Partial<Pick<PartnerCompetence, 'name'>> }
 > => {
   const queryClient = useQueryClient();
 
-  return useMutation<PartnerCompetence, Error, { id: string; data: Partial<PartnerCompetence> }>({
-    mutationFn: ({ id, data }: { id: string; data: Partial<PartnerCompetence> }) =>
+  return useMutation<
+    PartnerCompetence,
+    Error,
+    { id: string; data: Partial<Pick<PartnerCompetence, 'name'>> }
+  >({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Pick<PartnerCompetence, 'name'>> }) =>
       partnerCompetenceApi.editPartnerCompetence(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({

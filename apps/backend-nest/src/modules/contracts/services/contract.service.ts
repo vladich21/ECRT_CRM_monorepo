@@ -2,6 +2,7 @@ import type { SQL } from 'drizzle-orm';
 import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
+import { PartnersService } from '../../partners/services/partners.service';
 import { contracts, patents, refContractStates } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
@@ -53,7 +54,21 @@ export class ContractsService {
   /** In-memory кэш первой страницы списка (без partner_id) для использования в справочниках */
   private listCache: Map<string, CachedList> = new Map();
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly partnersService: PartnersService,
+  ) {}
+
+  /**
+   * После любой записи договора: смена состояния / is_active / партнёра / мягкое удаление —
+   * пересчитать автоматический статус затронутых контрагентов (см. PartnersService).
+   */
+  private async refreshPartnerDerivedStatusForPartnerIds(
+    rawIds: Array<string | null | undefined>,
+  ): Promise<void> {
+    const ids = [...new Set(rawIds.filter((id): id is string => Boolean(id && String(id).trim())))];
+    await Promise.all(ids.map((pid) => this.partnersService.refreshPartnerDerivedStatus(pid)));
+  }
 
   private cacheKeyAll(preview: boolean): string {
     return `contracts:preview:${preview}:all`;
@@ -295,6 +310,7 @@ export class ContractsService {
     insertData.isActive = await this.resolveIsActiveFromStateId(String(stateId));
     const [row] = await this.db.db.insert(contracts).values(insertData as any).returning();
     this.invalidateListCache();
+    await this.refreshPartnerDerivedStatusForPartnerIds([row?.partnerId]);
     return row ? this.toResponse(row) : null;
   }
 
@@ -354,12 +370,12 @@ export class ContractsService {
 
     const draftIds = await this.getDraftStateIds();
 
-    /** Счётчики вкладок по состоянию договора не зависят от deleted_scope запроса. */
+    /** Счётчики «Все / Действующие / …» — только не мягко удалённые (как список при deleted_scope=active). */
     const countForTab = async (tab: ContractListTab): Promise<number> => {
       const tabSql = this.contractListTabCondition(tab, draftIds);
       const parts = [
         ...(tabSql ? [...baseParts, tabSql] : [...baseParts]),
-        ...sqlPartsForDeletedScope(contracts.isDeleted, 'all'),
+        ...sqlPartsForDeletedScope(contracts.isDeleted, 'active'),
       ];
       return this.countContractsWhere(this.mergeWhereParts(parts));
     };
@@ -441,12 +457,13 @@ export class ContractsService {
   async update(id: string, data: Record<string, unknown>) {
     this.logger.debug(`Обновление договора id: ${id}`);
     const existingContractRows = await this.db.db
-      .select({ stateId: contracts.stateId })
+      .select({ stateId: contracts.stateId, partnerId: contracts.partnerId })
       .from(contracts)
       .where(eq(contracts.id, id))
       .limit(1);
     const existingContract = existingContractRows[0];
     if (!existingContract) return null;
+    const partnerIdBefore = existingContract.partnerId ? String(existingContract.partnerId) : null;
 
     const requestFieldToColumn: Record<string, string> = {
       number: 'number',
@@ -481,10 +498,27 @@ export class ContractsService {
         ? String(existingContract.stateId)
         : null;
 
-    updatePayload.isActive = await this.resolveIsActiveFromStateId(resolvedStateIdForActiveFlag);
+    const explicitIsActive = data.is_active;
+    const hasExplicitIsActive =
+      explicitIsActive !== undefined && explicitIsActive !== null && String(explicitIsActive) !== '';
+
+    if (hasNewStateIdInRequest) {
+      updatePayload.isActive = await this.resolveIsActiveFromStateId(String(stateIdSentInRequest));
+    } else if (hasExplicitIsActive) {
+      updatePayload.isActive = explicitIsActive === true || explicitIsActive === 'true';
+    } else {
+      updatePayload.isActive = await this.resolveIsActiveFromStateId(resolvedStateIdForActiveFlag);
+    }
+
     await this.db.db.update(contracts).set(updatePayload).where(eq(contracts.id, id));
     this.invalidateListCache();
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+    const partnerIdAfter =
+      updated && (updated as { partner_id?: string }).partner_id
+        ? String((updated as { partner_id: string }).partner_id)
+        : null;
+    await this.refreshPartnerDerivedStatusForPartnerIds([partnerIdBefore, partnerIdAfter]);
+    return updated;
   }
 
   /**
@@ -497,6 +531,7 @@ export class ContractsService {
     const contractRows = await this.db.db.select().from(contracts).where(eq(contracts.id, id)).limit(1);
     const contractRow = contractRows[0];
     if (!contractRow) return null;
+    const partnerIdForRefresh = contractRow.partnerId ? String(contractRow.partnerId) : null;
 
     const isDraftContract = await this.rowHasDraftState(contractRow.stateId);
     if (isDraftContract) {
@@ -508,6 +543,7 @@ export class ContractsService {
         .where(eq(patents.contractId, id));
       await this.db.db.delete(contracts).where(eq(contracts.id, id));
       this.invalidateListCache();
+      await this.refreshPartnerDerivedStatusForPartnerIds([partnerIdForRefresh]);
       return { deletion_mode: 'hard', id: String(contractRow.id) };
     }
 
@@ -517,6 +553,7 @@ export class ContractsService {
       .set({ isDeleted: true, updatedAt: new Date() })
       .where(eq(contracts.id, id));
     this.invalidateListCache();
+    await this.refreshPartnerDerivedStatusForPartnerIds([partnerIdForRefresh]);
     const contractAfterSoftDelete = await this.findOne(id);
     if (!contractAfterSoftDelete) return null;
     return { deletion_mode: 'soft', contract: contractAfterSoftDelete };
@@ -531,7 +568,13 @@ export class ContractsService {
       .set({ isDeleted: false, updatedAt: new Date() })
       .where(eq(contracts.id, id));
     this.invalidateListCache();
-    return this.findOne(id);
+    const restored = await this.findOne(id);
+    const pid =
+      restored && (restored as { partner_id?: string }).partner_id
+        ? String((restored as { partner_id: string }).partner_id)
+        : null;
+    await this.refreshPartnerDerivedStatusForPartnerIds([pid]);
+    return restored;
   }
 
   private toResponse(row: (typeof contracts.$inferSelect)) {

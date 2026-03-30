@@ -1,0 +1,152 @@
+.alertMb {
+  margin-bottom: 12px;
+}
+
+.form {
+  margin-top: 0;
+}
+
+.formItemFlush {
+  margin-bottom: 0;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.buyerBlock {
+  margin-top: 14px;
+}
+
+.buyerLabel {
+  font-size: 12px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.buyerName {
+  color: #262626;
+}
+
+.buyerHint {
+  font-size: 12px;
+  display: block;
+  margin-top: 4px;
+}
+
+.matrix {
+  margin-top: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.matrixHeader {
+  padding: 10px 14px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.matrixHeaderTitle {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.matrixHeaderMeta {
+  font-size: 12px;
+}
+
+.matrixBody {
+  padding: 8px 14px 12px;
+}
+
+.matrixColHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8c8c8c;
+}
+
+.colGrow {
+  flex: 1;
+  min-width: 0;
+}
+
+.colShrink {
+  flex-shrink: 0;
+}
+
+.colScore {
+  width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.colWeighted {
+  width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.criterionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.criterionTitle {
+  font-weight: 500;
+}
+
+.criterionMeta {
+  font-size: 12px;
+  display: block;
+}
+
+.scoreAccent {
+  width: 40px;
+  text-align: right;
+  color: #1677ff;
+}
+
+.weightedAccent {
+  width: 56px;
+  text-align: right;
+  color: #1677ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryBar {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(22, 119, 255, 0.06);
+  border: 1px solid #d6e4ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summaryLabel {
+  color: #1677ff;
+}
+
+.summaryScore {
+  font-size: 22px;
+  color: #0958d9;
+}
+
+.commentField {
+  margin-top: 14px;
+}

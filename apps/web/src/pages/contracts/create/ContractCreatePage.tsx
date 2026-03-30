@@ -30,13 +30,16 @@ import styles from './ContractCreatePage.module.scss';
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+type ContractCreateLocationState = { partnerId?: string };
+
 export default function ContractCreatePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const watchStateId = Form.useWatch('state_id', form);
-  const partnerIdFromState = (location.state as any)?.partnerId;
+  const partnerIdFromState = (location.state as ContractCreateLocationState | null)?.partnerId;
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,

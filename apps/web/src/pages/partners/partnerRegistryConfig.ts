@@ -1,17 +1,19 @@
 import type { PartnerRegistryStatus } from '../../types/partnerRegistry';
+import {
+  SURFACE_ACTIVE,
+  SURFACE_ARCHIVE,
+  SURFACE_BLOCKED,
+  SURFACE_POTENTIAL,
+  type StatusBadgeSurface,
+} from '../../constants/statusBadgeSurfaces';
 
-export const STATUS_CONFIG: Record<
-  PartnerRegistryStatus,
-  {
-    label: string;
-    color: string;
-  }
-> = {
-  active: { label: 'Активен', color: '#52c41a' },
-  potential: { label: 'Потенциальный', color: '#1677ff' },
-  blocked: { label: 'Заблокирован', color: '#ff4d4f' },
-  archive: { label: 'Архив', color: '#8c8c8c' },
+export const STATUS_CONFIG: Record<PartnerRegistryStatus, { label: string } & StatusBadgeSurface> = {
+  active: { label: 'Активен', ...SURFACE_ACTIVE },
+  potential: { label: 'Потенциальный', ...SURFACE_POTENTIAL },
+  blocked: { label: 'Заблокирован', ...SURFACE_BLOCKED },
+  archive: { label: 'Архив', ...SURFACE_ARCHIVE },
 };
+
 export const TYPE_CONFIG: Record<
   string,
   {

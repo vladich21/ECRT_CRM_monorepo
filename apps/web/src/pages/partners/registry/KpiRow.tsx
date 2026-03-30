@@ -9,7 +9,6 @@ interface KpiRowProps {
   complianceItems: ComplianceItem[];
   supplierEvalAvgScore: number | null;
   nextEvaluationValue: ReactNode;
-  nextEvaluationSoon?: boolean;
 }
 
 type KpiTileKey = 'avgScore' | 'nextEval';
@@ -25,7 +24,6 @@ export default function KpiRow({
   complianceItems,
   supplierEvalAvgScore,
   nextEvaluationValue,
-  nextEvaluationSoon,
 }: KpiRowProps) {
   const tiles: KpiTile[] = [
     {
@@ -48,10 +46,7 @@ export default function KpiRow({
         <ComplianceCards items={complianceItems} compact embedded />
       </div>
       {tiles.map(kpi => (
-        <div
-          key={kpi.key}
-          className={`${styles.tile} ${kpi.key === 'nextEval' && nextEvaluationSoon ? styles.tileSoonReevaluation : ''}`}
-        >
+        <div key={kpi.key} className={styles.tile}>
           <div className={styles.tileContent}>
             <div>
               <div

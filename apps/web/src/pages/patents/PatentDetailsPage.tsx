@@ -7,7 +7,7 @@ import { useDeletePatent, usePatentById, useRestorePatent } from '../../api/pate
 import { usePatentGrants } from '../../api/patents/patentGrantsApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, { detailHeaderVariantForPatentRecord } from '../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { getNameById } from '../../helpers/getNameById';
@@ -22,10 +22,6 @@ function getActiveTabFromPath(pathname: string): PatentTab {
   if (pathname.includes('/grants')) return 'grants';
   return 'main';
 }
-const STATUS_STYLE = {
-  active: { color: '#52c41a', label: 'Активен' },
-  deleted: { color: '#ff4d4f', label: 'Удалён' },
-} as const;
 export default function PatentDetailsPage() {
   const { patentId } = useParams();
   const navigate = useNavigate();
@@ -89,14 +85,15 @@ export default function PatentDetailsPage() {
   const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
   const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses) || '';
   const deptName = getNameById(patent.department_id, referenceBooks?.departments) || '';
-  const st = patent.is_deleted ? STATUS_STYLE.deleted : STATUS_STYLE.active;
+  const statusLabel = patent.is_deleted ? 'Удалён' : 'Активен';
+  const statusVariant = detailHeaderVariantForPatentRecord(patent.is_deleted);
   return (
     <DetailPageHeader
       title={`РИД ${patent.registration_number || '—'}`}
       titleWeight='medium'
       backLabel='Реестр РИД'
       onBack={handleBack}
-      statusBadge={{ label: st.label, color: st.color }}
+      statusBadge={{ label: statusLabel, variant: statusVariant }}
       metaItems={[
         patent.name && (
           <span key='name' className={styles.metaText}>

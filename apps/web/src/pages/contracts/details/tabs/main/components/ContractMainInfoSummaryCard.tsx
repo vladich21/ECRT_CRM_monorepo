@@ -1,6 +1,7 @@
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Button, Card, Collapse, Descriptions, Progress, Typography, type DescriptionsProps } from 'antd';
 
+import { APP_COLOR_PRIMARY } from '../../../../../../constants/appColors';
 import type { Contract } from '../../../../../../types/contract';
 import tabStyles from '../ContractMainInfoTab.module.scss';
 
@@ -34,7 +35,7 @@ export function ContractMainInfoSummaryCard({
             Этап <Text strong>{currentStageDisplayIndex}</Text> из <Text strong>{totalStagesCount}</Text>
           </Text>
         </div>
-        <Progress percent={Math.round(progressPercent)} strokeColor='#1677ff' />
+        <Progress percent={Math.round(progressPercent)} strokeColor={APP_COLOR_PRIMARY} />
       </div>
 
       <div className={`${tabStyles.sectionHeader} ${isMainInfoExpanded ? tabStyles.sectionHeaderBordered : ''}`}>

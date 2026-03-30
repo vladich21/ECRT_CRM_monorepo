@@ -1,7 +1,9 @@
-/** Цвет бейджа статуса контрагента в шапке (как в реестре). */
+import { getPartnerStatusSurface } from '../../constants/statusBadgeSurfaces';
+
+/** Текстовый цвет статуса (редкие места, где нужен только hex). */
 export const PARTNER_STATUS_BADGE_COLORS: Record<string, string> = {
-  Активный: '#52c41a',
-  Потенциальный: '#1677ff',
-  Заблокирован: '#ff4d4f',
-  Архив: '#8c8c8c',
+  Активный: getPartnerStatusSurface('Активный').color,
+  Потенциальный: getPartnerStatusSurface('Потенциальный').color,
+  Заблокирован: getPartnerStatusSurface('Заблокирован').color,
+  Архив: getPartnerStatusSurface('Архив').color,
 };

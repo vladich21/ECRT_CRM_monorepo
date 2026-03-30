@@ -1,6 +1,7 @@
 import { CalendarOutlined, FileTextOutlined, NumberOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
 import { Tag, Tooltip } from 'antd';
 
+import { getPatentRecordSurface, mutedTagStyle } from '../../constants/statusBadgeSurfaces';
 import { getNameById } from '../../helpers/getNameById';
 import { Patent } from '../../types/patent';
 import type { ReferenceDataForPatents } from './data';
@@ -10,10 +11,6 @@ function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
 
-const STATUS_STYLE = {
-  active: { color: '#52c41a', label: 'Активен' },
-  deleted: { color: '#ff4d4f', label: 'Удалён' },
-} as const;
 
 type Props = {
   patent: Patent;
@@ -25,12 +22,13 @@ export function PatentCard({ patent, refs, onClick }: Props) {
   const ipTypeName = getNameById(patent.intellectprop_id, refs?.patentIntellectProps) || '';
   const statusName = getNameById(patent.status_id, refs?.patentStatuses) || '';
   const deptName = getNameById(patent.department_id, refs?.departments) || '';
-  const st = patent.is_deleted ? STATUS_STYLE.deleted : STATUS_STYLE.active;
+  const surface = getPatentRecordSurface(patent.is_deleted);
+  const statusLabel = patent.is_deleted ? 'Удалён' : 'Активен';
 
   return (
     <div
       className={styles.card}
-      style={{ '--status-color': st.color } as React.CSSProperties}
+      {...(patent.is_deleted ? { 'data-danger-stripe': true as const } : {})}
       onClick={() => onClick(patent)}
     >
       {/* Основная информация */}
@@ -44,8 +42,8 @@ export function PatentCard({ patent, refs, onClick }: Props) {
           </span>
         </div>
         <div className={styles.metaRow}>
-          <Tag color={st.color} style={{ fontSize: 14 }}>
-            {st.label}
+          <Tag bordered={false} style={mutedTagStyle(surface, { fontSize: 14 })}>
+            {statusLabel}
           </Tag>
           {statusName && <Tag style={{ fontSize: 14 }}>{statusName}</Tag>}
         </div>

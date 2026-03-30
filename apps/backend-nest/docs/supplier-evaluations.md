@@ -72,7 +72,8 @@
 1. Все строки `supplier_evaluations` с той же парой `(partner_id, project_id)` и `status = 'active'` переводятся в `archived`.
 2. Вставляется новая строка со `status = 'active'`, рассчитанными `weighted_score`, `category`, `next_reevaluation_date`, комментарием; `created_by` / `updated_by` — из JWT при наличии.
 3. Вставляются строки в `supplier_evaluation_criterion_scores` для каждого критерия.
-4. Если `category = 'D'`: у существующих **активных** блокировок по этой паре выставляется `is_active = false`, затем вставляется новая строка в `supplier_partner_project_blocks` с `reason = evaluation_category_d` и ссылкой на новую оценку.
+4. У всех **активных** `supplier_partner_project_blocks` по этой паре `(partner_id, project_id)` выставляется `is_active = false` (в т.ч. после переоценки D→A/B/C, иначе блок остаётся «висящим»).
+5. Если `category = 'D'`: вставляется новая строка в `supplier_partner_project_blocks` с `reason = evaluation_category_d` и ссылкой на новую оценку.
 
 Проверки: партнёр и проект существуют и не удалены (`is_deleted = false`); нет дубликатов `criterion_id` в теле; все активные критерии покрыты баллами.
 
@@ -91,6 +92,7 @@
 | GET | `/criteria` | Список **активных** критериев (матрица). |
 | GET | `/blocks?partner_id=&project_id=` | Активная блокировка или `[]`. |
 | PUT | `/blocks/:id/deactivate` | Снять блокировку (`is_active = false`). |
+| GET | `/partner-eval-summary?partner_id=` | Сводка для карточки контрагента: `avg_score`, `next_reevaluation_date`, `next_reevaluation_overdue` (дата плана &lt; сегодня), `blocked_project_count` (число проектов с активной блокировкой по оценке). |
 | GET | `/counts-by-tab` | Счётчики по вкладкам смысла строки. Query: как у списка, кроме `ui_status` и пагинации: `partner_id`, `project_id`, `created_by`, `category`, `evaluated_year`, опционально `evaluated_at_from` / `evaluated_at_to` (`YYYY-MM-DD`, границы включительно). Если задан хотя бы один из `evaluated_at_*`, фильтр по году не применяется. |
 | GET | `/` | Список оценок. Query: `partner_id`, `project_id`, `status` = `active` \| `archived` \| `all` (по умолчанию `all` в клиенте реестра), `created_by`, `category`, `evaluated_year`, `evaluated_at_from`, `evaluated_at_to` (см. выше), `ui_status`, `sort_field` = `evaluated_at` \| `weighted_score`, `sort_dir` = `asc` \| `desc`, `limit`, `offset`. Ответ: `{ data, total }`. **Пагинация, фильтры и сортировка списка серверные.** |
 | GET | `/:id` | Оценка + массив `scores` (с `criterion_code`, `criterion_name`). Ответ: массив из одного объекта `[row]` (как в других контроллерах проекта). |
@@ -167,3 +169,5 @@ apps/web/
 | 2026-03-24 | Документ создан: сводка по БД, индексам, API, логике; зафиксированы пороги A/B/C/D как в UI. |
 | 2026-03-24 | Фронт: вкладка оценок у контрагента, сводный реестр, API-клиент и хуки. |
 | 2026-03-24 | Сид критериев по макету (`supplier-evaluations-criteria-seed.sql`), GET `counts-by-tab`, счётчики на вкладках реестра. |
+| 2026-03-26 | При создании любой новой актуальной оценки снимаются активные блоки по паре партнёр+проект; при D создаётся блок заново (исправление D→A с «висящей» блокировкой). |
+| 2026-03-26 | GET `partner-eval-summary` для KPI в реестре контрагентов (балл, просрочка, число заблокированных проектов). |

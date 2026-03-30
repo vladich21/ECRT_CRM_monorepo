@@ -7,7 +7,6 @@ import type {
   SupplierEvaluationUiStatusParam,
 } from '../../types/supplierEvaluation';
 
-/** Пресет сортировки списка в реестре оценок. */
 export type EvaluationRegistrySortPreset =
   | 'evaluated_at_desc'
   | 'evaluated_at_asc'
@@ -37,7 +36,6 @@ export function evaluationRegistrySortToRequestParams(preset: EvaluationRegistry
   }
 }
 
-/** Фильтр по букве категории (A–D). */
 export const EVALUATION_CATEGORY_FILTER_OPTIONS: { value: 'all' | SupplierEvaluationCategory; label: string }[] = [
   { value: 'all', label: 'Все категории' },
   { value: 'A', label: 'A (≥4.0)' },
@@ -46,7 +44,6 @@ export const EVALUATION_CATEGORY_FILTER_OPTIONS: { value: 'all' | SupplierEvalua
   { value: 'D', label: 'D (<2.0)' },
 ];
 
-/** Вкладки смысла строки (как в макете реестра). `all` — без ui_status на API. */
 export const EVALUATION_UI_TABS: { key: SupplierEvaluationUiStatusParam; label: string }[] = [
   { key: 'all', label: 'Все статусы' },
   { key: 'current', label: 'Актуальные' },
@@ -59,7 +56,6 @@ export const EVALUATION_UI_TABS: { key: SupplierEvaluationUiStatusParam; label: 
 const YEAR_START = new Date().getFullYear() - 5;
 const YEAR_END = new Date().getFullYear() + 2;
 
-/** Значение фильтра «все годы» в Select (Ant Design не допускает `null` в options). */
 export const EVALUATION_YEAR_FILTER_ALL = 'all';
 
 export const EVALUATION_YEAR_OPTIONS: { value: string; label: string }[] = [
@@ -70,14 +66,12 @@ export const EVALUATION_YEAR_OPTIONS: { value: string; label: string }[] = [
   }),
 ];
 
-/** Год для query `evaluated_year` или `undefined`, если выбраны все периоды. */
 export function evaluationYearFilterToApi(yearFilterValue: string): number | undefined {
   if (!yearFilterValue || yearFilterValue === EVALUATION_YEAR_FILTER_ALL) return undefined;
   const parsed = Number(yearFilterValue);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-/** Быстрый выбор года для фильтра по дате оценки (вкладка контрагента): календарный год целиком. */
 export function supplierEvaluationEvaluatedAtRangePresets(): { label: string; value: [Dayjs, Dayjs] }[] {
   const cy = dayjs().year();
   const presets: { label: string; value: [Dayjs, Dayjs] }[] = [

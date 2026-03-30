@@ -1,0 +1,75 @@
+$error: #e84749;
+$warning: #faad14;
+$muted: #8c8c8c;
+
+.dotsRow {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  margin-right: 6px;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #f0f0f0;
+}
+
+.categoryTag {
+  margin: 0;
+  min-width: 28px;
+  text-align: center;
+  font-weight: 700;
+  border: 1px solid;
+}
+
+.nextMain {
+  font-weight: 500;
+}
+
+.nextOverdue {
+  color: $error;
+}
+
+.nextSoon {
+  color: $warning;
+}
+
+.nextMuted {
+  color: $muted;
+}
+
+.nextSub {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.kpiOverdue {
+  color: $error;
+}
+
+.kpiSoon {
+  color: $warning;
+}
+
+.kpiSub {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.archived {
+  color: $muted;
+}
+
+.archivedLabel {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.archivedMeta {
+  font-size: 11px;
+  display: block;
+  margin-top: 2px;
+}

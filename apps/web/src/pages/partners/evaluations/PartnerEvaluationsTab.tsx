@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dayjs } from 'dayjs';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Modal, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Modal, Table, Tag, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { useOutletContext } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
@@ -17,6 +17,7 @@ import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { formatSrmUserName } from '../../../helpers/formatSrmUserName';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner } from '../../../types/partner';
 import type {
   SupplierEvaluationCategory,
@@ -36,6 +37,13 @@ import {
   type PartnerEvaluationsListFilters,
 } from './PartnerEvaluationsFiltersModal';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
+import {
+  PARTNER_EVALUATIONS_UI_MOCK_PROJECT_LABELS,
+  augmentPartnerEvaluationsListWithMock,
+  augmentPartnerEvaluationsTabCountsWithMock,
+  isPartnerEvaluationsUiMockPartnerId,
+  isPartnerEvaluationsUiMockRowId,
+} from './partnerEvaluationsUiMock';
 import {
   CategoryTag,
   formatReevaluationCell,
@@ -67,17 +75,21 @@ export default function PartnerEvaluationsTab() {
   });
 
   const { data: projects = [] } = useProjectsPreview();
-  const projectNameById = useMemo(
-    () => Object.fromEntries(projects.map(p => [p.id, p.name || p.code || p.id])),
-    [projects],
-  );
+  const projectNameById = useMemo(() => {
+    const base = Object.fromEntries(
+      projects.map(project => [project.id, project.name || project.code || project.id]),
+    );
+    return isPartnerEvaluationsUiMockPartnerId(partner.id)
+      ? { ...base, ...PARTNER_EVALUATIONS_UI_MOCK_PROJECT_LABELS }
+      : base;
+  }, [projects, partner.id]);
 
   const { data: usersResponse } = useUsers(2, true);
   const buyerOptions = useMemo(
     () =>
-      (usersResponse?.data ?? []).map(u => ({
-        value: u.id,
-        label: formatSrmUserName(u),
+      (usersResponse?.data ?? []).map(user => ({
+        value: user.id,
+        label: formatSrmUserName(user),
       })),
     [usersResponse?.data],
   );
@@ -98,7 +110,7 @@ export default function PartnerEvaluationsTab() {
     [partner.id, evaluatedAtFromIso, evaluatedAtToIso, categoryFilter, createdByUserId],
   );
 
-  const { data: tabCounts, isLoading: tabCountsLoading } = useSupplierEvaluationTabCounts(
+  const { data: tabCountsRaw, isLoading: tabCountsLoading } = useSupplierEvaluationTabCounts(
     tabCountRequestParams,
     Boolean(partner.id),
   );
@@ -127,7 +139,29 @@ export default function PartnerEvaluationsTab() {
     ],
   );
 
-  const { data, isLoading, refetch } = useSupplierEvaluationsList(listParams, Boolean(partner.id));
+  const { data: listDataRaw, isLoading, refetch } = useSupplierEvaluationsList(listParams, Boolean(partner.id));
+
+  const showEvaluationsUiMock =
+    isPartnerEvaluationsUiMockPartnerId(partner.id) &&
+    categoryFilter === 'all' &&
+    !createdByUserId &&
+    evaluatedAtRange == null;
+
+  const data = useMemo(
+    () =>
+      showEvaluationsUiMock
+        ? augmentPartnerEvaluationsListWithMock(listDataRaw, partner.id, rowStatusTab, page, pageSize)
+        : listDataRaw,
+    [listDataRaw, showEvaluationsUiMock, partner.id, rowStatusTab, page, pageSize],
+  );
+
+  const tabCounts = useMemo(
+    () =>
+      showEvaluationsUiMock
+        ? augmentPartnerEvaluationsTabCountsWithMock(tabCountsRaw, partner.id)
+        : tabCountsRaw,
+    [tabCountsRaw, showEvaluationsUiMock, partner.id],
+  );
 
   const activeFiltersCount = useMemo(
     () =>
@@ -175,7 +209,7 @@ export default function PartnerEvaluationsTab() {
       width: 100,
       align: 'center',
       onHeaderCell: () => ({ style: { textAlign: 'center' } }),
-      render: (_, row) => <CategoryTag category={row.category} />,
+      render: (_, row) => <CategoryTag category={row.category} weightedScore={row.weighted_score} />,
     },
     {
       title: 'Балл',
@@ -200,8 +234,8 @@ export default function PartnerEvaluationsTab() {
       width: 150,
       render: (_, row) => {
         const rowPresentationState = getRowUiStatus(row);
-        const { text, color } = statusBadgeLabel(rowPresentationState);
-        return <Tag color={color}>{text}</Tag>;
+        const { text, surface } = statusBadgeLabel(rowPresentationState);
+        return <Tag bordered={false} style={mutedTagStyle(surface)}>{text}</Tag>;
       },
     },
     {
@@ -216,7 +250,7 @@ export default function PartnerEvaluationsTab() {
           size='small'
           icon={<DeleteOutlined />}
           aria-label='Удалить оценку'
-          disabled={!!partner.is_deleted}
+          disabled={!!partner.is_deleted || isPartnerEvaluationsUiMockRowId(row.id)}
           onClick={() => {
             Modal.confirm({
               title: 'Удалить оценку?',
@@ -302,6 +336,19 @@ export default function PartnerEvaluationsTab() {
         }
       />
 
+      {showEvaluationsUiMock ? (
+        <Alert
+          type='info'
+          showIcon
+          closable
+          style={{ marginTop: 16 }}
+          message='Демо-строки для всех вкладок'
+          description={
+            'Просрочка (−21/−7/−1 дн.), скоро (0,1,5,11,19,20 — граница окна 20 дн.), актуальные (21, 90 дн. и строка без даты), 2 блокировки (D без даты), 2 архива. Счётчики вкладок и KPI усилены моками; строки без раскрытия и удаления.'
+          }
+        />
+      ) : null}
+
       <div className={listStyles.tableCard} style={{ marginTop: 16 }}>
         <Table<SupplierEvaluationListItem>
           rowKey='id'
@@ -326,7 +373,7 @@ export default function PartnerEvaluationsTab() {
                 }}
               />
             ),
-            rowExpandable: () => true,
+            rowExpandable: record => !isPartnerEvaluationsUiMockRowId(record.id),
           }}
         />
       </div>

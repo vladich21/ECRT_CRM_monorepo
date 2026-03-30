@@ -18,6 +18,7 @@ import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { formatSrmUserName } from '../../helpers/formatSrmUserName';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
+import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
 import type { SupplierEvaluationListItem, SupplierEvaluationUiStatusParam } from '../../types/supplierEvaluation';
 import EvaluationExpandedContent from '../partners/evaluations/EvaluationExpandedContent';
 import {
@@ -234,7 +235,7 @@ export default function SupplierEvaluationsRegistryPage() {
       width: 100,
       align: 'center',
       onHeaderCell: () => ({ style: { textAlign: 'center' } }),
-      render: (_, row) => <CategoryTag category={row.category} />,
+      render: (_, row) => <CategoryTag category={row.category} weightedScore={row.weighted_score} />,
     },
     {
       title: 'Балл',
@@ -264,8 +265,8 @@ export default function SupplierEvaluationsRegistryPage() {
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       render: (_, row) => {
         const rowPresentationState = getRowUiStatus(row);
-        const { text, color } = statusBadgeLabel(rowPresentationState);
-        return <Tag color={color}>{text}</Tag>;
+        const { text, surface } = statusBadgeLabel(rowPresentationState);
+        return <Tag bordered={false} style={mutedTagStyle(surface)}>{text}</Tag>;
       },
     },
     {

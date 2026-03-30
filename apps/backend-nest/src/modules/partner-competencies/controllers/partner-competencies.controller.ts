@@ -7,7 +7,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
 } from '@nestjs/common';
 import { PartnerCompetenciesService } from '../services/partner-competencies.service';
 
@@ -16,8 +15,8 @@ export class PartnerCompetenciesController {
   constructor(private readonly service: PartnerCompetenciesService) {}
 
   @Get()
-  findAll(@Query('preview') preview?: string) {
-    return this.service.findAll(preview === '1');
+  findAll() {
+    return this.service.findAll();
   }
 
   @Get(':id')

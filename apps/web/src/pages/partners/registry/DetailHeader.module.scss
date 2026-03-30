@@ -44,28 +44,28 @@
   font-weight: 500;
 }
 
-.badge {
-  border-radius: 6px;
-  padding: 2px 8px;
-  display: flex;
+.badgeKey {
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.badgeKey {
-  @extend .badge;
-  background: rgba(250, 173, 20, 0.13);
-  border: 1px solid rgba(250, 173, 20, 0.31);
-  color: #faad14;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(250, 173, 20, 0.1);
+  color: rgb(250, 173, 20);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .badgeTarget {
-  @extend .badge;
-  background: rgba(22, 119, 255, 0.13);
-  border: 1px solid rgba(22, 119, 255, 0.31);
-  color: #69b1ff;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(22, 119, 255, 0.1);
+  color: rgb(22, 119, 255);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .metaRow {
@@ -82,8 +82,9 @@
   gap: 6px;
   border-radius: 20px;
   padding: 4px 14px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  box-sizing: border-box;
 }
 
 .metaInn {

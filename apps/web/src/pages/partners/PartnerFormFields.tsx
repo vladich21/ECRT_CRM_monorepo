@@ -10,7 +10,7 @@ import {
   PhoneOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import { Button, Col, Divider, Form, Input, Row, Select, Space, Switch, Tag, Tooltip } from 'antd';
+import { Button, Col, Divider, Form, Input, Row, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd';
 
 import { PartnerCompetence } from '../../types/partner';
 import styles from './PartnerFormPage.module.scss';
@@ -42,6 +42,9 @@ interface PartnerFormFieldsProps {
   getFieldStatus?: (fieldName: string) => 'error' | undefined;
   onUploadByInn?: () => void;
   isLoadingInn?: boolean;
+  formMode?: 'create' | 'edit';
+  /** Только для edit: текущее наименование статуса с сервера */
+  statusDisplayName?: string;
 }
 export function PartnerFormFields({
   form,
@@ -50,6 +53,8 @@ export function PartnerFormFields({
   getFieldStatus = () => undefined,
   onUploadByInn,
   isLoadingInn,
+  formMode = 'create',
+  statusDisplayName,
 }: PartnerFormFieldsProps) {
   return (
     <>
@@ -155,15 +160,17 @@ export function PartnerFormFields({
               </Form.Item>
             </Col>
             <Col xs={24}>
-              <Form.Item label='Статус' name='status_id' rules={[{ required: true, message: 'Выберите статус' }]}>
-                <Select placeholder='Выберите статус' suffixIcon={<SafetyCertificateOutlined />}>
-                  {referenceBooks.partnerStatuses?.map(status => (
-                    <Option key={status.id} value={status.id}>
-                      {status.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+              {formMode === 'edit' && (
+                <>
+                  <Typography.Text style={{ display: 'block' }}>
+                    Статус архивировать
+                  </Typography.Text>
+                 
+                  <Form.Item name='manual_archive' valuePropName='checked'>
+                    <Switch checkedChildren='Да' unCheckedChildren='Нет' disabled={disabled} />
+                  </Form.Item>
+                </>
+              )}
             </Col>
             <Col xs={24}>
               <Form.Item label='Экономическая группа' name='partner_economic_category_id'>
@@ -269,40 +276,26 @@ export function PartnerFormFields({
               <Form.Item label='Компетенции' name='competence_ids'>
                 <Select
                   mode='multiple'
-                  placeholder='Выберите компетенции'
+                  showSearch
+                  optionFilterProp='label'
+                  filterOption={(searchText, option) =>
+                    String(option?.label ?? '')
+                      .toLowerCase()
+                      .includes(searchText.trim().toLowerCase())
+                  }
+                  placeholder='Начните вводить название компетенции'
                   suffixIcon={<ExperimentOutlined />}
                   optionLabelProp='label'
-                  tagRender={({ label, value, onClose }) => {
-                    const competence = referenceBooks.competencies?.find((comp: any) => comp.id === value);
-                    return (
-                      <Tag
-                        onClose={onClose}
-                        closable
-                        className={styles.competenceTag}
-                        style={{
-                          backgroundColor: competence?.color_bg || '#1890ff',
-                          color: competence?.color_text || '#ffffff',
-                          border: `1px solid ${competence?.color_border || '#1890ff'}`,
-                        }}
-                      >
-                        {label}
-                      </Tag>
-                    );
-                  }}
+                  tagRender={({ label, onClose }) => (
+                    <Tag onClose={onClose} closable bordered={false} className={styles.competenceTag}>
+                      {label}
+                    </Tag>
+                  )}
                 >
                   {referenceBooks.competencies?.map((competence: PartnerCompetence) => (
                     <Option key={competence.id} value={competence.id} label={competence.name}>
                       <div className={styles.competenceOptionContainer}>
-                        <Tag
-                          className={styles.competenceOptionTag}
-                          style={{
-                            backgroundColor: competence.color_bg || '#1890ff',
-                            color: competence.color_text || '#ffffff',
-                            border: `1px solid ${competence.color_border || '#1890ff'}`,
-                          }}
-                        >
-                          {competence.name}
-                        </Tag>
+                        <span className={styles.competenceOptionLabel}>{competence.name}</span>
                       </div>
                     </Option>
                   ))}

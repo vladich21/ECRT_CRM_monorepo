@@ -9,7 +9,7 @@ export const initialFormValues = {
   name: '',
   short_name: '',
   comment: '',
-  status_id: null,
+  manual_archive: false,
   type_ids: [],
   conpetence_ids: [],
   legal_address: '',
@@ -53,7 +53,7 @@ export const getColumnsData = (
     dataIndex: 'type_ids',
     key: 'type_ids',
     width: 150,
-    render: (typeIds: number[]) => {
+    render: (typeIds: string[]) => {
       if (!typeIds?.length) return '-';
 
       return (
@@ -72,7 +72,7 @@ export const getColumnsData = (
     dataIndex: 'status_id',
     key: 'status_id',
     width: 120,
-    render: (statusId: number) => {
+    render: (statusId: string) => {
       const status = references.partnerStatuses?.find(s => s.id === statusId);
       return status ? <Tag color='green'>{status.name}</Tag> : '-';
     },
@@ -82,7 +82,7 @@ export const getColumnsData = (
     dataIndex: 'competence_ids',
     key: 'competence_ids',
     width: 200,
-    render: (competenceIds: number[]) => {
+    render: (competenceIds: string[]) => {
       if (!competenceIds?.length) return '-';
 
       return (
@@ -90,14 +90,7 @@ export const getColumnsData = (
           {competenceIds.map(competenceId => {
             const competence = references.competencies?.find(c => c.id === competenceId);
             return (
-              <Tag
-                key={competenceId}
-                style={{
-                  backgroundColor: competence?.color_bg || '#1890ff',
-                  color: competence?.color_text || '#ffffff',
-                  border: `1px solid ${competence?.color_border || '#1890ff'}`,
-                }}
-              >
+              <Tag key={competenceId} color='geekblue'>
                 {competence?.name || '-'}
               </Tag>
             );

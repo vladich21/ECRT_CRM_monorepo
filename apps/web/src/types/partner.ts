@@ -46,7 +46,7 @@ export interface PartnerContact {
   position: string;
   phone: string;
   email: string;
-  is_primary: true;
+  is_primary: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -65,9 +65,6 @@ export interface PartnerStatus {
 export interface PartnerCompetence {
   id: string;
   name: string;
-  color_bg: string;
-  color_text: string;
-  color_border: string;
   created_at: string;
   updated_at: string;
 }

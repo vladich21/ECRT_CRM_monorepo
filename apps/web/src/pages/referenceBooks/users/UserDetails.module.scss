@@ -64,7 +64,6 @@
 }
 
 .infoValueMuted {
-  composes: infoValue;
   color: #bfbfbf;
   font-weight: 400;
 }
@@ -76,9 +75,9 @@
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
-  background: #e6f4ff;
-  color: #1677ff;
-  border: 1px solid #91caff;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
   margin-right: 4px;
   margin-bottom: 4px;
 }

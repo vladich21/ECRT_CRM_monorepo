@@ -1,0 +1,69 @@
+.avgTag {
+  margin: 0;
+  vertical-align: middle;
+}
+
+.avgTagHeaderGhost:global(.ant-tag) {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.nextDateDarkSoon {
+  display: inline-block;
+  margin: 0;
+  vertical-align: middle;
+  padding: 0 7px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(250, 173, 20, 0.55);
+  background: transparent;
+  color: #ffe58f;
+}
+
+.nextDateDarkNormal {
+  display: inline-block;
+  margin: 0;
+  vertical-align: middle;
+  padding: 0 7px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(145, 202, 255, 0.5);
+  background: transparent;
+  color: #e6f4ff;
+}
+
+.suffixDarkOverdue {
+  margin-left: 6px;
+  font-size: 13px;
+  color: #ffccc7;
+}
+
+.suffixDarkSoon {
+  margin-left: 6px;
+  font-size: 13px;
+  color: #ffe58f;
+}
+
+.registryDate {
+  color: #8c8c8c;
+}
+
+.registryWrap {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.registryDateStrong {
+  color: #595959;
+}
+
+.registrySuffix {
+  font-size: 13px;
+}
+
+.registrySuffixSpacing {
+  margin-left: 6px;
+}

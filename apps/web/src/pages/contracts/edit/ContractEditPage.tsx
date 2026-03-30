@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useContractById, useUpdateContract } from '../../../api/contracts/contractApiHooks';
+import { APP_COLOR_SUCCESS } from '../../../constants/appColors';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
@@ -33,6 +34,7 @@ import styles from '../create/ContractCreatePage.module.scss';
 import { formatDate } from '../details/tabs/stages/data';
 import tagStyles from '../list/ContractsListPage.module.scss';
 import { getContractStateTagClass, isContractSignedState } from '../utils/contractStateUtils';
+import type { ContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -40,6 +42,10 @@ export default function ContractEditPage() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const navigateBackToDetails = () => {
+    const state = location.state;
+    navigate(`/contracts/${contractId}`, state != null ? { state } : undefined);
+  };
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -63,9 +69,7 @@ export default function ContractEditPage() {
   const watchStateId = Form.useWatch('state_id', form);
   const watchPartnerId = Form.useWatch('partner_id', form);
   const watchDateSigned = Form.useWatch('date_signed', form);
-  const handleBack = () => {
-    navigate(`/contracts/${contractId}`);
-  };
+  const handleBack = navigateBackToDetails;
   useEffect(() => {
     if (contract) {
       form.setFieldsValue(contractUpdateFormMapper(contract));
@@ -74,11 +78,14 @@ export default function ContractEditPage() {
   useEffect(() => {
     if (isUpdateSuccess) {
       showNotification('success', 'Успех', 'Договор успешно изменён');
-      setTimeout(() => navigate(`/contracts/${contractId}`), 1000);
+      const state = location.state;
+      setTimeout(() => {
+        navigate(`/contracts/${contractId}`, state != null ? { state } : undefined);
+      }, 1000);
     } else if (isUpdateError) {
       showNotification('error', 'Ошибка', 'Не удалось изменить договор');
     }
-  }, [isUpdateError, isUpdateSuccess, navigate, contractId, showNotification]);
+  }, [isUpdateError, isUpdateSuccess, navigate, contractId, showNotification, location.state]);
   const calculateAmounts = (amountExclVal: number, vatRate: number) => {
     const amountVat = amountExclVal * (vatRate / 100);
     const amountInclVat = amountExclVal + amountVat;
@@ -164,7 +171,7 @@ export default function ContractEditPage() {
       onBack={handleBack}
       statusBadge={{
         label: isContractEffectiveByState ? 'Действует' : 'Не действует',
-        color: isContractEffectiveByState ? '#52c41a' : '#ff4d4f',
+        variant: isContractEffectiveByState ? 'success' : 'danger',
       }}
       metaItems={[
         headerName ? (

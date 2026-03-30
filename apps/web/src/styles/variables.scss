@@ -26,9 +26,37 @@ $border-tertiary: #f0f0f0;
 $border-active: #1677ff;
 
 $success: #52c41a;
+$success-surface-bg: #f6ffed;
+$success-surface-border: #b7eb8f;
 $warning: #faad14;
 $error: #ff4d4f;
 $info: #1677ff;
+
+/* Пастельные бейджи (шапка, таблицы, оценки) — один набор с `statusBadgeSurfaces` / detailHeaderStatusBadge */
+$badge-danger-bg: #fef2f2;
+$badge-danger-border: #fecaca;
+$badge-danger-text: #b91c1c;
+$badge-info-bg: #eff6ff;
+$badge-info-border: #bfdbfe;
+$badge-info-text: #1d4ed8;
+$badge-archive-bg: #f9fafb;
+$badge-archive-border: #e5e7eb;
+$badge-archive-text: #4b5563;
+$badge-warning-bg: #fffbeb;
+$badge-warning-border: #fde68a;
+$badge-warning-text: #b45309;
+$badge-neutral-bg: #fafafa;
+$badge-neutral-border: #e8e8e8;
+$badge-neutral-text: #737373;
+
+/* Активность в шапке (полупрозрачные) */
+$header-activity-active-bg: rgba(82, 196, 26, 0.125);
+$header-activity-active-border: rgba(82, 196, 26, 0.314);
+$header-activity-inactive-bg: rgba(255, 77, 79, 0.125);
+$header-activity-inactive-border: rgba(255, 77, 79, 0.314);
+
+/* Синхронно с constants/appColors APP_COLOR_ERROR (мягкий красный в UI) */
+$app-color-error: #e84749;
 
 $spacing-2xs: 2px;
 $spacing-xs: 4px;

@@ -111,6 +111,15 @@ export class SupplierEvaluationsController {
     return this.service.findContractProjectOptionsForPartner(partnerId.trim());
   }
 
+  /** KPI контрагента для реестра / шапки: средний балл, дата переоценки, просрочка, блоки по проектам. */
+  @Get('partner-eval-summary')
+  partnerEvalSummary(@Query('partner_id') partnerId?: string) {
+    if (!partnerId?.trim()) {
+      throw new BadRequestException('Укажите partner_id');
+    }
+    return this.service.findPartnerEvalSummary(partnerId.trim());
+  }
+
   /** Счётчики по вкладкам смысла строки (без учёта текстового поиска на фронте). */
   @Get('counts-by-tab')
   countsByTab(

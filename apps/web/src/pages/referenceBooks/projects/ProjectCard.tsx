@@ -1,6 +1,7 @@
 import { CalendarOutlined, RightOutlined, UserOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 
+import { mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import { Project } from '../../../types/referenceTypes';
 import styles from './ProjectsListPage.module.scss';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
@@ -15,6 +16,8 @@ type Props = {
 };
 export function ProjectCard({ project, managerName, onClick }: Props) {
   const st = PROJECT_STATUS_CONFIG[project.status] ?? PROJECT_STATUS_CONFIG.active;
+  const dangerStripe =
+    !!project.is_deleted || project.status === 'cancelled' || project.status === 'completed';
   const periodStr =
     project.start_date || project.end_date
       ? [project.start_date, project.end_date].filter(Boolean).map(formatDate).join(' — ')
@@ -22,16 +25,13 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
   return (
     <div
       className={styles.card}
-      style={{ '--status-color': st.color } as React.CSSProperties}
+      {...(dangerStripe ? { 'data-danger-stripe': true as const } : {})}
       onClick={() => onClick(project)}
     >
-      <div className={styles.mainInfo}>
-        <div className={styles.nameRow}>
-          <span className={styles.metaInn}>Код: {project.code || '—'}</span>
-        </div>
+      <div className={styles.mainInfo}>    
         <div className={styles.projectName}>{project.name || '—'}</div>
         <div className={styles.metaRow}>
-          <Tag color={st.color} style={{ fontSize: 14 }}>
+          <Tag bordered={false} style={mutedTagStyle(st, { fontSize: 14 })}>
             {st.label}
           </Tag>
         </div>

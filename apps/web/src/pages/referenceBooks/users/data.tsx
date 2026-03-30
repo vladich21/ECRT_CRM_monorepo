@@ -1,5 +1,11 @@
 import { Tag } from 'antd';
 
+import {
+  getActiveInactiveSurface,
+  mutedTagStyle,
+  SURFACE_BLOCKED,
+  SURFACE_NEUTRAL,
+} from '../../../constants/statusBadgeSurfaces';
 import { Department, Position, User } from '../../../types/user';
 
 export const initialFormValues = {
@@ -23,10 +29,10 @@ export const getColumnsData = () => [
     render: (is_active: boolean | undefined) =>
       is_active === undefined ? (
         '-'
-      ) : is_active ? (
-        <Tag color='rgba(47, 160, 75, 1)'>Активен</Tag>
       ) : (
-        <Tag color='rgba(139, 39, 39, 1)'>Не активен</Tag>
+        <Tag bordered={false} style={mutedTagStyle(getActiveInactiveSurface(is_active))}>
+          {is_active ? 'Активен' : 'Не активен'}
+        </Tag>
       ),
   },
   {
@@ -59,9 +65,15 @@ export const getColumnsData = () => [
     render: (_: any, record: User) => (
       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
         {record.roles?.length > 0 ? (
-          record.roles.map(role => <Tag key={role.id}>{role.role_name}</Tag>)
+          record.roles.map(role => (
+            <Tag key={role.id} bordered={false} style={mutedTagStyle(SURFACE_NEUTRAL)}>
+              {role.role_name}
+            </Tag>
+          ))
         ) : (
-          <Tag color='#b64141ff'>Роли не назначены</Tag>
+          <Tag bordered={false} style={mutedTagStyle(SURFACE_BLOCKED)}>
+            Роли не назначены
+          </Tag>
         )}
       </div>
     ),

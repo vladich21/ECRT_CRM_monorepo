@@ -9,7 +9,7 @@ import { useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, { detailHeaderVariantForContractHeader } from '../../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../../constants/deletionScope';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useNotification } from '../../../customhooks/useNotification';
@@ -49,21 +49,15 @@ export default function ContractDetailsPage() {
     contractsListReturn?: ContractsListNavSnapshot;
   } | null;
   const from = navState?.from;
-  const listDeletionScope = navState?.deletionScope ?? 'active';
-  const contractsListReturn = navState?.contractsListReturn;
+  /** Снимок для редиректа после удаления/восстановления: всё из state списка + переопределённые поля. */
+  const detailNavBase = typeof navState === 'object' && navState !== null ? navState : {};
+
+  /** Список договоров: общий реестр или вкладка контрагента `/partners/:id/contracts`. */
+  const contractsListPath =
+    typeof from === 'string' && from.trim().length > 0 ? from : CONTRACTS_REGISTRY_PATH;
+
   const handleBack = () => {
-    const backState: {
-      deletionScope: DeletionScope;
-      contractsListReturn?: ContractsListNavSnapshot;
-    } = {
-      deletionScope: listDeletionScope,
-      ...(contractsListReturn ? { contractsListReturn } : {}),
-    };
-    if (typeof from === 'string' && from.length > 0) {
-      navigate(from, { state: backState });
-      return;
-    }
-    navigate(CONTRACTS_REGISTRY_PATH, { state: backState });
+    navigate(contractsListPath, navState != null ? { state: navState } : undefined);
   };
   const { data: contract, isLoading, isError } = useContractById(contractId!);
   const { data: referenceBooks } = useReferenceData([
@@ -87,12 +81,12 @@ export default function ContractDetailsPage() {
     errorMessage: 'Не удалось удалить договор',
     getMutationProps: () => contractId!,
     showNotification,
-    redirectPath: CONTRACTS_REGISTRY_PATH,
+    redirectPath: contractsListPath,
     redirectReplace: true,
-    redirectState: (data: ContractDeleteResult) =>
-      data.deletion_mode === 'hard'
-        ? { deletionScope: 'active' as const }
-        : { deletionScope: 'deleted' as const },
+    redirectState: (data: ContractDeleteResult) => ({
+      ...detailNavBase,
+      deletionScope: data.deletion_mode === 'hard' ? ('active' as const) : ('deleted' as const),
+    }),
   });
   const { handleOpenModal: openRestoreModal } = useConfirmByModal({
     mutation: restoreContractMutation,
@@ -100,9 +94,12 @@ export default function ContractDetailsPage() {
     errorMessage: 'Не удалось восстановить договор',
     getMutationProps: () => contractId!,
     showNotification,
-    redirectPath: CONTRACTS_REGISTRY_PATH,
+    redirectPath: contractsListPath,
     redirectReplace: true,
-    redirectState: { listTab: 'all' as FilterTab },
+    redirectState: {
+      ...detailNavBase,
+      listTab: 'all' as FilterTab,
+    },
   });
   const activeTab = getActiveContractDetailsTab(location.pathname);
   const tabsWithCounts = CONTRACT_DETAILS_TABS.map(tab => {
@@ -113,7 +110,7 @@ export default function ContractDetailsPage() {
     return tab;
   });
   const handleEdit = () => {
-    navigate(getContractEditPath(contractId!), { state: { from } });
+    navigate(getContractEditPath(contractId!), navState != null ? { state: navState } : undefined);
   };
   const handleDelete = () => {
     if (!contract) return;
@@ -174,11 +171,15 @@ export default function ContractDetailsPage() {
           </div>
         ) : undefined
       }
-      backLabel='Договоры'
+      backLabel={
+        typeof from === 'string' && from.includes('/partners/') && from.includes('/contracts')
+          ? 'К договорам контрагента'
+          : 'Договоры'
+      }
       onBack={handleBack}
       statusBadge={{
         label: contract.is_deleted ? 'Удалён' : contract.is_active ? 'Действует' : 'Не действует',
-        color: contract.is_deleted ? '#ff4d4f' : contract.is_active ? '#52c41a' : '#ff4d4f',
+        variant: detailHeaderVariantForContractHeader(!!contract.is_deleted, !!contract.is_active),
       }}
       metaItems={[
         contractState && (
@@ -195,7 +196,7 @@ export default function ContractDetailsPage() {
           </span>
         ),
         projectChipLabel && (
-          <span key='project' className={`${tagStyles.cardCategory} ${styles.detailHeaderProjectChip}`}>
+          <span key='project' className={[tagStyles.cardCategory, styles.detailHeaderProjectChip].join(' ')}>
             {projectChipLabel}
           </span>
         ),
@@ -206,12 +207,7 @@ export default function ContractDetailsPage() {
             Редактировать
           </Button>
           {contract.is_deleted ? (
-            <Button
-              type='primary'
-              icon={<UndoOutlined />}
-              onClick={openRestoreModal}
-              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-            >
+            <Button type='primary' icon={<UndoOutlined />} onClick={openRestoreModal} className={styles.restoreActionBtn}>
               Восстановить
             </Button>
           ) : (

@@ -2,17 +2,27 @@ import type { ReactNode } from 'react';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 
+import type { DetailStatusBadge } from './detailHeaderStatusBadge';
+import { detailHeaderStatusBadgeClass } from './detailHeaderStatusBadge';
+
 import styles from './DetailPageHeader.module.scss';
+
+export type { DetailHeaderStatusBadgeVariant, DetailStatusBadge } from './detailHeaderStatusBadge';
+export {
+  PARTNER_STATUS_ID_TO_VARIANT,
+  detailHeaderStatusBadgeClass,
+  detailHeaderVariantForContractHeader,
+  detailHeaderVariantForPartnerStatus,
+  detailHeaderVariantForPartnerStatusName,
+  detailHeaderVariantForPatentRecord,
+  detailHeaderVariantForProjectStatus,
+} from './detailHeaderStatusBadge';
 
 interface TabItem {
   key: string;
   label: ReactNode;
 }
-interface StatusBadge {
-  label: string;
-  color: string;
-  icon?: ReactNode;
-}
+
 interface DetailPageHeaderProps {
   title: string;
   titleSuffix?: ReactNode;
@@ -20,7 +30,7 @@ interface DetailPageHeaderProps {
   subtitle?: ReactNode;
   backLabel: string;
   onBack: () => void;
-  statusBadge?: StatusBadge;
+  statusBadge?: DetailStatusBadge;
   metaItems?: ReactNode[];
   badges?: ReactNode[];
   actions?: ReactNode;
@@ -53,11 +63,15 @@ export default function DetailPageHeader({
   contextHolder,
   titleWeight = 'default',
 }: DetailPageHeaderProps) {
+  const headerClassName = stickyHeader ? `${styles.header} ${styles.headerSticky}` : styles.header;
+  const titleClassName =
+    titleWeight === 'medium' ? `${styles.companyName} ${styles.companyNameMedium}` : styles.companyName;
+
   return (
     <div className={styles.pageRoot}>
       {contextHolder}
 
-      <div className={`${styles.header} ${stickyHeader ? styles.headerSticky : ''}`}>
+      <div className={headerClassName}>
         <Button type='text' icon={<ArrowLeftOutlined />} onClick={onBack} className={styles.backBtn}>
           {backLabel}
         </Button>
@@ -65,11 +79,7 @@ export default function DetailPageHeader({
         <div className={styles.companyRow}>
           <div className={styles.companyInfo}>
             <div className={styles.nameRow}>
-              <h1
-                className={`${styles.companyName} ${titleWeight === 'medium' ? styles.companyNameMedium : ''}`.trim()}
-              >
-                {title}
-              </h1>
+              <h1 className={titleClassName}>{title}</h1>
               {titleSuffix && <div className={styles.titleSuffix}>{titleSuffix}</div>}
               {badges}
             </div>
@@ -77,18 +87,11 @@ export default function DetailPageHeader({
             {subtitle && <div className={styles.subtitle}>{subtitle}</div>}
 
             <div className={styles.metaRow}>
-              {statusBadge && (
-                <div
-                  className={styles.statusBadge}
-                  style={{
-                    background: `${statusBadge.color}20`,
-                    border: `1px solid ${statusBadge.color}50`,
-                    color: statusBadge.color,
-                  }}
-                >
+              {statusBadge ? (
+                <div className={detailHeaderStatusBadgeClass(statusBadge.variant)}>
                   {statusBadge.icon} {statusBadge.label}
                 </div>
-              )}
+              ) : null}
               {metaItems}
             </div>
           </div>

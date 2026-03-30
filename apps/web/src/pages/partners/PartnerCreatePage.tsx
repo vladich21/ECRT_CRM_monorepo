@@ -51,7 +51,7 @@ export default function PartnerCreatePage() {
     setErrorFields([]);
     const payload = {
       ...values,
-      status_id: values.status_id || null,
+      manual_archive: Boolean(values.manual_archive),
       type_ids: values.type_ids || [],
       competence_ids: values.competence_ids || [],
       partner_economic_category_id: values.partner_economic_category_id,

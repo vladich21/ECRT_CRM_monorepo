@@ -1,3 +1,9 @@
-.competenceTag {
-  font-weight: bold;
+@use '../../styles/variables' as v;
+
+/* Специфичность выше одного класса `.ant-tag` у Ant Design — без `!important`. */
+:global(.ant-tag).competenceTag {
+  font-weight: 600;
+  background-color: v.$primary-color;
+  color: #fff;
+  border-color: v.$primary-color;
 }

@@ -19,7 +19,10 @@ import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePatentById, useUpdatePatent } from '../../api/patents/patentApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, {
+  detailHeaderVariantForPatentRecord,
+  detailPageHeaderStyles as hStyles,
+} from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
 import { formReferenceId } from '../../helpers/formReferenceId';
 import { getEntityById } from '../../helpers/getEntityById';
@@ -29,10 +32,6 @@ import styles from './PatentFormPage.module.scss';
 
 const { Option } = Select;
 const { TextArea } = Input;
-const STATUS_STYLE = {
-  active: { color: '#52c41a', label: 'Активен' },
-  deleted: { color: '#ff4d4f', label: 'Удалён' },
-} as const;
 export default function PatentEditPage() {
   const { patentId } = useParams();
   const navigate = useNavigate();
@@ -121,7 +120,8 @@ export default function PatentEditPage() {
     return <NotFound errorMessage='Не удалось подгрузить справочники' />;
   }
 
-  const recordStatusBadge = patent.is_deleted ? STATUS_STYLE.deleted : STATUS_STYLE.active;
+  const recordStatusLabel = patent.is_deleted ? 'Удалён' : 'Активен';
+  const recordStatusVariant = detailHeaderVariantForPatentRecord(patent.is_deleted);
   const headerName = (watchName ?? patent.name) || '';
   const headerRegNumber = (watchRegNumber ?? patent.registration_number) || '';
   const intellectpropId = formReferenceId(watchIntellectPropId, patent.intellectprop_id);
@@ -137,8 +137,8 @@ export default function PatentEditPage() {
       backLabel='Реестр РИД'
       onBack={() => navigate(-1)}
       statusBadge={{
-        label: recordStatusBadge.label,
-        color: recordStatusBadge.color,
+        label: recordStatusLabel,
+        variant: recordStatusVariant,
       }}
       metaItems={[
         headerName ? (

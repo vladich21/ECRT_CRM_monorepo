@@ -40,7 +40,7 @@ export default function DepartmentDetailsPage() {
       onBack={() => navigate('/departments')}
       statusBadge={{
         label: department.is_active ? 'Активен' : 'Не активен',
-        color: department.is_active ? '#52c41a' : '#ff4d4f',
+        variant: department.is_active ? 'activityActive' : 'activityInactive',
       }}
       metaItems={[
         department.short_name && (

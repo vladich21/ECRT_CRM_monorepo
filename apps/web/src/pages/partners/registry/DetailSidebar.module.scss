@@ -54,6 +54,79 @@
   flex-shrink: 0;
 }
 
+/** Блок «Контактная информация»: те же строки, что «Классификация»; длинные значения справа с переносом. */
+.contactInfoRows {
+  gap: 0;
+
+  .classRowBorder,
+  .classRow {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .classLabel {
+    flex: 0 0 auto;
+    max-width: 38%;
+    padding-top: 2px;
+  }
+
+  .classValueWithIcon {
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+    text-align: right;
+    line-height: 1.35;
+  }
+
+  .classValueIcon {
+    color: #8c8c8c;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .classValueMultiline {
+    text-align: right;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+    max-width: 100%;
+  }
+
+  a.moreContactsLink {
+    max-width: 100%;
+    word-break: break-all;
+    text-align: right;
+  }
+}
+
+.moreContacts {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.moreContactsInGrid {
+  border-top: none;
+}
+
+.moreContactsLink {
+  color: #1677ff;
+
+  &:hover {
+    color: #4096ff;
+  }
+}
+
+.moreContactsMuted {
+  color: #8c8c8c;
+}
+
+.emptyHint {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
 .classItems {
   display: flex;
   flex-direction: column;
@@ -83,6 +156,13 @@
 .classValue {
   font-size: 14px;
   font-weight: 600;
+  text-align: right;
+  flex: 1;
+  min-width: 0;
+}
+
+.contactInfoRows .classValue {
+  max-width: 62%;
 }
 
 .timelineItem {

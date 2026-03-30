@@ -23,6 +23,7 @@ export const usePartnerById = (partnerId: string): UseQueryResult<Partner, Error
     queryKey: ['partners', partnerId],
     queryFn: () => partnerApi.getPartnerById(partnerId),
     enabled: isValidUuid(partnerId),
+    refetchOnWindowFocus: true,
   });
 };
 

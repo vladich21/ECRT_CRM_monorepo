@@ -18,6 +18,10 @@ import type { Partner } from '../../types/partner';
 import { EMPTY_FILTERS, PartnerFiltersModal, type PartnerFilters } from './PartnerFiltersModal';
 import styles from './PartnersListPage.module.scss';
 import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
+import {
+  isPartnerEvaluationsUiMockPartnerId,
+  mergePartnerSupplierEvalKpiWithUiMock,
+} from './evaluations/partnerEvaluationsUiMock';
 import SupplierCard from './registry/SupplierCard';
 import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 
@@ -242,8 +246,12 @@ export default function PartnersListPage() {
                 key={partner.id}
                 partner={partner}
                 references={references}
-                evaluationKpi={partnerEvalKpiQueries[index]?.data}
+                evaluationKpi={mergePartnerSupplierEvalKpiWithUiMock(
+                  partner.id,
+                  partnerEvalKpiQueries[index]?.data,
+                )}
                 evaluationKpiLoading={Boolean(partnerEvalKpiQueries[index]?.isPending)}
+               
                 onClick={handleCardClick}
               />
             ))

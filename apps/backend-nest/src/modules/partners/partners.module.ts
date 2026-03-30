@@ -8,5 +8,6 @@ import { PartnerInnLookupService } from './services/partner-inn-lookup.service';
 @Module({
   controllers: [PartnerContactsController, PartnersController],
   providers: [PartnersService, PartnerContactsService, PartnerInnLookupService],
+  exports: [PartnersService],
 })
 export class PartnersModule {}

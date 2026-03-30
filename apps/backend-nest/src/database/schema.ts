@@ -252,9 +252,6 @@ export const refPartnerTypes = pgTable('ref_partner_types', {
 export const refPartnerCompetencies = pgTable('ref_partner_competencies', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 1000 }),
-  colorBg: varchar('color_bg', { length: 7 }),
-  colorText: varchar('color_text', { length: 7 }),
-  colorBorder: varchar('color_border', { length: 7 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }),
 });

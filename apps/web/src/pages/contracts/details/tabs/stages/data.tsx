@@ -3,11 +3,26 @@ import { Progress, Tag, Tooltip } from 'antd';
 import { ColumnType } from 'antd/es/table';
 
 import { ReferenceData } from '../../../../../api/hooks/useReferences';
+import { APP_COLOR_ERROR, APP_COLOR_PRIMARY } from '../../../../../constants/appColors';
 import { getEntityById } from '../../../../../helpers/getEntityById';
 import { getNameById } from '../../../../../helpers/getNameById';
 import { getTagColorByData } from '../../../../../helpers/getTagColorByData';
 import { ContractRevision, ContractStage } from '../../../../../types/contract';
 import styles from './data.module.scss';
+
+const STAGE_STATE_TAG_CLASS: Record<string, string> = {
+  planned: styles.tagNeutral,
+  in_progress: styles.tagPotential,
+  completed: styles.tagSuccess,
+  on_hold: styles.tagWarning,
+  cancelled: styles.tagDanger,
+};
+
+function budgetDeviationRowClass(deviationPercent: number): string {
+  if (deviationPercent > 10) return styles.budgetDeviation;
+  if (deviationPercent < -10) return styles.budgetDeviationPositive;
+  return styles.budgetDeviationNeutral;
+}
 
 export const getStageColumnsData = (
   references: Pick<ReferenceData, 'contractStageStates' | 'contracts'>,
@@ -69,12 +84,6 @@ export const getStageColumnsData = (
     render: (_: any, record: ContractStage) => {
       const { planned_budget, forecasted_budget, actual_budget } = record;
       const budgetDeviation = actual_budget ? ((actual_budget - planned_budget) / planned_budget) * 100 : 0;
-      const deviationClass =
-        budgetDeviation > 10
-          ? styles.budgetDeviation
-          : budgetDeviation < -10
-            ? styles.budgetDeviationPositive
-            : styles.budgetDeviationNeutral;
       return (
         <div className={styles.budgetContainer}>
           <div>
@@ -87,7 +96,7 @@ export const getStageColumnsData = (
             <strong>Факт:</strong> {actual_budget || '-'}
           </div>
           {actual_budget && (
-            <div className={deviationClass}>
+            <div className={budgetDeviationRowClass(budgetDeviation)}>
               <small>Отклонение: {budgetDeviation.toFixed(1)}%</small>
             </div>
           )}
@@ -116,21 +125,28 @@ export const getStageColumnsData = (
               percent={Math.round(timeProgress)}
               size='small'
               status={isDelayed ? 'exception' : 'normal'}
-              strokeColor={isDelayed ? '#ff4d4f' : '#1890ff'}
+              strokeColor={isDelayed ? APP_COLOR_ERROR : APP_COLOR_PRIMARY}
             />
           </div>
           {statusCode === 'completed' && (
-            <Tag color='success' icon={<CheckCircleOutlined />} className={styles.statusTag}>
+            <Tag
+              bordered={false}
+              icon={<CheckCircleOutlined />}
+              className={`${styles.statusTag} ${styles.mutedStageTag} ${styles.tagSuccess}`}
+            >
               Завершен
             </Tag>
           )}
           {statusCode === 'in_progress' && (
-            <Tag color='processing' className={styles.statusTag}>
+            <Tag
+              bordered={false}
+              className={`${styles.statusTag} ${styles.mutedStageTag} ${styles.tagPotential}`}
+            >
               В работе
             </Tag>
           )}
           {isDelayed && statusCode !== 'completed' && (
-            <Tag color='error' className={styles.statusTag}>
+            <Tag bordered={false} className={`${styles.statusTag} ${styles.mutedStageTag} ${styles.tagDanger}`}>
               Просрочен
             </Tag>
           )}
@@ -145,16 +161,11 @@ export const getStageColumnsData = (
     width: 120,
     render: (status_id: string) => {
       const status = references.contractStageStates?.find(s => s.id === status_id);
-      const statusColors: Record<string, string> = {
-        planned: 'default',
-        in_progress: 'processing',
-        completed: 'success',
-        on_hold: 'warning',
-        cancelled: 'error',
-      };
+      const code = status?.code ?? 'planned';
+      const toneClass = STAGE_STATE_TAG_CLASS[code] ?? styles.tagNeutral;
       return (
-        <Tag color={statusColors[status?.code || 'default']} className={styles.statusTagCentered}>
-          {'Выполнено'}
+        <Tag bordered={false} className={`${styles.statusTagCentered} ${styles.mutedStageTag} ${toneClass}`}>
+          {status?.name ?? '—'}
         </Tag>
       );
     },
@@ -165,7 +176,12 @@ export const getStageColumnsData = (
     key: 'is_archived',
     width: 80,
     render: (is_archived: boolean) => (
-      <Tag color={is_archived ? 'default' : 'blue'}>{is_archived ? 'В архиве' : 'Активен'}</Tag>
+      <Tag
+        bordered={false}
+        className={`${styles.mutedStageTag} ${is_archived ? styles.tagArchive : styles.tagPotential}`}
+      >
+        {is_archived ? 'В архиве' : 'Активен'}
+      </Tag>
     ),
   },
   {

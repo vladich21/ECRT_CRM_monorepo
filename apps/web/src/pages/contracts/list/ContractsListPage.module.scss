@@ -9,14 +9,12 @@ $portal-accent: #002f55;
 $shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
 $shadow-hover: 0 4px 12px rgba(30, 41, 59, 0.12);
 
-$tag-active-bg: #bbf7d0;
-$tag-active-text: #15803d;
 $tag-inactive-bg: #fecaca;
 $tag-inactive-text: #b91c1c;
 $tag-draft-bg: #e2e8f0;
 $tag-draft-text: #334155;
-$tag-signed-bg: #bbf7d0;
-$tag-signed-text: #15803d;
+$tag-signed-bg: v.$success-surface-bg;
+$tag-signed-text: v.$success;
 $tag-approval-bg: #bfdbfe;
 $tag-approval-text: #1d4ed8;
 $tag-rejected-bg: #fecaca;
@@ -25,6 +23,9 @@ $tag-closed-bg: #e2e8f0;
 $tag-closed-text: #475569;
 $tag-default-bg: #bfdbfe;
 $tag-default-text: #1d4ed8;
+
+/* sync constants/appColors APP_COLOR_ERROR */
+$app-error: #e84749;
 
 .wrap {
   padding: 0;
@@ -202,20 +203,23 @@ $tag-default-text: #1d4ed8;
   background: #fff;
   border-radius: 12px;
   border: 1px solid #f0f0f0;
-  border-left: 4px solid var(--status-color);
-  padding: 12px 16px;
+  @include lp.listCardDangerStripe;
+  padding: 16px 20px;
   cursor: pointer;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    border-left-color 0.2s ease,
+    border-left-width 0.15s ease;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 
   &:hover {
     box-shadow: 0 4px 16px rgba(22, 119, 255, 0.12);
     border-color: #d0e4ff;
-    border-left-color: var(--status-color);
   }
 }
 
@@ -252,8 +256,30 @@ $tag-default-text: #1d4ed8;
 .chipsRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.chipTight {
+  font-size: 14px;
+  margin-inline-end: 0;
+}
+
+.contractEffectiveTag {
+  margin: 0;
+  font-size: 14px;
+  border: 1px solid #b7eb8f;
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.contractInactiveTag {
+  margin: 0;
+  font-size: 14px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .typeChip {
@@ -366,6 +392,7 @@ $tag-default-text: #1d4ed8;
 .metricsCol {
   flex: 0 0 180px;
   margin-left: auto;
+  padding-top: 2px;
 }
 
 .metricsTop {
@@ -404,6 +431,8 @@ $tag-default-text: #1d4ed8;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  align-self: center;
+  min-height: 44px;
 }
 
 .activityDate {
@@ -444,15 +473,15 @@ $tag-default-text: #1d4ed8;
 }
 
 .tagStatusActive {
-  background: rgba(82, 196, 26, 0.125);
-  color: #52c41a;
-  border-color: rgba(82, 196, 26, 0.314);
+  background: v.$success-surface-bg;
+  color: v.$success;
+  border-color: v.$success-surface-border;
 }
 
 .tagStatusInactive {
-  background: rgba(255, 77, 79, 0.125);
-  color: #ff4d4f;
-  border-color: rgba(255, 77, 79, 0.314);
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
 }
 
 .tagStateDraft {
@@ -465,7 +494,7 @@ $tag-default-text: #1d4ed8;
 .tagStateApproved {
   background: $tag-signed-bg;
   color: $tag-signed-text;
-  border-color: rgba(21, 128, 61, 0.4);
+  border-color: v.$success-surface-border;
 }
 
 .tagStateOnApproval {

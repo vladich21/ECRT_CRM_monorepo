@@ -30,7 +30,7 @@ export default function UserDetailsPage() {
       onBack={() => navigate('/users')}
       statusBadge={{
         label: user.is_active ? 'Активен' : 'Не активен',
-        color: user.is_active ? '#52c41a' : '#ff4d4f',
+        variant: user.is_active ? 'activityActive' : 'activityInactive',
       }}
       metaItems={[
         user.email && (

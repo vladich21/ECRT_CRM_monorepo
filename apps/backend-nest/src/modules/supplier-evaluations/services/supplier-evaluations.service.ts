@@ -2,6 +2,7 @@ import type { SQL } from 'drizzle-orm';
 import { and, asc, count, desc, eq, gte, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
+import { PartnersService } from '../../partners/services/partners.service';
 import {
   contracts,
   partners,
@@ -79,7 +80,10 @@ const UI_TAB_COUNT_KEYS: SupplierEvaluationUiStatusFilter[] = [
 export class SupplierEvaluationsService {
   private readonly logger = new Logger(SupplierEvaluationsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly partnersService: PartnersService,
+  ) {}
 
   /** Проекты из неудалённых договоров с контрагентом (для селекта «Новая оценка»). */
   async findContractProjectOptionsForPartner(partnerId: string) {
@@ -107,15 +111,95 @@ export class SupplierEvaluationsService {
     }));
   }
 
+  /**
+   * Сводка для карточки контрагента в реестре: KPI по активным оценкам, просрочка плановой
+   * переоценки, число проектов с активной блокировкой по оценке (кат. D).
+   */
+  async findPartnerEvalSummary(partnerId: string) {
+    const today = this.calendarTodayIso();
+    const [blockRows, evalRows] = await Promise.all([
+      this.db.db
+        .select({ projectId: supplierPartnerProjectBlocks.projectId })
+        .from(supplierPartnerProjectBlocks)
+        .where(
+          and(
+            eq(supplierPartnerProjectBlocks.partnerId, partnerId),
+            eq(supplierPartnerProjectBlocks.isActive, true),
+          )!,
+        ),
+      this.db.db
+        .select({
+          projectId: supplierEvaluations.projectId,
+          evaluatedAt: supplierEvaluations.evaluatedAt,
+          weightedScore: supplierEvaluations.weightedScore,
+          nextReevaluationDate: supplierEvaluations.nextReevaluationDate,
+        })
+        .from(supplierEvaluations)
+        .where(and(eq(supplierEvaluations.partnerId, partnerId), eq(supplierEvaluations.status, 'active'))!),
+    ]);
+
+    const blockedProjectCount = new Set(blockRows.map((r) => String(r.projectId))).size;
+
+    type EvalPick = (typeof evalRows)[number];
+    const byProject = new Map<string, EvalPick>();
+    for (const r of evalRows) {
+      const pid = String(r.projectId);
+      const prev = byProject.get(pid);
+      const evAt = this.isoDateOnly(r.evaluatedAt);
+      const prevAt = prev ? this.isoDateOnly(prev.evaluatedAt) : '';
+      if (!prev || evAt > prevAt) {
+        byProject.set(pid, r);
+      }
+    }
+    const perProject = [...byProject.values()];
+
+    let avgScore: number | null = null;
+    let nextReevaluationDate: string | null = null;
+    if (perProject.length > 0) {
+      const sum = perProject.reduce((acc, r) => acc + Number(r.weightedScore), 0);
+      avgScore = Math.round((sum / perProject.length) * 100) / 100;
+      const dates = perProject
+        .map((r) => (r.nextReevaluationDate ? this.isoDateOnly(r.nextReevaluationDate) : null))
+        .filter((d): d is string => Boolean(d));
+      nextReevaluationDate = dates.length === 0 ? null : dates.reduce((a, b) => (a <= b ? a : b));
+    }
+
+    const nextReevaluationOverdue =
+      nextReevaluationDate != null && nextReevaluationDate.length >= 10 && nextReevaluationDate < today;
+
+    return {
+      avg_score: avgScore,
+      next_reevaluation_date: nextReevaluationDate,
+      next_reevaluation_overdue: nextReevaluationOverdue,
+      blocked_project_count: blockedProjectCount,
+    };
+  }
+
+  private calendarTodayIso(): string {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  private isoDateOnly(v: unknown): string {
+    if (v == null) return '';
+    if (typeof v === 'string') return v.length >= 10 ? v.slice(0, 10) : v;
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    return String(v).slice(0, 10);
+  }
+
   async deleteEvaluation(evaluationId: string) {
     const existing = await this.db.db
-      .select({ id: supplierEvaluations.id })
+      .select({ id: supplierEvaluations.id, partnerId: supplierEvaluations.partnerId })
       .from(supplierEvaluations)
       .where(eq(supplierEvaluations.id, evaluationId))
       .limit(1);
     if (!existing[0]) {
       throw new NotFoundException(`Оценка ${evaluationId} не найдена`);
     }
+    const partnerId = String(existing[0].partnerId);
 
     await this.db.db.transaction(async (tx) => {
       await tx
@@ -127,6 +211,8 @@ export class SupplierEvaluationsService {
         .where(eq(supplierPartnerProjectBlocks.sourceEvaluationId, evaluationId));
       await tx.delete(supplierEvaluations).where(eq(supplierEvaluations.id, evaluationId));
     });
+
+    await this.partnersService.refreshPartnerDerivedStatus(partnerId);
   }
 
   async findCriteriaCatalog() {
@@ -380,7 +466,9 @@ export class SupplierEvaluationsService {
         return inserted;
       });
 
-      return await this.findOne(String(result.id));
+      const created = await this.findOne(String(result.id));
+      await this.partnersService.refreshPartnerDerivedStatus(dto.partner_id);
+      return created;
     } catch (err) {
       this.logger.warn(`Ошибка создания оценки: ${err}`);
       throw err;
@@ -429,6 +517,7 @@ export class SupplierEvaluationsService {
       .from(supplierPartnerProjectBlocks)
       .where(eq(supplierPartnerProjectBlocks.id, blockId))
       .limit(1);
+    await this.partnersService.refreshPartnerDerivedStatus(String(row.partnerId));
     return updated[0] ? this.blockToResponse(updated[0]) : null;
   }
 

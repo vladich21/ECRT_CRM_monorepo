@@ -8,6 +8,7 @@ import { ReferenceBookCardList } from '../../../components/referenceBooks/Refere
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useNotification } from '../../../customhooks/useNotification';
+import { COMPETENCE_TAG_BG, COMPETENCE_TAG_BORDER, COMPETENCE_TAG_TEXT } from '../../../constants/competenceDisplay';
 import { PartnerCompetence } from '../../../types/partner';
 
 export default function PartnerCompetencesListPage() {
@@ -47,9 +48,9 @@ export default function PartnerCompetencesListPage() {
           <ReferenceBookItemCard
             key={competence.id}
             title={competence.name}
-            previewBgColor={competence.color_bg || undefined}
-            previewTextColor={competence.color_text || undefined}
-            previewBorderColor={competence.color_border || undefined}
+            previewBgColor={COMPETENCE_TAG_BG}
+            previewTextColor={COMPETENCE_TAG_TEXT}
+            previewBorderColor={COMPETENCE_TAG_BORDER}
             previewText={competence.name}
             onEdit={() => onEdit(competence)}
             onDelete={() => onDelete({ id: Number(competence.id) })}

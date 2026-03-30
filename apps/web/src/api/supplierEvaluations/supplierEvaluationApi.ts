@@ -1,8 +1,5 @@
 import { apiClient } from '../clients';
-import {
-  computePartnerSupplierEvalKpi,
-  type PartnerSupplierEvalKpi,
-} from '../../utils/supplierEvaluationPartnerKpi';
+import type { PartnerSupplierEvalKpi } from '../../utils/supplierEvaluationPartnerKpi';
 import type {
   CreateSupplierEvaluationPayload,
   SupplierEvaluationBlock,
@@ -138,13 +135,21 @@ export const supplierEvaluationApi = {
   },
 };
 
-/** Активные оценки по контрагенту: средний балл и ближайшая дата переоценки по проектам. */
+/** KPI контрагента по оценкам (один запрос вместо списка на 500 строк). */
 export async function fetchPartnerSupplierEvalKpi(partnerId: string): Promise<PartnerSupplierEvalKpi> {
-  const res = await supplierEvaluationApi.getList({
-    partner_id: partnerId,
-    status: 'active',
-    limit: 500,
-    offset: 0,
+  const { data } = await apiClient.get<{
+    avg_score: number | null;
+    next_reevaluation_date: string | null;
+    next_reevaluation_overdue: boolean;
+    blocked_project_count: number;
+  }>('/supplier-evaluations/partner-eval-summary', {
+    params: { partner_id: partnerId },
   });
-  return computePartnerSupplierEvalKpi(res.data);
+  const row = data && typeof data === 'object' ? data : null;
+  return {
+    avgScore: row?.avg_score ?? null,
+    nextReevaluationIso: row?.next_reevaluation_date ?? null,
+    nextReevaluationOverdue: row?.next_reevaluation_overdue ?? false,
+    blockedProjectCount: row?.blocked_project_count ?? 0,
+  };
 }

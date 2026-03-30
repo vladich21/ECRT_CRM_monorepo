@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
   partners,
@@ -12,6 +12,7 @@ import {
   refPartnerTypes,
   refPartnerCompetencies,
   refPartnerCategories,
+  supplierEvaluations,
   supplierPartnerProjectBlocks,
 } from '../../../database/schema';
 import { computePartnerIsApproved, inferPartnerCategoryKind } from '../domain/partner-approval.rules';
@@ -188,6 +189,14 @@ export class PartnersService {
 
     const ids = rows.map((row) => row.id).filter(Boolean) as string[];
 
+    await Promise.all(ids.map((pid) => this.applyDerivedPartnerStatus(pid, { ignoreArchiveLock: false })));
+    let rowsForList = rows;
+    if (ids.length > 0) {
+      const freshList = await this.db.db.select().from(partners).where(inArray(partners.id, ids));
+      const byId = new Map(freshList.map((r) => [String(r.id), r]));
+      rowsForList = rows.map((r) => byId.get(String(r.id)) ?? r);
+    }
+
     const [typeRows, compRows] = ids.length
       ? await Promise.all([
           this.db.db
@@ -219,15 +228,15 @@ export class PartnersService {
       }
     }
 
-    const partnerIds = rows.map((row) => String(row.id));
-    const categoryIds = [...new Set(rows.map((row) => row.categoryId).filter(Boolean))] as string[];
+    const partnerIds = rowsForList.map((row) => String(row.id));
+    const categoryIds = [...new Set(rowsForList.map((row) => row.categoryId).filter(Boolean))] as string[];
 
     const [categoryNameById, blockedPartnerIds] = await Promise.all([
       this.loadCategoryNamesByIds(categoryIds),
       this.loadBlockedPartnerIds(partnerIds),
     ]);
 
-    const data = rows.map((row) => {
+    const data = rowsForList.map((row) => {
       const pid = String(row.id);
       const catId = row.categoryId ? String(row.categoryId) : '';
       const catName = catId ? categoryNameById.get(catId) ?? null : null;
@@ -267,7 +276,18 @@ export class PartnersService {
     const row = rows[0];
     if (!row) return null;
     const pid = String(row.id);
-    const catId = row.categoryId ? String(row.categoryId) : '';
+    const statusNameBefore = await this.getPartnerStatusName(row.statusId ? String(row.statusId) : null);
+    if ((statusNameBefore ?? '').trim() !== 'Архив') {
+      await this.applyDerivedPartnerStatus(pid, { ignoreArchiveLock: false });
+    }
+    const rowsFresh = await this.db.db
+      .select()
+      .from(partners)
+      .where(eq(partners.id, id))
+      .limit(1);
+    const rowFresh = rowsFresh[0] ?? row;
+
+    const catId = rowFresh.categoryId ? String(rowFresh.categoryId) : '';
     const [typeRows, compRows, categoryNameById, blockedPartnerIds] = await Promise.all([
       this.db.db
         .select({ typeId: relPartnersTypes.typeId })
@@ -282,9 +302,9 @@ export class PartnersService {
     ]);
     const catName = catId ? categoryNameById.get(catId) ?? null : null;
     const hasBlock = blockedPartnerIds.has(pid);
-    const extras = this.partnerApprovalExtras(row, catName, hasBlock);
+    const extras = this.partnerApprovalExtras(rowFresh, catName, hasBlock);
     return {
-      ...this.toResponse(row, extras),
+      ...this.toResponse(rowFresh, extras),
       type_ids: typeRows.map((typeRow) => String(typeRow.typeId)).filter(Boolean),
       competence_ids: compRows.map((compRow) => String(compRow.competenceId)).filter(Boolean),
     };
@@ -294,8 +314,11 @@ export class PartnersService {
     this.logger.debug('Создание партнёра');
     this.validateInnKppRequired(data);
     await this.validateReferences(data);
+    const manualArchive = this.parseManualArchiveFlag(data);
+    const statusIds = await this.resolvePartnerOperationalStatusIds();
     const insertData = {
       ...this.mapToDb(data),
+      statusId: manualArchive === true ? statusIds.archiveId : null,
       ...(userId ? { createdBy: userId, updatedBy: userId } : {}),
     };
     await this.checkInnKppUnique(insertData.inn, insertData.kpp);
@@ -303,6 +326,9 @@ export class PartnersService {
     if (!row) return null;
     const partnerId = String(row.id);
     await this.syncRelTables(partnerId, data);
+    if (manualArchive !== true) {
+      await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: true });
+    }
     return this.findOne(partnerId);
   }
 
@@ -310,6 +336,10 @@ export class PartnersService {
     this.logger.debug(`Обновление партнёра id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
+    const currentStatusName = await this.getPartnerStatusName(
+      current.status_id ? String(current.status_id) : null,
+    );
+    const manualArchive = this.parseManualArchiveFlag(data);
     const merged = { ...current, ...data };
     this.validateInnKppRequired(merged);
     await this.validateReferences(data);
@@ -329,7 +359,6 @@ export class PartnersService {
       phone: 'phone',
       email: 'email',
       website: 'website',
-      status_id: 'statusId',
       category_id: 'categoryId',
       comment: 'comment',
       partner_economic_category_id: 'partnerEconomicCategoryId',
@@ -348,6 +377,23 @@ export class PartnersService {
     }
     await this.db.db.update(partners).set(updateObj).where(eq(partners.id, id));
     await this.syncRelTables(id, data);
+
+    if (manualArchive === true) {
+      const { archiveId } = await this.resolvePartnerOperationalStatusIds();
+      await this.db.db
+        .update(partners)
+        .set({
+          statusId: archiveId,
+          updatedAt: new Date(),
+          ...(userId ? { updatedBy: userId } : {}),
+        })
+        .where(eq(partners.id, id));
+    } else if (manualArchive === false) {
+      await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: true });
+    } else if ((currentStatusName ?? '').trim() !== 'Архив') {
+      await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
+    }
+
     return this.findOne(id);
   }
 
@@ -383,6 +429,14 @@ export class PartnersService {
     return this.findOne(id);
   }
 
+  /**
+   * Активный / Потенциальный / Заблокирован пересчитываются по договорам и оценкам.
+   * Статус «Архив» не меняется при этом вызове (см. update + manual_archive).
+   */
+  async refreshPartnerDerivedStatus(partnerId: string): Promise<void> {
+    await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false });
+  }
+
   private async syncRelTables(partnerId: string, data: Record<string, unknown>) {
     const typeIds = Array.isArray(data.type_ids) ? data.type_ids.filter((x): x is string => typeof x === 'string') : [];
     const competenceIds = Array.isArray(data.competence_ids)
@@ -411,16 +465,6 @@ export class PartnersService {
         .limit(1);
       if (rows.length === 0) {
         throw new ConflictException('Указанная категория контрагента не найдена');
-      }
-    }
-    if (data.status_id) {
-      const rows = await this.db.db
-        .select({ id: refPartnerStatuses.id })
-        .from(refPartnerStatuses)
-        .where(eq(refPartnerStatuses.id, String(data.status_id)))
-        .limit(1);
-      if (rows.length === 0) {
-        throw new ConflictException('Указанный статус контрагента не найден');
       }
     }
     if (data.partner_economic_category_id) {
@@ -504,7 +548,6 @@ export class PartnersService {
       phone: data.phone != null ? String(data.phone) : null,
       email: data.email != null ? String(data.email) : null,
       website: data.website != null ? String(data.website) : null,
-      statusId: toUuid(data.status_id),
       categoryId: toUuid(data.category_id),
       comment: data.comment != null ? String(data.comment) : null,
       partnerEconomicCategoryId: toUuid(data.partner_economic_category_id),
@@ -516,6 +559,145 @@ export class PartnersService {
       ...(data.rating !== undefined && { rating: data.rating != null ? String(data.rating) : null }),
       ...(data.next_audit_date !== undefined && { nextAuditDate: data.next_audit_date != null ? String(data.next_audit_date) : null }),
     };
+  }
+
+  private parseManualArchiveFlag(data: Record<string, unknown>): boolean | undefined {
+    if (!('manual_archive' in data) || data.manual_archive === undefined) return undefined;
+    const v = data.manual_archive;
+    if (v === true || v === 'true') return true;
+    if (v === false || v === 'false') return false;
+    return undefined;
+  }
+
+  private async getPartnerStatusName(statusId: string | null | undefined): Promise<string | null> {
+    if (!statusId) return null;
+    const rows = await this.db.db
+      .select({ name: refPartnerStatuses.name })
+      .from(refPartnerStatuses)
+      .where(eq(refPartnerStatuses.id, statusId))
+      .limit(1);
+    return rows[0]?.name?.trim() ?? null;
+  }
+
+  private async resolvePartnerOperationalStatusIds(): Promise<{
+    activeId: string;
+    potentialId: string;
+    blockedId: string;
+    archiveId: string;
+  }> {
+    const rows = await this.db.db
+      .select({ id: refPartnerStatuses.id, name: refPartnerStatuses.name })
+      .from(refPartnerStatuses);
+    const byLower = new Map<string, string>();
+    for (const r of rows) {
+      const k = (r.name ?? '').trim().toLowerCase();
+      if (k) byLower.set(k, String(r.id));
+    }
+    const need = (ru: string) => {
+      const id = byLower.get(ru.toLowerCase());
+      if (!id) {
+        throw new InternalServerErrorException(`В ref_partner_statuses не найден статус «${ru}»`);
+      }
+      return id;
+    };
+    return {
+      activeId: need('Активный'),
+      potentialId: need('Потенциальный'),
+      blockedId: need('Заблокирован'),
+      archiveId: need('Архив'),
+    };
+  }
+
+  /**
+   * Как вкладка «Действующие»: не мягко удалён + is_active (подписан → на бэке выставляется is_active).
+   * Одного такого договора достаточно для «Активный» (если не «Заблокирован» по средней оценке).
+   */
+  private async partnerHasAtLeastOneEffectiveContract(partnerId: string): Promise<boolean> {
+    const rows = await this.db.db
+      .select({ id: contracts.id })
+      .from(contracts)
+      .where(
+        and(
+          eq(contracts.partnerId, partnerId),
+          eq(contracts.isDeleted, false),
+          eq(contracts.isActive, true),
+        )!,
+      )
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  private isoDateOnlyEval(v: unknown): string {
+    if (v == null) return '';
+    if (typeof v === 'string') return v.length >= 10 ? v.slice(0, 10) : v;
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    return String(v).slice(0, 10);
+  }
+
+  private async partnerAvgWeightedScoreFromActiveEvaluations(partnerId: string): Promise<number | null> {
+    const evalRows = await this.db.db
+      .select({
+        projectId: supplierEvaluations.projectId,
+        evaluatedAt: supplierEvaluations.evaluatedAt,
+        weightedScore: supplierEvaluations.weightedScore,
+      })
+      .from(supplierEvaluations)
+      .where(and(eq(supplierEvaluations.partnerId, partnerId), eq(supplierEvaluations.status, 'active'))!);
+
+    type EvalPick = (typeof evalRows)[number];
+    const byProject = new Map<string, EvalPick>();
+    for (const r of evalRows) {
+      const pid = String(r.projectId);
+      const prev = byProject.get(pid);
+      const evAt = this.isoDateOnlyEval(r.evaluatedAt);
+      const prevAt = prev ? this.isoDateOnlyEval(prev.evaluatedAt) : '';
+      if (!prev || evAt > prevAt) {
+        byProject.set(pid, r);
+      }
+    }
+    const perProject = [...byProject.values()];
+    if (perProject.length === 0) return null;
+    const sum = perProject.reduce((acc, r) => acc + Number(r.weightedScore), 0);
+    return Math.round((sum / perProject.length) * 100) / 100;
+  }
+
+  private async computeAutoStatusIdForPartnerRow(
+    partnerId: string,
+    ids: { activeId: string; potentialId: string; blockedId: string },
+  ): Promise<string> {
+    const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
+    if (avg !== null && avg < 2) {
+      return ids.blockedId;
+    }
+    const hasEffective = await this.partnerHasAtLeastOneEffectiveContract(partnerId);
+    if (hasEffective) {
+      return ids.activeId;
+    }
+    return ids.potentialId;
+  }
+
+  private async applyDerivedPartnerStatus(
+    partnerId: string,
+    opts: { ignoreArchiveLock: boolean },
+  ): Promise<void> {
+    const rows = await this.db.db.select().from(partners).where(eq(partners.id, partnerId)).limit(1);
+    const row = rows[0];
+    if (!row) return;
+
+    const ids = await this.resolvePartnerOperationalStatusIds();
+    const statusName = await this.getPartnerStatusName(row.statusId ? String(row.statusId) : null);
+    if (statusName === 'Архив' && !opts.ignoreArchiveLock) {
+      return;
+    }
+
+    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids);
+    const curId = row.statusId ? String(row.statusId) : null;
+    if (curId !== nextId) {
+      await this.db.db
+        .update(partners)
+        .set({ statusId: nextId, updatedAt: new Date() })
+        .where(eq(partners.id, partnerId));
+    }
   }
 
   private partnerApprovalExtras(

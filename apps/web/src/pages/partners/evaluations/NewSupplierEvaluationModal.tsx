@@ -19,6 +19,7 @@ import {
   computeWeightedPreview,
   lineWeightedScore,
 } from './supplierEvaluationUi';
+import styles from './NewSupplierEvaluationModal.module.scss';
 
 const { Text } = Typography;
 
@@ -26,13 +27,12 @@ type Props = {
   open: boolean;
   onClose: () => void;
   partnerId: string;
-  /** Предзаполнить проект (переоценка по строке) */
   initialProjectId?: string;
   onSuccess?: () => void;
 };
 
 function defaultScores(criteria: SupplierEvaluationCriterion[]): Record<string, number> {
-  return Object.fromEntries(criteria.map(c => [c.id, 4]));
+  return Object.fromEntries(criteria.map(criterion => [criterion.id, 4]));
 }
 
 export default function NewSupplierEvaluationModal({
@@ -61,11 +61,14 @@ export default function NewSupplierEvaluationModal({
   );
   const createMut = useCreateSupplierEvaluation();
   const { showNotification, contextHolder } = useNotification();
-  const currentUser = useAuthStore(s => s.user);
+  const currentUser = useAuthStore(store => store.user);
   const [scores, setScores] = useState<Record<string, number>>({});
 
   const criteriaOrdered = useMemo(
-    () => [...criteria].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    () =>
+      [...criteria].sort(
+        (criterionA, criterionB) => (criterionA.sort_order ?? 0) - (criterionB.sort_order ?? 0),
+      ),
     [criteria],
   );
 
@@ -81,14 +84,18 @@ export default function NewSupplierEvaluationModal({
   }, [open, criteriaOrdered, initialProjectId, form]);
 
   const weighted = useMemo(
-    () => computeWeightedPreview(criteriaOrdered.map(c => ({ id: c.id, weight: c.weight })), scores),
+    () =>
+      computeWeightedPreview(
+        criteriaOrdered.map(criterion => ({ id: criterion.id, weight: criterion.weight })),
+        scores,
+      ),
     [criteriaOrdered, scores],
   );
   const previewCategory = categoryFromWeightedScore(weighted);
 
   const projectOptions = useMemo(() => {
-    const base = contractProjects.map(p => ({ value: p.id, label: p.label }));
-    if (initialProjectId && !base.some(o => o.value === initialProjectId)) {
+    const base = contractProjects.map(project => ({ value: project.id, label: project.label }));
+    if (initialProjectId && !base.some(option => option.value === initialProjectId)) {
       return [{ value: initialProjectId, label: `Проект ${initialProjectId}` }, ...base];
     }
     return base;
@@ -106,17 +113,17 @@ export default function NewSupplierEvaluationModal({
         project_id: projectId,
         evaluated_at: values.evaluated_at.format('YYYY-MM-DD'),
         comment: values.comment?.trim() || undefined,
-        scores: criteriaOrdered.map(c => ({
-          criterion_id: c.id,
-          score: scores[c.id] ?? 4,
+        scores: criteriaOrdered.map(criterion => ({
+          criterion_id: criterion.id,
+          score: scores[criterion.id] ?? 4,
         })),
       });
       onSuccess?.();
       onClose();
-    } catch (e: unknown) {
+    } catch (error: unknown) {
       const msg =
-        e && typeof e === 'object' && 'response' in e
-          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
       if (msg) showNotification('error', 'Ошибка', String(msg));
     }
@@ -136,12 +143,12 @@ export default function NewSupplierEvaluationModal({
       onOk={handleOk}
     >
       {contextHolder}
-      <Form form={form} layout='vertical' style={{ marginTop: 0 }}>
+      <Form form={form} layout='vertical' className={styles.form}>
         {!projectsLoading && contractProjects.length === 0 ? (
           <Alert
             type='warning'
             showIcon
-            style={{ marginBottom: 12 }}
+            className={styles.alertMb}
             message='Нет проектов по договорам с этим контрагентом'
             description='Оценку можно выставить только по проекту, который указан в действующем договоре с контрагентом.'
           />
@@ -150,9 +157,8 @@ export default function NewSupplierEvaluationModal({
           <Alert
             type='info'
             showIcon
-            style={{ marginBottom: 12 }}
+            className={styles.alertMb}
             message='По выбранному проекту уже есть актуальная оценка'
-            description='Новая оценка не создаст дубликат: текущая актуальная запись будет перенесена в архив (переоценка).'
           />
         ) : null}
         <Row gutter={[16, 8]}>
@@ -161,9 +167,9 @@ export default function NewSupplierEvaluationModal({
               name='evaluated_at'
               label='Дата оценки'
               rules={[{ required: true, message: 'Укажите дату' }]}
-              style={{ marginBottom: 0 }}
+              className={styles.formItemFlush}
             >
-              <DatePicker format='DD.MM.YYYY' style={{ width: '100%' }} allowClear={false} />
+              <DatePicker format='DD.MM.YYYY' className={styles.fullWidth} allowClear={false} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={14} md={15}>
@@ -171,7 +177,7 @@ export default function NewSupplierEvaluationModal({
               name='project_id'
               label='Проект'
               rules={[{ required: true, message: 'Выберите проект' }]}
-              style={{ marginBottom: 0 }}
+              className={styles.formItemFlush}
             >
               <Select
                 showSearch
@@ -180,7 +186,7 @@ export default function NewSupplierEvaluationModal({
                 options={projectOptions}
                 loading={projectsLoading}
                 optionFilterProp='label'
-                style={{ width: '100%' }}
+                className={styles.fullWidth}
                 popupMatchSelectWidth={false}
                 dropdownStyle={{ minWidth: 320 }}
               />
@@ -188,136 +194,96 @@ export default function NewSupplierEvaluationModal({
           </Col>
         </Row>
 
-        <div style={{ marginTop: 14 }}>
-          <Text type='secondary' style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+        <div className={styles.buyerBlock}>
+          <Text type='secondary' className={styles.buyerLabel}>
             Закупщик
           </Text>
-          <Text strong style={{ color: '#262626' }}>
+          <Text strong className={styles.buyerName}>
             {formatSrmUserName(currentUser)}
           </Text>
-          <Text type='secondary' style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+          <Text type='secondary' className={styles.buyerHint}>
             Оценка фиксируется за пользователем, который нажимает «Сохранить».
           </Text>
         </div>
 
-        <div style={{ marginTop: 16, border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden' }}>
-          <div
-            style={{
-              padding: '10px 14px',
-              background: '#fafafa',
-              borderBottom: '1px solid #f0f0f0',
-              display: 'flex',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Text type='secondary' style={{ fontSize: 12, fontWeight: 600 }}>
+        <div className={styles.matrix}>
+          <div className={styles.matrixHeader}>
+            <Text type='secondary' className={styles.matrixHeaderTitle}>
               Матрица оценки
             </Text>
-            <Text type='secondary' style={{ fontSize: 12 }}>
+            <Text type='secondary' className={styles.matrixHeaderMeta}>
               Сумма весов: 100%
             </Text>
           </div>
-          <div style={{ padding: '8px 14px 12px' }}>
+          <div className={styles.matrixBody}>
             {criteriaLoading ? (
               <Text type='secondary'>Загрузка критериев…</Text>
             ) : (
               <>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingBottom: 8,
-                    marginBottom: 4,
-                    borderBottom: '1px solid #f0f0f0',
-                    fontSize: 11,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: '#8c8c8c',
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>Критерий</div>
-                  <div style={{ flexShrink: 0 }}>Шкала</div>
-                  <div style={{ width: 40, textAlign: 'right', flexShrink: 0 }}>Балл</div>
-                  <div style={{ width: 56, textAlign: 'right', flexShrink: 0 }}>× Вес</div>
+                <div className={styles.matrixColHeader}>
+                  <div className={styles.colGrow}>Критерий</div>
+                  <div className={styles.colShrink}>Шкала</div>
+                  <div className={styles.colScore}>Балл</div>
+                  <div className={styles.colWeighted}>× Вес</div>
                 </div>
-                {criteriaOrdered.map(c => {
-                const criterionScore = scores[c.id] ?? 4;
-                const weightedLineContribution = lineWeightedScore({
-                  id: '',
-                  criterion_id: c.id,
-                  criterion_code: c.code,
-                  criterion_name: c.name,
-                  score: criterionScore,
-                  criterion_weight: c.weight,
-                  sort_order: c.sort_order,
-                });
-                return (
-                  <div
-                    key={c.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      padding: '10px 0',
-                      borderBottom: '1px solid #f5f5f5',
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 500 }}>{c.name}</div>
-                      <Text type='secondary' style={{ fontSize: 12 }}>
-                        Вес {(c.weight * 100).toFixed(1)}% · порядок {c.sort_order}
+                {criteriaOrdered.map(criterion => {
+                  const criterionScore = scores[criterion.id] ?? 4;
+                  const weightedLineContribution = lineWeightedScore({
+                    id: '',
+                    criterion_id: criterion.id,
+                    criterion_code: criterion.code,
+                    criterion_name: criterion.name,
+                    score: criterionScore,
+                    criterion_weight: criterion.weight,
+                    sort_order: criterion.sort_order,
+                  });
+                  return (
+                    <div key={criterion.id} className={styles.criterionRow}>
+                      <div className={styles.colGrow}>
+                        <div className={styles.criterionTitle}>{criterion.name}</div>
+                        <Text type='secondary' className={styles.criterionMeta}>
+                          Вес {(criterion.weight * 100).toFixed(1)}% · порядок {criterion.sort_order}
+                        </Text>
+                      </div>
+                      <Space size={4} wrap>
+                        {SCORE_STEPS.map(scoreStep => (
+                          <Button
+                            key={scoreStep}
+                            size='small'
+                            type={scores[criterion.id] === scoreStep ? 'primary' : 'default'}
+                            onClick={() =>
+                              setScores(prevScores => ({ ...prevScores, [criterion.id]: scoreStep }))
+                            }
+                          >
+                            {scoreStep}
+                          </Button>
+                        ))}
+                      </Space>
+                      <Text strong className={styles.scoreAccent}>
+                        {criterionScore}
+                      </Text>
+                      <Text strong className={styles.weightedAccent}>
+                        {weightedLineContribution.toFixed(3)}
                       </Text>
                     </div>
-                    <Space size={4} wrap>
-                      {SCORE_STEPS.map(n => (
-                        <Button
-                          key={n}
-                          size='small'
-                          type={scores[c.id] === n ? 'primary' : 'default'}
-                          onClick={() => setScores(s => ({ ...s, [c.id]: n }))}
-                        >
-                          {n}
-                        </Button>
-                      ))}
-                    </Space>
-                    <Text strong style={{ width: 40, textAlign: 'right', color: '#1677ff' }}>
-                      {criterionScore}
-                    </Text>
-                    <Text strong style={{ width: 56, textAlign: 'right', color: '#1677ff', fontVariantNumeric: 'tabular-nums' }}>
-                      {weightedLineContribution.toFixed(3)}
-                    </Text>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </>
             )}
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 14,
-            padding: '12px 16px',
-            background: 'rgba(22, 119, 255, 0.06)',
-            border: '1px solid #d6e4ff',
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Text style={{ color: '#1677ff' }}>Итоговый балл</Text>
+        <div className={styles.summaryBar}>
+          <Text className={styles.summaryLabel}>Итоговый балл</Text>
           <Space align='center'>
-            <CategoryTag category={previewCategory} />
-            <Text strong style={{ fontSize: 22, color: '#0958d9' }}>
+            <CategoryTag category={previewCategory} weightedScore={weighted} />
+            <Text strong className={styles.summaryScore}>
               {criteriaOrdered.length ? weighted.toFixed(2) : '—'}
             </Text>
           </Space>
         </div>
 
-        <Form.Item name='comment' label='Комментарий' style={{ marginTop: 14 }}>
+        <Form.Item name='comment' label='Комментарий' className={styles.commentField}>
           <Input.TextArea rows={3} placeholder='Дополнительные замечания…' />
         </Form.Item>
       </Form>

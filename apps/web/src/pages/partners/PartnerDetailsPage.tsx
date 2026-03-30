@@ -1,5 +1,6 @@
 import { DeleteOutlined, EditOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
+import { useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useContracts } from '../../api/contracts/contractApiHooks';
@@ -11,18 +12,23 @@ import {
   usePartnerSupplierEvalKpi,
   useSupplierEvaluationsList,
 } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import { APP_COLOR_SUCCESS } from '../../constants/appColors';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../constants/deletionScope';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
 import {
+  isPartnerEvaluationsUiMockPartnerId,
+  mergePartnerSupplierEvalKpiWithUiMock,
+  partnerEvaluationsUiMockActiveRowsCount,
+} from './evaluations/partnerEvaluationsUiMock';
+import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
 } from './partnerDetailHeaderContent';
-import { PARTNER_STATUS_BADGE_COLORS } from './partnerStatusBadgeColors';
 import type { PartnerListTab } from './PartnersListPage.types';
 import type { PartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 
@@ -31,7 +37,12 @@ export default function PartnerDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { contextHolder, showNotification } = useNotification();
-  const { data: partner, isLoading, isError } = usePartnerById(partnerId!);
+  const {
+    data: partner,
+    isLoading,
+    isError,
+    refetch: refetchPartner,
+  } = usePartnerById(partnerId!);
   const { data: references } = useReferenceData(['partnerStatuses', 'partnerTypes', 'partnerCategories']);
   const mutation = useDeletePartner();
   const restoreMutation = useRestorePartner();
@@ -50,10 +61,16 @@ export default function PartnerDetailsPage() {
     { partner_id: partnerId, status: 'all', limit: 1, offset: 0 },
     Boolean(partnerId),
   );
-  const evaluationsTotal = evaluationsCountData?.total ?? 0;
-  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
+  const evaluationsTotal =
+    (evaluationsCountData?.total ?? 0) +
+    (partnerId && isPartnerEvaluationsUiMockPartnerId(partnerId) ? partnerEvaluationsUiMockActiveRowsCount() : 0);
+  const { data: partnerEvalKpiRaw, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
     partnerId,
     Boolean(partnerId),
+  );
+  const partnerEvalKpi = useMemo(
+    () => mergePartnerSupplierEvalKpiWithUiMock(partnerId ?? '', partnerEvalKpiRaw),
+    [partnerId, partnerEvalKpiRaw],
   );
   const getActiveTabFromPath = () => {
     const path = location.pathname;
@@ -65,6 +82,14 @@ export default function PartnerDetailsPage() {
     return 'main';
   };
   const activeTab = getActiveTabFromPath();
+
+  /** На вкладке «Договоры» подтягиваем статус с сервера (пересчёт по договорам + инвалидация после мутаций). */
+  useEffect(() => {
+    if (!partnerId || isError) return;
+    if (!location.pathname.includes(`/partners/${partnerId}/contracts`)) return;
+    void refetchPartner();
+  }, [partnerId, location.pathname, isError, refetchPartner]);
+
   const { handleOpenModal } = useConfirmByModal({
     mutation,
     successMessage: 'Контрагент успешно удалён',
@@ -139,12 +164,9 @@ export default function PartnerDetailsPage() {
       }
       statusBadge={
         partner.is_deleted
-          ? { label: 'Удалён', color: '#ff4d4f' }
+          ? { label: 'Удалён', variant: 'danger' }
           : statusName
-            ? {
-                label: statusName,
-                color: PARTNER_STATUS_BADGE_COLORS[statusName] ?? '#1677ff',
-              }
+            ? { label: statusName, variant: detailHeaderVariantForPartnerStatusName(statusName) }
             : undefined
       }
       badges={partnerDetailHeaderBadges(partner, { categoryName })}
@@ -164,7 +186,7 @@ export default function PartnerDetailsPage() {
               type='primary'
               icon={<UndoOutlined />}
               onClick={openRestoreModal}
-              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              style={{ backgroundColor: APP_COLOR_SUCCESS, borderColor: APP_COLOR_SUCCESS }}
             >
               Восстановить
             </Button>
