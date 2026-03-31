@@ -53,7 +53,6 @@ function parseEvaluatedYear(raw?: string): number | undefined {
   return Number.isFinite(y) && y >= 1990 && y <= 2100 ? y : undefined;
 }
 
-/** YYYY-MM-DD для фильтра по evaluated_at; невалидное значение отбрасывается. */
 function parseEvaluatedAtDate(raw?: string): string | undefined {
   if (raw == null || raw.trim() === '') return undefined;
   const s = raw.trim();
@@ -76,13 +75,11 @@ function parseSortDir(raw?: string): 'asc' | 'desc' | undefined {
 export class SupplierEvaluationsController {
   constructor(private readonly service: SupplierEvaluationsService) {}
 
-  /** Справочник критериев (матрица) для UI. */
   @Get('criteria')
   criteria() {
     return this.service.findCriteriaCatalog();
   }
 
-  /** Активная блокировка по паре контрагент + проект (если есть). */
   @Get('blocks')
   async findBlock(
     @Query('partner_id') partnerId?: string,
@@ -102,7 +99,6 @@ export class SupplierEvaluationsController {
     return [row];
   }
 
-  /** Проекты из договоров контрагента (для поля «Проект» при создании оценки). */
   @Get('partner-contract-projects')
   partnerContractProjects(@Query('partner_id') partnerId?: string) {
     if (!partnerId?.trim()) {
@@ -111,7 +107,6 @@ export class SupplierEvaluationsController {
     return this.service.findContractProjectOptionsForPartner(partnerId.trim());
   }
 
-  /** KPI контрагента для реестра / шапки: средний балл, дата переоценки, просрочка, блоки по проектам. */
   @Get('partner-eval-summary')
   partnerEvalSummary(@Query('partner_id') partnerId?: string) {
     if (!partnerId?.trim()) {
@@ -120,7 +115,6 @@ export class SupplierEvaluationsController {
     return this.service.findPartnerEvalSummary(partnerId.trim());
   }
 
-  /** Счётчики по вкладкам смысла строки (без учёта текстового поиска на фронте). */
   @Get('counts-by-tab')
   countsByTab(
     @Query('partner_id') partnerId?: string,
