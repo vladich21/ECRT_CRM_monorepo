@@ -3,47 +3,24 @@ import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import type { ContractsListParams } from '../../../api/contracts/contractApi';
-import { useContracts } from '../../../api/contracts/contractApiHooks';
-import { useReferenceData } from '../../../api/hooks/useReferences';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
 import { useNotification } from '../../../customhooks/useNotification';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import { Contract } from '../../../types/contract';
 import { useContractListFilters } from '../hooks/useContractListFilters';
 import { buildContractsListNavSnapshot, parseContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
+import { useContractsListData } from './hooks/useContractsListData';
+import { buildContractsApiFilters } from './utils/buildContractsApiFilters';
+import { validateAmountFilters } from './utils/contractListFilterValidators';
 import { ContractCard } from './ContractCard';
 import { ContractFiltersModal } from './ContractFiltersModal';
 import styles from './ContractsListPage.module.scss';
-import { FILTER_TABS, type ContractListReferences, type FilterTab } from './ContractsListPage.types';
+import { FILTER_TABS, type FilterTab } from './ContractsListPage.types';
 
 const SEARCH_DEBOUNCE_MS = 350;
-function validateAmountFilters(filters: { amountMin: number | null; amountMax: number | null }): string | null {
-  if (filters.amountMin != null && filters.amountMax != null && filters.amountMin > filters.amountMax) {
-    return 'Минимальная сумма не может быть больше максимальной';
-  }
-  return null;
-}
-function buildSelectOptions(references: ContractListReferences) {
-  return {
-    partners: (references?.partners ?? []).map(partner => ({
-      label: partner.name,
-      value: partner.id,
-    })),
-    categories: (references?.contractCategories ?? []).map(category => ({
-      label: category.name,
-      value: category.id,
-    })),
-    states: (references?.contractStates ?? []).map(state => ({
-      label: state.name,
-      value: state.id,
-    })),
-  };
-}
 export default function ContractsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,13 +45,16 @@ export default function ContractsListPage() {
   } = useContractListFilters({
     validateFilters: validateAmountFilters,
   });
+
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
     const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(debounceTimerId);
   }, [searchQuery]);
+
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
+
   const { skipNextListResetRef } = useListReturnFromDetail({
     location,
     navigate,
@@ -97,49 +77,25 @@ export default function ContractsListPage() {
       if (navigationState.deletionScope === 'deleted') setActiveTab('deleted');
     },
   });
+
   const effectivePartnerId = partnerIdFromRoute ?? appliedFilters.partnerId ?? undefined;
-  const apiFilters = useMemo((): ContractsListParams => {
-    const base: ContractsListParams = {
-      partner_id: effectivePartnerId || undefined,
-      search: debouncedSearch || undefined,
-      list_tab: activeTab === 'deleted' ? 'all' : activeTab,
-      /** «Действующие» и др. — только не мягко удалённые; удалённые — отдельная вкладка (как в логике статуса контрагента). */
-      deleted_scope: activeTab === 'deleted' ? 'deleted' : 'active',
-    };
-    if (appliedFilters.categoryId) {
-      base.category_id = appliedFilters.categoryId;
-    }
-    if (appliedFilters.stateId) {
-      base.state_id = appliedFilters.stateId;
-    }
-    if (appliedFilters.dateRange?.[0] && appliedFilters.dateRange?.[1]) {
-      base.date_from = appliedFilters.dateRange[0].format('YYYY-MM-DD');
-      base.date_to = appliedFilters.dateRange[1].format('YYYY-MM-DD');
-    }
-    if (appliedFilters.amountMin != null) {
-      base.amount_min = appliedFilters.amountMin;
-    }
-    if (appliedFilters.amountMax != null) {
-      base.amount_max = appliedFilters.amountMax;
-    }
-    return base;
-  }, [effectivePartnerId, debouncedSearch, activeTab, appliedFilters]);
-  const { data, isLoading, isError, isFetching } = useContracts(apiFilters, page, pageSize);
+  const apiFilters = useMemo(
+    () => buildContractsApiFilters({ effectivePartnerId, debouncedSearch, activeTab, appliedFilters }),
+    [effectivePartnerId, debouncedSearch, activeTab, appliedFilters],
+  );
   const {
-    data: referenceBooks,
-    isError: isRefsError,
-    isLoading: isRefsLoading,
-  } = useReferenceData(['partners', 'contractStates', 'contractCategories', 'contractTypes', 'projects']);
-  const contracts = data?.data ?? [];
-  const total = data?.total ?? 0;
-  const tabCounts = data?.tab_counts ?? {
-    all: 0,
-    active: 0,
-    draft: 0,
-    inactive: 0,
-  };
-  const deletionTabCounts = data?.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS;
-  const references = referenceBooks as ContractListReferences;
+    contracts,
+    total,
+    tabCounts,
+    deletedTabCount,
+    references,
+    selectOptions,
+    isInitialLoad,
+    isLoading,
+    isError,
+    isFetching,
+    isRefsError,
+  } = useContractsListData(apiFilters, page, pageSize);
   useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
   useEffect(() => {
     if (isRefsError || isError) return;
@@ -148,7 +104,7 @@ export default function ContractsListPage() {
       handleTableChange({ current: maxPage, pageSize } as never);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-  const selectOptions = useMemo(() => buildSelectOptions(references), [references]);
+
   const handleApplyFilters = () => {
     const result = applyFilters();
     if (!result.success && result.error) {
@@ -157,6 +113,7 @@ export default function ContractsListPage() {
     }
     resetPage();
   };
+
   const handleContractClick = (contract: Contract) =>
     navigate(`/contracts/${contract.id}`, {
       state: {
@@ -166,16 +123,18 @@ export default function ContractsListPage() {
         contractsListReturn: buildContractsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
       },
     });
+
   const handlePageChange = (newPage: number, newPageSize?: number) =>
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
     } as never);
+
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-  const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
+  
   return (
     <div className={styles.wrap}>
       {contextHolder}
@@ -219,7 +178,7 @@ export default function ContractsListPage() {
                     >
                       {label}{' '}
                       <span className={styles.filterTabCount}>
-                        {key === 'deleted' ? deletionTabCounts.deleted : tabCounts[key]}
+                        {key === 'deleted' ? deletedTabCount : tabCounts[key]}
                       </span>
                     </button>
                   ))}

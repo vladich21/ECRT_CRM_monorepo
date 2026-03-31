@@ -91,14 +91,35 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.metaSubRow {
+  margin-top: 2px;
 }
 
 .metaText {
-  color: #fff;
+  color: #595959;
   display: flex;
   align-items: center;
   gap: 3px;
+  font-size: 13px;
+}
+
+.metaNumber {
+  color: #8c8c8c;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.chipSmall {
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 1px 7px;
+  margin: 0;
+  color: #595959;
+  border-color: #e8e8e8;
+  background: #fafafa;
 }
 
 .metaDot {
@@ -137,7 +158,8 @@
 }
 
 .tag {
-  font-size: 14px;
+  font-size: 12px;
+  line-height: 1.35;
   background: #f5f5f5;
   color: #595959;
   border-radius: 4px;

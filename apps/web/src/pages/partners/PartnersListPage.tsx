@@ -26,6 +26,7 @@ import SupplierCard from './registry/SupplierCard';
 import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 
 const SEARCH_DEBOUNCE_MS = 350;
+
 export default function PartnersListPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -246,12 +247,8 @@ export default function PartnersListPage() {
                 key={partner.id}
                 partner={partner}
                 references={references}
-                evaluationKpi={mergePartnerSupplierEvalKpiWithUiMock(
-                  partner.id,
-                  partnerEvalKpiQueries[index]?.data,
-                )}
+                evaluationKpi={mergePartnerSupplierEvalKpiWithUiMock(partner.id, partnerEvalKpiQueries[index]?.data)}
                 evaluationKpiLoading={Boolean(partnerEvalKpiQueries[index]?.isPending)}
-               
                 onClick={handleCardClick}
               />
             ))

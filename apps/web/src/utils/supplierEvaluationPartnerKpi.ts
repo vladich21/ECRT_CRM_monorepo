@@ -2,7 +2,6 @@ import dayjs from 'dayjs';
 
 import type { SupplierEvaluationListItem } from '../types/supplierEvaluation';
 
-/** Сводка по активным оценкам контрагента (KPI в шапке, реестр, кэш partner-kpi). Только числа и даты — без цветов UI. */
 export type PartnerSupplierEvalKpi = {
   avgScore: number | null;
   nextReevaluationIso: string | null;
@@ -21,7 +20,6 @@ function oneRowPerProject(rows: SupplierEvaluationListItem[]): SupplierEvaluatio
   return Array.from(byProject.values());
 }
 
-/** `rows` — только активные оценки (как у API `status: active`). */
 export function computePartnerSupplierEvalKpi(rows: SupplierEvaluationListItem[]): PartnerSupplierEvalKpi {
   if (rows.length === 0) {
     return {

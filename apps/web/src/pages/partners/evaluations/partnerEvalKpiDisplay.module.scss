@@ -30,15 +30,13 @@
   font-size: 12px;
   line-height: 20px;
   border-radius: 4px;
-  border: 1px solid rgba(145, 202, 255, 0.5);
   background: transparent;
-  color: #e6f4ff;
 }
 
 .suffixDarkOverdue {
   margin-left: 6px;
   font-size: 13px;
-  color: #ffccc7;
+  color: #e84749;
 }
 
 .suffixDarkSoon {
@@ -52,7 +50,10 @@
 }
 
 .registryWrap {
-  white-space: normal;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
   line-height: 1.35;
 }
 

@@ -154,18 +154,20 @@ $card-stripe-danger: #e84749; // = constants/appColors APP_COLOR_ERROR
 $card-stripe-hover: #b3d0ff;
 
 @mixin listCardDangerStripe {
-  border-left: 4px solid $card-stripe-default;
+  // Базовый тонкий серый бордер по периметру
+  border: 1px solid $card-stripe-default;
 
+  // Ховер — чуть более акцентный, но по всему контуру
   &:hover {
-    border-left-color: $card-stripe-hover;
+    border-color: $card-stripe-hover;
   }
 
+  // "Красная" карточка — тонкий красный бордер по периметру
   &[data-danger-stripe] {
-    border-left-width: 3px;
-    border-left-color: $card-stripe-danger;
+    border-color: $card-stripe-danger;
 
     &:hover {
-      border-left-color: $card-stripe-danger;
+      border-color: $card-stripe-danger;
     }
   }
 }

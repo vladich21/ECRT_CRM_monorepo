@@ -52,7 +52,7 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
     {
       key: 'type',
       label: 'Тип',
-      children: typeName || '—',
+      children: typeName ? <span className={listStyles.cardCategory}>{typeName}</span> : '—',
     },
     {
       key: 'category',

@@ -31,17 +31,17 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
       <div className={styles.mainInfo}>    
         <div className={styles.projectName}>{project.name || '—'}</div>
         <div className={styles.metaRow}>
-          <Tag bordered={false} style={mutedTagStyle(st, { fontSize: 14 })}>
+          <Tag bordered={false} style={mutedTagStyle(st, { fontSize: 12 })}>
             {st.label}
           </Tag>
+          {project.short_name && (
+            <Tag className={styles.chipSmall} bordered>
+              {project.short_name}
+            </Tag>
+          )}
         </div>
-        {project.short_name && (
-          <div className={styles.metaRow} style={{ marginTop: 2 }}>
-            <span>{project.short_name}</span>
-          </div>
-        )}
         {managerName && (
-          <div className={styles.metaRow} style={{ marginTop: 2 }}>
+          <div className={`${styles.metaRow} ${styles.metaSubRow}`}>
             <span className={styles.metaText}>
               <UserOutlined style={{ fontSize: 11 }} />
               {managerName}

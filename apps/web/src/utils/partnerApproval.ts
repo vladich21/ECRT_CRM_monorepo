@@ -1,4 +1,3 @@
-// Синхронизировать с apps/backend-nest/.../partner-approval.rules.ts
 export type PartnerCategoryKind = 'resource' | 'engineering' | 'default';
 
 export function inferPartnerCategoryKind(categoryName: string | null | undefined): PartnerCategoryKind {

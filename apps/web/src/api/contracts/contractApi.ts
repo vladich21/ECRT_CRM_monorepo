@@ -90,7 +90,11 @@ export const contractApi = {
   },
   getContractById: async (contractId: string): Promise<Contract> => {
     const response = await apiClient.get(`/contracts/${contractId}`);
-    return response.data[0];
+    const contract = response.data?.[0] as Contract | undefined;
+    if (!contract) {
+      throw new Error('Contract not found');
+    }
+    return contract;
   },
   addContract: async (data: CreateContractPayload): Promise<Contract> => {
     const response = await apiClient.post(`/contracts`, data);

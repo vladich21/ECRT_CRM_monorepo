@@ -9,6 +9,7 @@ import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
+import { CONTRACTS_REGISTRY_PATH } from '../constants/routes';
 import {
   ContractFormClassificationFields,
   ContractFormDateFields,
@@ -78,7 +79,7 @@ export default function ContractCreatePage() {
           if (partnerIdFromState) {
             navigate(`/partners/${partnerIdFromState}/contracts`);
           } else {
-            navigate(-1);
+            navigate(CONTRACTS_REGISTRY_PATH);
           }
         }, 1000);
       },
@@ -110,7 +111,7 @@ export default function ContractCreatePage() {
       title='Создание нового договора'
       titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания договора</span>}
       backLabel='Договоры'
-      onBack={() => navigate(-1)}
+      onBack={() => navigate(CONTRACTS_REGISTRY_PATH)}
       actions={
         <>
           <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>

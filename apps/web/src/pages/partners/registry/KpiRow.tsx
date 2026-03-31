@@ -47,6 +47,7 @@ export default function KpiRow({
       </div>
       {tiles.map(kpi => (
         <div key={kpi.key} className={styles.tile}>
+          <div className={styles.tileHeader}>{kpi.label}</div>
           <div className={styles.tileContent}>
             <div>
               <div
@@ -61,7 +62,6 @@ export default function KpiRow({
               >
                 {kpi.value}
               </div>
-              <div className={styles.label}>{kpi.label}</div>
             </div>
             <div className={styles.iconBox}>{kpi.icon}</div>
           </div>

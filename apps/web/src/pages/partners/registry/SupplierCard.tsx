@@ -1,11 +1,14 @@
 import {
+  AimOutlined,
   BankOutlined,
   CalendarOutlined,
+  ClockCircleFilled,
   EnvironmentOutlined,
   RightOutlined,
   SafetyCertificateOutlined,
+  StarFilled,
 } from '@ant-design/icons';
-import { Progress } from 'antd';
+import { Progress, Tooltip } from 'antd';
 
 import type { Partner } from '../../../types/partner';
 import type { PartnerSupplierEvalKpi } from '../../../utils/supplierEvaluationPartnerKpi';
@@ -68,6 +71,14 @@ export default function SupplierCard({
 
   const progressPercent = avgScore == null ? 0 : Math.min(100, Math.round((avgScore / 5) * 100));
   const scoreStroke = avgScore == null ? '#d9d9d9' : scoreColor(avgScore);
+  const secondaryChips: Array<{ key: string; label: string; className: string }> = [
+    { key: 'status', label: statusName, className: statusBadgeClass(statusName) },
+    ...(!evaluationKpiLoading && avgScore == null
+      ? [{ key: 'not-rated', label: 'Не оценён', className: styles.tagNeutral }]
+      : []),
+  ];
+  const visibleSecondaryChips = secondaryChips.slice(0, 2);
+  const hiddenSecondaryChips = secondaryChips.slice(2);
 
   return (
     <div
@@ -78,32 +89,58 @@ export default function SupplierCard({
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
           <span className={styles.name}>{partner.short_name || partner.name}</span>
+          <div className={styles.badges}>
+            {!partner.is_approved && (
+              <span className={styles.chipNotApproved}>
+                <ClockCircleFilled className={styles.chipIcon} />
+                Не утверждён
+              </span>
+            )}
+            {partner.is_key_supplier && (
+              <span className={styles.chipKey}>
+                <StarFilled className={styles.chipIcon} />
+                Ключевой
+              </span>
+            )}
+            {partner.is_targeted && (
+              <span className={styles.chipTarget}>
+                <AimOutlined className={styles.chipIcon} />
+                Целевой
+              </span>
+            )}
+            {!evaluationKpiLoading && reevalOverdue && avgScore != null && (
+              <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>Просрочена</span>
+            )}
+            {!evaluationKpiLoading && blockedCount > 0 && (
+              <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>
+                Заблокирован · {blockedCount} {projectsCountLabel(blockedCount)}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className={styles.metaRow}>
+          {visibleSecondaryChips.map(chip => (
+            <span key={chip.key} className={`${styles.mutedTag} ${chip.className}`}>
+              {chip.label}
+            </span>
+          ))}
           <span className={styles.metaInn}>
             <BankOutlined style={{ fontSize: 11, marginRight: 4 }} />
             ИНН {partner.inn || '—'}
           </span>
-        </div>
-        <div className={styles.metaRow}>
-          <span className={`${styles.mutedTag} ${statusBadgeClass(statusName)}`}>{statusName}</span>
-          {!evaluationKpiLoading && avgScore == null && (
-            <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>Не оценён</span>
-          )}
-          {!evaluationKpiLoading && reevalOverdue && avgScore != null && (
-            <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>Просрочена</span>
-          )}
-          {!evaluationKpiLoading && blockedCount > 0 && (
-            <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>
-              Заблокирован · {blockedCount} {projectsCountLabel(blockedCount)}
-            </span>
+          {hiddenSecondaryChips.length > 0 && (
+            <Tooltip title={hiddenSecondaryChips.map(chip => chip.label).join(' · ')}>
+              <span className={`${styles.mutedTag} ${styles.tagOverflow}`}>+{hiddenSecondaryChips.length}</span>
+            </Tooltip>
           )}
         </div>
         {typeNames.length > 0 && (
-          <div className={styles.metaRow} style={{ marginTop: 2 }}>
+          <div className={`${styles.metaRow} ${styles.metaSubRow}`}>
             <span>{typeNames.join(', ')}</span>
           </div>
         )}
         {partner.actual_address && (
-          <div className={styles.metaRow} style={{ marginTop: 2 }}>
+          <div className={`${styles.metaRow} ${styles.metaSubRow}`}>
             <span className={styles.metaCity}>
               <EnvironmentOutlined style={{ fontSize: 11 }} />
               {partner.actual_address}

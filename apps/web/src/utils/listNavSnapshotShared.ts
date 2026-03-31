@@ -6,7 +6,6 @@ export function listNavSnapshotFormatVersion(raw: unknown): number | undefined {
   return undefined;
 }
 
-/** `raw` — объект снимка версии 1 или `null`, если формат не подходит. */
 export function asListNavSnapshotV1Record(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object' || listNavSnapshotFormatVersion(raw) !== 1) return null;
   return raw as Record<string, unknown>;

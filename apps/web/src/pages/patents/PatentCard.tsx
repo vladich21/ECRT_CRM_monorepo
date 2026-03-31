@@ -37,23 +37,23 @@ export function PatentCard({ patent, refs, onClick }: Props) {
           <Tooltip title={patent.name}>
             <span className={styles.name}>{patent.name || '—'}</span>
           </Tooltip>
-          <span className={styles.metaInn}>
+        </div>
+        <div className={styles.metaRow}>
+          <Tag bordered={false} style={mutedTagStyle(surface, { fontSize: 12 })}>
+            {statusLabel}
+          </Tag>
+          {statusName && <Tag className={styles.chipSmall}>{statusName}</Tag>}
+          <span className={styles.metaNumber}>
             <NumberOutlined style={{ fontSize: 11, marginRight: 4 }} />№ {patent.registration_number || '—'}
           </span>
         </div>
-        <div className={styles.metaRow}>
-          <Tag bordered={false} style={mutedTagStyle(surface, { fontSize: 14 })}>
-            {statusLabel}
-          </Tag>
-          {statusName && <Tag style={{ fontSize: 14 }}>{statusName}</Tag>}
-        </div>
         {ipTypeName && (
-          <div className={styles.metaRow} style={{ marginTop: 2 }}>
+          <div className={`${styles.metaRow} ${styles.metaSubRow}`}>
             <span>{ipTypeName}</span>
           </div>
         )}
         {deptName && (
-          <div className={styles.metaRow} style={{ marginTop: 2 }}>
+          <div className={`${styles.metaRow} ${styles.metaSubRow}`}>
             <span className={styles.metaText}>
               <TeamOutlined style={{ fontSize: 11 }} />
               {deptName}

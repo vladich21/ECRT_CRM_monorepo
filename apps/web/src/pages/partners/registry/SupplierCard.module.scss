@@ -4,15 +4,13 @@
 .card {
   background: #fff;
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e0e0e0; // базовый серый бордер
   @include lp.listCardDangerStripe;
-  padding: 12px 16px;
+  padding: 14px 16px;
   cursor: pointer;
   transition:
     box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    border-left-color 0.2s ease,
-    border-left-width 0.15s ease;
+    border-color 0.2s ease;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -25,8 +23,6 @@
   }
 }
 
-// ─── Main info column ───────────────────────────────────────────────────────
-
 .mainInfo {
   flex: 1;
   min-width: 0;
@@ -34,24 +30,28 @@
 
 .nameRow {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-  white-space: nowrap;
+  align-items: flex-start;
+  gap: 8px 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 
 .name {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 16px;
   color: #141414;
+  line-height: 1.35;
+  max-width: 440px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .badges {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .metaRow {
@@ -59,19 +59,23 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
-/** Пастельные бейджи статусов (как в сайдбаре), без яркого preset Ant Design. */
+.metaSubRow {
+  margin-top: 2px;
+}
+
 .mutedTag {
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
   margin: 0;
-  padding: 2px 8px;
-  font-size: 14px;
+  padding: 1px 7px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
   border-radius: 6px;
   border: 1px solid;
 }
@@ -112,10 +116,71 @@
   color: #737373;
 }
 
+.tagKeyLight {
+  background: rgba(250, 173, 20, 0.1);
+  border-color: rgba(250, 173, 20, 0.3);
+  color: rgb(250, 173, 20);
+}
+
+.tagTargetLight {
+  background: rgba(22, 119, 255, 0.1);
+  border-color: rgba(22, 119, 255, 0.28);
+  color: rgb(22, 119, 255);
+}
+
+.tagOverflow {
+  background: #f5f5f5;
+  border-color: #d9d9d9;
+  color: #595959;
+  cursor: help;
+}
+
+.chipNotApproved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 77, 79, 0.1);
+  color: rgb(255, 77, 79);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chipKey {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(250, 173, 20, 0.1);
+  color: rgb(250, 173, 20);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chipTarget {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(22, 119, 255, 0.1);
+  color: rgb(22, 119, 255);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chipIcon {
+  font-size: 12px;
+}
+
 .metaInn {
   color: #8c8c8c;
   white-space: nowrap;
   flex-shrink: 0;
+  font-size: 12px;
+  line-height: 20px;
 }
 
 .metaDot {
@@ -127,9 +192,8 @@
   display: flex;
   align-items: center;
   gap: 3px;
+  font-size: 13px;
 }
-
-// ─── Category column ────────────────────────────────────────────────────────
 
 .categoryCol {
   flex: 1;
@@ -160,11 +224,17 @@
   border: 1px solid #e8e8e8;
 }
 
-// ─── Metrics column (stats + compliance) ────────────────────────────────────
-
 .metricsCol {
-  flex: 0 0 180px;
+  flex: 0 0 200px;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
   margin-left: auto;
+  padding-left: 8px;
+  border-left: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .metricsTop {
@@ -194,9 +264,9 @@
 }
 
 .contractsCount {
-  font-size: 14px;
+  font-size: 13px;
   color: #595959;
-  margin-top: 4px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -213,12 +283,14 @@
 .nextEvalLine {
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px 6px;
+  white-space: nowrap;
 }
 
 .nextEvalLabel {
-  color: #595959;
+  color: #737373;
+  white-space: nowrap;
 }
 
 .evalKpiDaysHint {
@@ -236,7 +308,7 @@
 }
 
 .complianceLabel {
-  font-size: 14px;
+  font-size: 13px;
   color: #8c8c8c;
 }
 
@@ -244,8 +316,6 @@
   font-size: 14px;
   font-weight: 700;
 }
-
-// ─── Last activity column ───────────────────────────────────────────────────
 
 .activityCol {
   flex: 0 0 120px;
@@ -265,4 +335,44 @@
 
 .arrow {
   color: #d9d9d9;
+}
+
+@media (max-width: 1200px) {
+  .card {
+    align-items: flex-start;
+  }
+
+  .metricsCol {
+    flex: 0 0 180px;
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+  }
+}
+
+@media (max-width: 992px) {
+  .card {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mainInfo,
+  .metricsCol,
+  .activityCol {
+    width: 100%;
+  }
+
+  .metricsCol {
+    border-left: 0;
+    border-top: 1px solid #f0f0f0;
+    padding-left: 0;
+    padding-top: 10px;
+    margin-left: 0;
+    flex: none;
+  }
+
+  .activityCol {
+    justify-content: flex-end;
+    min-height: 16px;
+  }
 }

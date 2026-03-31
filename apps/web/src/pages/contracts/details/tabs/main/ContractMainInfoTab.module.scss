@@ -25,15 +25,15 @@
   padding: 12px 18px 14px;
 
   :global(.ant-descriptions-item-label)::after {
-    content: none !important;
+    content: none;
   }
 
-  :global(th.ant-descriptions-item) {
-    padding-bottom: 1px !important;
+  :global(.ant-descriptions .ant-descriptions-row > th.ant-descriptions-item) {
+    padding-bottom: 1px;
   }
 
-  :global(td.ant-descriptions-item) {
-    padding-bottom: 8px !important;
+  :global(.ant-descriptions .ant-descriptions-row > td.ant-descriptions-item) {
+    padding-bottom: 8px;
   }
 }
 
@@ -41,12 +41,12 @@
   margin-top: 10px;
   border-top: 1px solid #f0f0f0;
 
-  :global(.ant-collapse-header) {
-    padding: 8px 0 !important;
+  :global(.ant-collapse > .ant-collapse-item > .ant-collapse-header) {
+    padding: 8px 0;
   }
 
-  :global(.ant-collapse-content-box) {
-    padding: 0 0 6px !important;
+  :global(.ant-collapse-content > .ant-collapse-content-box) {
+    padding: 0 0 6px;
   }
 }
 
@@ -64,14 +64,14 @@
 }
 
 .descLabel {
-  color: rgba(0, 0, 0, 0.45) !important;
-  font-size: 14px !important;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 14px;
 }
 
 .descContent {
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  color: rgba(0, 0, 0, 0.88) !important;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .stagesToolbar {
@@ -91,12 +91,16 @@
 }
 
 .stagesExpandToggle {
-  padding-inline: 8px !important;
+  &:global(.ant-btn) {
+    padding-inline: 8px;
+  }
 }
 
 .filtersBtnActive {
-  border-color: #1677ff !important;
-  color: #1677ff !important;
+  &:global(.ant-btn) {
+    border-color: #1677ff;
+    color: #1677ff;
+  }
 }
 
 .filtersBadge {
@@ -113,12 +117,6 @@
   line-height: 1;
   background: rgba(22, 119, 255, 0.12);
   color: #1677ff;
-}
-
-.stagesToolbarRight {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .stagesToolbarRightWide {
@@ -140,7 +138,6 @@
   }
 }
 
-/** Шире стандартной модалки: три колонки бюджета и даты без тесноты */
 .stageFormModal :global(.ant-modal) {
   max-width: calc(100vw - 32px);
 }

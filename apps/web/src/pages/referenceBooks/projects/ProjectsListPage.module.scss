@@ -131,7 +131,11 @@ $portal-accent: #002f55;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.metaSubRow {
+  margin-top: 2px;
 }
 
 .metaText {
@@ -139,6 +143,17 @@ $portal-accent: #002f55;
   display: flex;
   align-items: center;
   gap: 3px;
+  font-size: 13px;
+}
+
+.chipSmall {
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 1px 7px;
+  margin: 0;
+  color: #595959;
+  border-color: #e8e8e8;
+  background: #fafafa;
 }
 
 .metricsCol { flex: 0 0 180px; margin-left: auto; }
@@ -149,6 +164,7 @@ $portal-accent: #002f55;
   font-size: 14px;
   font-weight: 700;
   color: #141414;
+  white-space: nowrap;
 }
 
 .statLabel {

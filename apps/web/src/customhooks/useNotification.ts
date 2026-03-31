@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { notification } from 'antd';
 
 export type NotificationType = 'success' | 'info' | 'warning' | 'error';
@@ -10,13 +11,25 @@ interface UseNotificationReturn {
 
 export const useNotification = (): UseNotificationReturn => {
   const [notificationApi, contextHolder] = notification.useNotification();
+  const isMountedRef = useRef(true);
 
-  const showNotification = (type: NotificationType, title: string, description?: string) => {
-    notificationApi[type]({
-      message: title,
-      description,
-    });
-  };
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const showNotification = useCallback(
+    (type: NotificationType, title: string, description?: string) => {
+      if (!isMountedRef.current) return;
+      notificationApi[type]({
+        message: title,
+        description,
+      });
+    },
+    [notificationApi],
+  );
 
   return {
     notificationApi,
