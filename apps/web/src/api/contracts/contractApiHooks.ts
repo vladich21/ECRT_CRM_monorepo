@@ -98,12 +98,13 @@ export const useDeleteContract = (): UseMutationResult<ContractDeleteResult, Err
   const queryClient = useQueryClient();
   return useMutation<ContractDeleteResult, Error, string>({
     mutationFn: (contractId: string) => contractApi.deleteContract(contractId),
-    onSuccess: (result, contractId) => {
+    onSuccess: () => {
       queueMicrotask(() => {
-        if (result.deletion_mode === 'hard') {
-          queryClient.removeQueries({ queryKey: ['contracts', contractId] });
-        }
-        queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
+        queryClient.invalidateQueries({
+          predicate: query =>
+            query.queryKey[0] === 'contracts' &&
+            (query.queryKey.length < 2 || typeof query.queryKey[1] !== 'string'),
+        });
         invalidatePartnerQueries(queryClient);
       });
     },

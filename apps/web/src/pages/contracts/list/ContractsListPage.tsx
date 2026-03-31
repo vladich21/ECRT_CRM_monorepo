@@ -134,7 +134,7 @@ export default function ContractsListPage() {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
   const paginationConfig = getPaginationConfig(total);
-  
+
   return (
     <div className={styles.wrap}>
       {contextHolder}
