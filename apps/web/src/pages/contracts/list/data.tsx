@@ -7,6 +7,11 @@ import { getNameById } from '../../../helpers/getNameById';
 import { getTagColorByData } from '../../../helpers/getTagColorByData';
 import { Contract } from '../../../types/contract';
 
+const formatMoney = (amount: number | null | undefined) => {
+  if (amount == null) return '-';
+  return `${amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`;
+};
+
 export const initialFormValues = {
   number: '',
   cipher: '',
@@ -70,7 +75,7 @@ export const getColumnsData = (
     dataIndex: 'amount_incl_vat',
     key: 'amount_incl_vat',
     width: 130,
-    render: (amount: number) => (amount ? `${amount.toLocaleString('ru-RU')} ₽` : '-'),
+    render: (amount: number | null | undefined) => formatMoney(amount),
   },
   {
     title: 'Статус',

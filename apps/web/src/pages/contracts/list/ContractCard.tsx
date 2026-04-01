@@ -21,6 +21,11 @@ type Refs =
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
+
+function formatMoney(amount: number | null | undefined) {
+  if (amount == null) return '—';
+  return `${amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`;
+}
 type Props = {
   contract: Contract;
   refs: Refs;
@@ -38,10 +43,8 @@ export function ContractCard({ contract, refs, onClick }: Props) {
     contract.start_date || contract.end_date
       ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' — ')
       : '—';
-  const amountExclStr =
-    contract.amount_excl_vat != null ? `${contract.amount_excl_vat.toLocaleString('ru-RU')} ₽` : '—';
-  const amountInclStr =
-    contract.amount_incl_vat != null ? `${contract.amount_incl_vat.toLocaleString('ru-RU')} ₽` : '—';
+  const amountExclStr = formatMoney(contract.amount_excl_vat);
+  const amountInclStr = formatMoney(contract.amount_incl_vat);
   const heading = formatContractRegistryCardHeading(contract);
 
   return (
