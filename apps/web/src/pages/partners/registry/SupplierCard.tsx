@@ -2,6 +2,7 @@ import {
   AimOutlined,
   BankOutlined,
   CalendarOutlined,
+  CheckCircleFilled,
   ClockCircleFilled,
   EnvironmentOutlined,
   RightOutlined,
@@ -23,10 +24,8 @@ interface SupplierCardProps {
     partnerTypes?: Array<{ id: string; name: string }>;
     competencies?: Array<{ id: string; name: string }>;
   };
-  /** Сводка по активным оценкам проектов (средний балл и ближайшая переоценка). */
   evaluationKpi?: PartnerSupplierEvalKpi;
   evaluationKpiLoading?: boolean;
-  /** Подсказка под блоком «Следующая оценка» (например демо по дням до переоценки). */
   evaluationKpiDaysHint?: string;
   onClick: (partner: Partner) => void;
 }
@@ -90,7 +89,12 @@ export default function SupplierCard({
         <div className={styles.nameRow}>
           <span className={styles.name}>{partner.short_name || partner.name}</span>
           <div className={styles.badges}>
-            {!partner.is_approved && (
+            {partner.is_approved ? (
+              <span className={styles.chipApproved}>
+                <CheckCircleFilled className={styles.chipIcon} />
+                Утверждён
+              </span>
+            ) : (
               <span className={styles.chipNotApproved}>
                 <ClockCircleFilled className={styles.chipIcon} />
                 Не утверждён

@@ -5,6 +5,7 @@ import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../api/hooks/useReferences';
+import { partnerApi } from '../../api/partners/partnerApi';
 import { usePartners } from '../../api/partners/partnerApiHooks';
 import { fetchPartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApi';
 import { getPartnerSupplierEvalKpiQueryKey } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
@@ -15,6 +16,7 @@ import { EMPTY_DELETION_TAB_COUNTS, type DeletionScope } from '../../constants/d
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import type { Partner } from '../../types/partner';
+import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../utils/partnerApproval';
 import { EMPTY_FILTERS, PartnerFiltersModal, type PartnerFilters } from './PartnerFiltersModal';
 import styles from './PartnersListPage.module.scss';
 import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
@@ -72,16 +74,34 @@ export default function PartnersListPage() {
       statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
       competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
       readiness: (activeTab === 'deleted' ? 'all' : activeTab) as 'all' | 'ready' | 'in_progress',
-      deletedScope: (activeTab === 'deleted' ? 'deleted' : 'all') as DeletionScope,
+      deletedScope: (activeTab === 'deleted' ? 'deleted' : 'active') as DeletionScope,
     }),
     [debouncedSearch, appliedFilters, activeTab],
   );
   const { data: partnersData, isLoading, isError, isFetching } = usePartners(apiFilters, page, pageSize);
+  const tabCountQueries = useQueries({
+    queries: PARTNER_FILTER_TABS.map(({ key }) => ({
+      queryKey: ['partners', 'tab-count', key, debouncedSearch.trim(), appliedFilters],
+      queryFn: async () => {
+        const filters = {
+          search: debouncedSearch.trim() || undefined,
+          typeIds: appliedFilters.typeIds.length > 0 ? appliedFilters.typeIds : undefined,
+          statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
+          competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
+          readiness: (key === 'deleted' ? 'all' : key) as 'all' | 'ready' | 'in_progress',
+          deletedScope: (key === 'deleted' ? 'deleted' : 'active') as DeletionScope,
+        };
+        const response = await partnerApi.getPartners(filters, 1, 0);
+        return response.total;
+      },
+      staleTime: 15 * 1000,
+    })),
+  });
   const {
     data: references,
     isError: isRefsError,
     isLoading: isRefsLoading,
-  } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies']);
+  } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies', 'partnerCategories']);
   const partners = partnersData?.data ?? [];
   const total = partnersData?.total ?? 0;
 
@@ -101,6 +121,12 @@ export default function PartnersListPage() {
     key_supplier: 0,
   };
   const deletionTabCounts = partnersData?.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS;
+  const getTabCount = (tabKey: PartnerListTab) => {
+    const tabIndex = PARTNER_FILTER_TABS.findIndex(tab => tab.key === tabKey);
+    const queriedTotal = tabIndex >= 0 ? tabCountQueries[tabIndex]?.data : undefined;
+    if (typeof queriedTotal === 'number') return queriedTotal;
+    return tabKey === 'deleted' ? deletionTabCounts.deleted : tabCounts[tabKey];
+  };
   useEffect(() => {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
@@ -206,9 +232,7 @@ export default function PartnersListPage() {
                       onClick={() => setActiveTab(key)}
                     >
                       {label}{' '}
-                      <span className={styles.filterTabCount}>
-                        {key === 'deleted' ? deletionTabCounts.deleted : tabCounts[key]}
-                      </span>
+                      <span className={styles.filterTabCount}>{getTabCount(key)}</span>
                     </button>
                   ))}
                 </div>
@@ -243,14 +267,29 @@ export default function PartnersListPage() {
             </div>
           ) : (
             partners.map((partner, index) => (
+              (() => {
+                const categoryName =
+                  references?.partnerCategories?.find(category => String(category.id) === String(partner.category_id))
+                    ?.name ?? null;
+                const approvedByRules = computePartnerIsApproved({
+                  kind: inferPartnerCategoryKind(categoryName),
+                  legalCheckPassed: Boolean(partner.legal_check_passed),
+                  questionnaireFilled: Boolean(partner.questionnaire_filled),
+                  initialAssessmentDone: Boolean(partner.initial_assessment_done),
+                  hasActiveSupplierEvaluationBlock: Boolean(partner.has_active_evaluation_block),
+                });
+                const displayPartner: Partner = { ...partner, is_approved: approvedByRules };
+                return (
               <SupplierCard
                 key={partner.id}
-                partner={partner}
+                partner={displayPartner}
                 references={references}
                 evaluationKpi={mergePartnerSupplierEvalKpiWithUiMock(partner.id, partnerEvalKpiQueries[index]?.data)}
                 evaluationKpiLoading={Boolean(partnerEvalKpiQueries[index]?.isPending)}
                 onClick={handleCardClick}
               />
+                );
+              })()
             ))
           )}
         </div>

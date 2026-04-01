@@ -14,6 +14,7 @@ import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
 import type { Partner } from '../../types/partner';
+import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../utils/partnerApproval';
 import { mergePartnerSupplierEvalKpiWithUiMock } from './evaluations/partnerEvaluationsUiMock';
 import {
   partnerDetailHeaderBadges,
@@ -134,8 +135,18 @@ export default function PartnerEditPage() {
     const archiveEntry = referenceBooks.partnerStatuses?.find(s => (s.name ?? '').trim() === 'Архив');
     const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
     const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived }));
+    const categoryName =
+      referenceBooks.partnerCategories?.find(c => String(c.id) === String(values.category_id ?? partner.category_id))?.name ??
+      null;
     payload.type_ids = values.type_ids ?? [];
     payload.competence_ids = values.competence_ids ?? [];
+    payload.is_approved = computePartnerIsApproved({
+      kind: inferPartnerCategoryKind(categoryName),
+      legalCheckPassed: Boolean(values.legal_check_passed),
+      questionnaireFilled: Boolean(values.questionnaire_filled),
+      initialAssessmentDone: Boolean(values.initial_assessment_done),
+      hasActiveSupplierEvaluationBlock: partner.has_active_evaluation_block ?? false,
+    });
     mutate(
       { id: partnerId!, data: payload },
       {

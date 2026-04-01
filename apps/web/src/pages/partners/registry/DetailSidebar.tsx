@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { SURFACE_ACTIVE, SURFACE_BLOCKED, getPartnerStatusSurface, mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner, PartnerContact } from '../../../types/partner';
+import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../../utils/partnerApproval';
 import styles from './DetailSidebar.module.scss';
 
 /** Контакт для карточки сайдбара: основной или первый в списке. */
@@ -147,6 +148,13 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
     c => c.id === partner.partner_economic_category_id,
   )?.name;
   const categoryName = references?.partnerCategories?.find(c => c.id === partner.category_id)?.name ?? '—';
+  const approvedByRules = computePartnerIsApproved({
+    kind: inferPartnerCategoryKind(categoryName),
+    legalCheckPassed: partner.legal_check_passed,
+    questionnaireFilled: partner.questionnaire_filled,
+    initialAssessmentDone: partner.initial_assessment_done,
+    hasActiveSupplierEvaluationBlock: partner.has_active_evaluation_block ?? false,
+  });
   const website = partner.website?.trim();
 
   const featured = contacts.length > 0 ? pickFeaturedContact(contacts) : null;
@@ -185,9 +193,9 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
             <span className={styles.classLabel}>Утверждён</span>
             <Tag
               bordered={false}
-              style={mutedTagStyle(partner.is_approved ? SURFACE_ACTIVE : SURFACE_BLOCKED, { fontSize: 14 })}
+              style={mutedTagStyle(approvedByRules ? SURFACE_ACTIVE : SURFACE_BLOCKED, { fontSize: 14 })}
             >
-              {partner.is_approved ? 'Да' : 'Нет'}
+              {approvedByRules ? 'Да' : 'Нет'}
             </Tag>
           </div>
           <div className={styles.classRowBorder}>

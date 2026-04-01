@@ -64,7 +64,13 @@ function approvalTooltipTitle(approved: boolean, categoryName: string | null | u
 function isApprovedForBadges(partner: Partner, options?: PartnerDetailHeaderBadgeOptions): boolean {
   const draft = options?.approvalPreviewDraft;
   if (!draft) {
-    return partner.is_approved;
+    return computePartnerIsApproved({
+      kind: inferPartnerCategoryKind(options?.categoryName),
+      legalCheckPassed: partner.legal_check_passed,
+      questionnaireFilled: partner.questionnaire_filled,
+      initialAssessmentDone: partner.initial_assessment_done,
+      hasActiveSupplierEvaluationBlock: partner.has_active_evaluation_block ?? false,
+    });
   }
   return computePartnerIsApproved({
     kind: inferPartnerCategoryKind(options.categoryName),

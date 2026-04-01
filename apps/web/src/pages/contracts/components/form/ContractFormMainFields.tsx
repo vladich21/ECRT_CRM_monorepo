@@ -1,11 +1,12 @@
 import {
   FileTextOutlined,
   NumberOutlined,
+  PlusOutlined,
   ProjectOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Col, Divider, Form, Input, Row, Select } from 'antd';
+import { Button, Col, Divider, Form, Input, Row, Select } from 'antd';
 
 import type { ContractFormMode, ContractFormRefs } from './contractForm.types';
 
@@ -14,9 +15,10 @@ const { TextArea } = Input;
 type Props = {
   mode: ContractFormMode;
   refs: ContractFormRefs;
+  onCreatePartner?: () => void;
 };
 
-export function ContractFormMainFields({ mode, refs }: Props) {
+export function ContractFormMainFields({ mode, refs, onCreatePartner }: Props) {
   const strict = mode === 'edit';
 
   return (
@@ -79,6 +81,19 @@ export function ContractFormMainFields({ mode, refs }: Props) {
                   .includes(input.toLowerCase())
               }
               suffixIcon={<TeamOutlined />}
+              popupRender={menu => (
+                <>
+                  {menu}
+                  {mode === 'create' && onCreatePartner ? (
+                    <>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <Button type='link' icon={<PlusOutlined />} onClick={onCreatePartner}>
+                        Добавить контрагента
+                      </Button>
+                    </>
+                  ) : null}
+                </>
+              )}
             >
               {refs.partners?.map(partner => (
                 <Select.Option key={partner.id} value={partner.id}>

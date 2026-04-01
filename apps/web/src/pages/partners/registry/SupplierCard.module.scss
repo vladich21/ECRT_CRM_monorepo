@@ -147,6 +147,18 @@
   font-weight: 500;
 }
 
+.chipApproved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(82, 196, 26, 0.12);
+  color: #52c41a;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .chipKey {
   display: inline-flex;
   align-items: center;
