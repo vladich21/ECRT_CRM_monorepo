@@ -38,7 +38,10 @@ export function ContractCard({ contract, refs, onClick }: Props) {
     contract.start_date || contract.end_date
       ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' — ')
       : '—';
-  const amountStr = contract.amount_incl_vat != null ? `${contract.amount_incl_vat.toLocaleString('ru-RU')} ₽` : '—';
+  const amountExclStr =
+    contract.amount_excl_vat != null ? `${contract.amount_excl_vat.toLocaleString('ru-RU')} ₽` : '—';
+  const amountInclStr =
+    contract.amount_incl_vat != null ? `${contract.amount_incl_vat.toLocaleString('ru-RU')} ₽` : '—';
   const heading = formatContractRegistryCardHeading(contract);
 
   return (
@@ -68,12 +71,18 @@ export function ContractCard({ contract, refs, onClick }: Props) {
       </div>
 
       <div className={styles.metricsCol}>
-        <div className={styles.statsBlock}>
-          <div className={styles.statValue}>
-            <DollarOutlined style={{ fontSize: 11, marginRight: 4 }} />
-            {amountStr}
+        <div className={styles.statsBlock} aria-label='Суммы договора'>
+          <div className={styles.statPrimaryRow}>
+            <span className={styles.statPrimaryLabel}>Без НДС</span>
+            <span className={styles.statValue}>
+              <DollarOutlined className={styles.statIcon} />
+              {amountExclStr}
+            </span>
           </div>
-          <div className={styles.statLabel}>Сумма с НДС</div>
+          <div className={styles.statSecondaryRow}>
+            <span className={styles.statSecondaryLabel}>С НДС</span>
+            <span className={styles.statSecondaryAmount}>{amountInclStr}</span>
+          </div>
         </div>
         <div className={styles.periodInfo}>
           <CalendarOutlined style={{ fontSize: 11 }} />
