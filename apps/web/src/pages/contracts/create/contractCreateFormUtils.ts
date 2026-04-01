@@ -61,7 +61,7 @@ export function buildCreateContractPayload(formValues: Record<string, unknown>):
     start_date: dateOrNull(formValues.start_date),
     end_date: dateOrNull(formValues.end_date),
     amount_excl_vat: numOrNull(formValues.amount_excl_vat),
-    vat_rate: numOrNull(formValues.vat_rate),
+    vat_rate: numOrNull(formValues.vat_rate) ?? 22,
     amount_vat: numOrNull(formValues.amount_vat),
     amount_incl_vat: numOrNull(formValues.amount_incl_vat),
     state_id: idOrNull(formValues.state_id),

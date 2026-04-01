@@ -16,7 +16,7 @@ export const initialFormValues = {
   start_date: null,
   end_date: null,
   amount_excl_vat: null,
-  vat_rate: null,
+  vat_rate: 22,
   amount_vat: null,
   amount_incl_vat: null,
   category_id: null,

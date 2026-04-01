@@ -46,21 +46,23 @@ export function ContractFormMoneyFields({
           </Form.Item>
         </Col>
         <Col xs={24}>
-          <Form.Item
-            label='Ставка НДС (%)'
-            name='vat_rate'
-            rules={requireFullValidation ? [{ required: true, message: 'Введите ставку НДС' }] : undefined}
-          >
+          <Form.Item label='Ставка НДС (%)' required={requireFullValidation}>
             <Space.Compact block style={{ width: '100%' }}>
-              <InputNumber
-                placeholder='0'
-                style={{ flex: 1, minWidth: 0 }}
-                min={0}
-                max={100}
-                step={1}
-                precision={0}
-                onChange={onVatRateChange}
-              />
+              <Form.Item
+                name='vat_rate'
+                noStyle
+                rules={requireFullValidation ? [{ required: true, message: 'Введите ставку НДС' }] : undefined}
+              >
+                <InputNumber
+                  placeholder='0'
+                  style={{ flex: 1, minWidth: 0 }}
+                  min={0}
+                  max={100}
+                  step={1}
+                  precision={0}
+                  onChange={onVatRateChange}
+                />
+              </Form.Item>
               <Input
                 readOnly
                 value='%'

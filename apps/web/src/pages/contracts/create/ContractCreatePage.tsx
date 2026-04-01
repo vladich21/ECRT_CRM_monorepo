@@ -30,6 +30,7 @@ import styles from './ContractCreatePage.module.scss';
 
 const CONTRACT_CREATE_DRAFT_STORAGE_KEY = 'contract-create-draft';
 const CONTRACT_DATE_FIELDS = ['start_date', 'end_date', 'date_signed'] as const;
+const DEFAULT_VAT_RATE = 22;
 type ContractCreateLocationState = {
   partnerId?: string;
   createdPartnerId?: string;
@@ -52,6 +53,7 @@ export default function ContractCreatePage() {
     refetch: refetchReferences,
   } = useReferenceData(['projects', 'partners', 'users', 'contractStates', 'contractCategories', 'contractTypes']);
   const { mutate, isPending: isCreateLoading } = useCreateContract();
+  const isDefaultVatRateAppliedRef = useRef(false);
 
   const normalizeDraftValues = (draft: Record<string, unknown>) => {
     const normalized = { ...draft };
@@ -71,6 +73,15 @@ export default function ContractCreatePage() {
     }
     return normalized;
   };
+
+  useEffect(() => {
+    if (isDefaultVatRateAppliedRef.current) return;
+    const currentVatRate = form.getFieldValue('vat_rate');
+    if (currentVatRate == null || currentVatRate === '' || Number(currentVatRate) === 0) {
+      form.setFieldValue('vat_rate', DEFAULT_VAT_RATE);
+    }
+    isDefaultVatRateAppliedRef.current = true;
+  }, [form]);
 
   useEffect(() => {
     const draftId = findDraftContractStateId(referenceBooks?.contractStates);
