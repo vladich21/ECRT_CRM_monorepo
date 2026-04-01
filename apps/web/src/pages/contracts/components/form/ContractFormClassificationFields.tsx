@@ -8,10 +8,10 @@ import layout from '../../create/ContractCreatePage.module.scss';
 type Props = {
   mode: ContractFormMode;
   refs: ContractFormRefs;
+  requireFullValidation?: boolean;
 };
 
-export function ContractFormClassificationFields({ mode, refs }: Props) {
-  const strict = mode === 'edit';
+export function ContractFormClassificationFields({ mode, refs, requireFullValidation = false }: Props) {
 
   return (
     <div className={layout.sectionBox}>
@@ -23,7 +23,7 @@ export function ContractFormClassificationFields({ mode, refs }: Props) {
           <Form.Item
             label='Категория'
             name='category_id'
-            rules={strict ? [{ required: true, message: 'Выберите категорию' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Выберите категорию' }] : undefined}
           >
             <Select placeholder='Выберите категорию' suffixIcon={<TagOutlined />}>
               {refs.contractCategories?.map(category => (

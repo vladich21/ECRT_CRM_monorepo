@@ -212,13 +212,15 @@ export default function ContractCreatePage() {
               mode='create'
               onAmountChange={handleAmountChange}
               onVatRateChange={handleVatRateChange}
+              requireFullValidation={false}
             />
-            <ContractFormDateFields mode='create' />
-            <ContractFormClassificationFields mode='create' refs={contractFormRefs} />
+            <ContractFormDateFields mode='create' requireFullValidation={false} />
+            <ContractFormClassificationFields mode='create' refs={contractFormRefs} requireFullValidation={false} />
             <ContractFormStateFields
               mode='create'
               refs={contractFormRefs}
               effectiveByState={createEffectiveByState}
+              requireFullValidation={false}
             />
           </div>
         </Form>

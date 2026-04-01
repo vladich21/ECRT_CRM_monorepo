@@ -16,10 +16,10 @@ type Props = {
   mode: ContractFormMode;
   refs: ContractFormRefs;
   onCreatePartner?: () => void;
+  requireFullValidation?: boolean;
 };
 
-export function ContractFormMainFields({ mode, refs, onCreatePartner }: Props) {
-  const strict = mode === 'edit';
+export function ContractFormMainFields({ mode, refs, onCreatePartner, requireFullValidation = false }: Props) {
 
   return (
     <>
@@ -32,7 +32,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner }: Props) {
           <Form.Item
             label='Номер договора'
             name='number'
-            rules={strict ? [{ required: true, message: 'Введите номер договора' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Введите номер договора' }] : undefined}
           >
             <Input placeholder='№123-Д' prefix={<NumberOutlined />} />
           </Form.Item>
@@ -48,7 +48,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner }: Props) {
           <Form.Item
             label='Название'
             name='name'
-            rules={strict ? [{ required: true, message: 'Введите название договора' }] : undefined}
+            rules={[{ required: true, message: 'Введите название договора' }]}
           >
             <Input placeholder='Введите название договора' />
           </Form.Item>
@@ -68,7 +68,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner }: Props) {
           <Form.Item
             label='Контрагент'
             name='partner_id'
-            rules={strict ? [{ required: true, message: 'Выберите контрагента' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Выберите контрагента' }] : undefined}
           >
             <Select
               placeholder='Выберите контрагента'
@@ -131,7 +131,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner }: Props) {
           <Form.Item
             label='Ответственный'
             name='responsible_id'
-            rules={strict ? [{ required: true, message: 'Выберите ответственного' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Выберите ответственного' }] : undefined}
           >
             <Select
               placeholder='Выберите ответственного'

@@ -9,9 +9,10 @@ type Props = {
   mode: ContractFormMode;
   refs: ContractFormRefs;
   effectiveByState: boolean;
+  requireFullValidation?: boolean;
 };
 
-export function ContractFormStateFields({ mode, refs, effectiveByState }: Props) {
+export function ContractFormStateFields({ mode, refs, effectiveByState, requireFullValidation = false }: Props) {
   const strict = mode === 'edit';
 
   return (
@@ -24,7 +25,7 @@ export function ContractFormStateFields({ mode, refs, effectiveByState }: Props)
           <Form.Item
             label='Состояние'
             name='state_id'
-            rules={strict ? [{ required: true, message: 'Выберите состояние' }] : undefined}
+            rules={strict && requireFullValidation ? [{ required: true, message: 'Выберите состояние' }] : undefined}
           >
             <Select
               placeholder={strict ? 'Выберите состояние' : 'Черновик'}

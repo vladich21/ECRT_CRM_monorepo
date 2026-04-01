@@ -7,10 +7,10 @@ import layout from '../../create/ContractCreatePage.module.scss';
 
 type Props = {
   mode: ContractFormMode;
+  requireFullValidation?: boolean;
 };
 
-export function ContractFormDateFields({ mode }: Props) {
-  const strict = mode === 'edit';
+export function ContractFormDateFields({ mode, requireFullValidation = false }: Props) {
 
   return (
     <div className={layout.sectionBox}>
@@ -22,7 +22,7 @@ export function ContractFormDateFields({ mode }: Props) {
           <Form.Item
             label='Дата начала'
             name='start_date'
-            rules={strict ? [{ required: true, message: 'Выберите дату начала' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Выберите дату начала' }] : undefined}
           >
             <DatePicker placeholder='Выберите дату начала' style={{ width: '100%' }} format='DD.MM.YYYY' />
           </Form.Item>
@@ -36,7 +36,7 @@ export function ContractFormDateFields({ mode }: Props) {
           <Form.Item
             label='Дата подписания'
             name='date_signed'
-            rules={strict ? [{ required: true, message: 'Выберите дату подписания' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Выберите дату подписания' }] : undefined}
           >
             <DatePicker placeholder='Выберите дату подписания' style={{ width: '100%' }} format='DD.MM.YYYY' />
           </Form.Item>

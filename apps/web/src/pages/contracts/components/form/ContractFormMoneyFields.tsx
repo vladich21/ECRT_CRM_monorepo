@@ -11,10 +11,15 @@ type Props = {
   mode: ContractFormMode;
   onAmountChange: (value: number | null) => void;
   onVatRateChange: (value: number | null) => void;
+  requireFullValidation?: boolean;
 };
 
-export function ContractFormMoneyFields({ mode, onAmountChange, onVatRateChange }: Props) {
-  const strict = mode === 'edit';
+export function ContractFormMoneyFields({
+  mode,
+  onAmountChange,
+  onVatRateChange,
+  requireFullValidation = false,
+}: Props) {
 
   return (
     <div className={layout.sectionBox}>
@@ -26,7 +31,7 @@ export function ContractFormMoneyFields({ mode, onAmountChange, onVatRateChange 
           <Form.Item
             label='Сумма без НДС'
             name='amount_excl_vat'
-            rules={strict ? [{ required: true, message: 'Введите сумму без НДС' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Введите сумму без НДС' }] : undefined}
           >
             <InputNumber
               placeholder='0.00'
@@ -44,7 +49,7 @@ export function ContractFormMoneyFields({ mode, onAmountChange, onVatRateChange 
           <Form.Item
             label='Ставка НДС (%)'
             name='vat_rate'
-            rules={strict ? [{ required: true, message: 'Введите ставку НДС' }] : undefined}
+            rules={requireFullValidation ? [{ required: true, message: 'Введите ставку НДС' }] : undefined}
           >
             <Space.Compact block style={{ width: '100%' }}>
               <InputNumber

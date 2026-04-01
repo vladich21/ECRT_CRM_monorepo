@@ -27,7 +27,7 @@ import { applyVatDerivedAmounts } from '../create/contractCreateFormUtils';
 import styles from '../create/ContractCreatePage.module.scss';
 import { formatDate } from '../details/tabs/stages/data';
 import tagStyles from '../list/ContractsListPage.module.scss';
-import { getContractStateTagClass, isContractSignedState } from '../utils/contractStateUtils';
+import { getContractStateTagClass, isContractDraft, isContractSignedState } from '../utils/contractStateUtils';
 import { applyDayjsDateFieldsToPayload } from './contractEditFormUtils';
 
 export default function ContractEditPage() {
@@ -129,6 +129,7 @@ export default function ContractEditPage() {
   const partnerName = getNameById(partnerId, referenceBooks?.partners ?? []) ?? '';
   const headerName = (watchContractName ?? contract.name) || '';
   const isContractEffectiveByState = isContractSignedState(stateId, referenceBooks?.contractStates);
+  const requireFullValidation = !isContractDraft(stateId, referenceBooks?.contractStates);
   const signedDateLabel = (() => {
     const dateSignedValue = watchDateSigned ?? contract.date_signed;
     if (!dateSignedValue) return '';
@@ -216,19 +217,25 @@ export default function ContractEditPage() {
           }}
           scrollToFirstError
         >
-          <ContractFormMainFields mode='edit' refs={contractFormRefs} />
+          <ContractFormMainFields mode='edit' refs={contractFormRefs} requireFullValidation={requireFullValidation} />
           <div className={styles.threeColSections}>
             <ContractFormMoneyFields
               mode='edit'
               onAmountChange={handleAmountChange}
               onVatRateChange={handleVatRateChange}
+              requireFullValidation={requireFullValidation}
             />
-            <ContractFormDateFields mode='edit' />
-            <ContractFormClassificationFields mode='edit' refs={contractFormRefs} />
+            <ContractFormDateFields mode='edit' requireFullValidation={requireFullValidation} />
+            <ContractFormClassificationFields
+              mode='edit'
+              refs={contractFormRefs}
+              requireFullValidation={requireFullValidation}
+            />
             <ContractFormStateFields
               mode='edit'
               refs={contractFormRefs}
               effectiveByState={isContractEffectiveByState}
+              requireFullValidation={requireFullValidation}
             />
           </div>
         </Form>
