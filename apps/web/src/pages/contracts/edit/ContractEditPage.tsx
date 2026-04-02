@@ -58,11 +58,21 @@ export default function ContractEditPage() {
   const watchDateSigned = Form.useWatch('date_signed', form);
   const handleBack = navigateBackToDetails;
 
+  const isFormInitializedRef = useRef(false);
   useEffect(() => {
     if (contract) {
       form.setFieldsValue(contractUpdateFormMapper(contract));
+      isFormInitializedRef.current = true;
     }
   }, [contract, form]);
+
+  const handleProjectChange = (project: { manager_id?: string | null; purchaser_id?: string | null } | null) => {
+    if (!isFormInitializedRef.current) return;
+    form.setFieldsValue({
+      responsible_id: project?.manager_id ?? null,
+      supplier_manager_id: project?.purchaser_id ?? null,
+    });
+  };
 
   const handleAmountChange = (value: number | null) => {
     const vatRate = form.getFieldValue('vat_rate');
@@ -217,7 +227,7 @@ export default function ContractEditPage() {
           }}
           scrollToFirstError
         >
-          <ContractFormMainFields mode='edit' refs={contractFormRefs} requireFullValidation={requireFullValidation} />
+          <ContractFormMainFields mode='edit' refs={contractFormRefs} requireFullValidation={requireFullValidation} onProjectChange={handleProjectChange} />
           <div className={styles.threeColSections}>
             <ContractFormMoneyFields
               mode='edit'

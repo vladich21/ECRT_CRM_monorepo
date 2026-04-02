@@ -7,6 +7,7 @@ export interface ContractResponseDto {
   partner_id: string;
   project_id: string;
   responsible_id: string;
+  supplier_manager_id: string;
 
   category_id: string;
   contract_type_id: string;

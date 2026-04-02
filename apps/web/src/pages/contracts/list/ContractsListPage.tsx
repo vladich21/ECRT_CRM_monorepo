@@ -141,8 +141,8 @@ export default function ContractsListPage() {
       {!partnerIdFromRoute && <BackButton path='/' />}
 
       <PageHeader
-        title='Договоры'
-        subtitle='Реестр договоров организации'
+        title='Реестр договоров'
+        subtitle='управление договорами'
         actions={
           <>
             <Button type='default'>Экспорт</Button>

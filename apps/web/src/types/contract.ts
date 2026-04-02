@@ -7,6 +7,7 @@ export interface Contract {
   partner_id: string;
   project_id: string;
   responsible_id: string;
+  supplier_manager_id?: string | null;
   category_id: string;
   contract_type_id: string;
   amount_excl_vat: number;

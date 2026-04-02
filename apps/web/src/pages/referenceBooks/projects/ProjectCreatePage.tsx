@@ -42,6 +42,7 @@ export default function ProjectCreatePage() {
         start_date,
         end_date: end_date || undefined,
         manager_id: values.manager_id ?? undefined,
+        purchaser_id: values.purchaser_id ?? undefined,
         status: values.status ?? 'active',
       } as Parameters<typeof mutate>[0],
       {
@@ -207,6 +208,29 @@ export default function ProjectCreatePage() {
               <Form.Item label='Руководитель' name='manager_id'>
                 <Select
                   placeholder='Выберите руководителя'
+                  allowClear
+                  showSearch
+                  optionFilterProp='label'
+                  optionLabelProp='label'
+                  filterOption={(input, option) =>
+                    String(option?.label ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  suffixIcon={<UserOutlined />}
+                >
+                  {referenceBooks?.users?.map(user => (
+                    <Select.Option key={user.id} value={user.id} label={user.name}>
+                      {user.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label='Ответственный закупщик' name='purchaser_id'>
+                <Select
+                  placeholder='Выберите закупщика'
                   allowClear
                   showSearch
                   optionFilterProp='label'

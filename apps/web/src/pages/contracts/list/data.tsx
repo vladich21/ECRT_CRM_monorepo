@@ -26,6 +26,7 @@ export const initialFormValues = {
   amount_incl_vat: null,
   category_id: null,
   responsible_id: null,
+  supplier_manager_id: null,
   project_id: null,
   state_id: null,
 };

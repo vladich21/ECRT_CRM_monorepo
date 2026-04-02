@@ -75,6 +75,7 @@ export default function ProjectDetailsPage() {
   if (isError || !project) return <NotFound errorMessage='Проект не найден' />;
   const st = PROJECT_STATUS_CONFIG[project.status] ?? PROJECT_STATUS_CONFIG.active;
   const managerName = getNameById(project.manager_id, referenceBooks?.users) || '';
+  const purchaserName = getNameById(project.purchaser_id ?? '', referenceBooks?.users) || '';
   return (
     <DetailPageHeader
       title={project.name}
@@ -221,6 +222,23 @@ export default function ProjectDetailsPage() {
               <div className={styles.managerItem}>
                 <div className={styles.managerAvatar}>{getInitials(managerName)}</div>
                 <span className={styles.managerName}>{managerName}</span>
+              </div>
+            ) : (
+              <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>
+                Не назначен
+              </span>
+            )}
+          </div>
+
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>
+              <ProjectOutlined style={{ marginRight: 6 }} />
+              Ответственный закупщик
+            </h3>
+            {purchaserName ? (
+              <div className={styles.managerItem}>
+                <div className={styles.managerAvatar}>{getInitials(purchaserName)}</div>
+                <span className={styles.managerName}>{purchaserName}</span>
               </div>
             ) : (
               <span className={styles.infoValueMuted} style={{ fontSize: 13 }}>

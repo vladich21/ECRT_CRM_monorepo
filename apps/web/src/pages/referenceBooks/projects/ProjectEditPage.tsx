@@ -220,10 +220,33 @@ export default function ProjectEditPage() {
               </Divider>
 
               <Row gutter={16}>
-                <Col xs={24}>
+                <Col xs={24} md={12}>
                   <Form.Item label='Руководитель' name='manager_id'>
                     <Select
                       placeholder='Выберите руководителя'
+                      allowClear
+                      showSearch
+                      optionFilterProp='label'
+                      optionLabelProp='label'
+                      filterOption={(input, option) =>
+                        String(option?.label ?? '')
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      suffixIcon={<UserOutlined />}
+                    >
+                      {referenceBooks?.users?.map(user => (
+                        <Select.Option key={user.id} value={user.id} label={user.name}>
+                          {user.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label='Ответственный закупщик' name='purchaser_id'>
+                    <Select
+                      placeholder='Выберите закупщика'
                       allowClear
                       showSearch
                       optionFilterProp='label'

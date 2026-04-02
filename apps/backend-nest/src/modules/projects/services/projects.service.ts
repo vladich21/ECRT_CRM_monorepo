@@ -178,6 +178,7 @@ export class ProjectsService {
       start_date: 'startDate',
       end_date: 'endDate',
       manager_id: 'managerId',
+      purchaser_id: 'purchaserId',
       status: 'status',
     };
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
@@ -230,6 +231,7 @@ export class ProjectsService {
       startDate,
       endDate: toDate(data.end_date),
       managerId: toUuid(data.manager_id),
+      purchaserId: toUuid(data.purchaser_id),
       status,
     };
   }
@@ -244,7 +246,7 @@ export class ProjectsService {
 
     if (preview) {
       const rows = await this.db.db
-        .select({ id: projects.id, name: projects.name, code: projects.code })
+        .select({ id: projects.id, name: projects.name, code: projects.code, managerId: projects.managerId, purchaserId: projects.purchaserId })
         .from(projects)
         .where(eq(projects.isDeleted, false))
         .orderBy(asc(projects.name));
@@ -252,6 +254,8 @@ export class ProjectsService {
         id: String(row.id),
         name: String(row.name ?? ''),
         code: String(row.code ?? ''),
+        manager_id: row.managerId ? String(row.managerId) : null,
+        purchaser_id: row.purchaserId ? String(row.purchaserId) : null,
       }));
     }
 
@@ -359,6 +363,7 @@ export class ProjectsService {
       start_date: row.startDate ? String(row.startDate) : null,
       end_date: row.endDate ? String(row.endDate) : null,
       manager_id: row.managerId ? String(row.managerId) : null,
+      purchaser_id: row.purchaserId ? String(row.purchaserId) : null,
       created_by: row.createdBy ? String(row.createdBy) : null,
       status: row.status ?? '',
       created_at: row.createdAt ? row.createdAt.toISOString() : null,

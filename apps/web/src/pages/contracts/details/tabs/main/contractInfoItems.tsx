@@ -28,6 +28,11 @@ export function buildMainInfoItems(contract: Contract, refs: MainInfoRefs) {
       children: getNameById(contract.responsible_id, refs?.users ?? []) || '-',
     },
     {
+      key: 'supplier_manager',
+      label: 'Ответственный от ОУП',
+      children: getNameById(contract.supplier_manager_id ?? '', refs?.users ?? []) || '-',
+    },
+    {
       key: 'project',
       label: 'Проект',
       children: getNameById(contract.project_id, refs?.projects ?? []) || '-',

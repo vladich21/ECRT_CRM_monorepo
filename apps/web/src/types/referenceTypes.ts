@@ -27,6 +27,7 @@ export interface Project {
   start_date: string;
   end_date: string;
   manager_id: string;
+  purchaser_id?: string | null;
   created_by?: string | null;
   status: string;
   created_at: string;

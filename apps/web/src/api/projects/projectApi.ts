@@ -26,7 +26,10 @@ export interface ProjectsListResponse {
   deletion_tab_counts: DeletionTabCounts;
 }
 
-export type ProjectPreviewItem = Pick<Project, 'id' | 'name' | 'code'>;
+export type ProjectPreviewItem = Pick<Project, 'id' | 'name' | 'code'> & {
+  manager_id?: string | null;
+  purchaser_id?: string | null;
+};
 function compactParams(
   obj: Record<string, string | number | boolean | undefined>,
 ): Record<string, string | number | boolean> {

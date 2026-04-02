@@ -7,5 +7,6 @@ export const initialFormValues = {
   start_date: '',
   end_date: '',
   manager_id: null,
+  purchaser_id: null,
   status: 'active',
 };

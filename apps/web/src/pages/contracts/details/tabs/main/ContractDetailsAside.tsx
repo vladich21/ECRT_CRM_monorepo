@@ -50,6 +50,7 @@ function getInitials(fullName: string | undefined): string {
 }
 export function ContractDetailsAside({ contract, stages = [], references }: ContractDetailsAsideProps) {
   const responsibleName = getNameById(contract.responsible_id, references?.users ?? []);
+  const supplierManagerName = getNameById(contract.supplier_manager_id ?? '', references?.users ?? []);
   const totalPlannedBudget = stages.reduce((sum, stage) => sum + (stage.planned_budget || 0), 0);
   const totalActualBudget = stages.reduce((sum, stage) => sum + (stage.actual_budget || 0), 0);
   const budgetProgressPercent =
@@ -169,16 +170,34 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
       </Card>
 
       <Card size='small' title='Команда'>
-        <Space align='center'>
-          <Avatar className={styles.avatar}>{getInitials(responsibleName)}</Avatar>
-          <div>
-            <Text strong className={styles.personName}>
-              {responsibleName || 'Не назначен'}
-            </Text>
-            <Text type='secondary' className={styles.personRole}>
-              Ответственный по договору
-            </Text>
-          </div>
+        <Space direction='vertical' size={12} style={{ width: '100%' }}>
+          <Space align='center'>
+            <Avatar className={styles.avatar}>{getInitials(responsibleName)}</Avatar>
+            <div>
+              <Text strong className={styles.personName}>
+                {responsibleName || 'Не назначен'}
+              </Text>
+              <Text type='secondary' className={styles.personRole}>
+                Ответственный по договору
+              </Text>
+            </div>
+          </Space>
+          {(supplierManagerName || true) && (
+            <>
+              <Divider style={{ margin: '0' }} />
+              <Space align='center'>
+                <Avatar className={styles.avatar}>{getInitials(supplierManagerName)}</Avatar>
+                <div>
+                  <Text strong className={styles.personName}>
+                    {supplierManagerName || 'Не назначен'}
+                  </Text>
+                  <Text type='secondary' className={styles.personRole}>
+                    Ответственный от ОУП
+                  </Text>
+                </div>
+              </Space>
+            </>
+          )}
         </Space>
       </Card>
     </div>

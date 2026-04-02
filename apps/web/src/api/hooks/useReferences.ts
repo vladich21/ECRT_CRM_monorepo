@@ -67,6 +67,8 @@ export interface ReferenceData {
     id: string;
     name: string;
     code: string;
+    manager_id?: string | null;
+    purchaser_id?: string | null;
   }>;
   competencies: Array<PartnerCompetence>;
   partners: Array<Reference>;

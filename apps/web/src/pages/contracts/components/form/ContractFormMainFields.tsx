@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Row, Select } from 'antd';
 
+import type { ProjectPreviewItem } from '../../../../api/projects/projectApi';
 import type { ContractFormMode, ContractFormRefs } from './contractForm.types';
 
 const { TextArea } = Input;
@@ -16,10 +17,17 @@ type Props = {
   mode: ContractFormMode;
   refs: ContractFormRefs;
   onCreatePartner?: () => void;
+  onProjectChange?: (project: ProjectPreviewItem | null) => void;
   requireFullValidation?: boolean;
 };
 
-export function ContractFormMainFields({ mode, refs, onCreatePartner, requireFullValidation = false }: Props) {
+export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectChange, requireFullValidation = false }: Props) {
+
+  const handleProjectChange = (value: string | undefined) => {
+    if (!onProjectChange) return;
+    const project = refs.projects?.find(p => p.id === value) ?? null;
+    onProjectChange(project);
+  };
 
   return (
     <>
@@ -117,6 +125,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, requireFul
                   .includes(input.toLowerCase())
               }
               suffixIcon={<ProjectOutlined />}
+              onChange={handleProjectChange}
             >
               {refs.projects?.map(project => (
                 <Select.Option key={project.id} value={project.id}>
@@ -135,6 +144,36 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, requireFul
           >
             <Select
               placeholder='Выберите ответственного'
+              allowClear
+              showSearch
+              optionFilterProp='label'
+              optionLabelProp='label'
+              filterOption={(input, option) =>
+                String(option?.label ?? '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              suffixIcon={<UserOutlined />}
+            >
+              {refs.users?.map(user => (
+                <Select.Option key={user.id} value={user.id} label={user.name}>
+                  {user.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={16} justify='end'>
+        <Col xs={24} md={8}>
+          <Form.Item
+            label='Ответственный от ОУП'
+            name='supplier_manager_id'
+            rules={requireFullValidation ? [{ required: true, message: 'Выберите ответственного от ОУП' }] : undefined}
+          >
+            <Select
+              placeholder='Выберите ответственного от ОУП'
               allowClear
               showSearch
               optionFilterProp='label'

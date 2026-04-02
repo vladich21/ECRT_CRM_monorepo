@@ -160,9 +160,9 @@ export default function PatentsListPage() {
       <BackButton path='/' />
 
       <PageHeader
-        title='РИД'
+        title='Реестр РИД'
         titleWeight='medium'
-        subtitle='Результаты интеллектуальной деятельности'
+        subtitle='управление РИД'
         actions={
           <>
             <Button

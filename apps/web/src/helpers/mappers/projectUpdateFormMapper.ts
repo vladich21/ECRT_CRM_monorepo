@@ -9,6 +9,7 @@ export const projectUpdateFormMapper = (projectData: Project) => {
     start_date: projectData.start_date || '',
     end_date: projectData.end_date || '',
     manager_id: projectData.manager_id || null,
+    purchaser_id: projectData.purchaser_id ?? null,
     status: projectData.status || 'active',
   };
   return values;

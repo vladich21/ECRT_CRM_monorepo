@@ -46,10 +46,6 @@ export default function PartnerCompetencesListPage() {
           <ReferenceBookItemCard
             key={competence.id}
             title={competence.name}
-            previewBgColor={COMPETENCE_TAG_BG}
-            previewTextColor={COMPETENCE_TAG_TEXT}
-            previewBorderColor={COMPETENCE_TAG_BORDER}
-            previewText={competence.name}
             onEdit={() => onEdit(competence)}
             onDelete={() => onDelete({ id: Number(competence.id) })}
           />

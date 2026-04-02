@@ -180,6 +180,13 @@ export default function ContractCreatePage() {
 
   const contractFormRefs = referenceBooks as ContractFormRefs;
 
+  const handleProjectChange = (project: { manager_id?: string | null; purchaser_id?: string | null } | null) => {
+    form.setFieldsValue({
+      responsible_id: project?.manager_id ?? null,
+      supplier_manager_id: project?.purchaser_id ?? null,
+    });
+  };
+
   return (
     <DetailPageHeader
       title='Создание нового договора'
@@ -217,7 +224,7 @@ export default function ContractCreatePage() {
           }}
           scrollToFirstError
         >
-          <ContractFormMainFields mode='create' refs={contractFormRefs} onCreatePartner={handleCreatePartnerFromContract} />
+          <ContractFormMainFields mode='create' refs={contractFormRefs} onCreatePartner={handleCreatePartnerFromContract} onProjectChange={handleProjectChange} />
           <div className={styles.threeColSections}>
             <ContractFormMoneyFields
               mode='create'

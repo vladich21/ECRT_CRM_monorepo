@@ -154,8 +154,8 @@ export default function ProjectsListPage() {
       <BackButton path='/' />
 
       <PageHeader
-        title='Проекты'
-        subtitle='Управление проектами'
+        title='Реестр проектов'
+        subtitle='управление проектами'
         actions={
           <>
             <Button

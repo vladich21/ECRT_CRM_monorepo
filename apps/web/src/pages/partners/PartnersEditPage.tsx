@@ -45,6 +45,7 @@ export default function PartnerEditPage() {
   const { mutate, isPending: isUpdateLoading } = useUpdatePartner();
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
   const isSubmittingRef = useRef(false);
+  const isFormInitializedRef = useRef(false);
   const wName = Form.useWatch('name', form) as string | undefined;
   const wShortName = Form.useWatch('short_name', form) as string | undefined;
   const wInn = Form.useWatch('inn', form) as string | undefined;
@@ -93,10 +94,11 @@ export default function PartnerEditPage() {
   ]);
 
   useEffect(() => {
-    if (partner && referenceBooks?.partnerStatuses) {
+    if (partner && referenceBooks?.partnerStatuses && !isFormInitializedRef.current) {
       const archiveEntry = referenceBooks.partnerStatuses.find(s => (s.name ?? '').trim() === 'Архив');
       const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
       form.setFieldsValue(partnerUpdateFormMapper(partner, { is_archived: isArchived }));
+      isFormInitializedRef.current = true;
     }
   }, [partner, referenceBooks, form]);
   const handleUploadByInn = async () => {

@@ -54,6 +54,7 @@ export function buildCreateContractPayload(formValues: Record<string, unknown>):
     description: trimOrNull(formValues.description),
     partner_id: idOrNull(formValues.partner_id),
     responsible_id: idOrNull(formValues.responsible_id),
+    supplier_manager_id: idOrNull(formValues.supplier_manager_id),
     project_id: idOrNull(formValues.project_id),
     contract_type_id: idOrNull(formValues.contract_type_id),
     category_id: idOrNull(formValues.category_id),
