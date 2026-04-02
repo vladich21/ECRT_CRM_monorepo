@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { parsePagination } from '../../../common/pagination';
 import type { RequestWithUser } from '../../auth/types';
-import { SupplierEvaluationsCreateEnvelopeDto } from '../dto';
+import { SupplierEvaluationsCreateEnvelopeDto, SupplierEvaluationsCreateInitialEnvelopeDto } from '../dto';
 import { isSupplierEvaluationCategory } from '../domain/supplier-evaluation.enums';
 import {
   SupplierEvaluationsService,
@@ -115,6 +115,15 @@ export class SupplierEvaluationsController {
     return this.service.findPartnerEvalSummary(partnerId.trim());
   }
 
+  @Get('initial')
+  async getActiveInitial(@Query('partner_id') partnerId?: string) {
+    if (!partnerId?.trim()) {
+      throw new BadRequestException('Укажите partner_id');
+    }
+    const row = await this.service.findActiveInitial(partnerId.trim());
+    return row ? [row] : [];
+  }
+
   @Get('counts-by-tab')
   countsByTab(
     @Query('partner_id') partnerId?: string,
@@ -184,6 +193,13 @@ export class SupplierEvaluationsController {
   async create(@Body() envelope: SupplierEvaluationsCreateEnvelopeDto, @Req() req: RequestWithUser) {
     const row = await this.service.create(envelope.body, req.user?.user_id);
     if (!row) throw new BadRequestException('Не удалось создать оценку');
+    return [row];
+  }
+
+  @Post('initial')
+  async createInitial(@Body() envelope: SupplierEvaluationsCreateInitialEnvelopeDto, @Req() req: RequestWithUser) {
+    const row = await this.service.createInitial(envelope.body, req.user?.user_id);
+    if (!row) throw new BadRequestException('Не удалось создать первичную оценку');
     return [row];
   }
 

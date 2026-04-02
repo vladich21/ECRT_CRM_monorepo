@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dayjs } from 'dayjs';
 import { useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Modal, Table, Tag, Typography } from 'antd';
+import { Button, Modal, Table, Tag, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { useOutletContext } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 
 import { useProjectsPreview } from '../../../api/projects/projectApiHooks';
 import {
+  usePartnerSupplierEvalKpi,
   useDeleteSupplierEvaluation,
   useSupplierEvaluationTabCounts,
   useSupplierEvaluationsList,
@@ -37,13 +38,7 @@ import {
   type PartnerEvaluationsListFilters,
 } from './PartnerEvaluationsFiltersModal';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
-import {
-  PARTNER_EVALUATIONS_UI_MOCK_PROJECT_LABELS,
-  augmentPartnerEvaluationsListWithMock,
-  augmentPartnerEvaluationsTabCountsWithMock,
-  isPartnerEvaluationsUiMockPartnerId,
-  isPartnerEvaluationsUiMockRowId,
-} from './partnerEvaluationsUiMock';
+import NewInitialSupplierEvaluationModal from './NewInitialSupplierEvaluationModal';
 import {
   CategoryTag,
   formatReevaluationCell,
@@ -64,6 +59,7 @@ export default function PartnerEvaluationsTab() {
   const [categoryFilter, setCategoryFilter] = useState<'all' | SupplierEvaluationCategory>('all');
   const [createdByUserId, setCreatedByUserId] = useState<string | undefined>(undefined);
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
+  const [initialEvaluationModalOpen, setInitialEvaluationModalOpen] = useState(false);
   const [reevaluationProjectId, setReevaluationProjectId] = useState<string | undefined>();
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [filtersDraft, setFiltersDraft] = useState<PartnerEvaluationsListFilters>(
@@ -75,14 +71,10 @@ export default function PartnerEvaluationsTab() {
   });
 
   const { data: projects = [] } = useProjectsPreview();
-  const projectNameById = useMemo(() => {
-    const base = Object.fromEntries(
-      projects.map(project => [project.id, project.name || project.code || project.id]),
-    );
-    return isPartnerEvaluationsUiMockPartnerId(partner.id)
-      ? { ...base, ...PARTNER_EVALUATIONS_UI_MOCK_PROJECT_LABELS }
-      : base;
-  }, [projects, partner.id]);
+  const projectNameById = useMemo(
+    () => Object.fromEntries(projects.map(project => [project.id, project.name || project.code || project.id])),
+    [projects],
+  );
 
   const { data: usersResponse } = useUsers(2, true);
   const buyerOptions = useMemo(
@@ -140,28 +132,10 @@ export default function PartnerEvaluationsTab() {
   );
 
   const { data: listDataRaw, isLoading, refetch } = useSupplierEvaluationsList(listParams, Boolean(partner.id));
+  const { data: partnerKpi } = usePartnerSupplierEvalKpi(partner.id, Boolean(partner.id));
 
-  const showEvaluationsUiMock =
-    isPartnerEvaluationsUiMockPartnerId(partner.id) &&
-    categoryFilter === 'all' &&
-    !createdByUserId &&
-    evaluatedAtRange == null;
-
-  const data = useMemo(
-    () =>
-      showEvaluationsUiMock
-        ? augmentPartnerEvaluationsListWithMock(listDataRaw, partner.id, rowStatusTab, page, pageSize)
-        : listDataRaw,
-    [listDataRaw, showEvaluationsUiMock, partner.id, rowStatusTab, page, pageSize],
-  );
-
-  const tabCounts = useMemo(
-    () =>
-      showEvaluationsUiMock
-        ? augmentPartnerEvaluationsTabCountsWithMock(tabCountsRaw, partner.id)
-        : tabCountsRaw,
-    [tabCountsRaw, showEvaluationsUiMock, partner.id],
-  );
+  const data = listDataRaw;
+  const tabCounts = tabCountsRaw;
 
   const activeFiltersCount = useMemo(
     () =>
@@ -250,7 +224,7 @@ export default function PartnerEvaluationsTab() {
           size='small'
           icon={<DeleteOutlined />}
           aria-label='Удалить оценку'
-          disabled={!!partner.is_deleted || isPartnerEvaluationsUiMockRowId(row.id)}
+          disabled={!!partner.is_deleted}
           onClick={() => {
             Modal.confirm({
               title: 'Удалить оценку?',
@@ -318,6 +292,15 @@ export default function PartnerEvaluationsTab() {
             >
               Новая оценка
             </Button>
+            {partnerKpi?.avgScore == null ? (
+              <Button
+                type='default'
+                disabled={!!partner.is_deleted}
+                onClick={() => setInitialEvaluationModalOpen(true)}
+              >
+                Первичная оценка
+              </Button>
+            ) : null}
           </>
         }
         filters={
@@ -343,19 +326,6 @@ export default function PartnerEvaluationsTab() {
         }
       />
 
-      {showEvaluationsUiMock ? (
-        <Alert
-          type='info'
-          showIcon
-          closable
-          style={{ marginTop: 16 }}
-          message='Демо-строки для всех вкладок'
-          description={
-            'Просрочка (−21/−7/−1 дн.), скоро (0,1,5,11,19,20 — граница окна 20 дн.), актуальные (21, 90 дн. и строка без даты), 2 блокировки (D без даты), 2 архива. Счётчики вкладок и KPI усилены моками; строки без раскрытия и удаления.'
-          }
-        />
-      ) : null}
-
       <div className={listStyles.tableCard} style={{ marginTop: 16 }}>
         <Table<SupplierEvaluationListItem>
           rowKey='id'
@@ -380,7 +350,7 @@ export default function PartnerEvaluationsTab() {
                 }}
               />
             ),
-            rowExpandable: record => !isPartnerEvaluationsUiMockRowId(record.id),
+            rowExpandable: () => true,
           }}
         />
       </div>
@@ -409,6 +379,18 @@ export default function PartnerEvaluationsTab() {
         onSuccess={() => {
           refetch();
           void queryClient.invalidateQueries({ queryKey: ['supplier-evaluations', 'partner-kpi', partner.id] });
+          void queryClient.invalidateQueries({
+            predicate: query => Array.isArray(query.queryKey) && query.queryKey[0] === 'partners',
+          });
+        }}
+      />
+
+      <NewInitialSupplierEvaluationModal
+        open={initialEvaluationModalOpen}
+        onClose={() => setInitialEvaluationModalOpen(false)}
+        partnerId={partner.id}
+        onSuccess={() => {
+          void queryClient.invalidateQueries({ queryKey: ['supplier-evaluations'] });
           void queryClient.invalidateQueries({
             predicate: query => Array.isArray(query.queryKey) && query.queryKey[0] === 'partners',
           });

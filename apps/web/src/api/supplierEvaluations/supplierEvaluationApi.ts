@@ -2,10 +2,12 @@ import { apiClient } from '../clients';
 import type { PartnerSupplierEvalKpi } from '../../utils/supplierEvaluationPartnerKpi';
 import type {
   CreateSupplierEvaluationPayload,
+  CreateInitialSupplierEvaluationPayload,
   SupplierEvaluationBlock,
   SupplierEvaluationContractProjectOption,
   SupplierEvaluationCriterion,
   SupplierEvaluationDetail,
+  InitialSupplierEvaluation,
   SupplierEvaluationListResponse,
   SupplierEvaluationTabCounts,
   SupplierEvaluationSortDir,
@@ -108,6 +110,20 @@ export const supplierEvaluationApi = {
 
   create: async (payload: CreateSupplierEvaluationPayload): Promise<SupplierEvaluationDetail | null> => {
     const { data } = await apiClient.post<SupplierEvaluationDetail[]>('/supplier-evaluations', payload);
+    const row = Array.isArray(data) ? data[0] : null;
+    return row ?? null;
+  },
+
+  getActiveInitial: async (partnerId: string): Promise<InitialSupplierEvaluation | null> => {
+    const { data } = await apiClient.get<InitialSupplierEvaluation[]>('/supplier-evaluations/initial', {
+      params: { partner_id: partnerId },
+    });
+    const row = Array.isArray(data) ? data[0] : null;
+    return row ?? null;
+  },
+
+  createInitial: async (payload: CreateInitialSupplierEvaluationPayload): Promise<InitialSupplierEvaluation | null> => {
+    const { data } = await apiClient.post<InitialSupplierEvaluation[]>('/supplier-evaluations/initial', payload);
     const row = Array.isArray(data) ? data[0] : null;
     return row ?? null;
   },

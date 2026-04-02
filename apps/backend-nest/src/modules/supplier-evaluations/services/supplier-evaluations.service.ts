@@ -21,7 +21,10 @@ import {
   categoryFromWeightedScore,
   nextReevaluationDateForCategory,
 } from '../domain/supplier-evaluation.rules';
-import type { CreateSupplierEvaluationDto } from '../dto';
+import type { CreateInitialSupplierEvaluationDto, CreateSupplierEvaluationDto } from '../dto';
+
+const EVAL_SCOPE_PROJECT = 'project';
+const EVAL_SCOPE_INITIAL = 'initial';
 
 export type SupplierEvaluationListStatusFilter = 'active' | 'archived' | 'all';
 
@@ -135,7 +138,13 @@ export class SupplierEvaluationsService {
           nextReevaluationDate: supplierEvaluations.nextReevaluationDate,
         })
         .from(supplierEvaluations)
-        .where(and(eq(supplierEvaluations.partnerId, partnerId), eq(supplierEvaluations.status, 'active'))!),
+        .where(
+          and(
+            eq(supplierEvaluations.partnerId, partnerId),
+            eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT),
+            eq(supplierEvaluations.status, 'active'),
+          )!,
+        ),
     ]);
 
     const blockedProjectCount = new Set(blockRows.map((r) => String(r.projectId))).size;
@@ -408,6 +417,7 @@ export class SupplierEvaluationsService {
             and(
               eq(supplierEvaluations.partnerId, dto.partner_id),
               eq(supplierEvaluations.projectId, dto.project_id),
+              eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT),
               eq(supplierEvaluations.status, 'active'),
             )!,
           );
@@ -417,6 +427,7 @@ export class SupplierEvaluationsService {
           .values({
             partnerId: dto.partner_id,
             projectId: dto.project_id,
+            scope: EVAL_SCOPE_PROJECT,
             status: 'active',
             weightedScore: String(weighted),
             category,
@@ -475,6 +486,145 @@ export class SupplierEvaluationsService {
     }
   }
 
+  async findActiveInitial(partnerId: string) {
+    const rows = await this.db.db
+      .select()
+      .from(supplierEvaluations)
+      .where(
+        and(
+          eq(supplierEvaluations.partnerId, partnerId),
+          eq(supplierEvaluations.scope, EVAL_SCOPE_INITIAL),
+          eq(supplierEvaluations.status, 'active'),
+        )!,
+      )
+      .orderBy(desc(supplierEvaluations.evaluatedAt), desc(supplierEvaluations.createdAt))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      partner_id: String(row.partnerId),
+      weighted_score: this.roundScore(Number(row.weightedScore)),
+      category: row.category as SupplierEvaluationCategory,
+      evaluated_at: row.evaluatedAt ? String(row.evaluatedAt) : '',
+      next_reevaluation_date: row.nextReevaluationDate ? String(row.nextReevaluationDate) : null,
+      comment: row.comment ?? '',
+      created_at: row.createdAt ? row.createdAt.toISOString() : '',
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
+    };
+  }
+
+  async createInitial(dto: CreateInitialSupplierEvaluationDto, createdByUserId?: string) {
+    this.validateEvaluatedAt(dto.evaluated_at);
+    // Для initial не нужен project_id и нет привязки к договорам/проектам
+    const [p] = await this.db.db
+      .select({ id: partners.id })
+      .from(partners)
+      .where(and(eq(partners.id, dto.partner_id), eq(partners.isDeleted, false)))
+      .limit(1);
+    if (!p) {
+      throw new BadRequestException('Контрагент не найден или удалён');
+    }
+
+    const criteriaRows = await this.db.db
+      .select()
+      .from(refSupplierEvaluationCriteria)
+      .where(eq(refSupplierEvaluationCriteria.isActive, true));
+
+    if (criteriaRows.length === 0) {
+      throw new BadRequestException('В справочнике нет активных критериев оценки');
+    }
+
+    const activeCriterionIds = new Set(criteriaRows.map((c) => String(c.id)));
+    const weightById = new Map(criteriaRows.map((c) => [String(c.id), Number(c.weight)]));
+
+    const seen = new Set<string>();
+    for (const s of dto.scores) {
+      if (seen.has(s.criterion_id)) {
+        throw new BadRequestException(`Критерий ${s.criterion_id} указан более одного раза`);
+      }
+      seen.add(s.criterion_id);
+      if (!activeCriterionIds.has(s.criterion_id)) {
+        throw new BadRequestException(`Неизвестный или неактивный критерий: ${s.criterion_id}`);
+      }
+    }
+
+    if (seen.size === 0) {
+      throw new BadRequestException('Нужен минимум один критерий для первичной оценки');
+    }
+
+    const sumWeights = dto.scores.reduce((acc, s) => acc + (weightById.get(s.criterion_id) ?? 0), 0);
+    if (!Number.isFinite(sumWeights) || sumWeights <= 0) {
+      throw new BadRequestException('Сумма весов выбранных критериев должна быть больше 0');
+    }
+
+    let weighted = 0;
+    for (const s of dto.scores) {
+      const w = weightById.get(s.criterion_id) ?? 0;
+      weighted += s.score * (w / sumWeights);
+    }
+    weighted = Math.round(weighted * 100) / 100;
+
+    const category = categoryFromWeightedScore(weighted);
+    const nextReevaluation = nextReevaluationDateForCategory(dto.evaluated_at, category);
+
+    const createdBy = createdByUserId ?? null;
+
+    const inserted = await this.db.db.transaction(async (tx) => {
+      await tx
+        .update(supplierEvaluations)
+        .set({ status: 'archived', updatedAt: new Date() })
+        .where(
+          and(
+            eq(supplierEvaluations.partnerId, dto.partner_id),
+            eq(supplierEvaluations.scope, EVAL_SCOPE_INITIAL),
+            eq(supplierEvaluations.status, 'active'),
+          )!,
+        );
+
+      const [row] = await tx
+        .insert(supplierEvaluations)
+        .values({
+          partnerId: dto.partner_id,
+          projectId: null,
+          scope: EVAL_SCOPE_INITIAL,
+          status: 'active',
+          weightedScore: String(weighted),
+          category,
+          evaluatedAt: dto.evaluated_at,
+          nextReevaluationDate: nextReevaluation,
+          comment: dto.comment ?? null,
+          createdBy,
+          updatedBy: createdBy,
+        })
+        .returning();
+      if (!row) throw new Error('INSERT supplier_evaluations (initial) не вернул строку');
+
+      await tx.insert(supplierEvaluationCriterionScores).values(
+        dto.scores.map((s) => ({
+          evaluationId: row.id,
+          criterionId: s.criterion_id,
+          score: String(s.score),
+        })),
+      );
+
+      return row;
+    });
+
+    await this.partnersService.refreshPartnerDerivedStatus(dto.partner_id);
+    return {
+      id: String(inserted.id),
+      partner_id: String(inserted.partnerId),
+      weighted_score: this.roundScore(Number(inserted.weightedScore)),
+      category: inserted.category as SupplierEvaluationCategory,
+      evaluated_at: inserted.evaluatedAt ? String(inserted.evaluatedAt) : '',
+      next_reevaluation_date: inserted.nextReevaluationDate ? String(inserted.nextReevaluationDate) : null,
+      comment: inserted.comment ?? '',
+      created_at: inserted.createdAt ? inserted.createdAt.toISOString() : '',
+      updated_at: inserted.updatedAt ? inserted.updatedAt.toISOString() : null,
+    };
+  }
+
   async findActiveBlock(partnerId: string, projectId: string) {
     const rows = await this.db.db
       .select()
@@ -523,6 +673,8 @@ export class SupplierEvaluationsService {
 
   private buildListWhere(filters: SupplierEvaluationQueryFilters): SQL | undefined {
     const parts: SQL[] = [];
+    // Список/фильтры в UI сейчас про проектные оценки — не смешиваем с первичными.
+    parts.push(eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT));
     if (filters.partnerId) {
       parts.push(eq(supplierEvaluations.partnerId, filters.partnerId));
     }

@@ -7,8 +7,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { partnerApi } from '../../api/partners/partnerApi';
 import { usePartners } from '../../api/partners/partnerApiHooks';
-import { fetchPartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApi';
-import { getPartnerSupplierEvalKpiQueryKey } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import { fetchPartnerSupplierEvalKpi, supplierEvaluationApi } from '../../api/supplierEvaluations/supplierEvaluationApi';
+import { getPartnerInitialEvalQueryKey, getPartnerSupplierEvalKpiQueryKey } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { BackButton } from '../../components/backButton/BackButton';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
@@ -20,10 +20,6 @@ import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../utils/
 import { EMPTY_FILTERS, PartnerFiltersModal, type PartnerFilters } from './PartnerFiltersModal';
 import styles from './PartnersListPage.module.scss';
 import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
-import {
-  isPartnerEvaluationsUiMockPartnerId,
-  mergePartnerSupplierEvalKpiWithUiMock,
-} from './evaluations/partnerEvaluationsUiMock';
 import SupplierCard from './registry/SupplierCard';
 import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 
@@ -110,6 +106,14 @@ export default function PartnersListPage() {
     queries: partners.map(partner => ({
       queryKey: getPartnerSupplierEvalKpiQueryKey(partner.id),
       queryFn: () => fetchPartnerSupplierEvalKpi(partner.id),
+      staleTime: 60 * 1000,
+      enabled: !isInitialLoad && partners.length > 0,
+    })),
+  });
+  const partnerInitialEvalQueries = useQueries({
+    queries: partners.map(partner => ({
+      queryKey: getPartnerInitialEvalQueryKey(partner.id),
+      queryFn: () => supplierEvaluationApi.getActiveInitial(partner.id),
       staleTime: 60 * 1000,
       enabled: !isInitialLoad && partners.length > 0,
     })),
@@ -284,8 +288,10 @@ export default function PartnersListPage() {
                 key={partner.id}
                 partner={displayPartner}
                 references={references}
-                evaluationKpi={mergePartnerSupplierEvalKpiWithUiMock(partner.id, partnerEvalKpiQueries[index]?.data)}
+                evaluationKpi={partnerEvalKpiQueries[index]?.data}
                 evaluationKpiLoading={Boolean(partnerEvalKpiQueries[index]?.isPending)}
+                initialEvaluation={partnerInitialEvalQueries[index]?.data}
+                initialEvaluationLoading={Boolean(partnerInitialEvalQueries[index]?.isPending)}
                 onClick={handleCardClick}
               />
                 );

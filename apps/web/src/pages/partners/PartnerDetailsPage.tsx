@@ -1,6 +1,6 @@
 import { DeleteOutlined, EditOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useContracts } from '../../api/contracts/contractApiHooks';
@@ -12,6 +12,7 @@ import {
   usePartnerSupplierEvalKpi,
   useSupplierEvaluationsList,
 } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import { usePartnerInitialSupplierEval } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { APP_COLOR_SUCCESS } from '../../constants/appColors';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
@@ -20,11 +21,6 @@ import type { DeletionScope } from '../../constants/deletionScope';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
-import {
-  isPartnerEvaluationsUiMockPartnerId,
-  mergePartnerSupplierEvalKpiWithUiMock,
-  partnerEvaluationsUiMockActiveRowsCount,
-} from './evaluations/partnerEvaluationsUiMock';
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
@@ -61,17 +57,12 @@ export default function PartnerDetailsPage() {
     { partner_id: partnerId, status: 'all', limit: 1, offset: 0 },
     Boolean(partnerId),
   );
-  const evaluationsTotal =
-    (evaluationsCountData?.total ?? 0) +
-    (partnerId && isPartnerEvaluationsUiMockPartnerId(partnerId) ? partnerEvaluationsUiMockActiveRowsCount() : 0);
-  const { data: partnerEvalKpiRaw, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
+  const evaluationsTotal = evaluationsCountData?.total ?? 0;
+  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
     partnerId,
     Boolean(partnerId),
   );
-  const partnerEvalKpi = useMemo(
-    () => mergePartnerSupplierEvalKpiWithUiMock(partnerId ?? '', partnerEvalKpiRaw),
-    [partnerId, partnerEvalKpiRaw],
-  );
+  const { data: initialEval, isLoading: initialEvalLoading } = usePartnerInitialSupplierEval(partnerId, Boolean(partnerId));
   const getActiveTabFromPath = () => {
     const path = location.pathname;
     if (path.includes('/contacts')) return 'contacts';
@@ -145,7 +136,7 @@ export default function PartnerDetailsPage() {
     { key: 'main', label: 'Основное' },
     { key: 'contacts', label: `Контактные лица (${contacts.length})` },
     { key: 'contracts', label: `Договоры (${contractsList?.total ?? 0})` },
-    { key: 'evaluations', label: `Оценки проектов (${evaluationsTotal})` },
+    { key: 'evaluations', label: `Оценки (${evaluationsTotal})` },
     { key: 'comments', label: 'Комментарии' },
     { key: 'files', label: `Файлы (${files.length})` },
   ];
@@ -170,7 +161,7 @@ export default function PartnerDetailsPage() {
             : undefined
       }
       badges={partnerDetailHeaderBadges(partner, { categoryName })}
-      metaItems={partnerDetailHeaderMetaItems(partner, references, partnerEvalKpi, partnerEvalKpiLoading)}
+      metaItems={partnerDetailHeaderMetaItems(partner, references, partnerEvalKpi, partnerEvalKpiLoading, initialEval, initialEvalLoading)}
       actions={
         <>
           <Button

@@ -3,10 +3,12 @@ import { useOutletContext } from 'react-router-dom';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { usePartnerContacts } from '../../../api/partners/partnerContactApiHooks';
-import { usePartnerSupplierEvalKpi } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import {
+  usePartnerInitialSupplierEval,
+  usePartnerSupplierEvalKpi,
+} from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import type { Partner } from '../../../types/partner';
 
-import { mergePartnerSupplierEvalKpiWithUiMock } from '../evaluations/partnerEvaluationsUiMock';
 import { formatNextReevaluationKpiValue } from '../evaluations/supplierEvaluationUi';
 import PartnersMainInfo from '../detailsTabs/PartnerMainInfo';
 import DetailSidebar from './DetailSidebar';
@@ -22,10 +24,9 @@ export default function PartnerOverviewTab() {
     'partnerEconomicCategories',
   ]);
 
-  const { data: supplierEvalKpiRaw } = usePartnerSupplierEvalKpi(partner.id, Boolean(partner.id));
-  const supplierEvalKpi = useMemo(
-    () => mergePartnerSupplierEvalKpiWithUiMock(partner.id, supplierEvalKpiRaw),
-    [partner.id, supplierEvalKpiRaw],
+  const { data: supplierEvalKpi } = usePartnerSupplierEvalKpi(partner.id, Boolean(partner.id));
+  const { data: initialEval } = usePartnerInitialSupplierEval(
+    supplierEvalKpi?.avgScore == null ? partner.id : undefined,
   );
   const { data: partnerContacts = [] } = usePartnerContacts(partner.id);
 
@@ -55,8 +56,17 @@ export default function PartnerOverviewTab() {
       <div className={styles.leftColumn}>
         <KpiRow
           complianceItems={complianceItems}
-          supplierEvalAvgScore={supplierEvalKpi?.avgScore ?? null}
-          nextEvaluationValue={formatNextReevaluationKpiValue(supplierEvalKpi?.nextReevaluationIso ?? null)}
+          supplierEvalAvgScore={supplierEvalKpi?.avgScore ?? initialEval?.weighted_score ?? null}
+          nextEvaluationValue={formatNextReevaluationKpiValue(
+            supplierEvalKpi?.nextReevaluationIso ?? initialEval?.next_reevaluation_date ?? null,
+          )}
+          avgScoreLabel={
+            supplierEvalKpi?.avgScore != null
+              ? 'По проектам'
+              : initialEval?.weighted_score != null
+                ? 'Первичная оценка'
+                : 'Средняя оценка'
+          }
         />
         <PartnersMainInfo partner={partner} />
       </div>

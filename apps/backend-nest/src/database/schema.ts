@@ -381,7 +381,10 @@ export const supplierEvaluations = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     partnerId: uuid('partner_id').notNull(),
-    projectId: uuid('project_id').notNull(),
+    /** Для первичной оценки project_id = NULL */
+    projectId: uuid('project_id'),
+    /** scope=project — оценка по проекту, scope=initial — первичная оценка контрагента */
+    scope: varchar('scope', { length: 20 }).notNull().default('project'),
     status: varchar('status', { length: 20 }).notNull(),
     weightedScore: numeric('weighted_score', { precision: 5, scale: 2 }).notNull(),
     category: varchar('category', { length: 1 }).notNull(),
@@ -396,6 +399,7 @@ export const supplierEvaluations = pgTable(
   (t) => [
     index('supplier_evaluations_partner_idx').on(t.partnerId),
     index('supplier_evaluations_project_idx').on(t.projectId),
+    index('supplier_evaluations_partner_scope_status_idx').on(t.partnerId, t.scope, t.status),
     index('supplier_evaluations_partner_project_status_idx').on(t.partnerId, t.projectId, t.status),
     index('supplier_evaluations_next_reeval_idx').on(t.nextReevaluationDate),
   ],

@@ -14,6 +14,7 @@ import headerStyles from '../../components/pageLayout/DetailPageHeader.module.sc
 import type { Partner } from '../../types/partner';
 import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../utils/partnerApproval';
 import type { PartnerSupplierEvalKpi } from '../../utils/supplierEvaluationPartnerKpi';
+import type { InitialSupplierEvaluation } from '../../types/supplierEvaluation';
 import { PartnerHeaderAvgScoreTag, PartnerNextEvalDateTags } from './evaluations/partnerEvalKpiDisplay';
 import chipStyles from './partnerDetailHeaderContent.module.scss';
 
@@ -132,6 +133,8 @@ export function partnerDetailHeaderMetaItems(
   references: { partnerTypes?: Array<{ id: string; name: string }> } | null | undefined,
   partnerEvalKpi: PartnerSupplierEvalKpi | undefined,
   partnerEvalKpiLoading: boolean,
+  initialEval?: InitialSupplierEvaluation | null,
+  initialEvalLoading?: boolean,
 ): ReactNode[] {
   const typeNames = (partner.type_ids ?? [])
     .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
@@ -163,13 +166,17 @@ export function partnerDetailHeaderMetaItems(
     );
   }
 
+  const hasProjectAvg = partnerEvalKpi?.avgScore != null;
+  const hasInitialAvg = !hasProjectAvg && initialEval?.weighted_score != null;
+  const avgScoreLabel = hasProjectAvg ? 'По проектам:' : hasInitialAvg ? 'Первичная оценка:' : 'Средняя оценка:';
+
   items.push(
     <span key='eval-avg' className={headerStyles.metaText}>
       <SafetyCertificateOutlined />
-      <span className={chipStyles.metaLabel}>Средняя оценка:</span>{' '}
+      <span className={chipStyles.metaLabel}>{avgScoreLabel}</span>{' '}
       <PartnerHeaderAvgScoreTag
-        avgScore={partnerEvalKpi?.avgScore ?? null}
-        loading={partnerEvalKpiLoading}
+        avgScore={partnerEvalKpi?.avgScore ?? (initialEval?.weighted_score ?? null)}
+        loading={partnerEvalKpiLoading || (partnerEvalKpi?.avgScore == null && Boolean(initialEvalLoading))}
         forDarkHeader
       />
     </span>,
@@ -179,10 +186,12 @@ export function partnerDetailHeaderMetaItems(
     <span key='eval-next' className={headerStyles.metaText}>
       <CalendarOutlined />
       <span className={chipStyles.metaLabel}>Следующая оценка:</span>{' '}
-      {partnerEvalKpiLoading ? (
+      {partnerEvalKpiLoading || (partnerEvalKpi?.avgScore == null && initialEvalLoading) ? (
         '…'
       ) : partnerEvalKpi?.nextReevaluationIso ? (
         <PartnerNextEvalDateTags nextIso={partnerEvalKpi.nextReevaluationIso} forDarkHeader />
+      ) : initialEval?.next_reevaluation_date ? (
+        <PartnerNextEvalDateTags nextIso={initialEval.next_reevaluation_date} forDarkHeader />
       ) : (
         <Tag bordered className={chipStyles.metaPlaceholderTag}>
           —

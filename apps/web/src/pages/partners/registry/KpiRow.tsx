@@ -9,6 +9,7 @@ interface KpiRowProps {
   complianceItems: ComplianceItem[];
   supplierEvalAvgScore: number | null;
   nextEvaluationValue: ReactNode;
+  avgScoreLabel?: string;
 }
 
 type KpiTileKey = 'avgScore' | 'nextEval';
@@ -24,13 +25,14 @@ export default function KpiRow({
   complianceItems,
   supplierEvalAvgScore,
   nextEvaluationValue,
+  avgScoreLabel = 'Средняя оценка',
 }: KpiRowProps) {
   const tiles: KpiTile[] = [
     {
       key: 'avgScore',
       icon: <SafetyCertificateOutlined />,
       value: supplierEvalAvgScore == null ? '—' : supplierEvalAvgScore.toFixed(2),
-      label: 'Средняя оценка',
+      label: avgScoreLabel,
     },
     {
       key: 'nextEval',

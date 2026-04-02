@@ -78,6 +78,26 @@ export interface CreateSupplierEvaluationPayload {
   scores: { criterion_id: string; score: number }[];
 }
 
+export interface InitialSupplierEvaluation {
+  id: string;
+  partner_id: string;
+  weighted_score: number;
+  category: SupplierEvaluationCategory;
+  evaluated_at: string;
+  next_reevaluation_date: string | null;
+  comment: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CreateInitialSupplierEvaluationPayload {
+  partner_id: string;
+  evaluated_at: string;
+  comment?: string;
+  /** Только включённые критерии. */
+  scores: { criterion_id: string; score: number }[];
+}
+
 export type SupplierEvaluationUiStatusParam =
   | 'all'
   | 'current'

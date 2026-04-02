@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
   CreateSupplierEvaluationPayload,
+  CreateInitialSupplierEvaluationPayload,
+  InitialSupplierEvaluation,
   SupplierEvaluationCategory,
   SupplierEvaluationSortDir,
   SupplierEvaluationSortField,
@@ -45,6 +47,7 @@ const supplierEvaluationQueryKey = {
   block: (partnerId: string, projectId: string) =>
     ['supplier-evaluations', 'block', partnerId, projectId] as const,
   partnerKpi: (partnerId: string) => ['supplier-evaluations', 'partner-kpi', partnerId] as const,
+  partnerInitial: (partnerId: string) => ['supplier-evaluations', 'partner-initial', partnerId] as const,
 };
 
 export function useSupplierEvaluationCriteria() {
@@ -151,12 +154,38 @@ export function usePartnerSupplierEvalKpi(partnerId: string | undefined, enabled
   });
 }
 
+export function getPartnerInitialEvalQueryKey(partnerId: string) {
+  return supplierEvaluationQueryKey.partnerInitial(partnerId);
+}
+
+export function usePartnerInitialSupplierEval(partnerId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: supplierEvaluationQueryKey.partnerInitial(partnerId ?? ''),
+    queryFn: () => supplierEvaluationApi.getActiveInitial(partnerId!),
+    enabled: Boolean(partnerId) && enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useCreateSupplierEvaluation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateSupplierEvaluationPayload) => supplierEvaluationApi.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplier-evaluations'] });
+    },
+  });
+}
+
+export function useCreateInitialSupplierEvaluation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateInitialSupplierEvaluationPayload) => supplierEvaluationApi.createInitial(payload),
+    onSuccess: (data: InitialSupplierEvaluation | null) => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-evaluations'] });
+      if (data?.partner_id) {
+        queryClient.invalidateQueries({ queryKey: supplierEvaluationQueryKey.partnerInitial(data.partner_id) });
+      }
     },
   });
 }

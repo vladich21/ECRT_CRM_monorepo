@@ -13,6 +13,7 @@ import { Progress, Tooltip } from 'antd';
 
 import type { Partner } from '../../../types/partner';
 import type { PartnerSupplierEvalKpi } from '../../../utils/supplierEvaluationPartnerKpi';
+import type { InitialSupplierEvaluation } from '../../../types/supplierEvaluation';
 import { PartnerNextEvalDateTags } from '../evaluations/partnerEvalKpiDisplay';
 import { scoreColor } from '../evaluations/supplierEvaluationUi';
 import styles from './SupplierCard.module.scss';
@@ -27,6 +28,8 @@ interface SupplierCardProps {
   evaluationKpi?: PartnerSupplierEvalKpi;
   evaluationKpiLoading?: boolean;
   evaluationKpiDaysHint?: string;
+  initialEvaluation?: InitialSupplierEvaluation | null;
+  initialEvaluationLoading?: boolean;
   onClick: (partner: Partner) => void;
 }
 
@@ -55,6 +58,8 @@ export default function SupplierCard({
   evaluationKpi,
   evaluationKpiLoading,
   evaluationKpiDaysHint,
+  initialEvaluation,
+  initialEvaluationLoading,
   onClick,
 }: SupplierCardProps) {
   const statusName = references?.partnerStatuses?.find(s => s.id === partner.status_id)?.name ?? '—';
@@ -62,7 +67,8 @@ export default function SupplierCard({
     .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
     .filter(Boolean);
 
-  const avgScore = evaluationKpi?.avgScore ?? null;
+  const hasProjectAvg = evaluationKpi?.avgScore != null;
+  const avgScore = evaluationKpi?.avgScore ?? (initialEvaluation?.weighted_score ?? null);
   const blockedCount = evaluationKpi?.blockedProjectCount ?? 0;
   const reevalOverdue = evaluationKpi?.nextReevaluationOverdue ?? false;
 
@@ -157,10 +163,19 @@ export default function SupplierCard({
         <div className={styles.complianceBlock}>
           <div className={styles.complianceHeader}>
             <span className={styles.complianceLabel}>
-              <SafetyCertificateOutlined /> Средняя оценка
+              <SafetyCertificateOutlined />{' '}
+              {hasProjectAvg
+                ? 'По проектам'
+                : avgScore != null
+                  ? 'Первичная оценка'
+                  : 'Средняя оценка'}
             </span>
             <span className={styles.complianceScore} style={{ color: scoreStroke }}>
-              {evaluationKpiLoading ? '…' : avgScore == null ? '—' : avgScore.toFixed(2)}
+              {evaluationKpiLoading || (!hasProjectAvg && initialEvaluationLoading)
+                ? '…'
+                : avgScore == null
+                  ? '—'
+                  : avgScore.toFixed(2)}
             </span>
           </div>
           <Progress
@@ -176,10 +191,12 @@ export default function SupplierCard({
           <div className={styles.nextEvalCol}>
             <span className={styles.nextEvalLine}>
               <span className={styles.nextEvalLabel}>Следующая оценка:</span>{' '}
-              {evaluationKpiLoading ? (
+              {evaluationKpiLoading || (!hasProjectAvg && initialEvaluationLoading) ? (
                 '…'
               ) : evaluationKpi?.nextReevaluationIso ? (
                 <PartnerNextEvalDateTags nextIso={evaluationKpi.nextReevaluationIso} layout='registry' />
+              ) : initialEvaluation?.next_reevaluation_date ? (
+                <PartnerNextEvalDateTags nextIso={initialEvaluation.next_reevaluation_date} layout='registry' />
               ) : (
                 <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>—</span>
               )}

@@ -143,7 +143,8 @@ export default function NewSupplierEvaluationModal({
       open={open}
       onCancel={onClose}
       width={720}
-      styles={{ body: { paddingTop: 12 } }}
+      style={{ top: 20 }}
+      styles={{ body: { paddingTop: 8 } }}
       destroyOnHidden
       okText='Сохранить оценку'
       okButtonProps={{ disabled: projectOptions.length === 0 || !criteriaOrdered.length }}
@@ -157,7 +158,7 @@ export default function NewSupplierEvaluationModal({
             type='warning'
             showIcon
             className={styles.alertMb}
-            message='Нет проектов по договорам с этим контрагентом'
+            message={<span className={styles.alertMessage}>Нет проектов по договорам с этим контрагентом</span>}
             description='Оценку можно выставить только по проекту, который указан в действующем договоре с контрагентом.'
           />
         ) : null}
@@ -201,19 +202,6 @@ export default function NewSupplierEvaluationModal({
             </Form.Item>
           </Col>
         </Row>
-
-        <div className={styles.buyerBlock}>
-          <Text type='secondary' className={styles.buyerLabel}>
-            Закупщик
-          </Text>
-          <Text strong className={styles.buyerName}>
-            {formatSrmUserName(currentUser)}
-          </Text>
-          <Text type='secondary' className={styles.buyerHint}>
-            Оценка фиксируется за пользователем, который нажимает «Сохранить».
-          </Text>
-        </div>
-
         <div className={styles.matrix}>
           <div className={styles.matrixHeader}>
             <Text type='secondary' className={styles.matrixHeaderTitle}>
@@ -250,7 +238,7 @@ export default function NewSupplierEvaluationModal({
                       <div className={styles.colGrow}>
                         <div className={styles.criterionTitle}>{criterion.name}</div>
                         <Text type='secondary' className={styles.criterionMeta}>
-                          Вес {(criterion.weight * 100).toFixed(1)}% · порядок {criterion.sort_order}
+                          Вес {(criterion.weight * 100).toFixed(1)}%
                         </Text>
                       </div>
                       <Space size={4} wrap>
@@ -292,7 +280,7 @@ export default function NewSupplierEvaluationModal({
         </div>
 
         <Form.Item name='comment' label='Комментарий' className={styles.commentField}>
-          <Input.TextArea rows={3} placeholder='Дополнительные замечания…' />
+          <Input.TextArea rows={2} placeholder='Дополнительные замечания…' />
         </Form.Item>
       </Form>
     </Modal>

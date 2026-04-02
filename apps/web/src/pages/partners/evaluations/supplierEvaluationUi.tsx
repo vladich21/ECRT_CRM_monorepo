@@ -85,25 +85,18 @@ export function getRowUiStatus(row: SupplierEvaluationListItem): UiEvalRowStatus
 export function ScoreDots({ value }: { value: number }) {
   const filled = Math.floor(value);
   const half = value % 1 > 0;
+  const color = scoreColor(value);
   const cells = [];
   for (let segmentIndex = 1; segmentIndex <= 5; segmentIndex += 1) {
     const isFilled = segmentIndex <= filled;
     const isHalf = segmentIndex === filled + 1 && half;
-    const bg = isFilled
-      ? scoreStepColor(segmentIndex)
-      : isHalf
-        ? scoreStepColor(segmentIndex)
-        : undefined;
     cells.push(
       <span
         key={segmentIndex}
         className={uiStyles.dot}
         style={
-          bg
-            ? {
-                backgroundColor: bg,
-                opacity: isHalf ? 0.5 : 1,
-              }
+          isFilled || isHalf
+            ? { backgroundColor: color, opacity: isHalf ? 0.5 : 1 }
             : undefined
         }
       />,

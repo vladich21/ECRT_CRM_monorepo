@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { usePartnerById, usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
-import { usePartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import { usePartnerInitialSupplierEval, usePartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../../components/pageLayout/DetailPageHeader';
@@ -15,7 +15,6 @@ import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateForm
 import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
 import type { Partner } from '../../types/partner';
 import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../utils/partnerApproval';
-import { mergePartnerSupplierEvalKpiWithUiMock } from './evaluations/partnerEvaluationsUiMock';
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
@@ -58,14 +57,11 @@ export default function PartnerEditPage() {
   const wTarget = Form.useWatch('is_targeted', form) as boolean | undefined;
   const wCategoryId = Form.useWatch('category_id', form) as string | undefined;
 
-  const { data: partnerEvalKpiRaw, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
+  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
     partnerId,
     Boolean(partnerId),
   );
-  const partnerEvalKpi = useMemo(
-    () => mergePartnerSupplierEvalKpiWithUiMock(partnerId ?? '', partnerEvalKpiRaw),
-    [partnerId, partnerEvalKpiRaw],
-  );
+  const { data: initialEval, isLoading: initialEvalLoading } = usePartnerInitialSupplierEval(partnerId, Boolean(partnerId));
 
   const displayPartner: Partner | null = useMemo(() => {
     if (!partner) return null;
@@ -183,6 +179,8 @@ export default function PartnerEditPage() {
         referenceBooks,
         partnerEvalKpi,
         partnerEvalKpiLoading,
+        initialEval,
+        initialEvalLoading,
       )}
       actions={
         <>
