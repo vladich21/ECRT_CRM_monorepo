@@ -1,5 +1,5 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { ConflictException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
@@ -134,10 +134,16 @@ export class PartnersService {
     this.logger.debug(`Получение партнёров (preview=${preview})`);
 
     if (preview) {
+      const { blockedId } = await this.resolvePartnerOperationalStatusIds();
       const rows = await this.db.db
         .select({ id: partners.id, name: partners.name })
         .from(partners)
-        .where(eq(partners.isDeleted, false))
+        .where(
+          and(
+            eq(partners.isDeleted, false),
+            or(isNull(partners.statusId), ne(partners.statusId, blockedId))!,
+          )!,
+        )
         .orderBy(asc(partners.name));
       const data = rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
       const n = data.length;
@@ -231,9 +237,10 @@ export class PartnersService {
     const partnerIds = rowsForList.map((row) => String(row.id));
     const categoryIds = [...new Set(rowsForList.map((row) => row.categoryId).filter(Boolean))] as string[];
 
-    const [categoryNameById, blockedPartnerIds] = await Promise.all([
+    const [categoryNameById, blockedPartnerIds, initialEvalPartnerIds] = await Promise.all([
       this.loadCategoryNamesByIds(categoryIds),
       this.loadBlockedPartnerIds(partnerIds),
+      this.loadInitialEvalPartnerIds(partnerIds),
     ]);
 
     const data = rowsForList.map((row) => {
@@ -241,7 +248,8 @@ export class PartnersService {
       const catId = row.categoryId ? String(row.categoryId) : '';
       const catName = catId ? categoryNameById.get(catId) ?? null : null;
       const hasBlock = blockedPartnerIds.has(pid);
-      const extras = this.partnerApprovalExtras(row, catName, hasBlock);
+      const hasInitialEval = initialEvalPartnerIds.has(pid);
+      const extras = this.partnerApprovalExtras(row, catName, hasBlock, hasInitialEval);
       return {
         ...this.toResponse(row, extras),
         type_ids: typeMap.get(pid) ?? [],
@@ -288,7 +296,7 @@ export class PartnersService {
     const rowFresh = rowsFresh[0] ?? row;
 
     const catId = rowFresh.categoryId ? String(rowFresh.categoryId) : '';
-    const [typeRows, compRows, categoryNameById, blockedPartnerIds] = await Promise.all([
+    const [typeRows, compRows, categoryNameById, blockedPartnerIds, initialEvalIds] = await Promise.all([
       this.db.db
         .select({ typeId: relPartnersTypes.typeId })
         .from(relPartnersTypes)
@@ -299,10 +307,12 @@ export class PartnersService {
         .where(eq(relPartnersCompetencies.partnerId, id)),
       catId ? this.loadCategoryNamesByIds([catId]) : Promise.resolve(new Map<string, string>()),
       this.loadBlockedPartnerIds([pid]),
+      this.loadInitialEvalPartnerIds([pid]),
     ]);
     const catName = catId ? categoryNameById.get(catId) ?? null : null;
     const hasBlock = blockedPartnerIds.has(pid);
-    const extras = this.partnerApprovalExtras(rowFresh, catName, hasBlock);
+    const hasInitialEval = initialEvalIds.has(pid);
+    const extras = this.partnerApprovalExtras(rowFresh, catName, hasBlock, hasInitialEval);
     return {
       ...this.toResponse(rowFresh, extras),
       type_ids: typeRows.map((typeRow) => String(typeRow.typeId)).filter(Boolean),
@@ -700,16 +710,26 @@ export class PartnersService {
     }
   }
 
+  /**
+   * Computes derived approval extras for a partner row.
+   *
+   * `hasInitialEvalRecord` is provided by the caller from a live query against the
+   * supplierEvaluations table — it represents the authoritative source of truth for
+   * whether the initial assessment has been conducted, superseding the cached
+   * `initialAssessmentDone` DB column (which is set on write but may lag behind on
+   * older rows created before this invariant was enforced).
+   */
   private partnerApprovalExtras(
     row: typeof partners.$inferSelect,
     categoryName: string | null,
     hasActiveEvaluationBlock: boolean,
+    hasInitialEvalRecord: boolean,
   ): { isApproved: boolean; hasActiveEvaluationBlock: boolean } {
     const isApproved = computePartnerIsApproved({
       kind: inferPartnerCategoryKind(categoryName),
       legalCheckPassed: !!(row.legalCheckPassed ?? false),
       questionnaireFilled: !!(row.questionnaireFilled ?? false),
-      initialAssessmentDone: !!(row.initialAssessmentDone ?? false),
+      initialAssessmentDone: !!(row.initialAssessmentDone ?? false) || hasInitialEvalRecord,
       hasActiveSupplierEvaluationBlock: hasActiveEvaluationBlock,
     });
     return { isApproved, hasActiveEvaluationBlock: hasActiveEvaluationBlock };
@@ -740,6 +760,22 @@ export class PartnersService {
         )!,
       );
     return new Set(blockRows.map((b) => String(b.partnerId)));
+  }
+
+  /** Returns the set of partner IDs that have an active initial evaluation record. */
+  private async loadInitialEvalPartnerIds(partnerIds: string[]): Promise<Set<string>> {
+    if (partnerIds.length === 0) return new Set();
+    const rows = await this.db.db
+      .selectDistinct({ partnerId: supplierEvaluations.partnerId })
+      .from(supplierEvaluations)
+      .where(
+        and(
+          inArray(supplierEvaluations.partnerId, partnerIds),
+          eq(supplierEvaluations.scope, 'initial'),
+          eq(supplierEvaluations.status, 'active'),
+        )!,
+      );
+    return new Set(rows.map((r) => String(r.partnerId)));
   }
 
   private toResponse(

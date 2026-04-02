@@ -1,5 +1,5 @@
 import { ExceptionOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { Col, Divider, Form, Row, Select, Switch, Typography } from 'antd';
+import { Col, Divider, Form, Row, Select } from 'antd';
 
 import type { PartnerFormRefs } from './partnerForm.types';
 
@@ -7,11 +7,9 @@ import styles from '../../PartnerFormPage.module.scss';
 
 type Props = {
   refs: PartnerFormRefs;
-  disabled?: boolean;
-  formMode: 'create' | 'edit';
 };
 
-export function PartnerFormClassificationFields({ refs, disabled, formMode }: Props) {
+export function PartnerFormClassificationFields({ refs }: Props) {
   return (
     <div className={styles.sectionBox}>
       <Divider orientation='left' style={{ marginTop: 0 }}>
@@ -28,16 +26,6 @@ export function PartnerFormClassificationFields({ refs, disabled, formMode }: Pr
               ))}
             </Select>
           </Form.Item>
-        </Col>
-        <Col xs={24}>
-          {formMode === 'edit' && (
-            <>
-              <Typography.Text style={{ display: 'block' }}>Статус архивировать</Typography.Text>
-              <Form.Item name='manual_archive' valuePropName='checked'>
-                <Switch checkedChildren='Да' unCheckedChildren='Нет' disabled={disabled} />
-              </Form.Item>
-            </>
-          )}
         </Col>
         <Col xs={24}>
           <Form.Item label='Экономическая группа' name='partner_economic_category_id'>

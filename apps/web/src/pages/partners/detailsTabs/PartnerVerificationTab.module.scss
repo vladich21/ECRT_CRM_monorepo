@@ -1,0 +1,148 @@
+.wrap {
+  padding: 0;
+}
+
+.card {
+  height: 100%;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: #f5f5f5;
+  color: #8c8c8c;
+
+  &[data-confirmed='true'] {
+    background: #f6ffed;
+    color: #389e0d;
+    border: 1px solid #b7eb8f;
+  }
+}
+
+.sectionTitle {
+  margin: 0 !important;
+}
+
+.sectionDesc {
+  font-size: 13px;
+}
+
+.iconSuccess {
+  color: #52c41a;
+}
+
+.iconPending {
+  color: #8c8c8c;
+}
+
+.dragger {
+  :global(.ant-upload-drag) {
+    border-radius: 8px;
+    background: #fafafa;
+    padding: 16px 0 !important;
+  }
+}
+
+.draggerIconWrap {
+  margin: 0;
+}
+
+.draggerIcon {
+  font-size: 24px;
+  color: #1677ff;
+}
+
+.draggerText {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.draggerLink {
+  color: #1677ff;
+}
+
+.draggerHint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.40);
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  background: #fafafa;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #f0f5ff;
+    border-color: #adc6ff;
+
+    .deleteBtn {
+      opacity: 1;
+    }
+  }
+}
+
+.fileIcon {
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.fileMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fileName {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.fileSize {
+  font-size: 12px;
+}
+
+.deleteBtn {
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}

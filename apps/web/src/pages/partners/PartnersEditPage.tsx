@@ -14,7 +14,6 @@ import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
 import type { Partner } from '../../types/partner';
-import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../utils/partnerApproval';
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
@@ -51,9 +50,6 @@ export default function PartnerEditPage() {
   const wInn = Form.useWatch('inn', form) as string | undefined;
   const wTypeIds = Form.useWatch('type_ids', form) as string[] | undefined;
   const wActualAddress = Form.useWatch('actual_address', form) as string | undefined;
-  const wLegal = Form.useWatch('legal_check_passed', form) as boolean | undefined;
-  const wQuestionnaire = Form.useWatch('questionnaire_filled', form) as boolean | undefined;
-  const wInitial = Form.useWatch('initial_assessment_done', form) as boolean | undefined;
   const wKey = Form.useWatch('is_key_supplier', form) as boolean | undefined;
   const wTarget = Form.useWatch('is_targeted', form) as boolean | undefined;
   const wCategoryId = Form.useWatch('category_id', form) as string | undefined;
@@ -75,23 +71,8 @@ export default function PartnerEditPage() {
       actual_address: wActualAddress ?? partner.actual_address,
       is_key_supplier: wKey ?? partner.is_key_supplier,
       is_targeted: wTarget ?? partner.is_targeted,
-      legal_check_passed: wLegal ?? partner.legal_check_passed,
-      questionnaire_filled: wQuestionnaire ?? partner.questionnaire_filled,
-      initial_assessment_done: wInitial ?? partner.initial_assessment_done,
     };
-  }, [
-    partner,
-    wInn,
-    wShortName,
-    wName,
-    wTypeIds,
-    wActualAddress,
-    wKey,
-    wTarget,
-    wLegal,
-    wQuestionnaire,
-    wInitial,
-  ]);
+  }, [partner, wInn, wShortName, wName, wTypeIds, wActualAddress, wKey, wTarget]);
 
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses && !isFormInitializedRef.current) {
@@ -133,18 +114,8 @@ export default function PartnerEditPage() {
     const archiveEntry = referenceBooks.partnerStatuses?.find(s => (s.name ?? '').trim() === 'Архив');
     const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
     const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived }));
-    const categoryName =
-      referenceBooks.partnerCategories?.find(c => String(c.id) === String(values.category_id ?? partner.category_id))?.name ??
-      null;
     payload.type_ids = values.type_ids ?? [];
     payload.competence_ids = values.competence_ids ?? [];
-    payload.is_approved = computePartnerIsApproved({
-      kind: inferPartnerCategoryKind(categoryName),
-      legalCheckPassed: Boolean(values.legal_check_passed),
-      questionnaireFilled: Boolean(values.questionnaire_filled),
-      initialAssessmentDone: Boolean(values.initial_assessment_done),
-      hasActiveSupplierEvaluationBlock: partner.has_active_evaluation_block ?? false,
-    });
     mutate(
       { id: partnerId!, data: payload },
       {

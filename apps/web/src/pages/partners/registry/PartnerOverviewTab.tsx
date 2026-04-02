@@ -30,8 +30,9 @@ export default function PartnerOverviewTab() {
   );
   const { data: partnerContacts = [] } = usePartnerContacts(partner.id);
 
-  const complianceItems = useMemo(
-    () => [
+  const complianceItems = useMemo(() => {
+    const initialAssessmentDone = partner.initial_assessment_done || initialEval != null;
+    return [
       {
         label: 'Юрид. проверка',
         done: partner.legal_check_passed,
@@ -39,17 +40,16 @@ export default function PartnerOverviewTab() {
       },
       {
         label: 'Первичная оценка',
-        done: partner.initial_assessment_done,
-        note: partner.initial_assessment_done ? 'Выполнена' : 'Не выполнена',
+        done: initialAssessmentDone,
+        note: initialAssessmentDone ? 'Выполнена' : 'Не выполнена',
       },
       {
         label: 'Анкета',
         done: partner.questionnaire_filled,
         note: partner.questionnaire_filled ? 'Заполнена' : 'Не заполнена',
       },
-    ],
-    [partner.legal_check_passed, partner.initial_assessment_done, partner.questionnaire_filled],
-  );
+    ];
+  }, [partner.initial_assessment_done, partner.legal_check_passed, partner.questionnaire_filled, initialEval]);
 
   return (
     <div className={styles.layout}>
@@ -62,7 +62,7 @@ export default function PartnerOverviewTab() {
           )}
           avgScoreLabel={
             supplierEvalKpi?.avgScore != null
-              ? 'По проектам'
+              ? 'Оценка по проектам'
               : initialEval?.weighted_score != null
                 ? 'Первичная оценка'
                 : 'Средняя оценка'

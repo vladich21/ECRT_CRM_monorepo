@@ -12,6 +12,7 @@ import PartnerCreatePage from "../pages/partners/PartnerCreatePage";
 import PartnerEditPage from "../pages/partners/PartnersEditPage";
 import PartnerContactsListPage from "../pages/partners/detailsTabs/Contacts/ContactsListPage";
 import { PartnerMainInfoTab } from "../pages/partners/detailsTabs/PartnerMainInfo";
+import PartnerVerificationTab from "../pages/partners/detailsTabs/PartnerVerificationTab";
 import PartnerEvaluationsTab from "../pages/partners/evaluations/PartnerEvaluationsTab";
 import SupplierEvaluationsRegistryPage from "../pages/supplierEvaluations/SupplierEvaluationsRegistryPage";
 import PartnerTypesListPage from "../pages/referenceBooks/partnerTypes/PartnerTypesListPage";
@@ -149,6 +150,7 @@ export default function AppRoutes() {
             <Route path="evaluations" element={<PartnerEvaluationsTab />}/>
             <Route path="comments" element={<CommentsList entityType="partner"/>}/>
             <Route path="files" element={<EntityFilesTab entityType="partner"/>}/>
+            <Route path="verification" element={<PartnerVerificationTab />}/>
           </Route>
         </Route>
 

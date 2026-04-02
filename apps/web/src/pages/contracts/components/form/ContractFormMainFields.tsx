@@ -92,7 +92,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
               popupRender={menu => (
                 <>
                   {menu}
-                  {mode === 'create' && onCreatePartner ? (
+                  {onCreatePartner ? (
                     <>
                       <Divider style={{ margin: '8px 0' }} />
                       <Button type='link' icon={<PlusOutlined />} onClick={onCreatePartner}>

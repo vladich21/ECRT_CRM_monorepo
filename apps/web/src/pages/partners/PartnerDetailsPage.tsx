@@ -9,10 +9,10 @@ import { useReferenceData } from '../../api/hooks/useReferences';
 import { useDeletePartner, usePartnerById, useRestorePartner } from '../../api/partners/partnerApiHooks';
 import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
 import {
+  usePartnerInitialSupplierEval,
   usePartnerSupplierEvalKpi,
   useSupplierEvaluationsList,
 } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { usePartnerInitialSupplierEval } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { APP_COLOR_SUCCESS } from '../../constants/appColors';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
@@ -70,6 +70,7 @@ export default function PartnerDetailsPage() {
     if (path.includes('/evaluations')) return 'evaluations';
     if (path.includes('/comments')) return 'comments';
     if (path.includes('/files')) return 'files';
+    if (path.includes('/verification')) return 'verification';
     return 'main';
   };
   const activeTab = getActiveTabFromPath();
@@ -122,6 +123,9 @@ export default function PartnerDetailsPage() {
       case 'files':
         navigate(`${basePath}/files`);
         break;
+      case 'verification':
+        navigate(`${basePath}/verification`);
+        break;
       default:
         navigate(basePath);
     }
@@ -139,6 +143,7 @@ export default function PartnerDetailsPage() {
     { key: 'evaluations', label: `Оценки (${evaluationsTotal})` },
     { key: 'comments', label: 'Комментарии' },
     { key: 'files', label: `Файлы (${files.length})` },
+    { key: 'verification', label: 'Проверка' },
   ];
   return (
     <DetailPageHeader

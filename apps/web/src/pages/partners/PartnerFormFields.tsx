@@ -40,8 +40,8 @@ export function PartnerFormFields({
       />
 
       <div className={styles.threeColSections}>
-        <PartnerFormClassificationFields refs={refs} disabled={disabled} formMode={formMode} />
-        <PartnerFormFlagsFields />
+        <PartnerFormClassificationFields refs={refs} />
+        <PartnerFormFlagsFields formMode={formMode} />
         <PartnerFormContactFields />
         <PartnerFormExtraFields refs={refs} />
       </div>

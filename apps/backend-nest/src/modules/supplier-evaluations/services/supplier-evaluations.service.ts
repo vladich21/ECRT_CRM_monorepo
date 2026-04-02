@@ -608,6 +608,11 @@ export class SupplierEvaluationsService {
         })),
       );
 
+      await tx
+        .update(partners)
+        .set({ initialAssessmentDone: true, updatedAt: new Date() })
+        .where(eq(partners.id, dto.partner_id));
+
       return row;
     });
 

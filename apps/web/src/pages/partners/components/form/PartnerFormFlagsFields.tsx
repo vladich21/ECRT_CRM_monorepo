@@ -3,7 +3,11 @@ import { Col, Divider, Form, Row, Switch } from 'antd';
 
 import styles from '../../PartnerFormPage.module.scss';
 
-export function PartnerFormFlagsFields() {
+type Props = {
+  formMode: 'create' | 'edit';
+};
+
+export function PartnerFormFlagsFields({ formMode }: Props) {
   return (
     <div className={styles.sectionBox}>
       <Divider orientation='left' style={{ marginTop: 0 }}>
@@ -20,16 +24,13 @@ export function PartnerFormFlagsFields() {
             <Switch checkedChildren='Да' unCheckedChildren='Нет' />
           </Form.Item>
         </Col>
-        <Col xs={24}>
-          <Form.Item label='Юр. проверка' name='legal_check_passed' valuePropName='checked'>
-            <Switch checkedChildren='Пройдена' unCheckedChildren='Нет' />
-          </Form.Item>
-        </Col>
-        <Col xs={24}>
-          <Form.Item label='Первичная оценка' name='initial_assessment_done' valuePropName='checked'>
-            <Switch checkedChildren='Выполнена' unCheckedChildren='Нет' />
-          </Form.Item>
-        </Col>
+        {formMode === 'edit' && (
+          <Col xs={24}>
+            <Form.Item label='Архивировать' name='manual_archive' valuePropName='checked'>
+              <Switch checkedChildren='Да' unCheckedChildren='Нет' />
+            </Form.Item>
+          </Col>
+        )}
       </Row>
     </div>
   );

@@ -30,14 +30,20 @@ import tagStyles from '../list/ContractsListPage.module.scss';
 import { getContractStateTagClass, isContractDraft, isContractSignedState } from '../utils/contractStateUtils';
 import { applyDayjsDateFieldsToPayload } from './contractEditFormUtils';
 
+const CONTRACT_EDIT_DRAFT_DATE_FIELDS = ['start_date', 'end_date', 'date_signed'] as const;
+
+const getContractEditDraftKey = (contractId: string) => `contract-edit-draft-${contractId}`;
+
+type ContractEditLocationState = {
+  createdPartnerId?: string;
+  restoreContractDraft?: boolean;
+};
+
 export default function ContractEditPage() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const navigateBackToDetails = () => {
-    const state = location.state;
-    navigate(`/contracts/${contractId}`, state != null ? { state } : undefined);
-  };
+  const locationStateRef = useRef((location.state as ContractEditLocationState | null) ?? null);
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -46,6 +52,7 @@ export default function ContractEditPage() {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
+    refetch: refetchReferences,
   } = useReferenceData(['projects', 'partners', 'users', 'contractStates', 'contractCategories', 'contractTypes']);
   const { mutate, isPending: isUpdateLoading } = useUpdateContract();
   const watchContractNumber = Form.useWatch('number', form);
@@ -56,15 +63,58 @@ export default function ContractEditPage() {
   const watchStateId = Form.useWatch('state_id', form);
   const watchPartnerId = Form.useWatch('partner_id', form);
   const watchDateSigned = Form.useWatch('date_signed', form);
-  const handleBack = navigateBackToDetails;
 
   const isFormInitializedRef = useRef(false);
+
   useEffect(() => {
-    if (contract) {
+    if (!contract || isFormInitializedRef.current) return;
+    isFormInitializedRef.current = true;
+
+    const locationState = locationStateRef.current;
+    const draftKey = getContractEditDraftKey(contractId!);
+    const draftRaw = locationState?.restoreContractDraft ? sessionStorage.getItem(draftKey) : null;
+
+    if (draftRaw) {
+      try {
+        const draft = JSON.parse(draftRaw) as Record<string, unknown>;
+        const normalized = { ...draft };
+        for (const key of CONTRACT_EDIT_DRAFT_DATE_FIELDS) {
+          const raw = normalized[key];
+          if (!raw) { normalized[key] = null; continue; }
+          if (!dayjs.isDayjs(raw)) {
+            const parsed = dayjs(raw as string);
+            normalized[key] = parsed.isValid() ? parsed : null;
+          }
+        }
+        form.setFieldsValue(normalized);
+      } catch {
+        form.setFieldsValue(contractUpdateFormMapper(contract));
+      }
+      sessionStorage.removeItem(draftKey);
+
+      void refetchReferences().then(() => {
+        if (locationState?.createdPartnerId) {
+          form.setFieldValue('partner_id', locationState.createdPartnerId);
+        }
+      });
+
+      navigate(location.pathname, { replace: true, state: undefined });
+    } else {
       form.setFieldsValue(contractUpdateFormMapper(contract));
-      isFormInitializedRef.current = true;
     }
-  }, [contract, form]);
+  }, [contract, contractId, form, location.pathname, navigate, refetchReferences]);
+
+  const handleCreatePartnerFromContract = () => {
+    sessionStorage.setItem(getContractEditDraftKey(contractId!), JSON.stringify(form.getFieldsValue(true)));
+    navigate('/partners/create', {
+      state: {
+        fromContractCreate: true,
+        returnPath: location.pathname,
+      },
+    });
+  };
+
+  const handleBack = () => navigate(`/contracts/${contractId}`);
 
   const handleProjectChange = (project: { manager_id?: string | null; purchaser_id?: string | null } | null) => {
     if (!isFormInitializedRef.current) return;
@@ -227,7 +277,7 @@ export default function ContractEditPage() {
           }}
           scrollToFirstError
         >
-          <ContractFormMainFields mode='edit' refs={contractFormRefs} requireFullValidation={requireFullValidation} onProjectChange={handleProjectChange} />
+          <ContractFormMainFields mode='edit' refs={contractFormRefs} requireFullValidation={requireFullValidation} onProjectChange={handleProjectChange} onCreatePartner={handleCreatePartnerFromContract} />
           <div className={styles.threeColSections}>
             <ContractFormMoneyFields
               mode='edit'
