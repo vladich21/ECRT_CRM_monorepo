@@ -1,13 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
-import dayjs from 'dayjs';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useCreateContract } from '../../../api/contracts/contractApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
+import { AsyncBoundary } from '../../../components/async/AsyncBoundary';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { CONTRACTS_REGISTRY_PATH } from '../constants/routes';
@@ -21,6 +19,7 @@ import {
 } from '../components/form';
 import { initialFormValues } from '../list/data';
 import { isContractSignedState } from '../utils/contractStateUtils';
+import { normalizeDraftDateFields } from '../../../utils/normalizeDraftDateFields';
 import {
   applyVatDerivedAmounts,
   buildCreateContractPayload,
@@ -43,7 +42,7 @@ export default function ContractCreatePage() {
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const watchStateId = Form.useWatch('state_id', form);
-  const locationState = (location.state as ContractCreateLocationState | null) ?? null;
+  const locationState = location.state as ContractCreateLocationState | null;
   const partnerIdFromState = locationState?.partnerId;
   const restoredPartnerId = locationState?.createdPartnerId;
   const {
@@ -54,25 +53,6 @@ export default function ContractCreatePage() {
   } = useReferenceData(['projects', 'partners', 'users', 'contractStates', 'contractCategories', 'contractTypes']);
   const { mutate, isPending: isCreateLoading } = useCreateContract();
   const isDefaultVatRateAppliedRef = useRef(false);
-
-  const normalizeDraftValues = (draft: Record<string, unknown>) => {
-    const normalized = { ...draft };
-    for (const key of CONTRACT_DATE_FIELDS) {
-      const raw = normalized[key];
-      if (!raw) {
-        normalized[key] = null;
-        continue;
-      }
-      if (dayjs.isDayjs(raw)) continue;
-      if (typeof raw === 'string' || raw instanceof Date || typeof raw === 'number') {
-        const parsed = dayjs(raw);
-        normalized[key] = parsed.isValid() ? parsed : null;
-      } else {
-        normalized[key] = null;
-      }
-    }
-    return normalized;
-  };
 
   useEffect(() => {
     if (isDefaultVatRateAppliedRef.current) return;
@@ -99,9 +79,8 @@ export default function ContractCreatePage() {
     if (draftRaw) {
       try {
         const draft = JSON.parse(draftRaw) as Record<string, unknown>;
-        form.setFieldsValue(normalizeDraftValues(draft));
+        form.setFieldsValue(normalizeDraftDateFields(draft, CONTRACT_DATE_FIELDS));
       } catch {
-        // noop: invalid draft payload should not block form usage
       }
       sessionStorage.removeItem(CONTRACT_CREATE_DRAFT_STORAGE_KEY);
     }
@@ -128,6 +107,13 @@ export default function ContractCreatePage() {
     if (value != null && amountExcl != null) {
       applyVatDerivedAmounts(form, Number(amountExcl), value);
     }
+  };
+
+  const handleProjectChange = (project: { manager_id?: string | null; purchaser_id?: string | null } | null) => {
+    form.setFieldsValue({
+      responsible_id: project?.manager_id ?? null,
+      supplier_manager_id: project?.purchaser_id ?? null,
+    });
   };
 
   const isSubmittingRef = useRef(false);
@@ -166,83 +152,71 @@ export default function ContractCreatePage() {
     });
   };
 
-  if (isReferencesLoading) {
-    return <Loader />;
-  }
-  if (isReferencesError || !referenceBooks) {
-    return <NotFound errorMessage='Не удалось подгрузить справочники' />;
-  }
-
   const createEffectiveByState = isContractSignedState(
-    typeof watchStateId === 'string' ? watchStateId : undefined,
-    referenceBooks.contractStates,
+    watchStateId as string | undefined,
+    referenceBooks?.contractStates,
   );
 
-  const contractFormRefs = referenceBooks as ContractFormRefs;
-
-  const handleProjectChange = (project: { manager_id?: string | null; purchaser_id?: string | null } | null) => {
-    form.setFieldsValue({
-      responsible_id: project?.manager_id ?? null,
-      supplier_manager_id: project?.purchaser_id ?? null,
-    });
-  };
+  const contractFormRefs = (referenceBooks ?? {}) as ContractFormRefs;
 
   return (
-    <DetailPageHeader
-      title='Создание нового договора'
-      titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания договора</span>}
-      backLabel='Договоры'
-      onBack={() => navigate(CONTRACTS_REGISTRY_PATH)}
-      actions={
-        <>
-          <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
-            Очистить форму
-          </Button>
-          <Button type='primary' icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
-            Создать договор
-          </Button>
-        </>
-      }
-      tabs={[{ key: 'main', label: 'Создание' }]}
-      activeTab='main'
-      onTabChange={() => {}}
-      contextHolder={contextHolder}
-      stickyHeader
-    >
-      <div className={styles.formCard}>
-        <Form
-          form={form}
-          layout='vertical'
-          size='middle'
-          initialValues={initialFormValues}
-          onFinish={handleCreate}
-          disabled={isCreateLoading}
-          onKeyPress={e => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-            }
-          }}
-          scrollToFirstError
-        >
-          <ContractFormMainFields mode='create' refs={contractFormRefs} onCreatePartner={handleCreatePartnerFromContract} onProjectChange={handleProjectChange} />
-          <div className={styles.threeColSections}>
-            <ContractFormMoneyFields
-              mode='create'
-              onAmountChange={handleAmountChange}
-              onVatRateChange={handleVatRateChange}
-              requireFullValidation={false}
-            />
-            <ContractFormDateFields mode='create' requireFullValidation={false} />
-            <ContractFormClassificationFields mode='create' refs={contractFormRefs} requireFullValidation={false} />
-            <ContractFormStateFields
-              mode='create'
-              refs={contractFormRefs}
-              effectiveByState={createEffectiveByState}
-              requireFullValidation={false}
-            />
-          </div>
-        </Form>
-      </div>
-    </DetailPageHeader>
+    <AsyncBoundary isLoading={isReferencesLoading} isError={isReferencesError || !referenceBooks} errorMessage='Не удалось подгрузить справочники'>
+      <DetailPageHeader
+        title='Создание нового договора'
+        titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания договора</span>}
+        backLabel='Договоры'
+        onBack={() => navigate(CONTRACTS_REGISTRY_PATH)}
+        actions={
+          <>
+            <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
+              Очистить форму
+            </Button>
+            <Button type='primary' icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
+              Создать договор
+            </Button>
+          </>
+        }
+        tabs={[{ key: 'main', label: 'Создание' }]}
+        activeTab='main'
+        onTabChange={() => {}}
+        contextHolder={contextHolder}
+        stickyHeader
+      >
+        <div className={styles.formCard}>
+          <Form
+            form={form}
+            layout='vertical'
+            size='middle'
+            initialValues={initialFormValues}
+            onFinish={handleCreate}
+            disabled={isCreateLoading}
+            onKeyPress={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+              }
+            }}
+            scrollToFirstError
+          >
+            <ContractFormMainFields mode='create' refs={contractFormRefs} onCreatePartner={handleCreatePartnerFromContract} onProjectChange={handleProjectChange} />
+            <div className={styles.threeColSections}>
+              <ContractFormMoneyFields
+                mode='create'
+                onAmountChange={handleAmountChange}
+                onVatRateChange={handleVatRateChange}
+                requireFullValidation={false}
+              />
+              <ContractFormDateFields mode='create' requireFullValidation={false} />
+              <ContractFormClassificationFields mode='create' refs={contractFormRefs} requireFullValidation={false} />
+              <ContractFormStateFields
+                mode='create'
+                refs={contractFormRefs}
+                effectiveByState={createEffectiveByState}
+                requireFullValidation={false}
+              />
+            </div>
+          </Form>
+        </div>
+      </DetailPageHeader>
+    </AsyncBoundary>
   );
 }

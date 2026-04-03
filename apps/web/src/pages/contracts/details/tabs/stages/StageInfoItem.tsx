@@ -6,7 +6,7 @@ import { getNameById } from '../../../../../helpers/getNameById';
 import { ContractStage } from '../../../../../types/contract';
 import styles from '../../ContractDetails.module.scss';
 import { formatDate } from './data';
-import { getDeadlineCountdownTagStyle, getDeadlineCountdownTone, pluralDaysRu } from './utils/stageHelpers';
+import { getDeadlineCountdownTone, pluralDaysRu } from './utils/stageHelpers';
 
 const { Text } = Typography;
 interface StageInfoItemProps {
@@ -60,9 +60,7 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
             <div className={`${styles.stageInfoRow} ${styles.stageInfoRowSpaced}`}>
               <Tag
                 className={styles.timeTag}
-                style={getDeadlineCountdownTagStyle(
-                  getDeadlineCountdownTone(daysUntilDeadline, { isCompleted, isOverdue }),
-                )}
+                data-tone={getDeadlineCountdownTone(daysUntilDeadline, { isCompleted, isOverdue })}
               >
                 {isOverdue ? 'Просрочено' : 'Осталось'}: {Math.abs(daysUntilDeadline)} {pluralDaysRu(daysUntilDeadline)}
               </Tag>
@@ -110,22 +108,14 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
                   </Text>
                   {budgetDeviation !== null && (
                     <Tag
-                      className={styles.budgetTag}
-                      style={{
-                        backgroundColor:
-                          budgetDeviation > 0
-                            ? 'rgba(211, 47, 47, 0.1)'
-                            : budgetDeviation < 0
-                              ? 'rgba(84, 177, 40, 0.1)'
-                              : 'rgba(217, 217, 217, 0.1)',
-                        color: budgetDeviation > 0 ? '#D32F2F' : budgetDeviation < 0 ? '#54B128' : '#525252',
-                        border:
-                          budgetDeviation > 0
-                            ? '1px solid #D32F2F'
-                            : budgetDeviation < 0
-                              ? '1px solid #54B128'
-                              : '1px solid #D9D9D9',
-                      }}
+                      className={[
+                        styles.budgetTag,
+                        budgetDeviation > 0
+                          ? styles.budgetTagOver
+                          : budgetDeviation < 0
+                            ? styles.budgetTagUnder
+                            : styles.budgetTagNeutral,
+                      ].join(' ')}
                     >
                       {budgetDeviation > 0 ? '+' : ''}
                       {budgetDeviation.toFixed(1)}%

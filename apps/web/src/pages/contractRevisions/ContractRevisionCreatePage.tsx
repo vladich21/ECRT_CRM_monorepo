@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { CloseOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Col, DatePicker, Form, Input, InputNumber, Row, Select, Space, Switch, Tag } from 'antd';
 import { useForm } from 'antd/es/form/Form';
-import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useCreateContractRevision } from '../../api/contractRevisions/contractRevisionsApiHooks';
@@ -16,8 +15,9 @@ import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useNotification } from '../../customhooks/useNotification';
 import { getEntityById } from '../../helpers/getEntityById';
-import { ContractRevision, ContractStage } from '../../types/contract';
+import type { ContractStage } from '../../types/contract';
 import { getStageColumnsData } from '../contracts/details/tabs/stages/data';
+import { mapContractToRevisionInitialValues, buildRevisionPayload } from './utils/revisionFormUtils';
 import styles from './ContractRevisionCreatePage.module.scss';
 
 const { TextArea } = Input;
@@ -45,28 +45,7 @@ export default function CreateContractRevisionPage() {
   const { mutate, isPending: isCreateLoading } = useCreateContractRevision();
   useEffect(() => {
     if (contract) {
-      form.setFieldsValue({
-        name: contract.name || '',
-        number: contract.number || '',
-        cipher: contract.cipher || '',
-        description: contract.description || '',
-        partner_id: contract.partner_id,
-        project_id: contract.project_id,
-        responsible_id: contract.responsible_id,
-        category_id: contract.category_id,
-        contract_type_id: contract.contract_type_id,
-        amount_excl_vat: contract.amount_excl_vat,
-        vat_rate: contract.vat_rate,
-        amount_vat: contract.amount_vat,
-        amount_incl_vat: contract.amount_incl_vat,
-        start_date: contract.start_date ? dayjs(contract.start_date) : null,
-        end_date: contract.end_date ? dayjs(contract.end_date) : null,
-        date_signed: contract.date_signed ? dayjs(contract.date_signed) : null,
-        state_id: contract.state_id,
-        is_active: contract.is_active,
-        comment: '',
-        revision_reason: '',
-      });
+      form.setFieldsValue(mapContractToRevisionInitialValues(contract));
     }
   }, [contract, form]);
   useEffect(() => {
@@ -96,25 +75,20 @@ export default function CreateContractRevisionPage() {
     });
   };
   const handleSubmit = async (values: Record<string, unknown>) => {
-    const data = {
-      ...values,
-      contract_type_id: (values.contract_type_id as string) || contract!.contract_type_id,
-      stages,
-    } as Omit<ContractRevision, 'contract_id' | 'revision_number'>;
-    if (contractId) {
-      mutate(
-        { contractId, data },
-        {
-          onSuccess: () => {
-            showNotification('success', 'Успех', 'Договор успешно создан');
-            setTimeout(() => navigate(-1), 1000);
-          },
-          onError: () => {
-            showNotification('error', 'Ошибка', 'Не удалось создать договор');
-          },
+    if (!contractId || !contract) return;
+    const data = buildRevisionPayload(values, stages, contract);
+    mutate(
+      { contractId, data },
+      {
+        onSuccess: () => {
+          showNotification('success', 'Успех', 'Договор успешно создан');
+          setTimeout(() => navigate(-1), 1000);
         },
-      );
-    }
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось создать договор');
+        },
+      },
+    );
   };
   const handleCancel = () => {
     navigate(`/contracts/${contractId}/revisions`);
@@ -273,8 +247,8 @@ export default function CreateContractRevisionPage() {
               loading={isStagesLoading}
               columns={[
                 ...getStageColumnsData({
-                  contractStageStates: referenceBooks?.contractStageStates!,
-                  contracts: referenceBooks?.contracts!,
+                  contractStageStates: referenceBooks?.contractStageStates ?? [],
+                  contracts: referenceBooks?.contracts ?? [],
                 }),
               ]}
               enableContextMenu={true}

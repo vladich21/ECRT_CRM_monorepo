@@ -25,7 +25,6 @@ import PartnerCompetencesListPage from "../pages/referenceBooks/competencies/Com
 import PartnerCompetenceCreatePage from "../pages/referenceBooks/competencies/CompetenceCreatePage";
 import PartnerCompetenceEditPage from "../pages/referenceBooks/competencies/CompetencyEditPage";
 import { ContractMainInfoTab } from "../pages/contracts/details/tabs/main/ContractMainInfoTab";
-import { ContractFilesTab } from "../pages/contracts/details/tabs/files/ContractFilesTab";
 import { ContractAdditionalAgreementsTab } from "../pages/contracts/details/tabs/additionalAgreements/ContractAdditionalAgreementsTab";
 import { ContractHistoryTab } from "../pages/contracts/details/tabs/history/ContractHistoryTab";
 import PatentCreatePage from "../pages/patents/PatentCreatePage";
@@ -163,7 +162,7 @@ export default function AppRoutes() {
           <Route path=":contractId" element={<ContractDetailsPage />}>
             <Route index element={<ContractMainInfoTab />}/>
             <Route path="additional-agreements" element={<ContractAdditionalAgreementsTab />}/>
-            <Route path="files" element={<ContractFilesTab />}/>
+            <Route path="files" element={<EntityFilesTab entityType="contract" />}/>
             <Route path="history" element={<ContractHistoryTab />}/>
           </Route>
         </Route>

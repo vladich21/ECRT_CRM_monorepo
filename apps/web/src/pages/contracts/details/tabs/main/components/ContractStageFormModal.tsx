@@ -12,6 +12,7 @@ type ContractStageFormModalProps = {
   users: ReferenceData['users'] | undefined;
   onCancel: () => void;
   onSubmit: () => void | Promise<void>;
+  isLoading?: boolean;
 };
 export function ContractStageFormModal({
   open,
@@ -20,6 +21,7 @@ export function ContractStageFormModal({
   users,
   onCancel,
   onSubmit,
+  isLoading = false,
 }: ContractStageFormModalProps) {
   const userOptions = (users ?? []).map(user => ({
     value: user.id,
@@ -33,6 +35,7 @@ export function ContractStageFormModal({
       forceRender
       onOk={onSubmit}
       okText={isEditing ? 'Сохранить' : 'Добавить'}
+      confirmLoading={isLoading}
       cancelText='Отмена'
       width={840}
       wrapClassName={styles.stageFormModal}

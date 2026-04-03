@@ -3,157 +3,94 @@ import { Button } from 'antd';
 import { useLayoutEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useContractById, useDeleteContract, useRestoreContract } from '../../../api/contracts/contractApiHooks';
-import { useContractStages } from '../../../api/contractStages/contractStagesApiHooks';
-import { useFilesByEntity } from '../../../api/files/fileApiHooks';
-import { useReferenceData } from '../../../api/hooks/useReferences';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader, { detailHeaderVariantForContractHeader } from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '../../../constants/deletionScope';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
 import { CONTRACTS_REGISTRY_PATH, getContractEditPath } from '../constants/routes';
 import tagStyles from '../list/ContractsListPage.module.scss';
-import type { FilterTab } from '../list/ContractsListPage.types';
 import {
   CONTRACT_DETAILS_TABS,
-  formatContractDetailPageHeading,
   formatProjectChipLabel,
   getActiveContractDetailsTab,
   getContractDetailsTabPath,
-  getDaysUntilDate,
-  shouldShowDeadlineBanner,
   type ContractDetailsTabKey,
 } from '../utils/contractDetailsUtils';
-import type { ContractDeleteResult } from '../../../api/contracts/contractApi';
 import type { ContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
-import { getContractStateTagClass, isContractDraft } from '../utils/contractStateUtils';
+import { getContractStateTagClass } from '../utils/contractStateUtils';
 import styles from './ContractDetails.module.scss';
 import { DEMO_ADDITIONAL_AGREEMENTS } from './tabs/additionalAgreements/ContractAdditionalAgreementsTab';
 import { ContractDetailsAside } from './tabs/main/ContractDetailsAside';
+import { useContractDetailsData } from './hooks/useContractDetailsData';
+import { useContractDetailsActions } from './hooks/useContractDetailsActions';
+import {
+  buildContractDetailsBackLabel,
+  buildContractDetailsStatusBadge,
+  buildContractDetailsTitle,
+} from './utils/contractDetailsHeaderUtils';
 
 export default function ContractDetailsPage() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [contractId]);
-  const { contextHolder, showNotification } = useNotification();
+
   const navState = location.state as {
     from?: string;
     deletionScope?: DeletionScope;
     contractsListReturn?: ContractsListNavSnapshot;
   } | null;
   const from = navState?.from;
-  /** Снимок для редиректа после удаления/восстановления: всё из state списка + переопределённые поля. */
-  const detailNavBase = typeof navState === 'object' && navState !== null ? navState : {};
+  const detailNavBase = navState ?? {};
+  const contractsListPath = from || CONTRACTS_REGISTRY_PATH;
 
-  /** Список договоров: общий реестр или вкладка контрагента `/partners/:id/contracts`. */
-  const contractsListPath =
-    typeof from === 'string' && from.trim().length > 0 ? from : CONTRACTS_REGISTRY_PATH;
+  const {
+    contract,
+    referenceBooks,
+    contractFiles,
+    stages,
+    contractState,
+    contractCategoryName,
+    contractTypeName,
+    partnerName,
+    projectEntity,
+    showDeadlineBanner,
+    daysUntilEnd,
+    formattedEndDate,
+    isLoading,
+    isError,
+  } = useContractDetailsData(contractId!);
 
-  const handleBack = () => {
-    navigate(contractsListPath, navState != null ? { state: navState } : undefined);
-  };
-  const { data: contract, isLoading, isError } = useContractById(contractId!);
-  const { data: referenceBooks } = useReferenceData([
-    'contractStates',
-    'contractCategories',
-    'contractTypes',
-    'partners',
-    'projects',
-    'users',
-  ]);
-  const { data: contractFiles = [] } = useFilesByEntity('contract', contractId!);
-  const { data: stagesData } = useContractStages(contractId ?? '');
-  const deleteContractMutation = useDeleteContract();
-  const restoreContractMutation = useRestoreContract();
-  const { handleOpenModal } = useConfirmByModal<ContractDeleteResult>({
-    mutation: deleteContractMutation,
-    successMessage: (data: ContractDeleteResult) =>
-      data.deletion_mode === 'hard'
-        ? 'Черновик удалён безвозвратно'
-        : 'Договор перемещён в удалённые',
-    errorMessage: 'Не удалось удалить договор',
-    getMutationProps: () => contractId!,
-    showNotification,
-    redirectPath: contractsListPath,
-    redirectReplace: true,
-    redirectState: (data: ContractDeleteResult) => ({
-      ...detailNavBase,
-      deletionScope: data.deletion_mode === 'hard' ? ('active' as const) : ('deleted' as const),
-    }),
-  });
-  const { handleOpenModal: openRestoreModal } = useConfirmByModal({
-    mutation: restoreContractMutation,
-    successMessage: 'Договор успешно восстановлен',
-    errorMessage: 'Не удалось восстановить договор',
-    getMutationProps: () => contractId!,
-    showNotification,
-    redirectPath: contractsListPath,
-    redirectReplace: true,
-    redirectState: {
-      ...detailNavBase,
-      listTab: 'all' as FilterTab,
-    },
-  });
+  const { handleDelete, openRestoreModal, contextHolder } = useContractDetailsActions(
+    contractId!,
+    contractsListPath,
+    detailNavBase,
+    contract,
+    referenceBooks?.contractStates,
+  );
+
   const activeTab = getActiveContractDetailsTab(location.pathname);
-  const tabsWithCounts = CONTRACT_DETAILS_TABS.map(tab => {
-    if (tab.key === 'files') return { ...tab, count: contractFiles.length };
-    if (tab.key === 'additional-agreements') {
-      return { ...tab, count: DEMO_ADDITIONAL_AGREEMENTS.length };
-    }
-    return tab;
+
+  const headerTabs = CONTRACT_DETAILS_TABS.map(tab => {
+    let count: number | undefined;
+    if (tab.key === 'files') count = contractFiles.length;
+    if (tab.key === 'additional-agreements') count = DEMO_ADDITIONAL_AGREEMENTS.length;
+    return { key: tab.key, label: count !== undefined ? `${tab.label} (${count})` : tab.label };
   });
-  const handleEdit = () => {
-    navigate(getContractEditPath(contractId!), navState != null ? { state: navState } : undefined);
-  };
-  const handleDelete = () => {
-    if (!contract) return;
-    if (isContractDraft(contract.state_id, referenceBooks?.contractStates)) {
-      handleOpenModal({
-        title: 'Удалить черновик безвозвратно?',
-        content:
-          'Черновик договора будет удалён навсегда. Восстановить его нельзя — запись исчезнет из системы.',
-        okText: 'Удалить навсегда',
-        confirmAppearance: 'delete',
-      });
-    } else {
-      handleOpenModal();
-    }
-  };
-  const handleTabChange = (tabKey: string) => {
-    if (!contractId) return;
-    navigate(getContractDetailsTabPath(contractId, tabKey as ContractDetailsTabKey));
-  };
+
   if (isLoading) return <Loader />;
   if (isError || !contract) return <NotFound errorMessage='Договор не найден' />;
-  const stages = stagesData ?? [];
-  const outletContext = { contract, stages };
-  const contractState = getEntityById(contract.state_id, referenceBooks?.contractStates);
-  const contractCategoryName = getNameById(contract.category_id, referenceBooks?.contractCategories ?? []) ?? '';
-  const contractTypeName = getNameById(contract.contract_type_id, referenceBooks?.contractTypes ?? []) ?? '';
-  const partnerName = getNameById(contract.partner_id, referenceBooks?.partners ?? []) ?? '';
-  const daysUntilEnd = getDaysUntilDate(contract.end_date);
-  const showDeadlineBanner = shouldShowDeadlineBanner(daysUntilEnd);
-  const formattedEndDate = contract.end_date ? new Date(contract.end_date).toLocaleDateString('ru-RU') : '-';
-  const title = formatContractDetailPageHeading(contract);
-  const projectEntity = getEntityById(contract.project_id, referenceBooks?.projects);
+
   const projectChipLabel = formatProjectChipLabel(projectEntity);
-  const hasHeaderSubtitle = !!(partnerName || contract.cipher || contractCategoryName);
-  const headerTabs = tabsWithCounts.map(({ key, label, count }) => ({
-    key,
-    label: count !== undefined ? `${label} (${count})` : label,
-  }));
+
   return (
     <DetailPageHeader
-      title={title}
+      title={buildContractDetailsTitle(contract)}
       subtitle={
-        hasHeaderSubtitle ? (
+        (partnerName || contract.cipher || contractCategoryName) ? (
           <div className={styles.detailHeaderSubtitle}>
             {partnerName ? <span className={styles.detailHeaderPartner}>{partnerName}</span> : null}
             {contract.cipher ? (
@@ -171,16 +108,9 @@ export default function ContractDetailsPage() {
           </div>
         ) : undefined
       }
-      backLabel={
-        typeof from === 'string' && from.includes('/partners/') && from.includes('/contracts')
-          ? 'К договорам контрагента'
-          : 'Договоры'
-      }
-      onBack={handleBack}
-      statusBadge={{
-        label: contract.is_deleted ? 'Удалён' : contract.is_active ? 'Действует' : 'Не действует',
-        variant: detailHeaderVariantForContractHeader(!!contract.is_deleted, !!contract.is_active),
-      }}
+      backLabel={buildContractDetailsBackLabel(from)}
+      onBack={() => navigate(contractsListPath, navState != null ? { state: navState } : undefined)}
+      statusBadge={buildContractDetailsStatusBadge(contract)}
       metaItems={[
         contractState && (
           <span
@@ -203,7 +133,12 @@ export default function ContractDetailsPage() {
       ].filter(Boolean)}
       actions={
         <>
-          <Button type='primary' icon={<EditOutlined />} onClick={handleEdit} disabled={!!contract.is_deleted}>
+          <Button
+            type='primary'
+            icon={<EditOutlined />}
+            onClick={() => navigate(getContractEditPath(contractId!), navState != null ? { state: navState } : undefined)}
+            disabled={!!contract.is_deleted}
+          >
             Редактировать
           </Button>
           {contract.is_deleted ? (
@@ -227,14 +162,15 @@ export default function ContractDetailsPage() {
       }
       tabs={headerTabs}
       activeTab={activeTab}
-      onTabChange={handleTabChange}
+      onTabChange={tabKey => {
+        if (contractId) navigate(getContractDetailsTabPath(contractId, tabKey as ContractDetailsTabKey));
+      }}
       contextHolder={contextHolder}
     >
       <div className={activeTab === 'main' ? styles.contentWrap : styles.contentWrapFull}>
         <div className={styles.contentMain}>
-          <Outlet context={outletContext} />
+          <Outlet context={{ contract, stages }} />
         </div>
-
         {activeTab === 'main' && (
           <ContractDetailsAside contract={contract} stages={stages} references={referenceBooks ?? null} />
         )}

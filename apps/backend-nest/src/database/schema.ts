@@ -95,6 +95,25 @@ export const contracts = pgTable('contracts', {
   isDeleted: boolean('is_deleted').notNull().default(false),
 });
 
+export const contractStages = pgTable('contract_stages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  contractId: uuid('contract_id').notNull(),
+  name: varchar('name', { length: 500 }).notNull(),
+  stageNumber: integer('stage_number').notNull().default(1),
+  responsibleId: uuid('responsible_id'),
+  stateId: uuid('state_id'),
+  plannedStartDate: date('planned_start_date'),
+  plannedEndDate: date('planned_end_date'),
+  actualStartDate: date('actual_start_date'),
+  actualEndDate: date('actual_end_date'),
+  plannedBudget: numeric('planned_budget', { precision: 19, scale: 2 }).notNull().default('0'),
+  forecastedBudget: numeric('forecasted_budget', { precision: 19, scale: 2 }).notNull().default('0'),
+  actualBudget: numeric('actual_budget', { precision: 19, scale: 2 }).notNull().default('0'),
+  isArchived: boolean('is_archived').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }),
+});
+
 export const positions = pgTable('positions', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }),

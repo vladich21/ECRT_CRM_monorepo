@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react';
-
 import { ContractStage } from '../../../../../../types/contract';
 
 export type StageComputedStatus = 'planned' | 'in_progress' | 'completed' | 'overdue';
@@ -115,47 +113,6 @@ export function getDeadlineCountdownTone(
   if (daysUntilDeadline <= 7) return 'approaching';
   if (daysUntilDeadline <= 14) return 'comfortable';
   return 'neutral';
-}
-export function getDeadlineCountdownTagStyle(tone: DeadlineCountdownTone): CSSProperties {
-  const styles: Record<DeadlineCountdownTone, CSSProperties> = {
-    overdue: {
-      backgroundColor: 'rgba(211, 47, 47, 0.12)',
-      color: '#C62828',
-      border: '1px solid #D32F2F',
-      fontWeight: 600,
-    },
-    critical: {
-      backgroundColor: 'rgba(183, 28, 28, 0.12)',
-      color: '#B71C1C',
-      border: '1px solid #C62828',
-      fontWeight: 600,
-    },
-    urgent: {
-      backgroundColor: 'rgba(230, 81, 0, 0.12)',
-      color: '#E65100',
-      border: '1px solid #F57C00',
-      fontWeight: 600,
-    },
-    approaching: {
-      backgroundColor: 'rgba(245, 124, 0, 0.14)',
-      color: '#E65100',
-      border: '1px solid #FB8C00',
-      fontWeight: 500,
-    },
-    comfortable: {
-      backgroundColor: 'rgba(255, 179, 0, 0.12)',
-      color: '#F9A825',
-      border: '1px solid #FBC02D',
-      fontWeight: 500,
-    },
-    neutral: {
-      backgroundColor: 'rgba(82, 82, 82, 0.08)',
-      color: '#595959',
-      border: '1px solid #D9D9D9',
-      fontWeight: 400,
-    },
-  };
-  return styles[tone];
 }
 export const calculateBudgetDeviation = (plannedBudget: number | null, actualBudget: number | null): number | null => {
   if (!plannedBudget || !actualBudget || actualBudget <= 0) return null;

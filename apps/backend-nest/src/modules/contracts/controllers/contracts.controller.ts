@@ -14,6 +14,7 @@ import {
   ContractQueryFilters,
   ContractsService,
 } from '../services/contract.service';
+import { ContractStagesService } from '../services/contract-stages.service';
 import { parsePagination } from '../../../common/pagination';
 import { parseDeletedScope } from '../../../common/deleted-scope';
 
@@ -34,7 +35,10 @@ function parseOptionalNumber(raw?: string): number | undefined {
 
 @Controller('contracts')
 export class ContractsController {
-  constructor(private readonly service: ContractsService) {}
+  constructor(
+    private readonly service: ContractsService,
+    private readonly stagesService: ContractStagesService,
+  ) {}
 
   @Post()
   async create(@Body('body') body?: Record<string, unknown>) {
@@ -83,7 +87,38 @@ export class ContractsController {
   async findStages(@Param('id') id: string) {
     const row = await this.service.findOne(id);
     if (!row) throw new NotFoundException(`Договор ${id} не найден`);
-    return [];
+    return this.stagesService.findByContract(id);
+  }
+
+  @Post(':id/stages')
+  async createStage(
+    @Param('id') contractId: string,
+    @Body('body') body?: Record<string, unknown>,
+  ) {
+    const row = await this.service.findOne(contractId);
+    if (!row) throw new NotFoundException(`Договор ${contractId} не найден`);
+    const stage = await this.stagesService.create(contractId, body ?? {});
+    return [stage];
+  }
+
+  @Put(':id/stages/:stageId')
+  async updateStage(
+    @Param('id') contractId: string,
+    @Param('stageId') stageId: string,
+    @Body('body') body?: Record<string, unknown>,
+  ) {
+    const updated = await this.stagesService.update(contractId, stageId, body ?? {});
+    if (!updated) throw new NotFoundException(`Этап ${stageId} не найден`);
+    return [updated];
+  }
+
+  @Delete(':id/stages/:stageId')
+  async deleteStage(
+    @Param('id') contractId: string,
+    @Param('stageId') stageId: string,
+  ) {
+    await this.stagesService.remove(contractId, stageId);
+    return { success: true };
   }
 
   @Get(':id')

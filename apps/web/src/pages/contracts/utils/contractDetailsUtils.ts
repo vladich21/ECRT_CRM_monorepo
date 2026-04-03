@@ -11,24 +11,25 @@ export function formatContractSignedDateRu(dateStr: string | null | undefined): 
   return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
-export function formatContractRegistryCardHeading(contract: Pick<Contract, 'number' | 'date_signed' | 'name'>): string {
+function buildContractHeading(
+  prefix: string,
+  contract: Pick<Contract, 'number' | 'date_signed' | 'name'>,
+): string {
   const num = contract.number?.trim() || '—';
   const date = formatContractSignedDateRu(contract.date_signed);
   const name = contract.name?.trim();
-  let s = `№ ${num}`;
-  if (date) s += ` от ${date}`;
-  if (name) s += ` "${name}"`;
-  return s;
+  let heading = `${prefix}${num}`;
+  if (date) heading += ` от ${date}`;
+  if (name) heading += ` "${name}"`;
+  return heading;
+}
+
+export function formatContractRegistryCardHeading(contract: Pick<Contract, 'number' | 'date_signed' | 'name'>): string {
+  return buildContractHeading('№ ', contract);
 }
 
 export function formatContractDetailPageHeading(contract: Pick<Contract, 'number' | 'date_signed' | 'name'>): string {
-  const num = contract.number?.trim() || '—';
-  const date = formatContractSignedDateRu(contract.date_signed);
-  const name = contract.name?.trim();
-  let s = `Договор №${num}`;
-  if (date) s += ` от ${date}`;
-  if (name) s += ` "${name}"`;
-  return s;
+  return buildContractHeading('Договор №', contract);
 }
 
 export function formatProjectChipLabel(project: ReferenceProjectPreview | undefined): string | null {
@@ -41,11 +42,10 @@ export function formatProjectChipLabel(project: ReferenceProjectPreview | undefi
   if (name === code) return code;
 
   const prefix = `${code} - `;
-  while (name.startsWith(prefix)) {
-    name = name.slice(prefix.length).trimStart();
+  if (name.startsWith(prefix)) {
+    name = name.slice(prefix.length).trim();
   }
-  if (!name) return code;
-  return `${code} - ${name}`;
+  return name ? `${code} - ${name}` : code;
 }
 
 export type ContractDetailsTabKey = 'main' | 'additional-agreements' | 'files' | 'history';

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
-import dayjs from 'dayjs';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useContractById, useUpdateContract } from '../../../api/contracts/contractApiHooks';
@@ -11,9 +10,6 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getChangedFields } from '../../../helpers/getChangedFields';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { formReferenceId } from '../../../helpers/formReferenceId';
-import { getNameById } from '../../../helpers/getNameById';
 import { contractUpdateFormMapper } from '../../../helpers/mappers/contractUpdateFormMapper';
 import {
   ContractFormClassificationFields,
@@ -25,10 +21,11 @@ import {
 } from '../components/form';
 import { applyVatDerivedAmounts } from '../create/contractCreateFormUtils';
 import styles from '../create/ContractCreatePage.module.scss';
-import { formatDate } from '../details/tabs/stages/data';
+import { normalizeDraftDateFields } from '../../../utils/normalizeDraftDateFields';
 import tagStyles from '../list/ContractsListPage.module.scss';
-import { getContractStateTagClass, isContractDraft, isContractSignedState } from '../utils/contractStateUtils';
 import { applyDayjsDateFieldsToPayload } from './contractEditFormUtils';
+import { useContractEditFormWatchers } from './hooks/useContractEditFormWatchers';
+import { buildContractEditHeaderMeta } from './utils/contractEditHeaderUtils';
 
 const CONTRACT_EDIT_DRAFT_DATE_FIELDS = ['start_date', 'end_date', 'date_signed'] as const;
 
@@ -43,7 +40,7 @@ export default function ContractEditPage() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const locationStateRef = useRef((location.state as ContractEditLocationState | null) ?? null);
+  const locationStateRef = useRef(location.state as ContractEditLocationState | null);
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -55,14 +52,16 @@ export default function ContractEditPage() {
     refetch: refetchReferences,
   } = useReferenceData(['projects', 'partners', 'users', 'contractStates', 'contractCategories', 'contractTypes']);
   const { mutate, isPending: isUpdateLoading } = useUpdateContract();
-  const watchContractNumber = Form.useWatch('number', form);
-  const watchCipher = Form.useWatch('cipher', form);
-  const watchContractName = Form.useWatch('name', form);
-  const watchCategoryId = Form.useWatch('category_id', form);
-  const watchContractTypeId = Form.useWatch('contract_type_id', form);
-  const watchStateId = Form.useWatch('state_id', form);
-  const watchPartnerId = Form.useWatch('partner_id', form);
-  const watchDateSigned = Form.useWatch('date_signed', form);
+  const {
+    number: watchContractNumber,
+    cipher: watchCipher,
+    name: watchContractName,
+    category_id: watchCategoryId,
+    contract_type_id: watchContractTypeId,
+    state_id: watchStateId,
+    partner_id: watchPartnerId,
+    date_signed: watchDateSigned,
+  } = useContractEditFormWatchers(form);
 
   const isFormInitializedRef = useRef(false);
 
@@ -77,16 +76,7 @@ export default function ContractEditPage() {
     if (draftRaw) {
       try {
         const draft = JSON.parse(draftRaw) as Record<string, unknown>;
-        const normalized = { ...draft };
-        for (const key of CONTRACT_EDIT_DRAFT_DATE_FIELDS) {
-          const raw = normalized[key];
-          if (!raw) { normalized[key] = null; continue; }
-          if (!dayjs.isDayjs(raw)) {
-            const parsed = dayjs(raw as string);
-            normalized[key] = parsed.isValid() ? parsed : null;
-          }
-        }
-        form.setFieldsValue(normalized);
+        form.setFieldsValue(normalizeDraftDateFields(draft, CONTRACT_EDIT_DRAFT_DATE_FIELDS));
       } catch {
         form.setFieldsValue(contractUpdateFormMapper(contract));
       }
@@ -176,27 +166,31 @@ export default function ContractEditPage() {
     return <NotFound errorMessage='Не найден договор или справочник' />;
   }
 
-  const headerNumber = (watchContractNumber ?? contract.number) || '';
-  const headerCipher = (watchCipher ?? contract.cipher) || '';
-  const title = `Договор №${headerNumber || '—'}${headerCipher ? ` (${headerCipher})` : ''}`;
-  const stateId = formReferenceId(watchStateId, contract.state_id);
-  const categoryId = formReferenceId(watchCategoryId, contract.category_id);
-  const contractTypeId = formReferenceId(watchContractTypeId, contract.contract_type_id);
-  const partnerId = formReferenceId(watchPartnerId, contract.partner_id);
-  const contractState = getEntityById(stateId, referenceBooks?.contractStates);
-  const contractCategoryName = getNameById(categoryId, referenceBooks?.contractCategories ?? []) ?? '';
-  const contractTypeName = getNameById(contractTypeId, referenceBooks?.contractTypes ?? []) ?? '';
-  const partnerName = getNameById(partnerId, referenceBooks?.partners ?? []) ?? '';
-  const headerName = (watchContractName ?? contract.name) || '';
-  const isContractEffectiveByState = isContractSignedState(stateId, referenceBooks?.contractStates);
-  const requireFullValidation = !isContractDraft(stateId, referenceBooks?.contractStates);
-  const signedDateLabel = (() => {
-    const dateSignedValue = watchDateSigned ?? contract.date_signed;
-    if (!dateSignedValue) return '';
-    if (dayjs.isDayjs(dateSignedValue)) return dateSignedValue.format('DD.MM.YYYY');
-    if (typeof dateSignedValue === 'string') return formatDate(dateSignedValue);
-    return '';
-  })();
+  const {
+    title,
+    headerName,
+    contractState,
+    stateTagClass,
+    contractTypeName,
+    contractCategoryName,
+    partnerName,
+    isEffective: isContractEffectiveByState,
+    requireFullValidation,
+    signedDateLabel,
+  } = buildContractEditHeaderMeta(
+    {
+      number: watchContractNumber,
+      cipher: watchCipher,
+      name: watchContractName,
+      category_id: watchCategoryId,
+      contract_type_id: watchContractTypeId,
+      state_id: watchStateId,
+      partner_id: watchPartnerId,
+      date_signed: watchDateSigned,
+    },
+    contract,
+    referenceBooks,
+  );
 
   const contractFormRefs = referenceBooks as ContractFormRefs;
 
@@ -221,11 +215,8 @@ export default function ContractEditPage() {
             {headerName}
           </span>
         ) : null,
-        contractState ? (
-          <span
-            key='state'
-            className={tagStyles[getContractStateTagClass(contractState.code) as keyof typeof tagStyles]}
-          >
+        contractState && stateTagClass ? (
+          <span key='state' className={tagStyles[stateTagClass as keyof typeof tagStyles]}>
             {contractState.name}
           </span>
         ) : null,

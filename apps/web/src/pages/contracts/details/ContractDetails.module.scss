@@ -8,7 +8,6 @@ $warning: #faad14;
 $warning-bg: #fffbe6;
 $warning-border: #ffe58f;
 $warning-dark: #d48806;
-/* sync constants/appColors APP_COLOR_ERROR */
 $error: #e84749;
 $error-bg: #fff2f0;
 $error-dark: #cf1322;
@@ -906,6 +905,30 @@ $radius-lg: 8px;
   font-size: 14px;
   padding: 4px 12px;
   border-radius: 4px;
+
+  &[data-status='overdue'] {
+    background-color: rgba(211, 47, 47, 0.1);
+    color: #d32f2f;
+    border: 1px solid #d32f2f;
+  }
+
+  &[data-status='completed'] {
+    background-color: rgba(84, 177, 40, 0.1);
+    color: #54b128;
+    border: 1px solid #54b128;
+  }
+
+  &[data-status='in_progress'] {
+    background-color: rgba(0, 21, 41, 0.1);
+    color: #001529;
+    border: 1px solid #001529;
+  }
+
+  &[data-status='planned'] {
+    background-color: rgba(166, 166, 166, 0.08);
+    color: #525252;
+    border: 1px solid #a6a6a6;
+  }
 }
 
 .urgentBadge {
@@ -986,6 +1009,48 @@ $radius-lg: 8px;
   font-size: 14px;
   padding: 2px 8px;
   border-radius: 4px;
+
+  &[data-tone='overdue'] {
+    background-color: rgba(211, 47, 47, 0.12);
+    color: #c62828;
+    border: 1px solid #d32f2f;
+    font-weight: 600;
+  }
+
+  &[data-tone='critical'] {
+    background-color: rgba(183, 28, 28, 0.12);
+    color: #b71c1c;
+    border: 1px solid #c62828;
+    font-weight: 600;
+  }
+
+  &[data-tone='urgent'] {
+    background-color: rgba(230, 81, 0, 0.12);
+    color: #e65100;
+    border: 1px solid #f57c00;
+    font-weight: 600;
+  }
+
+  &[data-tone='approaching'] {
+    background-color: rgba(245, 124, 0, 0.14);
+    color: #e65100;
+    border: 1px solid #fb8c00;
+    font-weight: 500;
+  }
+
+  &[data-tone='comfortable'] {
+    background-color: rgba(255, 179, 0, 0.12);
+    color: #f9a825;
+    border: 1px solid #fbc02d;
+    font-weight: 500;
+  }
+
+  &[data-tone='neutral'] {
+    background-color: rgba(82, 82, 82, 0.08);
+    color: #595959;
+    border: 1px solid #d9d9d9;
+    font-weight: 400;
+  }
 }
 
 .budgetTag {
@@ -993,6 +1058,24 @@ $radius-lg: 8px;
   padding: 2px 8px;
   border-radius: 4px;
   margin-left: 8px;
+}
+
+.budgetTagOver {
+  background-color: rgba(211, 47, 47, 0.1);
+  color: #d32f2f;
+  border-color: #d32f2f;
+}
+
+.budgetTagUnder {
+  background-color: rgba(84, 177, 40, 0.1);
+  color: #54b128;
+  border-color: #54b128;
+}
+
+.budgetTagNeutral {
+  background-color: rgba(217, 217, 217, 0.1);
+  color: #525252;
+  border-color: #d9d9d9;
 }
 
 .completedInfo {

@@ -23,6 +23,7 @@ import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete/openAn
 import { useNotification } from '../../../customhooks/useNotification';
 import type { MyFile } from '../../../types/files';
 import type { Partner } from '../../../types/partner';
+import { formatFileSizeStr } from '../../../utils/formatFileSize';
 import styles from './PartnerVerificationTab.module.scss';
 
 const { Text, Title } = Typography;
@@ -41,13 +42,6 @@ function getFileIcon(filename: string): React.ReactNode {
   return <FileOutlined style={{ color: '#8c8c8c', fontSize: 20 }} />;
 }
 
-function formatFileSize(size: string | null): string {
-  if (!size) return '—';
-  const bytes = Number(size);
-  if (bytes < 1024) return `${bytes} Б`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
-}
 
 type SectionProps = {
   title: string;
@@ -170,7 +164,7 @@ function VerificationSection({
                 <span className={styles.fileIcon}>{getFileIcon(file.name)}</span>
                 <div className={styles.fileMeta}>
                   <Text className={styles.fileName} title={file.name}>{file.name}</Text>
-                  <Text type='secondary' className={styles.fileSize}>{formatFileSize(file.size)}</Text>
+                  <Text type='secondary' className={styles.fileSize}>{formatFileSizeStr(file.size)}</Text>
                 </div>
                 <Tooltip title='Удалить'>
                   <Button

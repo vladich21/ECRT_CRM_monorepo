@@ -5,3 +5,12 @@ export const formatFileSize = (bytes: number): string => {
   const unitIndex = Math.floor(Math.log(bytes) / Math.log(bytesBase));
   return `${(bytes / Math.pow(bytesBase, unitIndex)).toFixed(2)} ${sizes[unitIndex]}`;
 };
+
+/** Форматирует размер файла из строки/null в читаемый вид (русские единицы). */
+export const formatFileSizeStr = (size: string | null): string => {
+  if (!size) return '—';
+  const bytes = Number(size);
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+};

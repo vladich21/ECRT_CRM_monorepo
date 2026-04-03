@@ -23,6 +23,7 @@ import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useNotification } from '../../customhooks/useNotification';
 import { getNameById } from '../../helpers/getNameById';
 import type { MyFile } from '../../types/files';
+import { formatFileSizeStr } from '../../utils/formatFileSize';
 import { triggerFileDownload } from '../filePreview/FilePreviewModal';
 import styles from './EntityFilesTab.module.scss';
 
@@ -43,15 +44,7 @@ function getFileIcon(filename: string): React.ReactNode {
   return <FileOutlined className={styles.iconDefault} />;
 }
 
-function formatFileSize(size: string | null): string {
-  if (!size) return '—';
-  const bytes = Number(size);
-  if (bytes < 1024) return `${bytes} Б`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
-}
-
-function formatDate(dateStr: string | null): string {
+function formatFileDate(dateStr: string | null): string {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('ru-RU');
 }
@@ -176,12 +169,12 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
                   <div className={styles.fileMeta}>
                     <span className={styles.fileMetaRow}>
                       <FileOutlined style={{ fontSize: 12 }} />
-                      {formatFileSize(file.size)}
+                      {formatFileSizeStr(file.size)}
                     </span>
                     {file.uploaded_at && (
                       <span className={styles.fileMetaRow}>
                         <CalendarOutlined style={{ fontSize: 12 }} />
-                        {formatDate(file.uploaded_at)}
+                        {formatFileDate(file.uploaded_at)}
                       </span>
                     )}
                     {file.uploadedby_id && (

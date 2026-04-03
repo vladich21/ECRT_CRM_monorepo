@@ -16,7 +16,6 @@ import { StageInfoItem } from './StageInfoItem';
 import {
   calculateBudgetDeviation,
   calculateDaysUntilDeadline,
-  getDeadlineCountdownTagStyle,
   getDeadlineCountdownTone,
   getStageStatus,
   getStageStatusDisplay,
@@ -58,34 +57,6 @@ export const StageCard: React.FC<StageCardProps> = ({
   const countdownTone = getDeadlineCountdownTone(daysUntilDeadline, { isCompleted, isOverdue });
   const showHeaderCountdown =
     !isCompleted && !isOverdue && daysUntilDeadline >= 0 && daysUntilDeadline <= 14 && Boolean(stage.planned_end_date);
-  const getStatusTagStyle = () => {
-    if (status === 'overdue') {
-      return {
-        backgroundColor: 'rgba(211, 47, 47, 0.1)',
-        color: '#D32F2F',
-        border: '1px solid #D32F2F',
-      };
-    }
-    if (status === 'completed') {
-      return {
-        backgroundColor: 'rgba(84, 177, 40, 0.1)',
-        color: '#54B128',
-        border: '1px solid #54B128',
-      };
-    }
-    if (status === 'in_progress') {
-      return {
-        backgroundColor: 'rgba(0, 21, 41, 0.1)',
-        color: '#001529',
-        border: '1px solid #001529',
-      };
-    }
-    return {
-      backgroundColor: 'rgba(166, 166, 166, 0.08)',
-      color: '#525252',
-      border: '1px solid #A6A6A6',
-    };
-  };
   return (
     <Col xs={24}>
       <Card
@@ -109,11 +80,11 @@ export const StageCard: React.FC<StageCardProps> = ({
             </div>
           </div>
           <div className={styles.stageHeaderRight}>
-            <Tag className={styles.stageStatusTag} style={getStatusTagStyle()}>
+            <Tag className={styles.stageStatusTag} data-status={status}>
               {statusText}
             </Tag>
             {showHeaderCountdown && (
-              <Tag className={styles.urgentBadge} style={getDeadlineCountdownTagStyle(countdownTone)}>
+              <Tag className={`${styles.urgentBadge} ${styles.timeTag}`} data-tone={countdownTone}>
                 Осталось {daysUntilDeadline} {pluralDaysRu(daysUntilDeadline)}
               </Tag>
             )}
@@ -132,7 +103,7 @@ export const StageCard: React.FC<StageCardProps> = ({
             {onDelete && (
               <Popconfirm
                 title='Удалить этап?'
-                description='Этап будет удалён из списка. Для данных с сервера позже потребуется запрос к API.'
+                description='Этап будет безвозвратно удалён.'
                 okText='Удалить'
                 cancelText='Отмена'
                 okButtonProps={{ danger: true }}

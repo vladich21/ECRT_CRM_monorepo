@@ -4,6 +4,7 @@ import { Alert, Avatar, Card, Descriptions, Divider, Progress, Space, Statistic,
 import type { ReferenceData } from '../../../../../api/hooks/useReferences';
 import { getNameById } from '../../../../../helpers/getNameById';
 import type { Contract, ContractStage } from '../../../../../types/contract';
+import detailStyles from '../../ContractDetails.module.scss';
 import styles from './ContractDetailsAside.module.scss';
 import { buildDetailItems } from './contractInfoItems';
 
@@ -134,8 +135,17 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
                   <Divider style={{ margin: '4px 0' }} />
                   <div className={styles.deviationRow}>
                     <Text type='secondary'>Отклонение</Text>
-                    <Tag style={{ fontSize: 14 }} color={budgetDeviationPercent >= 0 ? 'success' : 'error'}>
-                      {budgetDeviationPercent >= 0 ? '+' : ''}
+                    <Tag
+                      className={[
+                        detailStyles.budgetTag,
+                        budgetDeviationPercent > 0
+                          ? detailStyles.budgetTagOver
+                          : budgetDeviationPercent < 0
+                            ? detailStyles.budgetTagUnder
+                            : detailStyles.budgetTagNeutral,
+                      ].join(' ')}
+                    >
+                      {budgetDeviationPercent > 0 ? '+' : ''}
                       {budgetDeviationPercent.toFixed(1)}%
                     </Tag>
                   </div>
