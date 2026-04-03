@@ -10,7 +10,6 @@ export class PatentStatusesService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll() {
-    this.logger.debug('Получение статусов патентов');
     const rows = await this.db.db
       .select()
       .from(refPatentStatuses)

@@ -10,7 +10,6 @@ export class ContractStatesService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll() {
-    this.logger.debug('Получение состояний договоров');
     const rows = await this.db.db
       .select()
       .from(refContractStates)

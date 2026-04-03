@@ -663,10 +663,6 @@ export class SupplierEvaluationsService {
       })
       .where(eq(supplierPartnerProjectBlocks.id, blockId));
 
-    this.logger.log(
-      `Блокировка ${blockId} снята${updatedByUserId ? ` пользователем ${updatedByUserId}` : ''}`,
-    );
-
     const updated = await this.db.db
       .select()
       .from(supplierPartnerProjectBlocks)

@@ -32,7 +32,6 @@ export class UsersService {
     };
 
     if (usePreviewFormat) {
-      this.logger.debug(`Получение списка пользователей (preview=${preview})`);
       let baseSelect = this.db.db
         .select({
           id: users.id,
@@ -56,7 +55,6 @@ export class UsersService {
       return { data, total };
     }
 
-    this.logger.debug('Получение полного списка пользователей');
     let baseQuery = this.db.db
       .select({
         user: users,
@@ -115,7 +113,6 @@ export class UsersService {
   }
 
   async update(id: string, data: Record<string, unknown>): Promise<UserResponseDto | null> {
-    this.logger.debug(`Обновление пользователя id: ${id}`);
     const user = await this.findOne(id);
     if (!user) return null;
     const map: Record<string, string> = {
@@ -243,7 +240,6 @@ export class UsersService {
   }
 
   async findOne(id: string): Promise<UserResponseDto | null> {
-    this.logger.debug(`Получение пользователя по id: ${id}`);
     const rows = await this.db.db
       .select({
         user: users,

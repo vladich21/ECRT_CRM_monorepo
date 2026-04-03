@@ -10,7 +10,6 @@ export class PatentApplicationAreasService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll() {
-    this.logger.debug('Получение областей патентных заявок');
     const rows = await this.db.db
       .select()
       .from(refPatentApplicationAreas)
@@ -19,7 +18,6 @@ export class PatentApplicationAreasService {
   }
 
   async findOne(id: string) {
-    this.logger.debug(`Получение области по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(refPatentApplicationAreas)
@@ -31,7 +29,6 @@ export class PatentApplicationAreasService {
   }
 
   async create(data: Record<string, unknown>) {
-    this.logger.debug('Создание области применения');
     const insertData = {
       name: data.name != null ? String(data.name) : null,
       code: data.code != null ? String(data.code) : null,
@@ -46,7 +43,6 @@ export class PatentApplicationAreasService {
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    this.logger.debug(`Обновление области применения id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
@@ -61,7 +57,6 @@ export class PatentApplicationAreasService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Удаление области применения id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     try {

@@ -131,7 +131,6 @@ export class PartnersService {
     pagination?: PaginationParams,
     filters?: PartnerQueryFilters,
   ): Promise<PartnersListPayload> {
-    this.logger.debug(`Получение партнёров (preview=${preview})`);
 
     if (preview) {
       const { blockedId } = await this.resolvePartnerOperationalStatusIds();
@@ -275,7 +274,6 @@ export class PartnersService {
   }
 
   async findOne(id: string) {
-    this.logger.debug(`Получение партнёра по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(partners)
@@ -321,7 +319,6 @@ export class PartnersService {
   }
 
   async create(data: Record<string, unknown>, userId?: string) {
-    this.logger.debug('Создание партнёра');
     this.validateInnKppRequired(data);
     await this.validateReferences(data);
     const manualArchive = this.parseManualArchiveFlag(data);
@@ -343,7 +340,6 @@ export class PartnersService {
   }
 
   async update(id: string, data: Record<string, unknown>, userId?: string) {
-    this.logger.debug(`Обновление партнёра id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     const currentStatusName = await this.getPartnerStatusName(
@@ -408,7 +404,6 @@ export class PartnersService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Мягкое удаление партнёра id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     const contractRefs = await this.db.db
@@ -429,7 +424,6 @@ export class PartnersService {
   }
 
   async restore(id: string) {
-    this.logger.debug(`Восстановление партнёра id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     await this.db.db

@@ -11,7 +11,6 @@ export class RolesService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(preview?: boolean): Promise<RoleResponseDto[] | Record<string, unknown>[]> {
-    this.logger.debug(`Получение ролей (preview=${preview})`);
     if (preview) {
       const rows = await this.db.db
         .select({ id: refGroups.id, name: refGroups.name })
@@ -36,7 +35,6 @@ export class RolesService {
   }
 
   async findOne(id: string): Promise<RoleResponseDto | Record<string, unknown> | null> {
-    this.logger.debug(`Получение роли по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(refGroups)

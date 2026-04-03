@@ -11,7 +11,6 @@ export class PositionsService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(preview?: boolean): Promise<PositionResponseDto[] | Record<string, unknown>[]> {
-    this.logger.debug(`Получение должностей (preview=${preview})`);
     if (preview) {
       const rows = await this.db.db
         .select({ id: positions.id, name: positions.name })
@@ -32,7 +31,6 @@ export class PositionsService {
   }
 
   async findOne(id: string): Promise<PositionResponseDto | Record<string, unknown> | null> {
-    this.logger.debug(`Получение должности по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(positions)

@@ -47,7 +47,6 @@ export class PatentsService {
   }
 
   async findOne(id: string) {
-    this.logger.debug(`Получение патента по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(patents)
@@ -198,10 +197,6 @@ export class PatentsService {
     } = params;
     const { limit = 50, offset = 0 } = pagination;
 
-    this.logger.debug(
-      `Получение патентов (preview=${preview}, deleted_scope=${deletedScope}, search=${Boolean(search)})`,
-    );
-
     const baseParts = this.buildPatentFilterParts({
       search,
       departmentId,
@@ -291,7 +286,6 @@ export class PatentsService {
   }
 
   async create(data: Record<string, unknown>) {
-    this.logger.debug('Создание патента');
     const toUuid = (v: unknown): string | null =>
       v == null || v === '' ? null : typeof v === 'string' ? v : null;
     const toDateStr = (v: unknown): string | null =>
@@ -323,7 +317,6 @@ export class PatentsService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Мягкое удаление патента id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     await this.db.db
@@ -334,7 +327,6 @@ export class PatentsService {
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    this.logger.debug(`Обновление патента id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     const map: Record<string, string> = {
@@ -367,7 +359,6 @@ export class PatentsService {
   }
 
   async restore(id: string) {
-    this.logger.debug(`Восстановление патента id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     await this.db.db
@@ -409,7 +400,6 @@ export class PatentsService {
   }
 
   async getGrants(patentId: string) {
-    this.logger.debug(`Получение grants для патента ${patentId}`);
     if (!(await this.patentExists(patentId))) return null;
     try {
       const rows = await this.db.db
@@ -435,7 +425,6 @@ export class PatentsService {
   }
 
   async createGrant(patentId: string, data: Record<string, unknown>) {
-    this.logger.debug(`Добавление grant для патента ${patentId}`);
     if (!(await this.patentExists(patentId))) return null;
     const insertData: Record<string, unknown> = {
       patentId,

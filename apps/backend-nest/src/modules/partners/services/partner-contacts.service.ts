@@ -10,7 +10,6 @@ export class PartnerContactsService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(partnerId: string) {
-    this.logger.debug(`Получение контактов партнёра ${partnerId}`);
     const rows = await this.db.db
       .select()
       .from(partnerContacts)

@@ -28,7 +28,6 @@ export class MailService {
       text: `Ваш код для первого входа: ${code}\n\nКод действителен 10 минут.`,
       html: `<p>Ваш код для первого входа: <strong style="font-size:24px;letter-spacing:4px">${code}</strong></p><p>Код действителен 10 минут.</p>`,
     });
-    this.logger.log(`Временный код отправлен на ${to}`);
   }
 
   async send2faCode(to: string, code: string): Promise<void> {
@@ -39,6 +38,5 @@ export class MailService {
       text: `Ваш код двухфакторной аутентификации: ${code}\n\nКод действителен 10 минут.`,
       html: `<p>Ваш код подтверждения: <strong style="font-size:24px;letter-spacing:4px">${code}</strong></p><p>Код действителен 10 минут.</p>`,
     });
-    this.logger.log(`2FA-код отправлен на ${to}`);
   }
 }

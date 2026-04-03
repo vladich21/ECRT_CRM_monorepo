@@ -11,7 +11,6 @@ export class DepartmentsService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(preview?: boolean): Promise<DepartmentResponseDto[] | Record<string, unknown>[]> {
-    this.logger.debug(`Получение отделов (preview=${preview})`);
     if (preview) {
       const rows = await this.db.db
         .select({ id: departments.id, name: departments.name })
@@ -27,7 +26,6 @@ export class DepartmentsService {
   }
 
   async findOne(id: string): Promise<DepartmentResponseDto | Record<string, unknown> | null> {
-    this.logger.debug(`Получение отдела по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(departments)

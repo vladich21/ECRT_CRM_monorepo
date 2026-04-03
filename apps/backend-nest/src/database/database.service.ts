@@ -30,7 +30,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     try {
       await this.pool.query('SELECT 1');
-      this.logger.log('Подключение к БД srm_pg13 установлено');
     } catch (error) {
       this.logger.error(' Не удалось подключиться к БД', error);
       throw error;
@@ -39,6 +38,5 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.pool.end();
-    this.logger.log('Соединение с БД закрыто');
   }
 }

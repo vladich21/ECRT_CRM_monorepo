@@ -10,7 +10,6 @@ export class PatentGrantsService {
   constructor(private readonly db: DatabaseService) {}
 
   async findOne(id: string) {
-    this.logger.debug(`Получение grant по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(patentGrants)
@@ -22,7 +21,6 @@ export class PatentGrantsService {
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    this.logger.debug(`Обновление grant id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     const toDateStr = (v: unknown): string | null =>
@@ -39,7 +37,6 @@ export class PatentGrantsService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Удаление grant id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     await this.db.db.delete(patentGrants).where(eq(patentGrants.id, id));

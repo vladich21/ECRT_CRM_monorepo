@@ -243,7 +243,6 @@ export class ContractsService {
   }
 
   async create(data: Record<string, unknown>) {
-    this.logger.debug('Создание договора');
     const requestFieldToColumn: Record<string, string> = {
       number: 'number',
       cipher: 'cipher',
@@ -319,10 +318,6 @@ export class ContractsService {
   ): Promise<ContractsListResult> {
     const forReference = options?.forReference && !partnerId;
     const filters = options?.filters;
-    this.logger.debug(
-      `Получение договоров (preview=${preview}, partner_id=${partnerId}, forReference=${forReference})`,
-    );
-
     if (forReference) {
       const key = `contracts:for_reference:signed:${preview ? '1' : '0'}`;
       const cached = this.getValidCache(key);
@@ -439,7 +434,6 @@ export class ContractsService {
   }
 
   async findOne(id: string) {
-    this.logger.debug(`Получение договора по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(contracts)
@@ -451,7 +445,6 @@ export class ContractsService {
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    this.logger.debug(`Обновление договора id: ${id}`);
     const existingContractRows = await this.db.db
       .select({ stateId: contracts.stateId, partnerId: contracts.partnerId })
       .from(contracts)
@@ -528,7 +521,6 @@ export class ContractsService {
 
     const isDraftContract = await this.rowHasDraftState(contractRow.stateId);
     if (isDraftContract) {
-      this.logger.debug(`Жёсткое удаление черновика договора id: ${id}`);
       await this.db.db
         .update(patents)
         .set({ contractId: null, updatedAt: new Date() })
@@ -539,7 +531,6 @@ export class ContractsService {
       return { deletion_mode: 'hard', id: String(contractRow.id) };
     }
 
-    this.logger.debug(`Мягкое удаление договора id: ${id}`);
     await this.db.db
       .update(contracts)
       .set({ isDeleted: true, updatedAt: new Date() })
@@ -552,7 +543,6 @@ export class ContractsService {
   }
 
   async restore(id: string) {
-    this.logger.debug(`Восстановление договора id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     await this.db.db

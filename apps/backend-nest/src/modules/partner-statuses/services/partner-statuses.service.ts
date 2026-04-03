@@ -10,7 +10,6 @@ export class PartnerStatusesService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(preview?: boolean) {
-    this.logger.debug(`Получение статусов партнёров (preview=${preview})`);
     if (preview) {
       const rows = await this.db.db
         .select({ id: refPartnerStatuses.id, name: refPartnerStatuses.name })

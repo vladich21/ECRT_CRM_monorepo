@@ -10,7 +10,6 @@ export class PartnerTypesService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(preview?: boolean) {
-    this.logger.debug(`Получение типов партнёров (preview=${preview})`);
     if (preview) {
       const rows = await this.db.db
         .select({ id: refPartnerTypes.id, name: refPartnerTypes.name })

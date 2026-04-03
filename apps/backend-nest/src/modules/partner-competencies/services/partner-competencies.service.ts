@@ -17,7 +17,6 @@ export class PartnerCompetenciesService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll() {
-    this.logger.debug('Получение компетенций партнёров');
     const rows = await this.db.db
       .select(competenceListColumns)
       .from(refPartnerCompetencies)
@@ -26,7 +25,6 @@ export class PartnerCompetenciesService {
   }
 
   async findOne(id: string) {
-    this.logger.debug(`Получение компетенции по id: ${id}`);
     const rows = await this.db.db
       .select(competenceListColumns)
       .from(refPartnerCompetencies)
@@ -38,7 +36,6 @@ export class PartnerCompetenciesService {
   }
 
   async create(data: Record<string, unknown>) {
-    this.logger.debug('Создание компетенции');
     const insertData = {
       name: data.name != null ? String(data.name) : null,
     };
@@ -47,7 +44,6 @@ export class PartnerCompetenciesService {
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    this.logger.debug(`Обновление компетенции id: ${id}`);
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updateObj.name = data.name != null ? String(data.name) : null;
     await this.db.db.update(refPartnerCompetencies).set(updateObj).where(eq(refPartnerCompetencies.id, id));
@@ -55,7 +51,6 @@ export class PartnerCompetenciesService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Удаление компетенции id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     await this.db.db.delete(refPartnerCompetencies).where(eq(refPartnerCompetencies.id, id));

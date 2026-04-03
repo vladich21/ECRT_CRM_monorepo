@@ -21,7 +21,6 @@ export class CommentsService {
   }
 
   async findAll(entityType?: string, entityId?: string) {
-    this.logger.debug(`Получение комментариев entity_type=${entityType} entity_id=${entityId}`);
     if (!entityType || !entityId) return [];
     const rows = await this.db.db
       .select({
@@ -52,7 +51,6 @@ export class CommentsService {
   }
 
   async findOne(id: string) {
-    this.logger.debug(`Получение комментария по id: ${id}`);
     const rows = await this.db.db
       .select({
         comment: comments,
@@ -75,7 +73,6 @@ export class CommentsService {
   }
 
   async create(data: Record<string, unknown>) {
-    this.logger.debug('Создание комментария');
     const toUuid = (v: unknown): string | null =>
       v == null || v === '' ? null : typeof v === 'string' ? v : null;
     const insertData = {
@@ -93,7 +90,6 @@ export class CommentsService {
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    this.logger.debug(`Обновление комментария id: ${id}`);
     const current = await this.findOne(id);
     if (!current) return null;
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
@@ -116,7 +112,6 @@ export class CommentsService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Удаление комментария id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     await this.deleteWithChildren(id);

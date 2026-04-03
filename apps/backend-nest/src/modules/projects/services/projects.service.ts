@@ -135,7 +135,6 @@ export class ProjectsService {
   }
 
   async findOne(id: string) {
-    this.logger.debug(`Получение проекта по id: ${id}`);
     const rows = await this.db.db
       .select()
       .from(projects)
@@ -147,8 +146,6 @@ export class ProjectsService {
   }
 
   async create(data: Record<string, unknown>) {
-    this.logger.debug('Создание проекта');
-    this.logger.debug(`Полученные данные create: ${JSON.stringify(data)}`);
 
     const missing = REQUIRED_CREATE_FIELDS.filter((field) => {
       const fieldValue = data[field];
@@ -162,14 +159,11 @@ export class ProjectsService {
     }
 
     const insertData = this.mapToDb(data);
-    this.logger.debug(`Данные для вставки в БД: ${JSON.stringify(insertData)}`);
     const [row] = await this.db.db.insert(projects).values(insertData).returning();
     return row ? this.toResponse(row) : null;
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    this.logger.debug(`Обновление проекта id: ${id}`);
-    this.logger.debug(`Полученные данные update: ${JSON.stringify(data)}`);
     const map: Record<string, string> = {
       code: 'code',
       name: 'name',
@@ -190,7 +184,6 @@ export class ProjectsService {
   }
 
   async remove(id: string) {
-    this.logger.debug(`Мягкое удаление проекта id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     await this.db.db
@@ -201,7 +194,6 @@ export class ProjectsService {
   }
 
   async restore(id: string) {
-    this.logger.debug(`Восстановление проекта id: ${id}`);
     const row = await this.findOne(id);
     if (!row) return null;
     await this.db.db
@@ -242,7 +234,6 @@ export class ProjectsService {
     filters?: ProjectQueryFilters;
   }): Promise<ProjectsFindAllResult> {
     const { preview, pagination, filters } = options;
-    this.logger.debug(`Получение проектов (preview=${preview})`);
 
     if (preview) {
       const rows = await this.db.db
