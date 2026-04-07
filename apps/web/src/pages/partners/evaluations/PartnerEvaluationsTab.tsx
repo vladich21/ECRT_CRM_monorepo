@@ -7,12 +7,17 @@ import { useOutletContext } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 
 import { useProjectsPreview } from '../../../api/projects/projectApiHooks';
+import { invalidatePartnerQueries } from '../../../api/partners/partnerQueryKeys';
 import {
   usePartnerSupplierEvalKpi,
   useDeleteSupplierEvaluation,
   useSupplierEvaluationTabCounts,
   useSupplierEvaluationsList,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import {
+  invalidateSupplierEvaluationQueries,
+  supplierEvaluationQueryKeys,
+} from '../../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { useUsers } from '../../../api/users/userApiHooks';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
@@ -240,7 +245,7 @@ export default function PartnerEvaluationsTab() {
                       showNotification('success', 'Оценка удалена');
                       void refetch();
                       void queryClient.invalidateQueries({
-                        queryKey: ['supplier-evaluations', 'partner-kpi', partner.id],
+                        queryKey: supplierEvaluationQueryKeys.partnerKpi(partner.id),
                       });
                       resolve();
                     },
@@ -378,10 +383,10 @@ export default function PartnerEvaluationsTab() {
         initialProjectId={reevaluationProjectId}
         onSuccess={() => {
           refetch();
-          void queryClient.invalidateQueries({ queryKey: ['supplier-evaluations', 'partner-kpi', partner.id] });
           void queryClient.invalidateQueries({
-            predicate: query => Array.isArray(query.queryKey) && query.queryKey[0] === 'partners',
+            queryKey: supplierEvaluationQueryKeys.partnerKpi(partner.id),
           });
+          void invalidatePartnerQueries(queryClient);
         }}
       />
 
@@ -390,10 +395,8 @@ export default function PartnerEvaluationsTab() {
         onClose={() => setInitialEvaluationModalOpen(false)}
         partnerId={partner.id}
         onSuccess={() => {
-          void queryClient.invalidateQueries({ queryKey: ['supplier-evaluations'] });
-          void queryClient.invalidateQueries({
-            predicate: query => Array.isArray(query.queryKey) && query.queryKey[0] === 'partners',
-          });
+          void invalidateSupplierEvaluationQueries(queryClient);
+          void invalidatePartnerQueries(queryClient);
         }}
       />
     </div>

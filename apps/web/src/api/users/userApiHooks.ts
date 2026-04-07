@@ -2,23 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { User } from '../../types/user';
 import { userApi } from './userApi';
+import { userQueryKeys } from './userQueryKeys';
 
 type UpdateUserInput = {
   id: string;
   data: Partial<User>;
 };
-const usersQueryKey = ['users'] as const;
 
 export function useUsers(preview = 2, full = true) {
   return useQuery({
-    queryKey: [...usersQueryKey, 'full-list', preview, full],
+    queryKey: userQueryKeys.fullList(preview, full),
     queryFn: () => userApi.getUsers(preview, full),
   });
 }
 
 export function useUserById(userId: string) {
   return useQuery({
-    queryKey: [...usersQueryKey, userId],
+    queryKey: userQueryKeys.detail(userId),
     queryFn: () => userApi.getUserById(userId!),
     enabled: !!userId,
   });
@@ -29,7 +29,7 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: (data: User) => userApi.addUser(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: usersQueryKey });
+      void queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
     },
   });
 }
@@ -39,7 +39,8 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, data }: UpdateUserInput) => userApi.editUser(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: usersQueryKey });
+      void queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
     },
   });
 }
+

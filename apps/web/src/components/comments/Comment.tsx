@@ -12,6 +12,7 @@ import { Avatar, Button, Dropdown, Menu } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
+import { commentQueryKeys } from '../../api/comments/commentQueryKeys';
 import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useNotification } from '../../customhooks/useNotification';
 import { useCommentHelpers } from '../../hooks/useCommentHelpers';
@@ -76,7 +77,7 @@ const CommentComponent: React.FC<CommentProps> = ({
       onMutationSuccess: () => {
         if (entityType && entityId) {
           queryClient.invalidateQueries({
-            queryKey: ['comments', entityType, entityId],
+            queryKey: commentQueryKeys.byEntity(entityType, entityId),
           });
         }
       },

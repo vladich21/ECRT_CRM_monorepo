@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 import { parsePagination } from '../../../common/pagination';
 
@@ -33,10 +33,17 @@ export class UsersController {
     return user ? [user] : [];
   }
 
+  @Post()
+  async create(@Body('body') body?: Record<string, unknown>) {
+    const user = await this.usersService.create(body ?? {});
+    return user ? [user] : [];
+  }
+
   @Put(':id')
   async update(@Param('id') id: string, @Body('body') body?: Record<string, unknown>) {
     const user = await this.usersService.update(id, body ?? {});
     if (!user) throw new NotFoundException(`Пользователь ${id} не найден`);
     return [user];
   }
+
 }

@@ -2,6 +2,7 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { Patent } from '../../types/patent';
 import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
+import { invalidatePatentQueries, patentQueryKeys } from './patentQueryKeys';
 
 export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
 
@@ -40,7 +41,7 @@ export function usePatentsList(
 ): UseQueryResult<PatentsListResponse, Error> {
   const listQuery = buildListQuery(deletedScope, page, pageSize, filters);
   return useQuery<PatentsListResponse, Error>({
-    queryKey: ['patents', 'list', listQuery],
+    queryKey: patentQueryKeys.list(listQuery),
     queryFn: async () => {
       const res = await patentApi.getPatents(listQuery);
       if (Array.isArray(res)) {
@@ -54,7 +55,7 @@ export function usePatentsList(
 
 export const usePatentById = (patentId: string): UseQueryResult<Patent, Error> => {
   return useQuery<Patent, Error>({
-    queryKey: ['patents', patentId],
+    queryKey: patentQueryKeys.detail(patentId),
     queryFn: () => patentApi.getPatentById(patentId),
     enabled: !!patentId,
   });
@@ -69,7 +70,7 @@ export const useCreatePatent = (): UseMutationResult<
   return useMutation<Patent, Error, Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>>({
     mutationFn: (data: Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>) => patentApi.createPatent(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patents'] });
+      void invalidatePatentQueries(queryClient);
     },
   });
 };
@@ -93,8 +94,8 @@ export const useUpdatePatent = (): UseMutationResult<
   >({
     mutationFn: ({ id, data }: { id: string; data: Partial<Patent> }) => patentApi.updatePatent(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['patents'] });
-      queryClient.invalidateQueries({ queryKey: ['patents', variables.id] });
+      void invalidatePatentQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: patentQueryKeys.detail(variables.id) });
     },
   });
 };
@@ -104,7 +105,7 @@ export const useRestorePatent = (): UseMutationResult<Patent, Error, string> => 
   return useMutation<Patent, Error, string>({
     mutationFn: (patentId: string) => patentApi.restorePatent(patentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patents'] });
+      void invalidatePatentQueries(queryClient);
     },
   });
 };
@@ -114,7 +115,7 @@ export const useDeletePatent = (): UseMutationResult<void, Error, string> => {
   return useMutation<void, Error, string>({
     mutationFn: (patentId: string) => patentApi.deletePatent(patentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patents'] });
+      void invalidatePatentQueries(queryClient);
     },
   });
 };

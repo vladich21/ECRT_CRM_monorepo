@@ -1,19 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { usePartnerById, usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
-import { usePartnerInitialSupplierEval, usePartnerSupplierEvalKpi } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { Loader } from '../../components/loader/Loader';
-import { NotFound } from '../../components/notFound/NotFound';
+import { usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
+import { AsyncBoundary } from '../../components/async/AsyncBoundary';
 import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
 import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
-import type { Partner } from '../../types/partner';
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
@@ -21,6 +17,7 @@ import {
 } from './partnerDetailHeaderContent';
 import type { PartnerFormRefs, PartnerFormSubmitValues } from './components/form';
 import { PartnerFormFields } from './PartnerFormFields';
+import { usePartnerEditPageData } from './edit/hooks/usePartnerEditPageData';
 import styles from './PartnerFormPage.module.scss';
 
 export default function PartnerEditPage() {
@@ -29,50 +26,24 @@ export default function PartnerEditPage() {
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
-  const { data: partner, isLoading: isPartnerLoading, isError: isPartnerError } = usePartnerById(partnerId!);
   const {
-    data: referenceBooks,
-    isLoading: isReferencesLoading,
-    isError: isReferencesError,
-  } = useReferenceData([
-    'partnerCategories',
-    'partnerTypes',
-    'partnerStatuses',
-    'competencies',
-    'partnerEconomicCategories',
-  ]);
+    partner,
+    referenceBooks,
+    displayPartner,
+    headerLabels,
+    isPartnerLoading,
+    isPartnerError,
+    isReferencesLoading,
+    isReferencesError,
+    partnerEvalKpi,
+    partnerEvalKpiLoading,
+    initialEval,
+    initialEvalLoading,
+  } = usePartnerEditPageData(partnerId, form);
   const { mutate, isPending: isUpdateLoading } = useUpdatePartner();
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
   const isSubmittingRef = useRef(false);
   const isFormInitializedRef = useRef(false);
-  const wName = Form.useWatch('name', form) as string | undefined;
-  const wShortName = Form.useWatch('short_name', form) as string | undefined;
-  const wInn = Form.useWatch('inn', form) as string | undefined;
-  const wTypeIds = Form.useWatch('type_ids', form) as string[] | undefined;
-  const wActualAddress = Form.useWatch('actual_address', form) as string | undefined;
-  const wKey = Form.useWatch('is_key_supplier', form) as boolean | undefined;
-  const wTarget = Form.useWatch('is_targeted', form) as boolean | undefined;
-  const wCategoryId = Form.useWatch('category_id', form) as string | undefined;
-
-  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
-    partnerId,
-    Boolean(partnerId),
-  );
-  const { data: initialEval, isLoading: initialEvalLoading } = usePartnerInitialSupplierEval(partnerId, Boolean(partnerId));
-
-  const displayPartner: Partner | null = useMemo(() => {
-    if (!partner) return null;
-    return {
-      ...partner,
-      inn: wInn ?? partner.inn,
-      short_name: wShortName ?? partner.short_name,
-      name: wName ?? partner.name,
-      type_ids: wTypeIds ?? partner.type_ids,
-      actual_address: wActualAddress ?? partner.actual_address,
-      is_key_supplier: wKey ?? partner.is_key_supplier,
-      is_targeted: wTarget ?? partner.is_targeted,
-    };
-  }, [partner, wInn, wShortName, wName, wTypeIds, wActualAddress, wKey, wTarget]);
 
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses && !isFormInitializedRef.current) {
@@ -94,22 +65,8 @@ export default function PartnerEditPage() {
       },
     });
   };
-  if (isReferencesLoading || isPartnerLoading) {
-    return <Loader />;
-  }
-  if (isReferencesError || isPartnerError || !referenceBooks || !partner || !displayPartner) {
-    return <NotFound errorMessage='Контрагент не найден' />;
-  }
-  const headerTitle = (displayPartner.short_name || displayPartner.name || 'Контрагент').trim() || 'Контрагент';
-  const categoryName =
-    referenceBooks.partnerCategories?.find(
-      c => String(c.id) === String(wCategoryId ?? partner.category_id),
-    )?.name ?? null;
-  const statusName = referenceBooks.partnerStatuses?.find(
-    status => String(status.id) === String(partner.status_id),
-  )?.name;
   const handleSave = async (values: PartnerFormSubmitValues) => {
-    if (isSubmittingRef.current) return;
+    if (isSubmittingRef.current || !referenceBooks || !partner) return;
     isSubmittingRef.current = true;
     const archiveEntry = referenceBooks.partnerStatuses?.find(s => (s.name ?? '').trim() === 'Архив');
     const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
@@ -134,73 +91,87 @@ export default function PartnerEditPage() {
     );
   };
   return (
-    <DetailPageHeader
-      title={headerTitle}
-      titleWeight='medium'
-      backLabel='Реестр контрагентов'
-      onBack={() => navigate(-1)}
-      statusBadge={
-        partner.is_deleted
-          ? { label: 'Удалён', variant: 'danger' }
-          : statusName
-            ? { label: statusName, variant: detailHeaderVariantForPartnerStatusName(statusName) }
-            : undefined
-      }
-      badges={partnerDetailHeaderBadges(displayPartner, partnerEditBadgeOptions(displayPartner, partner, categoryName))}
-      metaItems={partnerDetailHeaderMetaItems(
-        displayPartner,
-        referenceBooks,
-        partnerEvalKpi,
-        partnerEvalKpiLoading,
-        initialEval,
-        initialEvalLoading,
-      )}
-      actions={
-        <>
-          <Button icon={<CloseOutlined />} onClick={() => navigate(-1)} disabled={isUpdateLoading}>
-            Отмена
-          </Button>
-          <Button
-            type='primary'
-            icon={<SaveOutlined />}
-            onClick={() => form.submit()}
-            loading={isUpdateLoading}
-            disabled={!isFormChanged}
-          >
-            Сохранить
-          </Button>
-        </>
-      }
-      tabs={[{ key: 'main', label: 'Редактирование' }]}
-      activeTab='main'
-      onTabChange={() => {}}
-      contextHolder={contextHolder}
-      stickyHeader
+    <AsyncBoundary
+      isLoading={isReferencesLoading || isPartnerLoading}
+      isError={isReferencesError || isPartnerError || !referenceBooks || !partner}
+      errorMessage='Контрагент не найден'
     >
-      <div className={styles.formCard}>
-        <Form
-          form={form}
-          layout='vertical'
-          size='middle'
-          onFieldsChange={() => setIsFormChanged(true)}
-          onFinish={handleSave}
-          disabled={isUpdateLoading}
-          onKeyPress={e => {
-            if (e.key === 'Enter') e.preventDefault();
-          }}
-          scrollToFirstError
+      {partner && referenceBooks && displayPartner && headerLabels ? (
+        <DetailPageHeader
+          title={headerLabels.headerTitle}
+          titleWeight='medium'
+          backLabel='Реестр контрагентов'
+          onBack={() => navigate(-1)}
+          statusBadge={
+            partner.is_deleted
+              ? { label: 'Удалён', variant: 'danger' }
+              : headerLabels.statusName
+                ? {
+                    label: headerLabels.statusName,
+                    variant: detailHeaderVariantForPartnerStatusName(headerLabels.statusName),
+                  }
+                : undefined
+          }
+          badges={partnerDetailHeaderBadges(
+            displayPartner,
+            partnerEditBadgeOptions(displayPartner, partner, headerLabels.categoryName),
+          )}
+          metaItems={partnerDetailHeaderMetaItems(
+            displayPartner,
+            referenceBooks,
+            partnerEvalKpi,
+            partnerEvalKpiLoading,
+            initialEval,
+            initialEvalLoading,
+          )}
+          actions={
+            <>
+              <Button icon={<CloseOutlined />} onClick={() => navigate(-1)} disabled={isUpdateLoading}>
+                Отмена
+              </Button>
+              <Button
+                type='primary'
+                icon={<SaveOutlined />}
+                onClick={() => form.submit()}
+                loading={isUpdateLoading}
+                disabled={!isFormChanged}
+              >
+                Сохранить
+              </Button>
+            </>
+          }
+          tabs={[{ key: 'main', label: 'Редактирование' }]}
+          activeTab='main'
+          onTabChange={() => {}}
+          contextHolder={contextHolder}
+          stickyHeader
         >
-          <PartnerFormFields
-            form={form}
-            referenceBooks={referenceBooks as PartnerFormRefs}
-            disabled={isUpdateLoading}
-            onUploadByInn={handleUploadByInn}
-            isLoadingInn={isLoadingInn}
-            formMode='edit'
-            statusDisplayName={statusName ?? '—'}
-          />
-        </Form>
-      </div>
-    </DetailPageHeader>
+          <div className={styles.formCard}>
+            <Form
+              form={form}
+              layout='vertical'
+              size='middle'
+              onFieldsChange={() => setIsFormChanged(true)}
+              onFinish={handleSave}
+              disabled={isUpdateLoading}
+              onKeyPress={e => {
+                if (e.key === 'Enter') e.preventDefault();
+              }}
+              scrollToFirstError
+            >
+              <PartnerFormFields
+                form={form}
+                referenceBooks={referenceBooks as PartnerFormRefs}
+                disabled={isUpdateLoading}
+                onUploadByInn={handleUploadByInn}
+                isLoadingInn={isLoadingInn}
+                formMode='edit'
+                statusDisplayName={headerLabels.statusName ?? '—'}
+              />
+            </Form>
+          </div>
+        </DetailPageHeader>
+      ) : null}
+    </AsyncBoundary>
   );
 }

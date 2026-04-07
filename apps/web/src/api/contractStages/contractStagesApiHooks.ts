@@ -2,10 +2,11 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { ContractStage } from '../../types/contract';
 import { contractStageApi } from './contractStagesApi';
+import { contractStageQueryKeys, invalidateContractStageQueries } from './contractStageQueryKeys';
 
 export const useContractStages = (contractId: string): UseQueryResult<ContractStage[], Error> => {
   return useQuery<ContractStage[], Error>({
-    queryKey: ['contract-stages', contractId],
+    queryKey: contractStageQueryKeys.byContract(contractId),
     queryFn: () => contractStageApi.getContractStages(contractId),
     enabled: !!contractId,
   });
@@ -13,14 +14,14 @@ export const useContractStages = (contractId: string): UseQueryResult<ContractSt
 
 export const useAllContractStages = (): UseQueryResult<ContractStage[], Error> => {
   return useQuery<ContractStage[], Error>({
-    queryKey: ['contract-stages'],
+    queryKey: contractStageQueryKeys.all,
     queryFn: () => contractStageApi.getContractStages(),
   });
 };
 
 export const useContractStageById = (contractId: string, stageId: string): UseQueryResult<ContractStage, Error> => {
   return useQuery<ContractStage, Error>({
-    queryKey: ['contract-stages', stageId],
+    queryKey: contractStageQueryKeys.byStageId(stageId),
     queryFn: () => contractStageApi.getContractStageById(contractId, stageId),
     enabled: !!stageId,
   });
@@ -45,11 +46,7 @@ export const useCreateContractStage = (): UseMutationResult<
   >({
     mutationFn: ({ contractId, data }) => contractStageApi.addContractStage(contractId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key.includes('contract-stages'));
-        },
-      });
+      void invalidateContractStageQueries(queryClient);
     },
   });
 };
@@ -74,12 +71,8 @@ export const useUpdateContractStage = (): UseMutationResult<
     }
   >({
     mutationFn: ({ contractId, stageId, data }) => contractStageApi.editContractStage(contractId, stageId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key.includes('contract-stages'));
-        },
-      });
+    onSuccess: () => {
+      void invalidateContractStageQueries(queryClient);
     },
   });
 };
@@ -103,11 +96,7 @@ export const useDeleteContractStage = (): UseMutationResult<
   >({
     mutationFn: ({ contractId, stageId }) => contractStageApi.deleteContractStage(contractId, stageId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key.includes('contract-stages'));
-        },
-      });
+      void invalidateContractStageQueries(queryClient);
     },
   });
 };

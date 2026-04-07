@@ -1,26 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useQueries } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { partnerApi } from '../../api/partners/partnerApi';
-import { usePartners } from '../../api/partners/partnerApiHooks';
-import { fetchPartnerSupplierEvalKpi, supplierEvaluationApi } from '../../api/supplierEvaluations/supplierEvaluationApi';
-import { getPartnerInitialEvalQueryKey, getPartnerSupplierEvalKpiQueryKey } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { BackButton } from '../../components/backButton/BackButton';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { EMPTY_DELETION_TAB_COUNTS, type DeletionScope } from '../../constants/deletionScope';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import type { Partner } from '../../types/partner';
-import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../utils/partnerApproval';
-import { EMPTY_FILTERS, PartnerFiltersModal, type PartnerFilters } from './PartnerFiltersModal';
+import { PartnerFiltersModal } from './PartnerFiltersModal';
 import styles from './PartnersListPage.module.scss';
 import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
+import { usePartnersListData } from './hooks/usePartnersListData';
+import { usePartnersListFilters } from './hooks/usePartnersListFilters';
 import SupplierCard from './registry/SupplierCard';
+import { buildPartnersApiFilters } from './utils/buildPartnersApiFilters';
+import { toPartnerListDisplayPartner } from './utils/partnersListDisplayUtils';
 import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -28,12 +25,24 @@ const SEARCH_DEBOUNCE_MS = 350;
 export default function PartnersListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<PartnerListTab>('all');
-  const [appliedFilters, setAppliedFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
-  const [draftFilters, setDraftFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const {
+    searchQuery,
+    setSearchQuery,
+    activeTab,
+    setActiveTab,
+    appliedFilters,
+    setAppliedFilters,
+    draftFilters,
+    isFiltersOpen,
+    openFiltersModal,
+    closeFiltersModal,
+    applyFilters: commitAppliedFilters,
+    resetFilters: commitResetFilters,
+    updateDraftFilter,
+    activeFiltersCount,
+    setDraftFilters,
+  } = usePartnersListFilters();
+  const [debouncedSearch, flushDebouncedSearch] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
   const { skipNextListResetRef } = useListReturnFromDetail({
@@ -43,7 +52,7 @@ export default function PartnersListPage() {
     parse: parsePartnersListNavSnapshot,
     applyParsed: restoredListState => {
       setSearchQuery(restoredListState.searchQuery);
-      setDebouncedSearch(restoredListState.searchQuery.trim());
+      flushDebouncedSearch(restoredListState.searchQuery.trim());
       setActiveTab(restoredListState.activeTab);
       setAppliedFilters(restoredListState.appliedFilters);
       setDraftFilters(restoredListState.appliedFilters);
@@ -58,79 +67,35 @@ export default function PartnersListPage() {
       if (navigationState.deletionScope === 'deleted') setActiveTab('deleted');
     },
   });
-  useEffect(() => {
-    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(debounceTimerId);
-  }, [searchQuery]);
   useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
   const apiFilters = useMemo(
-    () => ({
-      search: debouncedSearch.trim() || undefined,
-      typeIds: appliedFilters.typeIds.length > 0 ? appliedFilters.typeIds : undefined,
-      statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
-      competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
-      readiness: (activeTab === 'deleted' ? 'all' : activeTab) as 'all' | 'ready' | 'in_progress',
-      deletedScope: (activeTab === 'deleted' ? 'deleted' : 'active') as DeletionScope,
-    }),
+    () => buildPartnersApiFilters(debouncedSearch, activeTab, appliedFilters),
     [debouncedSearch, appliedFilters, activeTab],
   );
-  const { data: partnersData, isLoading, isError, isFetching } = usePartners(apiFilters, page, pageSize);
-  const tabCountQueries = useQueries({
-    queries: PARTNER_FILTER_TABS.map(({ key }) => ({
-      queryKey: ['partners', 'tab-count', key, debouncedSearch.trim(), appliedFilters],
-      queryFn: async () => {
-        const filters = {
-          search: debouncedSearch.trim() || undefined,
-          typeIds: appliedFilters.typeIds.length > 0 ? appliedFilters.typeIds : undefined,
-          statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
-          competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
-          readiness: (key === 'deleted' ? 'all' : key) as 'all' | 'ready' | 'in_progress',
-          deletedScope: (key === 'deleted' ? 'deleted' : 'active') as DeletionScope,
-        };
-        const response = await partnerApi.getPartners(filters, 1, 0);
-        return response.total;
-      },
-      staleTime: 15 * 1000,
-    })),
-  });
   const {
-    data: references,
-    isError: isRefsError,
-    isLoading: isRefsLoading,
-  } = useReferenceData(['partnerTypes', 'partnerStatuses', 'competencies', 'partnerCategories']);
-  const partners = partnersData?.data ?? [];
-  const total = partnersData?.total ?? 0;
+    partners,
+    total,
+    references,
+    isInitialLoad,
+    isLoading,
+    isError,
+    isFetching,
+    isRefsError,
+    partnerEvalKpiQueries,
+    partnerInitialEvalQueries,
+    getTabCount,
+    filterOptions,
+  } = usePartnersListData(apiFilters, page, pageSize, debouncedSearch, appliedFilters);
 
-  const isInitialLoad = isRefsLoading || (isLoading && !partnersData);
-  const partnerEvalKpiQueries = useQueries({
-    queries: partners.map(partner => ({
-      queryKey: getPartnerSupplierEvalKpiQueryKey(partner.id),
-      queryFn: () => fetchPartnerSupplierEvalKpi(partner.id),
-      staleTime: 60 * 1000,
-      enabled: !isInitialLoad && partners.length > 0,
-    })),
-  });
-  const partnerInitialEvalQueries = useQueries({
-    queries: partners.map(partner => ({
-      queryKey: getPartnerInitialEvalQueryKey(partner.id),
-      queryFn: () => supplierEvaluationApi.getActiveInitial(partner.id),
-      staleTime: 60 * 1000,
-      enabled: !isInitialLoad && partners.length > 0,
-    })),
-  });
-  const tabCounts = partnersData?.tab_counts ?? {
-    all: 0,
-    ready: 0,
-    in_progress: 0,
-    key_supplier: 0,
+  const applyFilters = () => {
+    commitAppliedFilters();
+    resetPage();
   };
-  const deletionTabCounts = partnersData?.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS;
-  const getTabCount = (tabKey: PartnerListTab) => {
-    const tabIndex = PARTNER_FILTER_TABS.findIndex(tab => tab.key === tabKey);
-    const queriedTotal = tabIndex >= 0 ? tabCountQueries[tabIndex]?.data : undefined;
-    if (typeof queriedTotal === 'number') return queriedTotal;
-    return tabKey === 'deleted' ? deletionTabCounts.deleted : tabCounts[tabKey];
+  const resetFilters = () => {
+    commitResetFilters();
+    resetPage();
   };
+
   useEffect(() => {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
@@ -138,42 +103,6 @@ export default function PartnersListPage() {
       handleTableChange({ current: maxPage, pageSize } as never);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-  const filterOptions = useMemo(
-    () => ({
-      types: (references?.partnerTypes ?? []).map(type => ({ label: type.name, value: String(type.id) })),
-      statuses: (references?.partnerStatuses ?? []).map(status => ({
-        label: status.name,
-        value: String(status.id),
-      })),
-      competencies: (references?.competencies ?? []).map(competence => ({
-        label: competence.name,
-        value: String(competence.id),
-      })),
-    }),
-    [references],
-  );
-  const activeFiltersCount =
-    (appliedFilters.typeIds.length > 0 ? 1 : 0) +
-    (appliedFilters.statusIds.length > 0 ? 1 : 0) +
-    (appliedFilters.competenceIds.length > 0 ? 1 : 0);
-  const openFiltersModal = () => {
-    setDraftFilters(appliedFilters);
-    setIsFiltersOpen(true);
-  };
-  const applyFilters = () => {
-    setAppliedFilters(draftFilters);
-    setIsFiltersOpen(false);
-    resetPage();
-  };
-  const resetFilters = () => {
-    setDraftFilters(EMPTY_FILTERS);
-    setAppliedFilters(EMPTY_FILTERS);
-    setIsFiltersOpen(false);
-    resetPage();
-  };
-  const updateDraftFilter = (patch: Partial<PartnerFilters>) => {
-    setDraftFilters(prev => ({ ...prev, ...patch }));
-  };
   const handleCardClick = (partner: Partner) => {
     navigate(`/partners/${partner.id}`, {
       state: {
@@ -271,22 +200,9 @@ export default function PartnersListPage() {
             </div>
           ) : (
             partners.map((partner, index) => (
-              (() => {
-                const categoryName =
-                  references?.partnerCategories?.find(category => String(category.id) === String(partner.category_id))
-                    ?.name ?? null;
-                const approvedByRules = computePartnerIsApproved({
-                  kind: inferPartnerCategoryKind(categoryName),
-                  legalCheckPassed: Boolean(partner.legal_check_passed),
-                  questionnaireFilled: Boolean(partner.questionnaire_filled),
-                  initialAssessmentDone: Boolean(partner.initial_assessment_done),
-                  hasActiveSupplierEvaluationBlock: Boolean(partner.has_active_evaluation_block),
-                });
-                const displayPartner: Partner = { ...partner, is_approved: approvedByRules };
-                return (
               <SupplierCard
                 key={partner.id}
-                partner={displayPartner}
+                partner={toPartnerListDisplayPartner(partner, references)}
                 references={references}
                 evaluationKpi={partnerEvalKpiQueries[index]?.data}
                 evaluationKpiLoading={Boolean(partnerEvalKpiQueries[index]?.isPending)}
@@ -294,8 +210,6 @@ export default function PartnersListPage() {
                 initialEvaluationLoading={Boolean(partnerInitialEvalQueries[index]?.isPending)}
                 onClick={handleCardClick}
               />
-                );
-              })()
             ))
           )}
         </div>
@@ -320,7 +234,7 @@ export default function PartnersListPage() {
         open={isFiltersOpen}
         draftFilters={draftFilters}
         onUpdateDraftFilter={updateDraftFilter}
-        onClose={() => setIsFiltersOpen(false)}
+        onClose={closeFiltersModal}
         onApply={applyFilters}
         onReset={resetFilters}
         selectOptions={filterOptions}

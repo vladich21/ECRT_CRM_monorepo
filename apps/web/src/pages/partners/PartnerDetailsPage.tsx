@@ -1,18 +1,8 @@
 import { DeleteOutlined, EditOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useContracts } from '../../api/contracts/contractApiHooks';
-import { useFilesByEntity } from '../../api/files/fileApiHooks';
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { useDeletePartner, usePartnerById, useRestorePartner } from '../../api/partners/partnerApiHooks';
-import { usePartnerContacts } from '../../api/partners/partnerContactApiHooks';
-import {
-  usePartnerInitialSupplierEval,
-  usePartnerSupplierEvalKpi,
-  useSupplierEvaluationsList,
-} from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import { useDeletePartner, useRestorePartner } from '../../api/partners/partnerApiHooks';
 import { APP_COLOR_SUCCESS } from '../../constants/appColors';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
@@ -20,6 +10,7 @@ import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../..
 import type { DeletionScope } from '../../constants/deletionScope';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
+import { usePartnerDetailsData } from './details/hooks/usePartnerDetailsData';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
 import {
   partnerDetailHeaderBadges,
@@ -33,13 +24,6 @@ export default function PartnerDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { contextHolder, showNotification } = useNotification();
-  const {
-    data: partner,
-    isLoading,
-    isError,
-    refetch: refetchPartner,
-  } = usePartnerById(partnerId!);
-  const { data: references } = useReferenceData(['partnerStatuses', 'partnerTypes', 'partnerCategories']);
   const mutation = useDeletePartner();
   const restoreMutation = useRestorePartner();
   const navState = location.state as {
@@ -48,39 +32,21 @@ export default function PartnerDetailsPage() {
   } | null;
   const listDeletionScope = navState?.deletionScope ?? 'active';
   const partnersListReturn = navState?.partnersListReturn;
-  const { data: contacts = [] } = usePartnerContacts(partnerId);
-  const { data: files = [] } = useFilesByEntity('partner', partnerId!);
-  const { data: contractsList } = useContracts(partnerId ? { partner_id: partnerId } : undefined, 1, 1, {
-    enabled: Boolean(partnerId),
-  });
-  const { data: evaluationsCountData } = useSupplierEvaluationsList(
-    { partner_id: partnerId, status: 'all', limit: 1, offset: 0 },
-    Boolean(partnerId),
-  );
-  const evaluationsTotal = evaluationsCountData?.total ?? 0;
-  const { data: partnerEvalKpi, isLoading: partnerEvalKpiLoading } = usePartnerSupplierEvalKpi(
-    partnerId,
-    Boolean(partnerId),
-  );
-  const { data: initialEval, isLoading: initialEvalLoading } = usePartnerInitialSupplierEval(partnerId, Boolean(partnerId));
-  const getActiveTabFromPath = () => {
-    const path = location.pathname;
-    if (path.includes('/contacts')) return 'contacts';
-    if (path.includes('/contracts')) return 'contracts';
-    if (path.includes('/evaluations')) return 'evaluations';
-    if (path.includes('/comments')) return 'comments';
-    if (path.includes('/files')) return 'files';
-    if (path.includes('/verification')) return 'verification';
-    return 'main';
-  };
-  const activeTab = getActiveTabFromPath();
 
-  /** На вкладке «Договоры» подтягиваем статус с сервера (пересчёт по договорам + инвалидация после мутаций). */
-  useEffect(() => {
-    if (!partnerId || isError) return;
-    if (!location.pathname.includes(`/partners/${partnerId}/contracts`)) return;
-    void refetchPartner();
-  }, [partnerId, location.pathname, isError, refetchPartner]);
+  const {
+    partner,
+    isLoading,
+    isError,
+    references,
+    activeTab,
+    tabItemsWithCounts,
+    categoryName,
+    statusName,
+    partnerEvalKpi,
+    partnerEvalKpiLoading,
+    initialEval,
+    initialEvalLoading,
+  } = usePartnerDetailsData(partnerId, location.pathname);
 
   const { handleOpenModal } = useConfirmByModal({
     mutation,
@@ -102,6 +68,7 @@ export default function PartnerDetailsPage() {
     redirectReplace: true,
     redirectState: { listTab: 'all' as PartnerListTab },
   });
+
   const handleTabChange = (key: string) => {
     const basePath = `/partners/${partnerId}`;
     switch (key) {
@@ -133,18 +100,7 @@ export default function PartnerDetailsPage() {
 
   if (isLoading) return <Loader />;
   if (isError || !partner) return <NotFound errorMessage='Контрагент не найден' />;
-  const categoryName =
-    references?.partnerCategories?.find(c => String(c.id) === String(partner.category_id))?.name ?? null;
-  const statusName = references?.partnerStatuses?.find(s => s.id === partner.status_id)?.name;
-  const tabItemsWithCounts = [
-    { key: 'main', label: 'Основное' },
-    { key: 'contacts', label: `Контактные лица (${contacts.length})` },
-    { key: 'contracts', label: `Договоры (${contractsList?.total ?? 0})` },
-    { key: 'evaluations', label: `Оценки (${evaluationsTotal})` },
-    { key: 'comments', label: 'Комментарии' },
-    { key: 'files', label: `Файлы (${files.length})` },
-    { key: 'verification', label: 'Проверка' },
-  ];
+
   return (
     <DetailPageHeader
       title={partner.short_name || partner.name || 'Контрагент'}
@@ -166,7 +122,14 @@ export default function PartnerDetailsPage() {
             : undefined
       }
       badges={partnerDetailHeaderBadges(partner, { categoryName })}
-      metaItems={partnerDetailHeaderMetaItems(partner, references, partnerEvalKpi, partnerEvalKpiLoading, initialEval, initialEvalLoading)}
+      metaItems={partnerDetailHeaderMetaItems(
+        partner,
+        references,
+        partnerEvalKpi,
+        partnerEvalKpiLoading,
+        initialEval,
+        initialEvalLoading,
+      )}
       actions={
         <>
           <Button

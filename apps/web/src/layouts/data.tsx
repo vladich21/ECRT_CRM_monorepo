@@ -76,7 +76,7 @@ const menuItems = [
   {
     key: 'patents_management',
     icon: <CopyrightOutlined />,
-    label: 'Интелектуальная Собственность',
+    label: 'Интеллектуальная собственность',
     children: [
       {
         key: 'patents',

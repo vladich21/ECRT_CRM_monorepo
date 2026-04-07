@@ -41,6 +41,14 @@ export interface ContractsListResponse {
   deletion_tab_counts?: DeletionTabCounts;
 }
 
+function normalizeContractFlags(contract: Contract): Contract {
+  const r = contract as unknown as Record<string, unknown>;
+  return {
+    ...contract,
+    is_deleted: Boolean(r.is_deleted ?? r.isDeleted),
+  };
+}
+
 function compactParams(
   obj: Record<string, string | number | boolean | undefined>,
 ): Record<string, string | number | boolean> {
@@ -71,7 +79,11 @@ export const contractApi = {
     const response = await apiClient.get('/contracts', {
       params: compactParams(listParamsToQuery(params, limit, offset)),
     });
-    return response.data;
+    const body = response.data as ContractsListResponse;
+    return {
+      ...body,
+      data: (body.data ?? []).map(normalizeContractFlags),
+    };
   },
  
   getContractsForReference: async (): Promise<ContractsListResponse> => {
@@ -94,22 +106,26 @@ export const contractApi = {
     if (!contract) {
       throw new Error('Contract not found');
     }
-    return contract;
+    return normalizeContractFlags(contract);
   },
   addContract: async (data: CreateContractPayload): Promise<Contract> => {
     const response = await apiClient.post(`/contracts`, data);
-    return response.data[0];
+    return normalizeContractFlags(response.data[0] as Contract);
   },
   editContract: async (contractId: string, data: Partial<Contract>): Promise<Contract> => {
     const response = await apiClient.put(`/contracts/${contractId}`, data);
-    return response.data[0];
+    return normalizeContractFlags(response.data[0] as Contract);
   },
   deleteContract: async (contractId: string): Promise<ContractDeleteResult> => {
     const response = await apiClient.delete(`/contracts/${contractId}`);
-    return response.data as ContractDeleteResult;
+    const data = response.data as ContractDeleteResult;
+    if (data && typeof data === 'object' && 'deletion_mode' in data && data.deletion_mode === 'soft' && data.contract) {
+      return { ...data, contract: normalizeContractFlags(data.contract) };
+    }
+    return data;
   },
   restoreContract: async (contractId: string): Promise<Contract> => {
     const response = await apiClient.put(`/contracts/${contractId}/restore`);
-    return response.data[0];
+    return normalizeContractFlags(response.data[0] as Contract);
   },
 };

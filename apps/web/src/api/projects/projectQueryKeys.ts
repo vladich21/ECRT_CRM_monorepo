@@ -1,0 +1,15 @@
+import type { QueryClient } from '@tanstack/react-query';
+
+import type { ProjectsListParams } from './projectApi';
+
+export const projectQueryKeys = {
+  all: ['projects'] as const,
+  preview: ['projects', 'preview'] as const,
+  list: (params: ProjectsListParams | undefined, page: number | undefined, pageSize: number | undefined) =>
+    ['projects', 'list', params ?? {}, page, pageSize] as const,
+  detail: (projectId: string) => ['projects', projectId] as const,
+} as const;
+
+export function invalidateProjectQueries(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: projectQueryKeys.all });
+}

@@ -2,17 +2,18 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { PartnerStatus } from '../../types/partner';
 import { partnerStatusApi } from './partnerStatusApi';
+import { invalidatePartnerStatusQueries, partnerStatusQueryKeys } from './partnerStatusQueryKeys';
 
 export const usePartnerStatuses = (preview?: number): UseQueryResult<PartnerStatus[], Error> => {
   return useQuery<PartnerStatus[], Error>({
-    queryKey: ['partnerStatuses'],
+    queryKey: partnerStatusQueryKeys.all,
     queryFn: () => partnerStatusApi.getPartnerStatuses(preview),
   });
 };
 
 export const usePartnerStatusById = (partnerStatusId: string): UseQueryResult<PartnerStatus, Error> => {
   return useQuery<PartnerStatus, Error>({
-    queryKey: ['partnerStatuses', partnerStatusId],
+    queryKey: partnerStatusQueryKeys.detail(partnerStatusId),
     queryFn: () => partnerStatusApi.getPartnerStatusById(partnerStatusId),
     enabled: !!partnerStatusId,
   });
@@ -24,11 +25,7 @@ export const useCreatePartnerStatus = (): UseMutationResult<PartnerStatus, Error
   return useMutation<PartnerStatus, Error, PartnerStatus>({
     mutationFn: (data: PartnerStatus) => partnerStatusApi.addPartnerStatus(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partnerStatuses');
-        },
-      });
+      void invalidatePartnerStatusQueries(queryClient);
     },
   });
 };
@@ -43,12 +40,8 @@ export const useUpdatePartnerStatus = (): UseMutationResult<
   return useMutation<PartnerStatus, Error, { id: string; data: Partial<PartnerStatus> }>({
     mutationFn: ({ id, data }: { id: string; data: Partial<PartnerStatus> }) =>
       partnerStatusApi.editPartnerStatus(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partnerStatuses');
-        },
-      });
+    onSuccess: () => {
+      void invalidatePartnerStatusQueries(queryClient);
     },
   });
 };
@@ -59,11 +52,7 @@ export const useDeletePartnerStatus = (): UseMutationResult<PartnerStatus, Error
   return useMutation<PartnerStatus, Error, string>({
     mutationFn: (partnerStatusId: string) => partnerStatusApi.deletePartnerStatus(partnerStatusId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partnerStatuses');
-        },
-      });
+      void invalidatePartnerStatusQueries(queryClient);
     },
   });
 };

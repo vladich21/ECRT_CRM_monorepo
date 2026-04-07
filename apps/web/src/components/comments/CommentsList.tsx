@@ -5,6 +5,7 @@ import { message } from 'antd';
 import { useParams } from 'react-router-dom';
 
 import { useComments, useCreateComment, useUpdateComment } from '../../api/comments/commentApiHooks';
+import { commentQueryKeys } from '../../api/comments/commentQueryKeys';
 import { fileApi } from '../../api/files/fileApi';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useNotification } from '../../customhooks/useNotification';
@@ -137,7 +138,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
               formData.append('entityId', createdComment.id);
               await fileApi.uploadFiles(formData);
               queryClient.invalidateQueries({
-                queryKey: ['comments', entityType, entityId],
+                queryKey: commentQueryKeys.byEntity(entityType, entityId),
               });
               showNotification('success', 'Успех', 'Комментарий с файлами успешно отправлен');
             } catch (error) {
@@ -148,7 +149,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
             showNotification('success', 'Успех', 'Комментарий успешно отправлен');
           }
           queryClient.invalidateQueries({
-            queryKey: ['comments', entityType, entityId],
+            queryKey: commentQueryKeys.byEntity(entityType, entityId),
           });
           setAction('');
           setCurrentCommentId(null);
@@ -198,7 +199,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
               showNotification('success', 'Успех', 'Комментарий успешно отредактирован');
             }
             queryClient.invalidateQueries({
-              queryKey: ['comments', entityType, entityId],
+              queryKey: commentQueryKeys.byEntity(entityType, entityId),
             });
             setAction('');
             setCurrentCommentId(null);

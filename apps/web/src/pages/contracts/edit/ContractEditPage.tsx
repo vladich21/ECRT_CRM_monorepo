@@ -165,6 +165,11 @@ export default function ContractEditPage() {
   if (isReferencesError || isContractError || !contract || !referenceBooks) {
     return <NotFound errorMessage='Не найден договор или справочник' />;
   }
+  if (contract.is_deleted) {
+    return (
+      <NotFound errorMessage='Удалённый договор нельзя редактировать. Откройте карточку договора и нажмите «Восстановить».' />
+    );
+  }
 
   const {
     title,

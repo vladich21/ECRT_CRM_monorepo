@@ -2,17 +2,18 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { PartnerCompetence } from '../../types/partner';
 import { partnerCompetenceApi } from './partnerCompetenceApi';
+import { competenceQueryKeys, invalidateCompetenceQueries } from './competenceQueryKeys';
 
 export const usePartnerCompetencies = (): UseQueryResult<PartnerCompetence[], Error> => {
   return useQuery<PartnerCompetence[], Error>({
-    queryKey: ['competencies'],
+    queryKey: competenceQueryKeys.all,
     queryFn: () => partnerCompetenceApi.getPartnerCompetencies(),
   });
 };
 
 export const usePartnerCompetenceById = (partnerCompetenceId: string): UseQueryResult<PartnerCompetence, Error> => {
   return useQuery<PartnerCompetence, Error>({
-    queryKey: ['competencies', partnerCompetenceId],
+    queryKey: competenceQueryKeys.detail(partnerCompetenceId),
     queryFn: () => partnerCompetenceApi.getPartnerCompetenceById(partnerCompetenceId),
     enabled: !!partnerCompetenceId,
   });
@@ -28,11 +29,7 @@ export const useCreatePartnerCompetence = (): UseMutationResult<
   return useMutation<PartnerCompetence, Error, Pick<PartnerCompetence, 'name'>>({
     mutationFn: (data: Pick<PartnerCompetence, 'name'>) => partnerCompetenceApi.addPartnerCompetence(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'competencies');
-        },
-      });
+      void invalidateCompetenceQueries(queryClient);
     },
   });
 };
@@ -51,12 +48,8 @@ export const useUpdatePartnerCompetence = (): UseMutationResult<
   >({
     mutationFn: ({ id, data }: { id: string; data: Partial<Pick<PartnerCompetence, 'name'>> }) =>
       partnerCompetenceApi.editPartnerCompetence(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'competencies');
-        },
-      });
+    onSuccess: () => {
+      void invalidateCompetenceQueries(queryClient);
     },
   });
 };
@@ -67,11 +60,7 @@ export const useDeletePartnerCompetence = (): UseMutationResult<PartnerCompetenc
   return useMutation<PartnerCompetence, Error, string>({
     mutationFn: (partnerCompetenceId: string) => partnerCompetenceApi.deletePartnerCompetence(partnerCompetenceId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'competencies');
-        },
-      });
+      void invalidateCompetenceQueries(queryClient);
     },
   });
 };

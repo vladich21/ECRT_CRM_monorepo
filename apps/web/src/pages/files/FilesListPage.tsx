@@ -37,7 +37,7 @@ const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', 
   const addFilesMutation = useUploadFiles({ entityType: entityType, entityId: entityId! });
 
 
-  const { handleOpenModal: openAddModal } = useMutateByModal<void, Error>({
+  const { handleOpenModal: openAddModal } = useMutateByModal<MyFile[], Error>({
     isEdit: false,
     mutation: addFilesMutation,
     successMessage: 'Файлы успешно добавлены',

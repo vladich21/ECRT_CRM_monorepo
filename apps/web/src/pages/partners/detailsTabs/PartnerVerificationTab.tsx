@@ -18,6 +18,7 @@ import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { triggerFileDownload } from '../../../components/filePreview/FilePreviewModal';
 import { fileApi } from '../../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity } from '../../../api/files/fileApiHooks';
+import { fileQueryKeys } from '../../../api/files/fileQueryKeys';
 import { useUpdatePartner } from '../../../api/partners/partnerApiHooks';
 import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete/openAntdDeleteConfirm';
 import { useNotification } from '../../../customhooks/useNotification';
@@ -90,7 +91,7 @@ function VerificationSection({
       formData.append('entityType', entityType);
       formData.append('entityId', partnerId);
       await fileApi.uploadFiles(formData);
-      await queryClient.invalidateQueries({ queryKey: ['files', entityType, partnerId] });
+      await queryClient.invalidateQueries({ queryKey: fileQueryKeys.byEntity(entityType, partnerId) });
       onSuccess?.('ok');
       showNotification('success', 'Файл загружен', 'Документ успешно добавлен');
       onAfterUpload();

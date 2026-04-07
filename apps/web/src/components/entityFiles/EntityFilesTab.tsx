@@ -18,6 +18,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { fileApi } from '../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity } from '../../api/files/fileApiHooks';
+import { fileQueryKeys } from '../../api/files/fileQueryKeys';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useNotification } from '../../customhooks/useNotification';
@@ -94,7 +95,7 @@ export function EntityFilesTab({ entityType }: EntityFilesTabProps) {
       formData.append('entityType', entityType);
       formData.append('entityId', entityId);
       await fileApi.uploadFiles(formData);
-      await queryClient.invalidateQueries({ queryKey: ['files', entityType, entityId] });
+      await queryClient.invalidateQueries({ queryKey: fileQueryKeys.byEntity(entityType, entityId) });
       onSuccess?.('ok');
       showNotification('success', 'Готово', 'Файл загружен');
     } catch {

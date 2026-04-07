@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 import { useDeleteContract, useRestoreContract } from '../../../../api/contracts/contractApiHooks';
 import type { ContractDeleteResult } from '../../../../api/contracts/contractApi';
 import { useConfirmByModal } from '../../../../customhooks/useConfirmByModal';
@@ -37,7 +39,7 @@ export function useContractDetailsActions(
     }),
   });
 
-  const { handleOpenModal: openRestoreModal } = useConfirmByModal({
+  const { handleOpenModal: openRestoreModalBase } = useConfirmByModal({
     mutation: restoreContractMutation,
     successMessage: 'Договор успешно восстановлен',
     errorMessage: 'Не удалось восстановить договор',
@@ -47,6 +49,14 @@ export function useContractDetailsActions(
     redirectReplace: true,
     redirectState: { ...detailNavBase, listTab: 'all' as FilterTab },
   });
+
+  const openRestoreModal = useCallback(() => {
+    openRestoreModalBase({
+      title: 'Восстановить договор?',
+      content: 'Договор снова появится в основном реестре и будет доступен для редактирования.',
+      okText: 'Восстановить',
+    });
+  }, [openRestoreModalBase]);
 
   const handleDelete = () => {
     if (!contract) return;

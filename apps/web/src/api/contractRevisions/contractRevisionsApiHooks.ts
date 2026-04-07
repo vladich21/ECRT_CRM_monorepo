@@ -2,10 +2,11 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { ContractRevision } from '../../types/contract';
 import { contractRevisionApi } from './contractRevisionsApi';
+import { contractRevisionQueryKeys } from './contractRevisionQueryKeys';
 
 export const useContractRevisions = (contractId: string): UseQueryResult<ContractRevision[], Error> => {
   return useQuery<ContractRevision[], Error>({
-    queryKey: ['contract-revisions', contractId],
+    queryKey: contractRevisionQueryKeys.byContract(contractId),
     queryFn: () => contractRevisionApi.getContractRevisions(contractId),
     enabled: !!contractId,
   });
@@ -16,7 +17,7 @@ export const useContractRevisionById = (
   revisionNumber: number,
 ): UseQueryResult<ContractRevision, Error> => {
   return useQuery<ContractRevision, Error>({
-    queryKey: ['contract-revisions', contractId, revisionNumber],
+    queryKey: contractRevisionQueryKeys.byContractAndNumber(contractId, revisionNumber),
     queryFn: () => contractRevisionApi.getContractRevisionById(contractId, revisionNumber),
     enabled: !!contractId && revisionNumber !== undefined,
   });
@@ -36,8 +37,8 @@ export const useCreateContractRevision = (): UseMutationResult<
   >({
     mutationFn: ({ contractId, data }) => contractRevisionApi.createContractRevision(contractId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['contract-revisions', variables.contractId],
+      void queryClient.invalidateQueries({
+        queryKey: contractRevisionQueryKeys.byContract(variables.contractId),
       });
     },
   });
@@ -54,11 +55,10 @@ export const useDeleteContractRevision = (): UseMutationResult<
     mutationFn: ({ contractId, revisionNumber }) =>
       contractRevisionApi.deleteContractRevision(contractId, revisionNumber),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['contract-revisions', variables.contractId],
+      void queryClient.invalidateQueries({
+        queryKey: contractRevisionQueryKeys.byContract(variables.contractId),
       });
-      // Также инвалидируем все запросы сравнения, которые могли включать эту ревизию
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         predicate: query => {
           return (
             query.queryKey.includes(variables.contractId) &&

@@ -3,6 +3,7 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 import { isValidUuid } from '../../helpers/isValidUuid';
 import { Partner } from '../../types/partner';
 import { partnerApi, PartnerListParams, PartnersListResponse } from './partnerApi';
+import { invalidatePartnerQueries, partnerQueryKeys } from './partnerQueryKeys';
 
 export function usePartners(
   filters?: PartnerListParams,
@@ -12,7 +13,7 @@ export function usePartners(
   const limit = pageSize ?? 20;
   const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
   return useQuery<PartnersListResponse, Error>({
-    queryKey: ['partners', 'list', filters ?? null, page, pageSize],
+    queryKey: partnerQueryKeys.list(filters ?? null, page, pageSize),
     queryFn: () => partnerApi.getPartners(filters, limit, offset),
     placeholderData: previousData => previousData,
   });
@@ -20,7 +21,7 @@ export function usePartners(
 
 export const usePartnerById = (partnerId: string): UseQueryResult<Partner, Error> => {
   return useQuery<Partner, Error>({
-    queryKey: ['partners', partnerId],
+    queryKey: partnerQueryKeys.detail(partnerId),
     queryFn: () => partnerApi.getPartnerById(partnerId),
     enabled: isValidUuid(partnerId),
     refetchOnWindowFocus: true,
@@ -38,9 +39,7 @@ export const useCreatePartner = (): UseMutationResult<Partner, Error, Partner> =
   return useMutation<Partner, Error, Partner>({
     mutationFn: (data: Partner) => partnerApi.addPartner(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
-      });
+      void invalidatePartnerQueries(queryClient);
     },
   });
 };
@@ -64,9 +63,7 @@ export const useUpdatePartner = (): UseMutationResult<
   >({
     mutationFn: ({ id, data }) => partnerApi.editPartner(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
-      });
+      void invalidatePartnerQueries(queryClient);
     },
   });
 };
@@ -77,9 +74,7 @@ export const useDeletePartner = (): UseMutationResult<Partner, Error, string, un
     mutationFn: (partnerId: string) => partnerApi.deletePartner(partnerId),
     onSuccess: () => {
       queueMicrotask(() => {
-        queryClient.invalidateQueries({
-          predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
-        });
+        void invalidatePartnerQueries(queryClient);
       });
     },
   });
@@ -90,10 +85,8 @@ export const useRestorePartner = (): UseMutationResult<Partner, Error, string> =
   return useMutation<Partner, Error, string>({
     mutationFn: (partnerId: string) => partnerApi.restorePartner(partnerId),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({
-        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'partners'),
-      });
-      queryClient.invalidateQueries({ queryKey: ['partners', id] });
+      void invalidatePartnerQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: partnerQueryKeys.detail(id) });
     },
   });
 };

@@ -2,18 +2,19 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { PatentGrant } from '../../types/patent';
 import { patentGrantsApi } from './patentGrantsApi';
+import { invalidatePatentGrantQueries, patentGrantQueryKeys } from './patentGrantQueryKeys';
 
 export const usePatentGrants = (patentId?: string): UseQueryResult<PatentGrant[], Error> => {
   return useQuery<PatentGrant[], Error>({
-    queryKey: ['patentGrants', patentId],
+    queryKey: patentGrantQueryKeys.entry(patentId),
     queryFn: () => patentGrantsApi.getPatentGrants(patentId),
-    enabled: !!patentId, // Запрос выполняется только если есть patentId
+    enabled: !!patentId,
   });
 };
 
 export const usePatentGrantById = (grantId: string): UseQueryResult<PatentGrant, Error> => {
   return useQuery<PatentGrant, Error>({
-    queryKey: ['patentGrants', grantId],
+    queryKey: patentGrantQueryKeys.entry(grantId),
     queryFn: () => patentGrantsApi.getPatentGrantById(grantId),
     enabled: !!grantId,
   });
@@ -29,11 +30,7 @@ export const useCreatePatentGrant = (): UseMutationResult<PatentGrant, Error, Cr
   return useMutation<PatentGrant, Error, CreatePatentGrantInput>({
     mutationFn: ({ patentId, data }) => patentGrantsApi.createPatentGrant(patentId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'patentGrants');
-        },
-      });
+      void invalidatePatentGrantQueries(queryClient);
     },
   });
 };
@@ -48,12 +45,8 @@ export const useUpdatePatentGrant = (): UseMutationResult<
   return useMutation<PatentGrant, Error, { id: string; data: Partial<PatentGrant> }>({
     mutationFn: ({ id, data }: { id: string; data: Partial<PatentGrant> }) =>
       patentGrantsApi.updatePatentGrant(id, data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'patentGrants');
-        },
-      });
+    onSuccess: () => {
+      void invalidatePatentGrantQueries(queryClient);
     },
   });
 };
@@ -64,8 +57,8 @@ export const useDeletePatentGrant = (): UseMutationResult<void, Error, string> =
   return useMutation<void, Error, string>({
     mutationFn: (grantId: string) => patentGrantsApi.deletePatentGrant(grantId),
     onSuccess: (_, grantId) => {
-      queryClient.removeQueries({ queryKey: ['patentGrants', grantId] });
-      queryClient.invalidateQueries({
+      void queryClient.removeQueries({ queryKey: patentGrantQueryKeys.entry(grantId) });
+      void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === 'patentGrants' && query.queryKey[1] !== grantId,
       });
     },

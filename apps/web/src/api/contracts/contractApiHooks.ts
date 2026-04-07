@@ -2,6 +2,12 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { Contract } from '../../types/contract';
 import { Reference } from '../../types/referenceTypes';
+import { invalidatePartnerQueries } from '../partners/partnerQueryKeys';
+import {
+  contractQueryKeys,
+  invalidateContractListQueriesAfterDelete,
+  invalidateContractQueries,
+} from './contractQueryKeys';
 import {
   contractApi,
   ContractDeleteResult,
@@ -11,12 +17,6 @@ import {
 } from './contractApi';
 
 export type { ContractsListParams };
-
-function invalidatePartnerQueries(queryClient: ReturnType<typeof useQueryClient>): void {
-  queryClient.invalidateQueries({
-    predicate: q => q.queryKey.some(key => typeof key === 'string' && key === 'partners'),
-  });
-}
 
 export function useContracts(
   params?: ContractsListParams,
@@ -29,7 +29,7 @@ export function useContracts(
   const limit = pageSize ?? 50;
   const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
   return useQuery<ContractsListResponse, Error>({
-    queryKey: ['contracts', params ?? {}, page, pageSize],
+    queryKey: contractQueryKeys.list(params, page, pageSize),
     queryFn: () => contractApi.getContracts(params, limit, offset),
     placeholderData: prev => prev,
     enabled: queryOptions?.enabled !== false,
@@ -38,21 +38,21 @@ export function useContracts(
 
 export const useContractsStates = (): UseQueryResult<Reference[], Error> => {
   return useQuery<Reference[], Error>({
-    queryKey: ['contractsStates'],
+    queryKey: contractQueryKeys.states,
     queryFn: () => contractApi.getContractsStates(),
   });
 };
 
 export const useContractsCategories = (): UseQueryResult<Reference[], Error> => {
   return useQuery<Reference[], Error>({
-    queryKey: ['contractsCategories'],
+    queryKey: contractQueryKeys.categories,
     queryFn: () => contractApi.getContractsCategories(),
   });
 };
 
 export const useContractById = (contractId: string): UseQueryResult<Contract, Error> => {
   return useQuery<Contract, Error>({
-    queryKey: ['contracts', contractId],
+    queryKey: contractQueryKeys.detail(contractId),
     queryFn: () => contractApi.getContractById(contractId),
     enabled: !!contractId,
   });
@@ -63,8 +63,8 @@ export const useCreateContract = (): UseMutationResult<Contract, Error, CreateCo
   return useMutation<Contract, Error, CreateContractPayload>({
     mutationFn: (data: CreateContractPayload) => contractApi.addContract(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
-      invalidatePartnerQueries(queryClient);
+      void invalidateContractQueries(queryClient);
+      void invalidatePartnerQueries(queryClient);
     },
   });
 };
@@ -88,8 +88,8 @@ export const useUpdateContract = (): UseMutationResult<
   >({
     mutationFn: ({ id, data }: { id: string; data: Partial<Contract> }) => contractApi.editContract(id, data),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
-      queryClient.setQueryData(['contracts', variables.id], data);
+      void invalidateContractQueries(queryClient);
+      queryClient.setQueryData(contractQueryKeys.detail(variables.id), data);
     },
   });
 };
@@ -100,12 +100,8 @@ export const useDeleteContract = (): UseMutationResult<ContractDeleteResult, Err
     mutationFn: (contractId: string) => contractApi.deleteContract(contractId),
     onSuccess: () => {
       queueMicrotask(() => {
-        queryClient.invalidateQueries({
-          predicate: query =>
-            query.queryKey[0] === 'contracts' &&
-            (query.queryKey.length < 2 || typeof query.queryKey[1] !== 'string'),
-        });
-        invalidatePartnerQueries(queryClient);
+        void invalidateContractListQueriesAfterDelete(queryClient);
+        void invalidatePartnerQueries(queryClient);
       });
     },
   });
@@ -116,9 +112,9 @@ export const useRestoreContract = (): UseMutationResult<Contract, Error, string>
   return useMutation<Contract, Error, string>({
     mutationFn: (contractId: string) => contractApi.restoreContract(contractId),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['contracts'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['contracts', id] });
-      invalidatePartnerQueries(queryClient);
+      void invalidateContractQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: contractQueryKeys.detail(id) });
+      void invalidatePartnerQueries(queryClient);
     },
   });
 };

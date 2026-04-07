@@ -20,8 +20,8 @@ export default function PartnerCompetencesListPage() {
   const onEdit = (record: PartnerCompetence) => {
     navigate(`/competencies/${record.id}/edit`, {});
   };
-  const onDelete = ({ id }: { id: number }) => {
-    deleteCompetenceIdRef.current = String(id);
+  const onDelete = ({ id }: { id: string }) => {
+    deleteCompetenceIdRef.current = id;
     openAntdDeleteConfirm({
       mutation: deletePartnerCompetenceMutation,
       getVariables: () => deleteCompetenceIdRef.current,
@@ -47,7 +47,7 @@ export default function PartnerCompetencesListPage() {
             key={competence.id}
             title={competence.name}
             onEdit={() => onEdit(competence)}
-            onDelete={() => onDelete({ id: Number(competence.id) })}
+            onDelete={() => onDelete({ id: competence.id })}
           />
         ))}
       </ReferenceBookCardList>

@@ -2,25 +2,26 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { PartnerEconomicCategory } from '../../types/partner';
 import { partnerEconomicCategoryApi } from './partnerEconomicCategoryApi';
+import {
+  invalidatePartnerEconomicCategoryQueries,
+  partnerEconomicCategoryQueryKeys,
+} from './partnerEconomicCategoryQueryKeys';
 
-// 1.2. Получение списка категорий
 export const usePartnerEconomicCategories = (): UseQueryResult<PartnerEconomicCategory[], Error> => {
   return useQuery<PartnerEconomicCategory[], Error>({
-    queryKey: ['partnerEconomicCategories'],
+    queryKey: partnerEconomicCategoryQueryKeys.all,
     queryFn: () => partnerEconomicCategoryApi.getPartnerEconomicCategories(),
   });
 };
 
-// 1.3. Получение категории по ID
 export const usePartnerEconomicCategoryById = (categoryId: string): UseQueryResult<PartnerEconomicCategory, Error> => {
   return useQuery<PartnerEconomicCategory, Error>({
-    queryKey: ['partnerEconomicCategories', categoryId],
+    queryKey: partnerEconomicCategoryQueryKeys.detail(categoryId),
     queryFn: () => partnerEconomicCategoryApi.getPartnerEconomicCategoryById(categoryId),
     enabled: !!categoryId,
   });
 };
 
-// 1.1. Создание категории
 export const useCreatePartnerEconomicCategory = (): UseMutationResult<
   PartnerEconomicCategory,
   Error,
@@ -31,16 +32,11 @@ export const useCreatePartnerEconomicCategory = (): UseMutationResult<
   return useMutation<PartnerEconomicCategory, Error, PartnerEconomicCategory>({
     mutationFn: (data: PartnerEconomicCategory) => partnerEconomicCategoryApi.createPartnerEconomicCategory(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partnerEconomicCategories');
-        },
-      });
+      void invalidatePartnerEconomicCategoryQueries(queryClient);
     },
   });
 };
 
-// 1.4. Обновление категории
 export const useUpdatePartnerEconomicCategory = (): UseMutationResult<
   PartnerEconomicCategory,
   Error,
@@ -51,12 +47,8 @@ export const useUpdatePartnerEconomicCategory = (): UseMutationResult<
   return useMutation<PartnerEconomicCategory, Error, { id: string; data: Partial<PartnerEconomicCategory> }>({
     mutationFn: ({ id, data }: { id: string; data: Partial<PartnerEconomicCategory> }) =>
       partnerEconomicCategoryApi.updatePartnerEconomicCategory(id, data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partnerEconomicCategories');
-        },
-      });
+    onSuccess: () => {
+      void invalidatePartnerEconomicCategoryQueries(queryClient);
     },
   });
 };
@@ -66,12 +58,8 @@ export const useDeletePartnerEconomicCategory = (): UseMutationResult<void, Erro
 
   return useMutation<void, Error, string>({
     mutationFn: (categoryId: string) => partnerEconomicCategoryApi.deletePartnerEconomicCategory(categoryId),
-    onSuccess: (_, categoryId) => {
-      queryClient.invalidateQueries({
-        predicate: query => {
-          return query.queryKey.some(key => typeof key === 'string' && key === 'partnerEconomicCategories');
-        },
-      });
+    onSuccess: () => {
+      void invalidatePartnerEconomicCategoryQueries(queryClient);
     },
   });
 };

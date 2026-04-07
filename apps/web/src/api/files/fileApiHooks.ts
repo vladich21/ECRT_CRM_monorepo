@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { fileApi } from '../../api/files/fileApi';
 import { isValidUuid } from '../../helpers/isValidUuid';
-import { MyFile } from '../../types/files';
+import type { MyFile } from '../../types/files';
+import { fileApi } from './fileApi';
+import { fileQueryKeys } from './fileQueryKeys';
 
 interface FileWithId {
   id: string;
@@ -16,7 +17,7 @@ interface UseUploadFilesProps {
 
 export const useFilesByEntity = (entityType: string, entityId: string) => {
   return useQuery({
-    queryKey: ['files', entityType, entityId],
+    queryKey: fileQueryKeys.byEntity(entityType, entityId),
     queryFn: () => fileApi.getFilesByEntity(entityType, entityId),
     enabled: !!entityType && isValidUuid(entityId),
   });
@@ -26,7 +27,7 @@ export const useUploadFiles = ({ entityType, entityId }: UseUploadFilesProps) =>
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (filesToUpload: FileWithId[]): Promise<void> => {
+    mutationFn: async (filesToUpload: FileWithId[]): Promise<MyFile[]> => {
       const formData = new FormData();
       filesToUpload.forEach((f, i) => formData.append(`file${i + 1}`, f.file));
       formData.append('entityType', entityType);
@@ -34,9 +35,9 @@ export const useUploadFiles = ({ entityType, entityId }: UseUploadFilesProps) =>
 
       return fileApi.uploadFiles(formData);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['files', entityType, entityId],
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: fileQueryKeys.byEntity(entityType, entityId),
       });
     },
   });
@@ -60,8 +61,8 @@ export const useDeleteFile = () => {
       return await fileApi.deleteFile(entityType, entityId, fileId);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['files', variables.entityType, variables.entityId],
+      void queryClient.invalidateQueries({
+        queryKey: fileQueryKeys.byEntity(variables.entityType, variables.entityId),
       });
     },
   });

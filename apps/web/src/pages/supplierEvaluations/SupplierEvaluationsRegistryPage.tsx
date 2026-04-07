@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 
 import { partnerApi } from '../../api/partners/partnerApi';
+import { partnerQueryKeys } from '../../api/partners/partnerQueryKeys';
 import { useProjectsPreview } from '../../api/projects/projectApiHooks';
 import {
   useDeleteSupplierEvaluation,
@@ -87,7 +88,7 @@ export default function SupplierEvaluationsRegistryPage() {
   );
 
   const { data: partners = [] } = useQuery({
-    queryKey: ['partners', 'reference'],
+    queryKey: partnerQueryKeys.referenceList(),
     queryFn: () => partnerApi.getPartnersForReference(),
     staleTime: 5 * 60 * 1000,
   });

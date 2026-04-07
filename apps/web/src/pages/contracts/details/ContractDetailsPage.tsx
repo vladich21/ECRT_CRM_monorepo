@@ -3,6 +3,7 @@ import { Button } from 'antd';
 import { useLayoutEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { APP_COLOR_SUCCESS } from '../../../constants/appColors';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
@@ -142,7 +143,12 @@ export default function ContractDetailsPage() {
             Редактировать
           </Button>
           {contract.is_deleted ? (
-            <Button type='primary' icon={<UndoOutlined />} onClick={openRestoreModal} className={styles.restoreActionBtn}>
+            <Button
+              type='primary'
+              icon={<UndoOutlined />}
+              onClick={openRestoreModal}
+              style={{ backgroundColor: APP_COLOR_SUCCESS, borderColor: APP_COLOR_SUCCESS }}
+            >
               Восстановить
             </Button>
           ) : (

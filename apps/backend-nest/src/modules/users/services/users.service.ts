@@ -1,6 +1,6 @@
 import { asc, count, eq, inArray } from 'drizzle-orm';
 import * as argon2 from 'argon2';
-import { Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { users, departments, positions, refGroups, relUsersGroups } from '../../../database/schema';
 import { UserResponseDto } from '../dto/user-response.dto';
@@ -134,15 +134,62 @@ export class UsersService {
         else updateObj[camel] = data[snake];
       }
     }
-    await this.db.db.update(users).set(updateObj).where(eq(users.id, id));
-    if (data.role_ids !== undefined && Array.isArray(data.role_ids)) {
-      await this.db.db.delete(relUsersGroups).where(eq(relUsersGroups.userId, id));
-      const roleIds = data.role_ids.filter((x): x is string => typeof x === 'string');
-      if (roleIds.length) {
-        await this.db.db.insert(relUsersGroups).values(roleIds.map((groupId) => ({ userId: id, groupId })));
+    try {
+      await this.db.db.update(users).set(updateObj).where(eq(users.id, id));
+      if (data.role_ids !== undefined && Array.isArray(data.role_ids)) {
+        await this.db.db.delete(relUsersGroups).where(eq(relUsersGroups.userId, id));
+        const roleIds = data.role_ids.filter((x): x is string => typeof x === 'string');
+        if (roleIds.length) {
+          await this.db.db.insert(relUsersGroups).values(roleIds.map((groupId) => ({ userId: id, groupId })));
+        }
       }
+    } catch (error) {
+      this.handleDbConflict(error);
     }
     return this.findOne(id);
+  }
+
+  async create(data: Record<string, unknown>): Promise<UserResponseDto | null> {
+    const insertObj: Record<string, unknown> = {
+      email: data.email != null ? String(data.email).trim().toLowerCase() : null,
+      firstName: data.first_name != null ? String(data.first_name) : null,
+      lastName: data.last_name != null ? String(data.last_name) : null,
+      middleName: data.middle_name != null ? String(data.middle_name) : null,
+      phone: data.phone != null ? String(data.phone) : null,
+      isActive: data.is_active !== undefined ? Boolean(data.is_active) : false,
+      departmentId: data.department_id != null && data.department_id !== '' ? String(data.department_id) : null,
+      positionId: data.position_id != null && data.position_id !== '' ? String(data.position_id) : null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    try {
+      const [inserted] = await this.db.db.insert(users).values(insertObj).returning({ id: users.id });
+      const userId = inserted?.id ? String(inserted.id) : null;
+      if (!userId) return null;
+
+      if (Array.isArray(data.role_ids)) {
+        const roleIds = data.role_ids.filter((x): x is string => typeof x === 'string');
+        if (roleIds.length > 0) {
+          await this.db.db.insert(relUsersGroups).values(roleIds.map((groupId) => ({ userId, groupId })));
+        }
+      }
+
+      return this.findOne(userId);
+    } catch (error) {
+      this.handleDbConflict(error);
+    }
+  }
+
+  private handleDbConflict(error: unknown): never {
+    const dbError = (error as { cause?: { code?: string; constraint?: string; detail?: string } })?.cause;
+    if (dbError?.code === '23505' && dbError.constraint === 'users_email_idx') {
+      throw new ConflictException('Пользователь с таким email уже существует');
+    }
+    if (dbError?.code === '23503') {
+      throw new ConflictException('Невозможно выполнить операцию из-за связанных записей');
+    }
+    throw error as Error;
   }
 
   async findByEmail(email: string): Promise<{ id: string } | null> {

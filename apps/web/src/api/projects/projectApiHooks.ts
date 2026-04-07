@@ -2,12 +2,13 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { Project } from '../../types/referenceTypes';
 import { projectApi, type ProjectPreviewItem, ProjectsListParams, ProjectsListResponse } from './projectApi';
+import { invalidateProjectQueries, projectQueryKeys } from './projectQueryKeys';
 
 export type { ProjectsListParams };
 
 export function useProjectsPreview(): UseQueryResult<ProjectPreviewItem[], Error> {
   return useQuery({
-    queryKey: ['projects', 'preview'],
+    queryKey: projectQueryKeys.preview,
     queryFn: () => projectApi.getProjectsPreview(),
     staleTime: 10 * 60 * 1000,
   });
@@ -21,7 +22,7 @@ export function useProjectsList(
   const limit = pageSize ?? 50;
   const offset = page != null && pageSize != null ? (page - 1) * pageSize : 0;
   return useQuery<ProjectsListResponse, Error>({
-    queryKey: ['projects', 'list', params ?? {}, page, pageSize],
+    queryKey: projectQueryKeys.list(params, page, pageSize),
     queryFn: () => projectApi.getProjectsList(params, limit, offset),
     placeholderData: prev => prev,
   });
@@ -29,7 +30,7 @@ export function useProjectsList(
 
 export const useProjectById = (projectId: string): UseQueryResult<Project, Error> => {
   return useQuery<Project, Error>({
-    queryKey: ['projects', projectId],
+    queryKey: projectQueryKeys.detail(projectId),
     queryFn: () => projectApi.getProjectById(projectId),
     enabled: !!projectId,
   });
@@ -40,9 +41,7 @@ export const useCreateProject = (): UseMutationResult<Project, Error, Project> =
   return useMutation<Project, Error, Project>({
     mutationFn: (data: Project) => projectApi.addProject(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'projects'),
-      });
+      void invalidateProjectQueries(queryClient);
     },
   });
 };
@@ -66,9 +65,7 @@ export const useUpdateProject = (): UseMutationResult<
   >({
     mutationFn: ({ id, data }: { id: string; data: Partial<Project> }) => projectApi.editProject(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'projects'),
-      });
+      void invalidateProjectQueries(queryClient);
     },
   });
 };
@@ -79,9 +76,7 @@ export const useDeleteProject = (): UseMutationResult<Project, Error, string, un
     mutationFn: (projectId: string) => projectApi.deleteProject(projectId),
     onSuccess: () => {
       queueMicrotask(() => {
-        queryClient.invalidateQueries({
-          predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'projects'),
-        });
+        void invalidateProjectQueries(queryClient);
       });
     },
   });
@@ -92,10 +87,8 @@ export const useRestoreProject = (): UseMutationResult<Project, Error, string> =
   return useMutation<Project, Error, string>({
     mutationFn: (projectId: string) => projectApi.restoreProject(projectId),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({
-        predicate: query => query.queryKey.some(key => typeof key === 'string' && key === 'projects'),
-      });
-      queryClient.invalidateQueries({ queryKey: ['projects', id] });
+      void invalidateProjectQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: projectQueryKeys.detail(id) });
     },
   });
 };
