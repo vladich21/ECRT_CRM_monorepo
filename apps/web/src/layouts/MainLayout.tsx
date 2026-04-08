@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Layout, Menu, theme } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import ecrtLogoMin from '../assets/svg/ecrt-logo-min.svg';
 import ProfileButton from '../components/profileButton/ProfileButton';
 import useAuthStore from '../store/AuthStore';
 import { menuItems } from './data';
@@ -30,7 +31,9 @@ function MainLayout({ children }: MainLayoutProps) {
     <Layout className={styles.layout}>
       <Header className={styles.header}>
         <div className={styles.logo}>
-          <img src='/logo_min.png' alt='Логотип' />
+          <button type='button' className={styles.logoButton} onClick={() => navigate('/home')} aria-label='Перейти на главную'>
+            <img src={ecrtLogoMin} alt='Логотип' />
+          </button>
         </div>
 
         <Menu

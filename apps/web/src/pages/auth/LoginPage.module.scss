@@ -30,6 +30,37 @@
   }
 }
 
+.steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.stepDot {
+  height: 6px;
+  width: 32px;
+  border-radius: 999px;
+  background: #d1d5db;
+  transition: all 0.3s;
+}
+
+.active {
+  background: #2563eb;
+}
+
+.completed {
+  background: #8ec5ff;
+}
+
+.logo {
+  width: 210px;
+  height: auto;
+  display: block;
+  margin: 0 auto 4px;
+}
+
 .emailHint {
   color: $text-quaternary;
   margin-top: 8px;

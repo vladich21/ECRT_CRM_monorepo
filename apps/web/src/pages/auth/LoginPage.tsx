@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert, Button, Form, Image } from 'antd';
+import { Alert, Button, Form } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { authApi } from '../../api/auth/authApi';
+import ecrtLogoMain from '../../assets/svg/ecrt-logo-main.svg';
 import { authLoadingScreenStore } from '../../store/authLoadingScreenStore';
 import { useAuthStore } from '../../store/AuthStore';
 import type { User } from '../../types/user';
@@ -16,6 +17,14 @@ import {
   type LoginState,
 } from './LoginPage.types';
 
+const STEP_PROGRESS: Record<LoginState['step'], number> = {
+  login: 1,
+  password: 2,
+  'temp-code': 3,
+  'set-password': 3,
+  '2fa-code': 3,
+};
+
 function LoginPage() {
   const navigate = useNavigate();
   const storeLogin = useAuthStore(s => s.login);
@@ -27,6 +36,12 @@ function LoginPage() {
     authLoadingScreenStore.showThenNavigate(() => navigate('/home'), 1000, 1500);
   };
   const handleBack = () => {
+    if (state.step === '2fa-code') {
+      set({ step: 'password', error: '' });
+      form.resetFields();
+      return;
+    }
+
     const savedEmail = state.email;
     setState(INITIAL_LOGIN_STATE);
     form.resetFields();
@@ -81,11 +96,20 @@ function LoginPage() {
     }
   };
   const showCodeHint = state.maskedEmail && (state.step === 'temp-code' || state.step === '2fa-code');
+  const activeStep = STEP_PROGRESS[state.step];
   return (
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.header}>
-          <Image src='/logo.png' alt='Логотип' preview={false} width={160} />
+          <div className={styles.steps} aria-hidden='true'>
+            {[1, 2, 3].map(step => (
+              <div
+                key={step}
+                className={`${styles.stepDot} ${step < activeStep ? styles.completed : ''} ${step === activeStep ? styles.active : ''}`}
+              />
+            ))}
+          </div>
+          <img src={ecrtLogoMain} alt='Логотип ИЦЖТ' className={styles.logo} />
           <h2>{STEP_TITLES[state.step]}</h2>
           {showCodeHint && <p className={styles.emailHint}>Код отправлен на {state.maskedEmail}</p>}
         </div>

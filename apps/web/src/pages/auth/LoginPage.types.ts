@@ -24,7 +24,7 @@ export const INITIAL_LOGIN_STATE: LoginState = {
 };
 
 export const STEP_TITLES: Record<Step, string> = {
-  login: 'Войти в портал',
+  login: 'Войти в PMDB',
   password: 'Введите пароль',
   'temp-code': 'Код подтверждения',
   'set-password': 'Установка пароля',
