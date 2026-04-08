@@ -1,4 +1,3 @@
-import { EnvironmentOutlined, GlobalOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 import { Link } from 'react-router-dom';
 
@@ -33,23 +32,20 @@ function websiteHref(raw: string): string {
   return `https://${t}`;
 }
 
-/** Те же строки «лейбл — значение», что у блока «Классификация». */
+/** Строки «лейбл — значение» для блока «Контактные лица». */
 function ContactInfoClassificationRows({
   partnerId,
   contact,
   extraCount,
-  websiteRaw,
 }: {
   partnerId: string;
   contact: PartnerContact;
   extraCount: number;
-  websiteRaw?: string;
 }) {
   const phone = contact.phone?.trim();
   const email = contact.email?.trim();
   const name = contact.full_name?.trim() || '—';
   const position = contact.position?.trim();
-  const website = websiteRaw?.trim();
 
   return (
     <div className={`${styles.classItems} ${styles.contactInfoRows}`}>
@@ -64,10 +60,7 @@ function ContactInfoClassificationRows({
       <div className={styles.classRowBorder}>
         <span className={styles.classLabel}>Телефон</span>
         {phone ? (
-          <span className={`${styles.classValue} ${styles.classValueWithIcon}`}>
-            <PhoneOutlined className={styles.classValueIcon} aria-hidden />
-            <span>{phone}</span>
-          </span>
+          <span className={styles.classValue}>{phone}</span>
         ) : (
           <span className={styles.classValue}>—</span>
         )}
@@ -75,10 +68,7 @@ function ContactInfoClassificationRows({
       <div className={styles.classRowBorder}>
         <span className={styles.classLabel}>Email</span>
         {email ? (
-          <span className={`${styles.classValue} ${styles.classValueWithIcon}`}>
-            <MailOutlined className={styles.classValueIcon} aria-hidden />
-            <span className={styles.classValueMultiline}>{email}</span>
-          </span>
+          <span className={`${styles.classValue} ${styles.classValueMultiline}`}>{email}</span>
         ) : (
           <span className={styles.classValue}>—</span>
         )}
@@ -93,17 +83,6 @@ function ContactInfoClassificationRows({
           <span className={styles.classValue}>—</span>
         )}
       </div>
-      {website ? (
-        <div className={styles.classRowBorder}>
-          <span className={styles.classLabel}>Сайт</span>
-          <span className={`${styles.classValue} ${styles.classValueWithIcon}`}>
-            <GlobalOutlined className={styles.classValueIcon} aria-hidden />
-            <a href={websiteHref(website)} target='_blank' rel='noopener noreferrer' className={styles.moreContactsLink}>
-              {website}
-            </a>
-          </span>
-        </div>
-      ) : null}
       {extraCount > 0 ? (
         <div className={`${styles.classRow} ${styles.moreContactsInGrid}`}>
           <span className={styles.classLabel}>Ещё контакты</span>
@@ -118,7 +97,6 @@ function ContactInfoClassificationRows({
 
 interface DetailSidebarProps {
   partner: Partner;
-  /** Контактные лица; с вкладки «Контактные лица» — для блока «Контактная информация». */
   contacts?: PartnerContact[];
   references?: {
     partnerCategories?: Array<{
@@ -156,6 +134,8 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
     hasActiveSupplierEvaluationBlock: partner.has_active_evaluation_block ?? false,
   });
   const website = partner.website?.trim();
+  const partnerPhone = partner.phone?.trim();
+  const partnerEmail = partner.email?.trim();
 
   const featured = contacts.length > 0 ? pickFeaturedContact(contacts) : null;
   const extraCount = featured ? countOtherContacts(contacts, featured.id) : 0;
@@ -163,16 +143,45 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
   return (
     <div className={styles.sidebar}>
       <div className={styles.card}>
-        <h3 className={styles.cardTitle}>Контактная информация</h3>
+        <h3 className={styles.cardTitle}>Контакты контрагента</h3>
+        <div className={styles.classItems}>
+          <div className={styles.classRowBorder}>
+            <span className={styles.classLabel}>Телефон</span>
+            {partnerPhone ? (
+              <span className={styles.classValue}>{partnerPhone}</span>
+            ) : (
+              <span className={styles.classValue}>—</span>
+            )}
+          </div>
+          <div className={styles.classRowBorder}>
+            <span className={styles.classLabel}>Email</span>
+            {partnerEmail ? (
+              <span className={`${styles.classValue} ${styles.classValueMultiline}`}>{partnerEmail}</span>
+            ) : (
+              <span className={styles.classValue}>—</span>
+            )}
+          </div>
+          <div className={styles.classRow}>
+            <span className={styles.classLabel}>Сайт</span>
+            {website ? (
+              <span className={styles.classValue}>
+                <a href={websiteHref(website)} target='_blank' rel='noopener noreferrer' className={styles.moreContactsLink}>
+                  {website}
+                </a>
+              </span>
+            ) : (
+              <span className={styles.classValue}>—</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.card}>
+        <h3 className={styles.cardTitle}>Контактные лица</h3>
         {contacts.length === 0 ? (
           <div className={styles.emptyHint}>Контактные лица не добавлены</div>
         ) : featured ? (
-          <ContactInfoClassificationRows
-            partnerId={partner.id}
-            contact={featured}
-            extraCount={extraCount}
-            websiteRaw={website}
-          />
+          <ContactInfoClassificationRows partnerId={partner.id} contact={featured} extraCount={extraCount} />
         ) : null}
       </div>
 
@@ -206,35 +215,6 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
             <span className={styles.classLabel}>Экон. группа</span>
             <span className={styles.classValue}>{econCategory || '—'}</span>
           </div>
-        </div>
-      </div>
-
-      <div className={styles.card}>
-        <h3 className={styles.cardTitle}>Адреса</h3>
-        <div className={styles.contactItems}>
-          {partner.legal_address ? (
-            <div className={styles.contactItem}>
-              <EnvironmentOutlined className={styles.contactIcon} />
-              <div>
-                <div style={{ fontSize: 14, color: '#8c8c8c' }}>Юридический</div>
-                {partner.legal_address}
-              </div>
-            </div>
-          ) : null}
-          {partner.actual_address ? (
-            <div className={styles.contactItem}>
-              <EnvironmentOutlined className={styles.contactIcon} />
-              <div>
-                <div style={{ fontSize: 14, color: '#8c8c8c' }}>Фактический</div>
-                {partner.actual_address}
-              </div>
-            </div>
-          ) : null}
-          {!partner.legal_address && !partner.actual_address && (
-            <div className={styles.contactItem} style={{ color: '#8c8c8c' }}>
-              Не указаны
-            </div>
-          )}
         </div>
       </div>
     </div>

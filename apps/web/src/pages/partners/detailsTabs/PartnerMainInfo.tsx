@@ -1,4 +1,4 @@
-import { BankOutlined, CopyOutlined, ProfileOutlined } from '@ant-design/icons';
+import { BankOutlined, CopyOutlined, EnvironmentOutlined, ProfileOutlined } from '@ant-design/icons';
 import { Button, Descriptions, Space, Tooltip, Typography, message } from 'antd';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -24,15 +24,27 @@ interface PartnersMainInfoProps {
   partner?: Partner;
 }
 
-function RequisiteCell({ label, value }: { label: string; value: string }) {
+function RequisiteCell({
+  label,
+  value,
+  className,
+  valueClassName,
+  copyable = true,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+  valueClassName?: string;
+  copyable?: boolean;
+}) {
   const trimmed = value.trim();
   const display = trimmed || '—';
 
   return (
-    <div className={styles.requisiteCell}>
+    <div className={`${styles.requisiteCell} ${className ?? ''}`.trim()}>
       <div className={styles.requisiteTop}>
         <span className={styles.requisiteLabel}>{label}</span>
-        {trimmed ? (
+        {copyable && trimmed ? (
           <Tooltip title={`Копировать ${label}`}>
             <Button
               type='text'
@@ -45,7 +57,7 @@ function RequisiteCell({ label, value }: { label: string; value: string }) {
           </Tooltip>
         ) : null}
       </div>
-      <span className={styles.requisiteValue}>{display}</span>
+      <span className={`${styles.requisiteValue} ${valueClassName ?? ''}`.trim()}>{display}</span>
     </div>
   );
 }
@@ -105,7 +117,16 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
           <RequisiteCell label='КПП' value={partner?.kpp ?? ''} />
           <RequisiteCell label='ОГРН' value={partner?.ogrn ?? ''} />
         </div>
+        <h4 className={styles.addressesTitle}>
+          <EnvironmentOutlined className={styles.sectionTitleIcon} aria-hidden />
+          Адреса
+        </h4>
+        <div className={styles.addressesGrid}>
+          <RequisiteCell label='Юридический адрес' value={partner?.legal_address ?? ''} />
+          <RequisiteCell label='Фактический адрес' value={partner?.actual_address ?? ''} />
+        </div>
       </section>
+
     </div>
   );
 }
