@@ -7,6 +7,7 @@ import { CheckEmailDto } from './dto/check-email.dto';
 import { VerifyPasswordDto } from './dto/verify-password.dto';
 import { VerifyCodeDto } from './dto/verify-code.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
+import { ResendCodeDto } from './dto/resend-code.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -32,6 +33,13 @@ export class AuthController {
   @Post('verify-temp-code')
   verifyTempCode(@Body() dto: VerifyCodeDto) {
     return this.auth.verifyTempCode(dto.email, dto.code);
+  }
+
+  @Public()
+  @UseGuards(RateLimitGuard)
+  @Post('resend-code')
+  resendCode(@Body() dto: ResendCodeDto) {
+    return this.auth.resendCode(dto.email, dto.type);
   }
 
   @Public()

@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import { ECRT_LOGO_SVG } from './assets/ecrt-logo-svg';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 @Injectable()
 export class MailService {
@@ -60,6 +61,10 @@ export class MailService {
     const safeCode = this.escapeHtml(code);
     const safeHeading = this.escapeHtml(heading);
     const safeDescription = this.escapeHtml(description);
+    const logoDataUri = this.getLogoDataUri();
+    const logoHtml = logoDataUri
+      ? `<img src="${logoDataUri}" alt="Логотип ИЦЖТ" width="48" height="48" style="display:block;width:48px;height:48px;border:0;outline:none;text-decoration:none;" />`
+      : '';
     const year = new Date().getFullYear();
     return `
 <!doctype html>
@@ -75,8 +80,10 @@ export class MailService {
         <td align="center" style="padding:24px 12px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;background:#f3f5f7;">
             <tr>
-              <td style="background:#1f3f69;padding:16px 20px 16px 28px;border-bottom:1px solid #e21a1a;color:#ffffff;font-family:Arial,sans-serif;font-size:28px;line-height:1;">${ECRT_LOGO_SVG}</td>
-              <td style="background:#1f3f69;padding:22px 28px 22px 0;border-bottom:1px solid #e21a1a;color:#ffffff;font-family:Arial,sans-serif;font-size:18px;line-height:1.35;word-break:break-word;">АО «Инжиниринговый центр железнодорожного транспорта»</td>
+              <td style="background:#1f3f69;padding:16px 20px 16px 28px;border-bottom:1px solid #e21a1a;color:#ffffff;font-family:Arial,sans-serif;font-size:28px;line-height:1;">
+                ${logoHtml}
+              </td>
+              <td style="background:#1f3f69;padding:22px 28px 22px 0;border-bottom:1px solid #e21a1a;color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight: 600;line-height:1.2;white-space:nowrap;word-break:normal;">АО «Инжиниринговый центр железнодорожного транспорта»</td>
             </tr>
 
             <tr>
@@ -115,6 +122,17 @@ export class MailService {
     </table>
   </body>
 </html>`;
+  }
+
+  private getLogoDataUri(): string | null {
+    const logoPath = path.resolve(process.cwd(), '../web/public/logo_min.png');
+
+    try {
+      const logoBase64 = fs.readFileSync(logoPath).toString('base64');
+      return `data:image/png;base64,${logoBase64}`;
+    } catch {
+      return null;
+    }
   }
 
   private escapeHtml(value: string): string {

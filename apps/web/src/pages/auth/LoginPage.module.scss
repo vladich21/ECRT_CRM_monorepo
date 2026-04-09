@@ -1,21 +1,98 @@
 @use '../../styles/variables' as *;
 
 .page {
-  min-height: 100vh;
-  background: $bg-tertiary;
+  height: 100dvh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  overflow: hidden;
 }
 
 .card {
-  background: $bg-primary;
-  border-radius: $radius-lg;
-  padding: 40px 40px 32px;
-  box-shadow: $shadow-xl;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 32px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
   width: 100%;
-  max-width: 420px;
+  max-width: 382px;
+}
+
+.codeCard {
+  width: 382px;
+  max-width: 382px;
+  min-height: unset;
+  padding: 32px;
+
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .logo {
+    width: auto;
+    height: 40px;
+    margin: 0 auto 20px;
+  }
+
+  .steps {
+    margin-bottom: 16px;
+  }
+
+  .emailHint {
+    margin-top: 6px;
+    font-size: $font-sm;
+  }
+}
+
+.codeForm {
+  width: 100%;
+}
+
+.codeFormItem {
+  margin-bottom: 24px;
+
+  :global(.ant-form-item-control-input-content) {
+    display: flex;
+    justify-content: center;
+  }
+
+  :global(.ant-otp),
+  :global(.ant-input-otp) {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  :global(input[type='text']) {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 2px solid #d6dbe3;
+    font-size: 22px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    line-height: 1;
+    color: #111827;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    background: #f9fafb;
+
+    &:hover {
+      border-color: #d1d5db;
+    }
+
+    &:focus,
+    &:focus-visible {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px #bfdbfe;
+      background: #fff;
+      outline: none;
+    }
+  }
 }
 
 .header {
@@ -65,6 +142,7 @@
   color: $text-quaternary;
   margin-top: 8px;
   font-size: $font-base;
+  margin-bottom: 0;
 }
 
 .loginRow {
@@ -83,6 +161,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.codeHint {
+  margin: 0 0 16px;
+  color: $text-quaternary;
+  font-size: $font-sm;
+  line-height: $line-height-relaxed;
+  text-align: center;
+}
+
+.codeOtp {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto;
+}
+
 .passwordHint {
   color: $text-quaternary;
   font-size: $font-sm;
@@ -91,10 +184,30 @@
 }
 
 .backBtn {
-  margin-top: 8px;
+  margin-top: 2px;
   color: $text-placeholder !important;
+  font-size: $font-sm;
+  line-height: 1.2;
+  padding: 6px 0 !important;
 
   &:hover {
     color: $text-quaternary !important;
   }
+}
+
+.resendBtn {
+  margin-top: 10px;
+  color: #2563eb !important;
+  font-size: $font-sm;
+  line-height: 1.2;
+  padding: 6px 0 !important;
+
+  &:hover {
+    color: #1d4ed8 !important;
+  }
+}
+
+.codeSubmitBtn {
+  border-radius: 12px;
+  height: 40px;
 }

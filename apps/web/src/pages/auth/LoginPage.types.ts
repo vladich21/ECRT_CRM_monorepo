@@ -28,7 +28,7 @@ export const STEP_TITLES: Record<Step, string> = {
   password: 'Введите пароль',
   'temp-code': 'Код подтверждения',
   'set-password': 'Установка пароля',
-  '2fa-code': 'Двухфакторная аутентификация',
+  '2fa-code': 'Подтверждение входа',
 };
 
 export const STEP_BUTTON_LABELS: Record<Step, string> = {

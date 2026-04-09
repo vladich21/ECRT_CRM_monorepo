@@ -15,6 +15,8 @@ interface AuthResponse {
   email?: string;
 }
 
+type ResendCodeStep = 'temp-code' | '2fa-code';
+
 export const authApi = {
   checkEmail: async (email: string): Promise<CheckLoginResponse> => {
     const res = await apiClient.post<CheckLoginResponse>('/auth/check', { email });
@@ -33,6 +35,11 @@ export const authApi = {
 
   verify2fa: async (email: string, code: string): Promise<AuthResponse> => {
     const res = await apiClient.post<AuthResponse>('/auth/verify-2fa', { email, code });
+    return res.data;
+  },
+
+  resendCode: async (email: string, type: ResendCodeStep): Promise<{ success: boolean; email?: string }> => {
+    const res = await apiClient.post<{ success: boolean; email?: string }>('/auth/resend-code', { email, type });
     return res.data;
   },
 

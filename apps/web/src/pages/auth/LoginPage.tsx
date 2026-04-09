@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Form } from 'antd';
+import { Alert, Button, Form, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { authApi } from '../../api/auth/authApi';
@@ -22,7 +22,7 @@ const STEP_PROGRESS: Record<LoginState['step'], number> = {
   password: 2,
   'temp-code': 3,
   'set-password': 3,
-  '2fa-code': 3,
+  '2fa-code': 2,
 };
 
 function LoginPage() {
@@ -30,6 +30,7 @@ function LoginPage() {
   const storeLogin = useAuthStore(s => s.login);
   const [form] = Form.useForm<FormValues>();
   const [state, setState] = useState<LoginState>(INITIAL_LOGIN_STATE);
+  const [resendingCode, setResendingCode] = useState(false);
   const set = (patch: Partial<LoginState>) => setState(prev => ({ ...prev, ...patch }));
   const finish = (user: User | undefined) => {
     if (user) storeLogin(user);
@@ -95,11 +96,33 @@ function LoginPage() {
       set({ loading: false });
     }
   };
-  const showCodeHint = state.maskedEmail && (state.step === 'temp-code' || state.step === '2fa-code');
+  const canResendCode = state.step === 'temp-code' || state.step === '2fa-code';
+  const isCodeStep = state.step === 'temp-code' || state.step === '2fa-code';
+  const handleResendCode = async () => {
+    if (!canResendCode || !state.email || resendingCode) return;
+    setResendingCode(true);
+    try {
+      const data = await authApi.resendCode(state.email, state.step);
+      set({ maskedEmail: data.email ?? state.maskedEmail, error: '' });
+      message.success('Код отправлен повторно');
+    } catch (err: unknown) {
+      const axiosError = err as {
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
+      };
+      set({ error: axiosError.response?.data?.message ?? 'Не удалось отправить код повторно' });
+    } finally {
+      setResendingCode(false);
+    }
+  };
+  const showCodeHint = isCodeStep && Boolean(state.email);
   const activeStep = STEP_PROGRESS[state.step];
   return (
     <div className={styles.page}>
-      <div className={styles.card}>
+      <div className={`${styles.card} ${isCodeStep ? styles.codeCard : ''}`}>
         <div className={styles.header}>
           <div className={styles.steps} aria-hidden='true'>
             {[1, 2, 3].map(step => (
@@ -111,7 +134,7 @@ function LoginPage() {
           </div>
           <img src={ecrtLogoMain} alt='Логотип ИЦЖТ' className={styles.logo} />
           <h2>{STEP_TITLES[state.step]}</h2>
-          {showCodeHint && <p className={styles.emailHint}>Код отправлен на {state.maskedEmail}</p>}
+          {showCodeHint && <p className={styles.emailHint}>Код отправлен на {state.email}</p>}
         </div>
 
         {state.error && (
@@ -125,18 +148,30 @@ function LoginPage() {
           />
         )}
 
-        <Form form={form} layout='vertical' onFinish={handleSubmit}>
+        <Form form={form} layout='vertical' onFinish={handleSubmit} className={isCodeStep ? styles.codeForm : undefined}>
           <LoginFormFields step={state.step} email={state.email} onBack={handleBack} />
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type='primary' htmlType='submit' size='large' loading={state.loading} block>
+            <Button
+              type='primary'
+              htmlType='submit'
+              size='large'
+              loading={state.loading}
+              block
+              className={isCodeStep ? styles.codeSubmitBtn : ''}
+            >
               {STEP_BUTTON_LABELS[state.step]}
             </Button>
           </Form.Item>
+          {canResendCode && (
+            <Button type='link' block className={styles.resendBtn} onClick={handleResendCode} loading={resendingCode}>
+              Отправить код повторно
+            </Button>
+          )}
         </Form>
 
         {state.step !== 'login' && (
           <Button type='link' block className={styles.backBtn} onClick={handleBack}>
-            Назад
+            ← Назад
           </Button>
         )}
       </div>

@@ -81,6 +81,15 @@ export class AuthService {
     return { mustChangePassword: true };
   }
 
+  async resendCode(email: string, type: 'temp-code' | '2fa-code') {
+    const user = await this.users.getAuthDataByEmail(email);
+    if (!user || !user.isActive) throw new UnauthorizedException('Пользователь не найден');
+
+    const codeType = type === 'temp-code' ? 'temp_password' : '2fa';
+    await this.sendCode(user.id, user.email, codeType);
+    return { success: true, email: this.maskEmail(user.email) };
+  }
+
   async verify2fa(email: string, code: string, res: Response) {
     const user = await this.users.getAuthDataByEmail(email);
     if (!user || !user.isActive) throw new UnauthorizedException('Пользователь не найден');

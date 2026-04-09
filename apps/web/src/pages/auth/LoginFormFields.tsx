@@ -48,18 +48,36 @@ export function LoginFormFields({ step, email, onBack }: Props) {
   }
 
   if (step === 'temp-code' || step === '2fa-code') {
+    const codeLabel = step === '2fa-code' ? null : '6-значный код';
     return (
-      <Form.Item
-        label='6-значный код'
-        name='code'
-        normalize={digitsOnly}
-        rules={[
-          { required: true, message: 'Введите код' },
-          { len: 6, message: 'Код состоит из 6 цифр' },
-        ]}
-      >
-        <Input className={styles.codeInput} placeholder='000000' size='large' maxLength={6} autoFocus />
-      </Form.Item>
+      <>
+        {step === '2fa-code' && (
+          <p className={styles.codeHint}>
+            Введите 6-значный код подтверждения, отправленный на вашу почту
+          </p>
+        )}
+        <Form.Item
+          className={step === '2fa-code' ? styles.codeFormItem : undefined}
+          label={codeLabel ?? undefined}
+          name='code'
+          normalize={digitsOnly}
+          rules={[
+            { required: true, message: 'Введите код' },
+            { len: 6, message: 'Код состоит из 6 цифр' },
+          ]}
+        >
+          {step === '2fa-code' ? (
+            <Input.OTP
+              length={6}
+              formatter={value => (/\d/.test(value) ? value : '')}
+              autoFocus
+              className={styles.codeOtp}
+            />
+          ) : (
+            <Input className={styles.codeInput} placeholder='000000' size='large' maxLength={6} autoFocus />
+          )}
+        </Form.Item>
+      </>
     );
   }
 
