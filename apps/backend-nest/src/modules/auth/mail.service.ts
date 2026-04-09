@@ -26,7 +26,11 @@ export class MailService {
       to,
       subject: 'Код для входа в портал',
       text: `Ваш код для первого входа: ${code}\n\nКод действителен 10 минут.`,
-      html: `<p>Ваш код для первого входа: <strong style="font-size:24px;letter-spacing:4px">${code}</strong></p><p>Код действителен 10 минут.</p>`,
+      html: this.buildCodeEmailHtml({
+        heading: 'ПОДТВЕРЖДЕНИЕ ВХОДА',
+        description: 'Для завершения входа в PMDB введите код подтверждения:',
+        code,
+      }),
     });
   }
 
@@ -36,12 +40,26 @@ export class MailService {
       to,
       subject: 'Код подтверждения входа',
       text: `Ваш код двухфакторной аутентификации: ${code}\n\nКод действителен 10 минут.`,
-      html: this.build2faEmailHtml(code),
+      html: this.buildCodeEmailHtml({
+        heading: 'ПОДТВЕРЖДЕНИЕ ВХОДА',
+        description: 'Для завершения входа в PMDB введите код подтверждения:',
+        code,
+      }),
     });
   }
 
-  private build2faEmailHtml(code: string): string {
+  private buildCodeEmailHtml({
+    heading,
+    description,
+    code,
+  }: {
+    heading: string;
+    description: string;
+    code: string;
+  }): string {
     const safeCode = this.escapeHtml(code);
+    const safeHeading = this.escapeHtml(heading);
+    const safeDescription = this.escapeHtml(description);
     const year = new Date().getFullYear();
     return `
 <!doctype html>
@@ -63,8 +81,8 @@ export class MailService {
 
             <tr>
               <td colspan="2" style="padding:34px 48px 18px 48px;font-family:Arial,sans-serif;">
-                <div style="color:#2f62a6;font-size:18px;letter-spacing:2px;font-weight:700;margin-bottom:22px;">ПОДТВЕРЖДЕНИЕ ВХОДА</div>
-                <div style="font-size:28px;line-height:1.35;color:#3b4654;margin-bottom:24px;word-break:break-word;">Для завершения входа в PMDB введите код подтверждения:</div>
+                <div style="color:#2f62a6;font-size:18px;letter-spacing:2px;font-weight:700;margin-bottom:22px;">${safeHeading}</div>
+                <div style="font-size:28px;line-height:1.35;color:#3b4654;margin-bottom:24px;word-break:break-word;">${safeDescription}</div>
 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 18px auto;">
                   <tr>
