@@ -6,7 +6,6 @@ import * as path from 'node:path';
 
 @Injectable()
 export class MailService {
-  private static readonly LOGO_CID = 'pmdb-logo@inline';
   private readonly transporter: nodemailer.Transporter;
   private readonly from: string;
 
@@ -23,7 +22,6 @@ export class MailService {
   }
 
   async sendTempCode(to: string, code: string): Promise<void> {
-    const attachments = this.getLogoAttachment();
     await this.transporter.sendMail({
       from: this.from,
       to,
@@ -33,14 +31,11 @@ export class MailService {
         heading: 'ПОДТВЕРЖДЕНИЕ ВХОДА',
         description: 'Для завершения входа в PMDB введите код подтверждения:',
         code,
-        hasLogo: Boolean(attachments?.length),
       }),
-      attachments,
     });
   }
 
   async send2faCode(to: string, code: string): Promise<void> {
-    const attachments = this.getLogoAttachment();
     await this.transporter.sendMail({
       from: this.from,
       to,
@@ -50,9 +45,7 @@ export class MailService {
         heading: 'ПОДТВЕРЖДЕНИЕ ВХОДА',
         description: 'Для завершения входа в PMDB введите код подтверждения:',
         code,
-        hasLogo: Boolean(attachments?.length),
       }),
-      attachments,
     });
   }
 
@@ -60,18 +53,17 @@ export class MailService {
     heading,
     description,
     code,
-    hasLogo,
   }: {
     heading: string;
     description: string;
     code: string;
-    hasLogo: boolean;
   }): string {
     const safeCode = this.escapeHtml(code);
     const safeHeading = this.escapeHtml(heading);
     const safeDescription = this.escapeHtml(description);
-    const logoHtml = hasLogo
-      ? `<img src="cid:${MailService.LOGO_CID}" alt="Логотип ИЦЖТ" width="48" height="48" style="display:block;width:48px;height:48px;border:0;outline:none;text-decoration:none;" />`
+    const logoDataUri = this.getLogoDataUri();
+    const logoHtml = logoDataUri
+      ? `<img src="${logoDataUri}" alt="Логотип ИЦЖТ" width="48" height="48" style="display:block;width:48px;height:48px;border:0;outline:none;text-decoration:none;" />`
       : '';
     const year = new Date().getFullYear();
     return `
@@ -136,7 +128,7 @@ export class MailService {
 </html>`;
   }
 
-  private getLogoAttachment(): nodemailer.SendMailOptions['attachments'] {
+  private getLogoDataUri(): string | null {
     const fromEnv = this.config.get<string>('MAIL_LOGO_PATH', '').trim();
     const candidates = [
       fromEnv,
@@ -145,18 +137,10 @@ export class MailService {
       path.resolve(process.cwd(), 'logo_min.png'),
     ].filter(Boolean);
     const logoPath = candidates.find((candidate) => fs.existsSync(candidate));
-    if (!logoPath) return undefined;
+    if (!logoPath) return null;
 
-    const logoContent = fs.readFileSync(logoPath);
-    return [
-      {
-        filename: 'logo_min.png',
-        content: logoContent,
-        cid: MailService.LOGO_CID,
-        contentType: 'image/png',
-        contentDisposition: 'inline',
-      },
-    ];
+    const logoContent = fs.readFileSync(logoPath).toString('base64');
+    return `data:image/png;base64,${logoContent}`;
   }
 
   private escapeHtml(value: string): string {
