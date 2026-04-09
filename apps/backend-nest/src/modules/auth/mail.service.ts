@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 
 /** Как в email-template.html: PNG 34×34, полный data URI одной строкой. */
 const LOGO_BASE64 =
@@ -65,7 +63,6 @@ export class MailService {
     const safeCode = this.escapeHtml(code);
     const safeHeading = this.escapeHtml(heading);
     const safeDescription = this.escapeHtml(description);
-    const logoDataUri = this.getLogoDataUri();
     const year = new Date().getFullYear();
     return `
 <!doctype html>
@@ -85,7 +82,7 @@ export class MailService {
                 <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                   <tr valign="middle">
                     <td style="padding-right:12px;">
-                      <img src="${logoDataUri}" width="34" height="34" alt=""
+                      <img src="${LOGO_BASE64}" width="34" height="34" alt=""
                         style="display:block;width:34px;height:34px;border:0;outline:none;text-decoration:none;" />
                     </td>
                     <td>
@@ -141,30 +138,6 @@ export class MailService {
     </table>
   </body>
 </html>`;
-  }
-
-  /** Как в email-template.html: data:image/png;base64 + одна строка base64 без пробелов. */
-  private getLogoDataUri(): string {
-    const fromEnvB64 = this.config.get<string>('MAIL_LOGO_BASE64', '').trim();
-    if (fromEnvB64) {
-      const b64 = fromEnvB64.replace(/\s/g, '');
-      return `data:image/png;base64,${b64}`;
-    }
-
-    const fromEnvPath = this.config.get<string>('MAIL_LOGO_PATH', '').trim();
-    const candidates = [
-      fromEnvPath,
-      path.resolve(process.cwd(), 'apps/web/public/logo_min.png'),
-      path.resolve(process.cwd(), '../web/public/logo_min.png'),
-      path.resolve(process.cwd(), 'logo_min.png'),
-    ].filter(Boolean);
-    const logoPath = candidates.find((candidate) => fs.existsSync(candidate));
-    if (logoPath) {
-      const b64 = fs.readFileSync(logoPath).toString('base64').replace(/\s/g, '');
-      return `data:image/png;base64,${b64}`;
-    }
-
-    return LOGO_BASE64;
   }
 
   private escapeHtml(value: string): string {
