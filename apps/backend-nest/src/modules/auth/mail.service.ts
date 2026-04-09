@@ -26,6 +26,7 @@ export class MailService {
       from: this.from,
       to,
       subject: 'Код для входа в портал',
+      textEncoding: 'base64',
       text: `Ваш код для первого входа: ${code}\n\nКод действителен 10 минут.`,
       html: this.buildCodeEmailHtml({
         heading: 'ПОДТВЕРЖДЕНИЕ ВХОДА',
@@ -40,6 +41,7 @@ export class MailService {
       from: this.from,
       to,
       subject: 'Код подтверждения входа',
+      textEncoding: 'base64',
       text: `Ваш код двухфакторной аутентификации: ${code}\n\nКод действителен 10 минут.`,
       html: this.buildCodeEmailHtml({
         heading: 'ПОДТВЕРЖДЕНИЕ ВХОДА',
