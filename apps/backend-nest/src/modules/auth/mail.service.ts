@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 
 @Injectable()
 export class MailService {
   private readonly transporter: nodemailer.Transporter;
   private readonly from: string;
+  private readonly logoUrl: string;
 
   constructor(private readonly config: ConfigService) {
     this.from = config.get<string>('SMTP_FROM', 'pmdb@test.local');
+    this.logoUrl = config.get<string>('MAIL_LOGO_URL', '').trim();
     this.transporter = nodemailer.createTransport({
       host: config.get<string>('SMTP_HOST', '192.0.2.12'),
       port: config.get<number>('SMTP_PORT', 1025),
@@ -61,9 +61,9 @@ export class MailService {
     const safeCode = this.escapeHtml(code);
     const safeHeading = this.escapeHtml(heading);
     const safeDescription = this.escapeHtml(description);
-    const logoDataUri = this.getLogoDataUri();
-    const logoHtml = logoDataUri
-      ? `<img src="${logoDataUri}" alt="Логотип ИЦЖТ" width="48" height="48" style="display:block;width:48px;height:48px;border:0;outline:none;text-decoration:none;" />`
+    const safeLogoUrl = this.escapeHtml(this.logoUrl);
+    const logoHtml = safeLogoUrl
+      ? `<img src="${safeLogoUrl}" alt="Логотип ИЦЖТ" width="48" height="48" style="display:block;width:48px;height:48px;border:0;outline:none;text-decoration:none;" />`
       : '';
     const year = new Date().getFullYear();
     return `
@@ -78,7 +78,7 @@ export class MailService {
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#e9ebef;">
       <tr>
         <td align="center" style="padding:24px 12px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;background:#f3f5f7;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;background:#ffffff;">
             <tr>
               <td style="background:#1f3f69;padding:16px 20px 16px 28px;border-bottom:1px solid #e21a1a;color:#ffffff;font-family:Arial,sans-serif;font-size:28px;line-height:1;">
                 ${logoHtml}
@@ -87,9 +87,9 @@ export class MailService {
             </tr>
 
             <tr>
-              <td colspan="2" style="padding:34px 48px 18px 48px;font-family:Arial,sans-serif;">
+              <td colspan="2" style="background:#ffffff;padding:34px 48px 18px 48px;font-family:Arial,sans-serif;">
                 <div style="color:#2f62a6;font-size:18px;letter-spacing:2px;font-weight:700;margin-bottom:22px;">${safeHeading}</div>
-                <div style="font-size:28px;line-height:1.35;color:#3b4654;margin-bottom:24px;word-break:break-word;">${safeDescription}</div>
+                <div style="font-size:20px;line-height:1.35;color:#3b4654;margin-bottom:24px;word-break:break-word;">${safeDescription}</div>
 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 18px auto;">
                   <tr>
@@ -99,14 +99,18 @@ export class MailService {
                   </tr>
                 </table>
 
-                <div style="background:#d8deea;border:1px solid #c8d0df;padding:18px 22px;font-family:Arial,sans-serif;color:#7f8fa4;font-size:16px;line-height:1.5;">
-                  Код действителен 10 минут. Если вы не запрашивали вход, проигнорируйте это письмо.
-                </div>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#d8deea;border:1px solid #c8d0df;">
+                  <tr>
+                    <td style="padding:18px 22px;font-family:Arial,sans-serif;color:#7f8fa4;font-size:16px;line-height:1.5;">
+                      Код действителен 10 минут. Если вы не запрашивали вход, проигнорируйте это письмо.
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
 
             <tr>
-              <td colspan="2" style="padding:26px 48px 24px 48px;text-align:center;font-family:Arial,sans-serif;color:#9aa6b5;font-size:14px;line-height:1.5;">
+              <td colspan="2" style="background:#ffffff;padding:26px 48px 24px 48px;text-align:center;font-family:Arial,sans-serif;color:#9aa6b5;font-size:14px;line-height:1.5;">
                 Это письмо отправлено автоматически с PMDB.
               </td>
             </tr>
@@ -122,17 +126,6 @@ export class MailService {
     </table>
   </body>
 </html>`;
-  }
-
-  private getLogoDataUri(): string | null {
-    const logoPath = path.resolve(process.cwd(), '../web/public/logo_min.png');
-
-    try {
-      const logoBase64 = fs.readFileSync(logoPath).toString('base64');
-      return `data:image/png;base64,${logoBase64}`;
-    } catch {
-      return null;
-    }
   }
 
   private escapeHtml(value: string): string {
