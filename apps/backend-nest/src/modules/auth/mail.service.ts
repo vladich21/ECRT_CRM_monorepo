@@ -147,12 +147,14 @@ export class MailService {
     const logoPath = candidates.find((candidate) => fs.existsSync(candidate));
     if (!logoPath) return undefined;
 
+    const logoContent = fs.readFileSync(logoPath);
     return [
       {
         filename: 'logo_min.png',
-        path: logoPath,
+        content: logoContent,
         cid: MailService.LOGO_CID,
         contentType: 'image/png',
+        contentDisposition: 'inline',
       },
     ];
   }
