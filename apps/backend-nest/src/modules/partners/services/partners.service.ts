@@ -96,10 +96,16 @@ export class PartnersService {
     const parts: SQL[] = [];
     const raw = filters?.search?.trim();
     if (raw) {
-      const safe = raw.replace(/[%_]/g, '');
+      const safe = raw.replace(/[%_]/g, '').replace(/\s+/g, ' ').trim();
       if (safe.length > 0) {
         const term = `%${safe}%`;
-        parts.push(or(ilike(partners.name, term), ilike(partners.inn, term))!);
+        parts.push(
+          or(
+            ilike(partners.name, term),
+            ilike(partners.shortName, term),
+            ilike(partners.inn, term),
+          )!,
+        );
       }
     }
     if (filters?.statusIds?.length) {

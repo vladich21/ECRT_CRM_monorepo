@@ -94,8 +94,8 @@
 | PUT | `/blocks/:id/deactivate` | Снять блокировку (`is_active = false`). |
 | GET | `/partner-eval-summary?partner_id=` | Сводка для карточки контрагента: `avg_score`, `next_reevaluation_date`, `next_reevaluation_overdue` (дата плана &lt; сегодня), `blocked_project_count` (число проектов с активной блокировкой по оценке). |
 | GET | `/counts-by-tab` | Счётчики по вкладкам смысла строки. Query: как у списка, кроме `ui_status` и пагинации: `partner_id`, `project_id`, `created_by`, `category`, `evaluated_year`, опционально `evaluated_at_from` / `evaluated_at_to` (`YYYY-MM-DD`, границы включительно). Если задан хотя бы один из `evaluated_at_*`, фильтр по году не применяется. |
-| GET | `/` | Список оценок. Query: `partner_id`, `project_id`, `status` = `active` \| `archived` \| `all` (по умолчанию `all` в клиенте реестра), `created_by`, `category`, `evaluated_year`, `evaluated_at_from`, `evaluated_at_to` (см. выше), `ui_status`, `sort_field` = `evaluated_at` \| `weighted_score`, `sort_dir` = `asc` \| `desc`, `limit`, `offset`. Ответ: `{ data, total }`. **Пагинация, фильтры и сортировка списка серверные.** |
-| GET | `/:id` | Оценка + массив `scores` (с `criterion_code`, `criterion_name`). Ответ: массив из одного объекта `[row]` (как в других контроллерах проекта). |
+| GET | `/` | Список оценок. Query: `partner_id`, `project_id`, `status` = `active` \| `archived` \| `all` (по умолчанию `all` в клиенте реестра), `created_by`, `category`, `evaluated_year`, `evaluated_at_from`, `evaluated_at_to` (см. выше), `ui_status`, `sort_field` = `evaluated_at` \| `weighted_score`, `sort_dir` = `asc` \| `desc`, `limit`, `offset`. Ответ: `{ data, total }`. **Пагинация, фильтры и сортировка списка серверные.** В каждой строке списка поле **`partner_name`**: `short_name`, иначе `name` из `partners` (для реестра без зависимости от `GET /partners?preview=1`). |
+| GET | `/:id` | Оценка + массив `scores` (с `criterion_code`, `criterion_name`). Ответ: массив из одного объекта `[row]` (как в других контроллерах проекта). В объекте оценки также **`partner_name`** (как у списка). |
 | POST | `/` | Новая оценка. Тело: **`{ "body": { ... } }`** (как у договоров). |
 
 **POST — поля `body`:**
@@ -166,6 +166,7 @@ apps/web/
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-04-10 | В ответах GET `/` и GET `/:id` добавлено поле `partner_name` (из `partners`). |
 | 2026-03-24 | Документ создан: сводка по БД, индексам, API, логике; зафиксированы пороги A/B/C/D как в UI. |
 | 2026-03-24 | Фронт: вкладка оценок у контрагента, сводный реестр, API-клиент и хуки. |
 | 2026-03-24 | Сид критериев по макету (`supplier-evaluations-criteria-seed.sql`), GET `counts-by-tab`, счётчики на вкладках реестра. |

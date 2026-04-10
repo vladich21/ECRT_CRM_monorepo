@@ -10,6 +10,7 @@ import { Button, Col, Divider, Form, Input, Row, Select } from 'antd';
 
 import type { ProjectPreviewItem } from '../../../../api/projects/projectApi';
 import type { ContractFormMode, ContractFormRefs } from './contractForm.types';
+import formFieldStyles from './ContractFormMainFields.module.scss';
 
 const { TextArea } = Input;
 
@@ -79,12 +80,21 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
             rules={requireFullValidation ? [{ required: true, message: 'Выберите контрагента' }] : undefined}
           >
             <Select
+              className={formFieldStyles.partnerSelect}
+              classNames={{ popup: { root: formFieldStyles.partnerSelectPopup } }}
+              popupMatchSelectWidth={false}
+              styles={{
+                popup: {
+                  root: { minWidth: 360, maxWidth: 'min(90vw, 960px)' },
+                },
+              }}
               placeholder='Выберите контрагента'
               allowClear
               showSearch
-              optionFilterProp='children'
+              optionFilterProp='label'
+              optionLabelProp='label'
               filterOption={(input, option) =>
-                String(option?.children ?? '')
+                String(option?.label ?? '')
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
@@ -104,7 +114,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
               )}
             >
               {refs.partners?.map(partner => (
-                <Select.Option key={partner.id} value={partner.id}>
+                <Select.Option key={partner.id} value={partner.id} label={partner.name}>
                   {partner.name}
                 </Select.Option>
               ))}

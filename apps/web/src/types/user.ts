@@ -18,6 +18,12 @@ export interface Role {
   role_name: string;
 }
 
+export interface Supervisor {
+  id: string;
+  email: string;
+  name: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -31,4 +37,11 @@ export interface User {
   department: Department;
   position: Position;
   roles: Role[];
+  external_user_id?: string | null;
+  personnel_number?: string | null;
+  hired_at?: string | null;
+  quit_date?: string | null;
+  internal_phone?: string | null;
+  avatar_url?: string | null;
+  supervisor?: Supervisor | null;
 }

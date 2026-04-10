@@ -16,6 +16,7 @@ export interface SupplierEvaluationCriterion {
 export interface SupplierEvaluationListItem {
   id: string;
   partner_id: string;
+  partner_name?: string;
   project_id: string;
   status: SupplierEvaluationStatus;
   weighted_score: number;
@@ -24,7 +25,6 @@ export interface SupplierEvaluationListItem {
   next_reevaluation_date: string | null;
   comment: string;
   created_by: string;
-  /** ФИО из users (last + first + middle), если есть */
   created_by_name?: string;
   updated_by: string;
   created_at: string;
@@ -37,10 +37,8 @@ export interface SupplierEvaluationScoreDetail {
   score: number;
   criterion_code: string;
   criterion_name: string;
-  /** Доля 0–1, как в справочнике */
   criterion_weight: number;
   sort_order: number;
-  /** score × weight, до 3 знаков (сервер; иначе считаем на клиенте) */
   weighted_line?: number;
 }
 
@@ -53,7 +51,6 @@ export interface SupplierEvaluationListResponse {
   total: number;
 }
 
-/** GET /supplier-evaluations/partner-contract-projects */
 export interface SupplierEvaluationContractProjectOption {
   id: string;
   label: string;
@@ -94,7 +91,6 @@ export interface CreateInitialSupplierEvaluationPayload {
   partner_id: string;
   evaluated_at: string;
   comment?: string;
-  /** Только включённые критерии. */
   scores: { criterion_id: string; score: number }[];
 }
 
@@ -109,5 +105,4 @@ export type SupplierEvaluationUiStatusParam =
 export type SupplierEvaluationSortField = 'evaluated_at' | 'weighted_score';
 export type SupplierEvaluationSortDir = 'asc' | 'desc';
 
-/** Ответ GET /supplier-evaluations/counts-by-tab */
 export type SupplierEvaluationTabCounts = Record<SupplierEvaluationUiStatusParam, number>;

@@ -101,9 +101,14 @@ const ProfilePage = () => {
           <div className={styles.avatarWrap}>
             <Avatar
               size={96}
-              icon={<UserOutlined />}
+              src={user?.avatar_url || undefined}
+              icon={!user?.avatar_url ? <UserOutlined /> : undefined}
               className={styles.avatar}
-              style={{ backgroundColor: '#fde3cf', color: '#f56a00' }}
+              style={
+                user?.avatar_url
+                  ? undefined
+                  : { backgroundColor: '#fde3cf', color: '#f56a00' }
+              }
             />
             <button
               type='button'
@@ -216,8 +221,51 @@ const ProfilePage = () => {
                         <span className={styles.infoValueMuted}>Не указано</span>
                       )}
                     </div>
+                    {user?.internal_phone != null && user.internal_phone !== '' && (
+                      <div className={styles.infoRow}>
+                        <span className={styles.infoLabel}>Внутренний телефон</span>
+                        <span className={styles.infoValue}>{user.internal_phone}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+                {(user?.personnel_number ||
+                  user?.hired_at ||
+                  user?.quit_date ||
+                  user?.supervisor?.name) && (
+                  <div className={styles.card}>
+                    <h3 className={styles.cardTitle}>Данные из HR</h3>
+                    <div className={styles.infoRows}>
+                      {user?.personnel_number != null && user.personnel_number !== '' && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Табельный номер</span>
+                          <span className={styles.infoValue}>{user.personnel_number}</span>
+                        </div>
+                      )}
+                      {user?.hired_at != null && user.hired_at !== '' && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Дата приёма</span>
+                          <span className={styles.infoValue}>{user.hired_at}</span>
+                        </div>
+                      )}
+                      {user?.quit_date != null && user.quit_date !== '' && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Дата увольнения</span>
+                          <span className={styles.infoValue}>{user.quit_date}</span>
+                        </div>
+                      )}
+                      {user?.supervisor?.name != null && user.supervisor.name !== '' && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Руководитель</span>
+                          <span className={styles.infoValue}>
+                            {user.supervisor.name}
+                            {user.supervisor.email ? ` (${user.supervisor.email})` : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className={styles.sidebar} />
             </div>

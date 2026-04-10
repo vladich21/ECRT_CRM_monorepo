@@ -9,7 +9,7 @@ import {
   SafetyCertificateOutlined,
   StarFilled,
 } from '@ant-design/icons';
-import { Progress, Tooltip } from 'antd';
+import { Progress } from 'antd';
 
 import type { Partner } from '../../../types/partner';
 import type { PartnerSupplierEvalKpi } from '../../../utils/supplierEvaluationPartnerKpi';
@@ -71,20 +71,12 @@ export default function SupplierCard({
   const avgScore = evaluationKpi?.avgScore ?? (initialEvaluation?.weighted_score ?? null);
   const blockedCount = evaluationKpi?.blockedProjectCount ?? 0;
   const reevalOverdue = evaluationKpi?.nextReevaluationOverdue ?? false;
+  const isStatusBlocked = statusName === 'Заблокирован';
 
-  const dangerStripe = blockedCount > 0 || reevalOverdue;
+  const dangerStripe = blockedCount > 0 || reevalOverdue || isStatusBlocked;
 
   const progressPercent = avgScore == null ? 0 : Math.min(100, Math.round((avgScore / 5) * 100));
   const scoreStroke = avgScore == null ? '#d9d9d9' : scoreColor(avgScore);
-  const secondaryChips: Array<{ key: string; label: string; className: string }> = [
-    { key: 'status', label: statusName, className: statusBadgeClass(statusName) },
-    ...(!evaluationKpiLoading && avgScore == null
-      ? [{ key: 'not-rated', label: 'Не оценён', className: styles.tagNeutral }]
-      : []),
-  ];
-  const visibleSecondaryChips = secondaryChips.slice(0, 2);
-  const hiddenSecondaryChips = secondaryChips.slice(2);
-
   return (
     <div
       className={styles.card}
@@ -93,56 +85,48 @@ export default function SupplierCard({
     >
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
-          <span className={styles.name}>{partner.short_name || partner.name}</span>
-          <div className={styles.badges}>
-            {partner.is_approved ? (
-              <span className={styles.chipApproved}>
-                <CheckCircleFilled className={styles.chipIcon} />
-                Утверждён
-              </span>
-            ) : (
-              <span className={styles.chipNotApproved}>
-                <ClockCircleFilled className={styles.chipIcon} />
-                Не утверждён
-              </span>
-            )}
-            {partner.is_key_supplier && (
-              <span className={styles.chipKey}>
-                <StarFilled className={styles.chipIcon} />
-                Ключевой
-              </span>
-            )}
-            {partner.is_targeted && (
-              <span className={styles.chipTarget}>
-                <AimOutlined className={styles.chipIcon} />
-                Целевой
-              </span>
-            )}
-            {!evaluationKpiLoading && reevalOverdue && avgScore != null && (
-              <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>Просрочена</span>
-            )}
-            {!evaluationKpiLoading && blockedCount > 0 && (
-              <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>
-                Заблокирован · {blockedCount} {projectsCountLabel(blockedCount)}
-              </span>
-            )}
-          </div>
+          <span className={styles.name}>{partner.name?.trim() ? partner.name : '—'}</span>
         </div>
         <div className={styles.metaRow}>
-          {visibleSecondaryChips.map(chip => (
-            <span key={chip.key} className={`${styles.mutedTag} ${chip.className}`}>
-              {chip.label}
+          <span className={`${styles.mutedTag} ${statusBadgeClass(statusName)}`}>{statusName}</span>
+          {!evaluationKpiLoading && avgScore == null ? (
+            <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>Не оценён</span>
+          ) : null}
+          {partner.is_approved ? (
+            <span className={styles.chipApproved}>
+              <CheckCircleFilled className={styles.chipIcon} />
+              Утверждён
             </span>
-          ))}
+          ) : (
+            <span className={styles.chipNotApproved}>
+              <ClockCircleFilled className={styles.chipIcon} />
+              Не утверждён
+            </span>
+          )}
+          {partner.is_key_supplier ? (
+            <span className={styles.chipKey}>
+              <StarFilled className={styles.chipIcon} />
+              Ключевой
+            </span>
+          ) : null}
+          {partner.is_targeted ? (
+            <span className={styles.chipTarget}>
+              <AimOutlined className={styles.chipIcon} />
+              Целевой
+            </span>
+          ) : null}
+          {!evaluationKpiLoading && reevalOverdue && avgScore != null ? (
+            <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>Просрочена</span>
+          ) : null}
+          {!evaluationKpiLoading && blockedCount > 0 ? (
+            <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>
+              Заблокирован · {blockedCount} {projectsCountLabel(blockedCount)}
+            </span>
+          ) : null}
           <span className={styles.metaInn}>
             <BankOutlined style={{ fontSize: 11, marginRight: 4 }} />
             ИНН {partner.inn || '—'}
           </span>
-          {hiddenSecondaryChips.length > 0 && (
-            <Tooltip title={hiddenSecondaryChips.map(chip => chip.label).join(' · ')}>
-              <span className={`${styles.mutedTag} ${styles.tagOverflow}`}>+{hiddenSecondaryChips.length}</span>
-            </Tooltip>
-          )}
         </div>
         {typeNames.length > 0 && (
           <div className={`${styles.metaRow} ${styles.metaSubRow}`}>

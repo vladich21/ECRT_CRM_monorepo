@@ -23,3 +23,13 @@
 .filtersModalControl {
   @include lp.filtersModalControl;
 }
+
+.tableCellMultiline {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  vertical-align: top;
+}

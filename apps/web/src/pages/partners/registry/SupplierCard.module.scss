@@ -40,18 +40,12 @@
   font-weight: 600;
   font-size: 16px;
   color: #141414;
-  line-height: 1.35;
-  max-width: 440px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.badges {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .metaRow {
@@ -126,13 +120,6 @@
   background: rgba(22, 119, 255, 0.1);
   border-color: rgba(22, 119, 255, 0.28);
   color: rgb(22, 119, 255);
-}
-
-.tagOverflow {
-  background: #f5f5f5;
-  border-color: #d9d9d9;
-  color: #595959;
-  cursor: help;
 }
 
 .chipNotApproved {

@@ -28,7 +28,6 @@ const EVAL_SCOPE_INITIAL = 'initial';
 
 export type SupplierEvaluationListStatusFilter = 'active' | 'archived' | 'all';
 
-/** Уточнение по смыслу строки для реестра (см. макет фильтров). */
 export type SupplierEvaluationUiStatusFilter =
   | 'all'
   | 'current'
@@ -46,18 +45,14 @@ export interface SupplierEvaluationQueryFilters {
   status: SupplierEvaluationListStatusFilter;
   createdBy?: string;
   category?: SupplierEvaluationCategory;
-  /** Календарный год даты evaluated_at (игнорируется, если задан диапазон evaluatedAtFrom / evaluatedAtTo). */
   evaluatedYear?: number;
-  /** Нижняя граница evaluated_at (YYYY-MM-DD), включительно */
   evaluatedAtFrom?: string;
-  /** Верхняя граница evaluated_at (YYYY-MM-DD), включительно */
   evaluatedAtTo?: string;
   uiStatus?: SupplierEvaluationUiStatusFilter;
   sortField?: SupplierEvaluationListSortField;
   sortDir?: SupplierEvaluationListSortDir;
 }
 
-/** Без ui_status и пагинации — для счётчиков вкладок реестра. */
 export interface SupplierEvaluationTabCountFilters {
   partnerId?: string;
   projectId?: string;
@@ -88,7 +83,6 @@ export class SupplierEvaluationsService {
     private readonly partnersService: PartnersService,
   ) {}
 
-  /** Проекты из неудалённых договоров с контрагентом (для селекта «Новая оценка»). */
   async findContractProjectOptionsForPartner(partnerId: string) {
     const rows = await this.db.db
       .select({
@@ -114,10 +108,6 @@ export class SupplierEvaluationsService {
     }));
   }
 
-  /**
-   * Сводка для карточки контрагента в реестре: KPI по активным оценкам, просрочка плановой
-   * переоценки, число проектов с активной блокировкой по оценке (кат. D).
-   */
   async findPartnerEvalSummary(partnerId: string) {
     const today = this.calendarTodayIso();
     const [blockRows, evalRows] = await Promise.all([
@@ -254,9 +244,12 @@ export class SupplierEvaluationsService {
         creatorLastName: users.lastName,
         creatorFirstName: users.firstName,
         creatorMiddleName: users.middleName,
+        partnerShortName: partners.shortName,
+        partnerName: partners.name,
       })
       .from(supplierEvaluations)
       .leftJoin(users, eq(supplierEvaluations.createdBy, users.id))
+      .leftJoin(partners, eq(supplierEvaluations.partnerId, partners.id))
       .where(listWhere)
       .orderBy(primaryOrder, tieBreaker)
       .limit(limit)
@@ -264,17 +257,20 @@ export class SupplierEvaluationsService {
 
     return {
       data: rows.map((r) =>
-        this.evaluationToResponse(r.ev, {
-          lastName: r.creatorLastName,
-          firstName: r.creatorFirstName,
-          middleName: r.creatorMiddleName,
-        }),
+        this.evaluationToResponse(
+          r.ev,
+          {
+            lastName: r.creatorLastName,
+            firstName: r.creatorFirstName,
+            middleName: r.creatorMiddleName,
+          },
+          { shortName: r.partnerShortName, name: r.partnerName },
+        ),
       ),
       total,
     };
   }
 
-  /** Число строк по каждой вкладке смысла (те же фильтры, что у списка, кроме ui_status). Поиска по тексту нет. */
   async findTabCounts(filters: SupplierEvaluationTabCountFilters): Promise<SupplierEvaluationTabCounts> {
     const base: Omit<SupplierEvaluationQueryFilters, 'uiStatus'> = {
       partnerId: filters.partnerId,
@@ -316,9 +312,12 @@ export class SupplierEvaluationsService {
         creatorLastName: users.lastName,
         creatorFirstName: users.firstName,
         creatorMiddleName: users.middleName,
+        partnerShortName: partners.shortName,
+        partnerName: partners.name,
       })
       .from(supplierEvaluations)
       .leftJoin(users, eq(supplierEvaluations.createdBy, users.id))
+      .leftJoin(partners, eq(supplierEvaluations.partnerId, partners.id))
       .where(eq(supplierEvaluations.id, id))
       .limit(1);
     const row = head[0];
@@ -344,11 +343,15 @@ export class SupplierEvaluationsService {
       .orderBy(asc(refSupplierEvaluationCriteria.sortOrder));
 
     return {
-      ...this.evaluationToResponse(evaluation, {
-        lastName: row.creatorLastName,
-        firstName: row.creatorFirstName,
-        middleName: row.creatorMiddleName,
-      }),
+      ...this.evaluationToResponse(
+        evaluation,
+        {
+          lastName: row.creatorLastName,
+          firstName: row.creatorFirstName,
+          middleName: row.creatorMiddleName,
+        },
+        { shortName: row.partnerShortName, name: row.partnerName },
+      ),
       scores: scoreRows.map((s) => ({
         id: String(s.id),
         criterion_id: String(s.criterion_id),
@@ -516,7 +519,6 @@ export class SupplierEvaluationsService {
 
   async createInitial(dto: CreateInitialSupplierEvaluationDto, createdByUserId?: string) {
     this.validateEvaluatedAt(dto.evaluated_at);
-    // Для initial не нужен project_id и нет привязки к договорам/проектам
     const [p] = await this.db.db
       .select({ id: partners.id })
       .from(partners)
@@ -674,7 +676,6 @@ export class SupplierEvaluationsService {
 
   private buildListWhere(filters: SupplierEvaluationQueryFilters): SQL | undefined {
     const parts: SQL[] = [];
-    // Список/фильтры в UI сейчас про проектные оценки — не смешиваем с первичными.
     parts.push(eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT));
     if (filters.partnerId) {
       parts.push(eq(supplierEvaluations.partnerId, filters.partnerId));
@@ -773,7 +774,6 @@ export class SupplierEvaluationsService {
     }
   }
 
-  /** Оценка допускается только по проектам, с которыми у контрагента есть договор. */
   private async assertProjectLinkedViaPartnerContracts(partnerId: string, projectId: string) {
     const allowed = await this.findContractProjectOptionsForPartner(partnerId);
     if (!allowed.some((o) => o.id === projectId)) {
@@ -810,11 +810,15 @@ export class SupplierEvaluationsService {
       firstName?: string | null;
       middleName?: string | null;
     },
+    partner?: { shortName?: string | null; name?: string | null },
   ) {
     const createdByName = creator ? this.formatCreatorName(creator) : '';
+    const partnerName =
+      partner?.shortName?.trim() || partner?.name?.trim() || '';
     return {
       id: String(row.id),
       partner_id: String(row.partnerId),
+      partner_name: partnerName,
       project_id: String(row.projectId),
       status: row.status,
       weighted_score: this.roundScore(Number(row.weightedScore)),

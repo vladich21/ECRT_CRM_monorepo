@@ -1,5 +1,5 @@
-import { MailOutlined, RightOutlined } from '@ant-design/icons';
-import { Tag } from 'antd';
+import { MailOutlined, RightOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Tag } from 'antd';
 
 import { getActiveInactiveSurface, mutedTagStyle } from '../../../../constants/statusBadgeSurfaces';
 import type { User } from '../../../../types/user';
@@ -24,6 +24,12 @@ export default function UserCard({ user, onClick }: UserCardProps) {
     >
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
+          <Avatar
+            size={40}
+            src={user.avatar_url || undefined}
+            icon={!user.avatar_url ? <UserOutlined /> : undefined}
+            style={{ flexShrink: 0 }}
+          />
           <span className={styles.name}>{getFio(user)}</span>
           <span className={styles.metaInn}>
             <MailOutlined style={{ fontSize: 11, marginRight: 4 }} />

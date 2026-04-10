@@ -194,22 +194,33 @@ export default function SupplierEvaluationsRegistryPage() {
     {
       title: 'Контрагент',
       key: 'partner',
-      ellipsis: true,
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       onCell: () => ({ style: { verticalAlign: 'top' } }),
-      render: (_, row) => (
-        <Link to={`/partners/${row.partner_id}/evaluations`}>
-          {partnerNameById[row.partner_id] ?? row.partner_id}
-        </Link>
-      ),
+      render: (_, row) => {
+        const label =
+          row.partner_name?.trim() ||
+          partnerNameById[row.partner_id] ||
+          row.partner_id;
+        return (
+          <Link
+            className={registryStyles.tableCellMultiline}
+            to={`/partners/${row.partner_id}/evaluations`}
+          >
+            {label}
+          </Link>
+        );
+      },
     },
     {
       title: 'Проект',
       key: 'project',
-      ellipsis: { showTitle: true },
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       onCell: () => ({ style: { verticalAlign: 'top' } }),
-      render: (_, row) => <Text strong>{projectNameById[row.project_id] ?? row.project_id}</Text>,
+      render: (_, row) => (
+        <Text strong className={registryStyles.tableCellMultiline}>
+          {projectNameById[row.project_id] ?? row.project_id}
+        </Text>
+      ),
     },
     {
       title: 'Дата оценки',

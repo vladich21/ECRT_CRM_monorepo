@@ -1,6 +1,8 @@
-import { asc, count, eq, inArray } from 'drizzle-orm';
+import { asc, count, eq, inArray, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import * as argon2 from 'argon2';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../../database/database.service';
 import { users, departments, positions, refGroups, relUsersGroups } from '../../../database/schema';
 import { UserResponseDto } from '../dto/user-response.dto';
@@ -8,13 +10,22 @@ import { UserPreviewDto } from '../dto/user-preview.dto';
 import { DepartmentRefDto } from '../dto/department-ref.dto';
 import { PositionRefDto } from '../dto/position-ref.dto';
 import { RoleRefDto } from '../dto/role-ref.dto';
+import { SupervisorRefDto } from '../dto/supervisor-ref.dto';
 import { PaginationParams } from '../../../common/pagination';
+
+const supervisorUser = alias(users, 'supervisor_user');
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
+  private readonly hrAssetBaseUrl: string;
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly config: ConfigService,
+  ) {
+    this.hrAssetBaseUrl = (this.config.get<string>('EXTERNAL_HR_ASSET_BASE_URL') ?? '').replace(/\/$/, '');
+  }
 
   async findAll(
     preview?: 'active' | 'all' | 'full',
@@ -62,10 +73,12 @@ export class UsersService {
         departmentName: departments.name,
         positionId: positions.id,
         positionName: positions.name,
+        supervisor: supervisorUser,
       })
       .from(users)
       .leftJoin(departments, eq(users.departmentId, departments.id))
-      .leftJoin(positions, eq(users.positionId, positions.id));
+      .leftJoin(positions, eq(users.positionId, positions.id))
+      .leftJoin(supervisorUser, eq(users.supervisorId, supervisorUser.id));
     if (activeFilter) baseQuery = baseQuery.where(activeFilter) as typeof baseQuery;
 
     const orderedFull = baseQuery.orderBy(asc(users.lastName));
@@ -107,6 +120,7 @@ export class UsersService {
           ? { id: String(userRow.positionId), name: userRow.positionName ?? '' }
           : { id: '', name: '' },
         roles: rolesByUser.get(String(userRow.user.id)) ?? [],
+        supervisor: this.supervisorRefFromRow(userRow.supervisor),
       }),
     );
     return { data, total };
@@ -197,7 +211,7 @@ export class UsersService {
     const rows = await this.db.db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.email, email.trim().toLowerCase()))
+      .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`)
       .limit(1);
     const row = rows[0];
     return row ? { id: String(row.id) } : null;
@@ -208,7 +222,7 @@ export class UsersService {
     const rows = await this.db.db
       .select({ passwordHash: users.passwordHash })
       .from(users)
-      .where(eq(users.email, email.trim().toLowerCase()))
+      .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`)
       .limit(1);
     const hash = rows[0]?.passwordHash;
     return hash ?? null;
@@ -239,7 +253,7 @@ export class UsersService {
         twoFactorEnabled: users.twoFactorEnabled,
       })
       .from(users)
-      .where(eq(users.email, email.trim().toLowerCase()))
+      .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`)
       .limit(1);
     const row = rows[0];
     if (!row) return null;
@@ -258,7 +272,7 @@ export class UsersService {
     const rows = await this.db.db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.email, email.trim().toLowerCase()))
+      .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`)
       .limit(1);
     const row = rows[0];
     if (!row) return null;
@@ -294,10 +308,12 @@ export class UsersService {
         departmentName: departments.name,
         positionId: positions.id,
         positionName: positions.name,
+        supervisor: supervisorUser,
       })
       .from(users)
       .leftJoin(departments, eq(users.departmentId, departments.id))
       .leftJoin(positions, eq(users.positionId, positions.id))
+      .leftJoin(supervisorUser, eq(users.supervisorId, supervisorUser.id))
       .where(eq(users.id, id))
       .limit(1);
 
@@ -323,12 +339,45 @@ export class UsersService {
         ? { id: String(firstRow.positionId), name: firstRow.positionName ?? '' }
         : { id: '', name: '' },
       roles,
+      supervisor: this.supervisorRefFromRow(firstRow.supervisor),
     });
   }
 
+  private supervisorRefFromRow(
+    row: typeof users.$inferSelect | null,
+  ): SupervisorRefDto | null {
+    if (!row?.id) return null;
+    const name = [row.lastName, row.firstName, row.middleName].filter(Boolean).join(' ').trim();
+    return {
+      id: String(row.id),
+      email: row.email ?? '',
+      name: name || (row.email ?? ''),
+    };
+  }
+
+  private toAbsoluteAvatarUrl(relativeOrAbsolute: string | null): string | null {
+    if (!relativeOrAbsolute?.trim()) return null;
+    const v = relativeOrAbsolute.trim();
+    if (v.startsWith('http://') || v.startsWith('https://')) return v;
+    if (!this.hrAssetBaseUrl) return v;
+    return `${this.hrAssetBaseUrl}${v.startsWith('/') ? '' : '/'}${v}`;
+  }
+
+  private formatDate(d: Date | string | null | undefined): string | null {
+    if (d == null) return null;
+    if (d instanceof Date) return d.toISOString().slice(0, 10);
+    const s = String(d);
+    return s.length >= 10 ? s.slice(0, 10) : s;
+  }
+
   private toResponse(
-    user: (typeof users.$inferSelect),
-    refs: { department: DepartmentRefDto; position: PositionRefDto; roles: RoleRefDto[] },
+    user: typeof users.$inferSelect,
+    refs: {
+      department: DepartmentRefDto;
+      position: PositionRefDto;
+      roles: RoleRefDto[];
+      supervisor: SupervisorRefDto | null;
+    },
   ): UserResponseDto {
     return {
       id: String(user.id),
@@ -343,6 +392,13 @@ export class UsersService {
       department: refs.department,
       position: refs.position,
       roles: refs.roles,
+      external_user_id: user.externalUserId ? String(user.externalUserId) : null,
+      personnel_number: user.personnelNumber ?? null,
+      hired_at: this.formatDate(user.hiredAt),
+      quit_date: this.formatDate(user.quitDate),
+      internal_phone: user.internalPhone ?? null,
+      avatar_url: this.toAbsoluteAvatarUrl(user.avatarUrl ?? null),
+      supervisor: refs.supervisor,
     };
   }
 }

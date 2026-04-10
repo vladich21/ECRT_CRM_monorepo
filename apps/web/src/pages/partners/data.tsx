@@ -27,19 +27,19 @@ export const getColumnsData = (
 ): ColumnType<Partner>[] => [
   {
     title: 'Наименование',
-    dataIndex: 'short_name',
-    key: 'short_name',
-    width: 200,
-    render: (shortName: string, record: Partner) => (
-      <div>
-        <div style={{ fontWeight: 'bold' }}>{shortName || '-'}</div>
-        {record.name && (
-          <div style={{ fontSize: '12px', color: '#666' }} title={record.name}>
-            {record.name.length > 50 ? `${record.name.substring(0, 50)}...` : record.name}
-          </div>
-        )}
-      </div>
-    ),
+    dataIndex: 'name',
+    key: 'name',
+    width: 280,
+    render: (name: string) => {
+      const trimmed = name?.trim() ?? '';
+      if (!trimmed) return '—';
+      const display = trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
+      return (
+        <div style={{ fontWeight: 'bold' }} title={trimmed}>
+          {display}
+        </div>
+      );
+    },
   },
   {
     title: 'ИНН',

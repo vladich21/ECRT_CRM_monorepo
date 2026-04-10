@@ -1,15 +1,17 @@
 .profile-btn {
     color: #ffffff;
     margin-top: auto;
-    height: 65px;
+    min-height: 64px;
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    overflow: hidden;
+    overflow: visible;
     cursor: pointer;
     justify-content: flex-start;
-    margin-left: 25px;
+    margin-left: 16px;
     transition: all 0.3s ease-in;
+    /* Достаточно для полного ФИО в 1–2 строки без выталкивания меню */
+    max-width: min(22rem, 100%);
 }
 
 .avatar {
@@ -33,16 +35,24 @@
 .name {
     transition: all 0.3s ease-out;
     width: auto;
-    overflow: hidden;
-    white-space: nowrap;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
+    line-height: 1.25;
+    text-align: left;
 
     &.collapsed {
         opacity: 0;
         max-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
     }
 
     &.expanded {
         opacity: 1;
-        max-width: 200px;
+        max-width: none;
+        white-space: normal;
     }
 }

@@ -9,7 +9,9 @@ export const useFilteredPartners = (partners: Partner[], filters: Record<string,
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const matchesSearch =
-          partner.name?.toLowerCase().includes(searchLower) || partner.inn?.toLowerCase().includes(searchLower);
+          partner.name?.toLowerCase().includes(searchLower) ||
+          partner.short_name?.toLowerCase().includes(searchLower) ||
+          partner.inn?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
       if (filters.type_ids) {

@@ -46,7 +46,11 @@ function MainLayout({ children }: MainLayoutProps) {
 
         <div className={styles.profileSection}>
           <ProfileButton
-            name={`${user?.first_name} ${user?.last_name}`}
+            name={
+              [user?.last_name, user?.first_name, user?.middle_name].filter(Boolean).join(' ').trim() ||
+              'Пользователь'
+            }
+            avatarUrl={user?.avatar_url}
             collapsed={false}
             onClick={() => navigate('/profile')}
           />

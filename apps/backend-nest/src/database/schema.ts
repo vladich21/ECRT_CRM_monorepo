@@ -16,6 +16,13 @@ export const users = pgTable(
   'users',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    externalUserId: uuid('external_user_id'),
+    personnelNumber: varchar('personnel_number', { length: 32 }),
+    hiredAt: date('hired_at'),
+    quitDate: date('quit_date'),
+    internalPhone: varchar('internal_phone', { length: 32 }),
+    avatarUrl: text('avatar_url'),
+    supervisorId: uuid('supervisor_id'),
     passwordHash: varchar('password_hash', { length: 255 }),
     mustChangePassword: boolean('must_change_password').default(false),
     twoFactorEnabled: boolean('two_factor_enabled').default(false),
@@ -31,7 +38,10 @@ export const users = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }),
   },
-  (t) => [uniqueIndex('users_email_idx').on(t.email)],
+  (t) => [
+    uniqueIndex('users_email_idx').on(t.email),
+    uniqueIndex('users_external_user_id_uidx').on(t.externalUserId),
+  ],
 );
 
 export const authCodes = pgTable(

@@ -29,6 +29,7 @@ import { PartnerEconomicCategoriesModule } from './modules/partner-economic-cate
 import { FilesModule } from './modules/files/files.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { SupplierEvaluationsModule } from './modules/supplier-evaluations/supplier-evaluations.module';
+import { HrSyncModule } from './modules/hr-sync/hr-sync.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { SupplierEvaluationsModule } from './modules/supplier-evaluations/suppli
     FilesModule,
     CommentsModule,
     SupplierEvaluationsModule,
+    HrSyncModule,
   ],
   controllers: [AppController],
   providers: [

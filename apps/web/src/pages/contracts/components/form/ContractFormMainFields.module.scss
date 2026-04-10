@@ -1,0 +1,26 @@
+.partnerSelect {
+  width: 100%;
+
+  :global(.ant-select-selector) {
+    height: auto !important;
+    min-height: 32px;
+    align-items: flex-start;
+    padding-block: 4px;
+  }
+
+  :global(.ant-select-selection-item) {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+  }
+}
+
+.partnerSelectPopup {
+  :global(.ant-select-item-option-content) {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+  }
+}

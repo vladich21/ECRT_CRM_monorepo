@@ -1,5 +1,5 @@
-import { EditOutlined, IdcardOutlined, MailOutlined, PhoneOutlined, TeamOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { EditOutlined, IdcardOutlined, MailOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useUserById } from '../../../api/users/userApiHooks';
@@ -26,6 +26,14 @@ export default function UserDetailsPage() {
   return (
     <DetailPageHeader
       title={fullName || 'Пользователь'}
+      badges={[
+        <Avatar
+          key='user-avatar'
+          size={48}
+          src={user.avatar_url || undefined}
+          icon={!user.avatar_url ? <UserOutlined /> : undefined}
+        />,
+      ]}
       backLabel='Пользователи'
       onBack={() => navigate('/users')}
       statusBadge={{
@@ -102,8 +110,61 @@ export default function UserDetailsPage() {
                   {user.phone || 'Не указано'}
                 </span>
               </div>
+              {user.internal_phone != null && user.internal_phone !== '' && (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Внутренний телефон</span>
+                  <span className={styles.infoValue}>{user.internal_phone}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {(user.personnel_number ||
+            user.hired_at ||
+            user.quit_date ||
+            user.supervisor?.name ||
+            user.external_user_id) && (
+            <div className={styles.card}>
+              <h3 className={styles.cardTitle}>Данные из HR</h3>
+              <div className={styles.infoRows}>
+                {user.personnel_number != null && user.personnel_number !== '' && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Табельный номер</span>
+                    <span className={styles.infoValue}>{user.personnel_number}</span>
+                  </div>
+                )}
+                {user.hired_at != null && user.hired_at !== '' && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Дата приёма</span>
+                    <span className={styles.infoValue}>{user.hired_at}</span>
+                  </div>
+                )}
+                {user.quit_date != null && user.quit_date !== '' && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Дата увольнения</span>
+                    <span className={styles.infoValue}>{user.quit_date}</span>
+                  </div>
+                )}
+                {user.supervisor?.name != null && user.supervisor.name !== '' && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Руководитель</span>
+                    <span className={styles.infoValue}>
+                      {user.supervisor.name}
+                      {user.supervisor.email ? ` (${user.supervisor.email})` : ''}
+                    </span>
+                  </div>
+                )}
+                {user.external_user_id != null && user.external_user_id !== '' && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Внешний ID</span>
+                    <span className={styles.infoValueMuted} style={{ fontSize: 12 }}>
+                      {user.external_user_id}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
