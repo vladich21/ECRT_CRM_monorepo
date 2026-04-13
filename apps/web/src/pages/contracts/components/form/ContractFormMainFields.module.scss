@@ -1,18 +1,39 @@
 .partnerSelect {
   width: 100%;
 
-  :global(.ant-select-selector) {
+  &:global(.ant-select-single) {
     height: auto !important;
     min-height: 32px;
-    align-items: flex-start;
-    padding-block: 4px;
   }
 
-  :global(.ant-select-selection-item) {
-    white-space: normal;
+  &:global(.ant-select-single) :global(.ant-select-selector) {
+    display: flex;
+    align-items: flex-start !important;
+    height: auto !important;
+    min-height: 32px;
+    padding-block: 6px;
+  }
+
+  &:global(.ant-select-single) :global(.ant-select-selection-wrap) {
+    flex: 1 1 auto;
+    min-width: 0;
+    align-self: stretch;
+  }
+
+  &:global(.ant-select-single) :global(.ant-select-selection-wrap::after) {
+    line-height: 0 !important;
+  }
+
+  &:global(.ant-select-single) :global(.ant-select-selection-item) {
+    white-space: normal !important;
     word-break: break-word;
     overflow-wrap: anywhere;
-    line-height: 1.45;
+    line-height: 1.45 !important;
+    align-self: flex-start !important;
+  }
+
+  &:global(.ant-select-single) :global(.ant-select-selection-search-input) {
+    height: 22px !important;
   }
 }
 

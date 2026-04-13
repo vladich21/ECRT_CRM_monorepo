@@ -1,3 +1,6 @@
+/* Как в main.css — единый стек для страниц и Ant Design */
+$font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
 $primary-color: #1677ff;
 $primary-dark: #0958d9;
 $primary-light: #4096ff;
@@ -32,7 +35,6 @@ $warning: #faad14;
 $error: #ff4d4f;
 $info: #1677ff;
 
-/* Пастельные бейджи (шапка, таблицы, оценки) — один набор с `statusBadgeSurfaces` / detailHeaderStatusBadge */
 $badge-danger-bg: #fef2f2;
 $badge-danger-border: #fecaca;
 $badge-danger-text: #b91c1c;
@@ -49,13 +51,14 @@ $badge-neutral-bg: #fafafa;
 $badge-neutral-border: #e8e8e8;
 $badge-neutral-text: #737373;
 
-/* Активность в шапке (полупрозрачные) */
 $header-activity-active-bg: rgba(82, 196, 26, 0.125);
 $header-activity-active-border: rgba(82, 196, 26, 0.314);
 $header-activity-inactive-bg: rgba(255, 77, 79, 0.125);
 $header-activity-inactive-border: rgba(255, 77, 79, 0.314);
+$header-activity-info-bg: rgba(22, 119, 255, 0.125);
+$header-activity-info-border: rgba(22, 119, 255, 0.314);
+$header-activity-info-text: #1677ff;
 
-/* Синхронно с constants/appColors APP_COLOR_ERROR (мягкий красный в UI) */
 $app-color-error: #e84749;
 
 $spacing-2xs: 2px;

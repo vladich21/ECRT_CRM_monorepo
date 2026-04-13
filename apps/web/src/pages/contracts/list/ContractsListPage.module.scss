@@ -502,10 +502,11 @@ $app-error: #e84749;
 
 .cardCategory {
   font-size: 12px;
-  color: $portal-secondary-muted;
-  background: $tag-default-bg;
-  border: 1px solid $portal-secondary-border;
-  padding: 1px 7px;
+  line-height: 1.35;
+  color: v.$header-activity-info-text;
+  background: v.$header-activity-info-bg;
+  border: 1px solid v.$header-activity-info-border;
+  padding: 2px 10px;
   border-radius: 6px;
   flex-shrink: 0;
 }
@@ -520,7 +521,7 @@ $app-error: #e84749;
 .tagStateDefault {
   font-size: 12px;
   line-height: 1.35;
-  padding: 1px 7px;
+  padding: 2px 10px;
   border-radius: 6px;
   border: 1px solid transparent;
 }

@@ -1,4 +1,4 @@
-// ── Profile Page — portal-style ──
+@use '../../styles/variables' as v;
 
 .pageRoot {
   padding: 0;
@@ -6,10 +6,9 @@
   overflow: hidden;
 }
 
-// ─── Dark gradient header ───────────────────────────────────────────────────
 .header {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1a3a6b 100%);
-  padding: 32px 32px 28px;
+  padding: 22px clamp(16px, 3vw, 32px) 20px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -19,79 +18,77 @@
 .headerContent {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
+  width: 100%;
 }
 
 .avatarWrap {
-  position: relative;
   flex-shrink: 0;
-
-  &:hover .photoUploadBtn {
-    opacity: 1;
-  }
 }
 
-.avatar {
+.avatar:global(.ant-avatar) {
   display: block;
+  width: 100px !important;
+  height: 100px !important;
+  min-width: 100px !important;
+  min-height: 100px !important;
+  flex-shrink: 0;
+  font-size: 42px !important;
 }
 
-.photoUploadBtn {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-  color: #fff;
-  font-size: 20px;
-
-  &:hover {
-    opacity: 1;
-  }
+.avatar:global(.ant-avatar) :global(.ant-avatar-image) > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
 }
 
 .headerInfo {
   flex: 1;
+  min-width: 0;
+}
+
+.headerBadges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerRolesGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headerRolesEmpty {
+  font-family: v.$font-sans;
+  font-size: v.$font-sm;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
 }
 
 .userName {
-  margin: 0 0 6px;
+  margin: 0 0 10px;
   color: #fff;
-  font-size: 22px;
+  font-family: v.$font-sans;
+  font-size: 20px;
   font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
 }
 
-.roleTag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+.headerContext {
+  margin: 0 0 10px;
+  font-family: v.$font-sans;
+  font-size: 14px;
   font-weight: 500;
-  margin-right: 6px;
-  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.45;
+  max-width: 72ch;
 }
 
-.roleTagAdmin {
-  @extend .roleTag;
-  background: rgba(255, 77, 79, 0.15);
-  border: 1px solid rgba(255, 77, 79, 0.3);
-  color: #ff7875;
-}
-
-.roleTagDefault {
-  @extend .roleTag;
-  background: rgba(22, 119, 255, 0.15);
-  border: 1px solid rgba(22, 119, 255, 0.3);
-  color: #69b1ff;
-}
-
-// Бейдж статуса аккаунта на тёмном хедере — светлые «стеклянные» тона, как у roleTag*
 .statusBadge {
   display: inline-flex;
   align-items: center;
@@ -100,20 +97,18 @@
   padding: 4px 14px;
   font-size: 13px;
   font-weight: 600;
-  margin-left: 4px;
   vertical-align: middle;
 }
 
 .statusBadgeActive {
-  @extend .statusBadge;
-  background: rgba(183, 235, 143, 0.14);
-  border: 1px solid rgba(183, 235, 143, 0.4);
-  color: #d3f261;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  composes: statusBadge;
+  background: v.$header-activity-active-bg;
+  border: 1px solid v.$header-activity-active-border;
+  color: v.$success;
 }
 
 .statusBadgeInactive {
-  @extend .statusBadge;
+  composes: statusBadge;
   background: rgba(255, 163, 158, 0.12);
   border: 1px solid rgba(255, 163, 158, 0.38);
   color: #ffccc7;
@@ -124,196 +119,4 @@
   display: flex;
   gap: 8px;
   flex-shrink: 0;
-}
-
-// ─── Content area ───────────────────────────────────────────────────────────
-.contentWrap {
-  padding: 24px 32px;
-  background: #f5f7fa;
-  min-height: calc(100vh - 300px);
-}
-
-.editCard {
-  max-width: 920px;
-}
-
-.editGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
-  gap: 16px 24px;
-  align-items: start;
-}
-
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
-}
-
-.leftColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-@media (max-width: 768px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-.profileCard {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  background: #fff;
-  border-radius: 10px;
-  padding: 24px;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-}
-
-.profileSection {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.profileSectionTitle {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #595959;
-  letter-spacing: 0.02em;
-}
-
-@media (max-width: 768px) {
-  .profileCard {
-    grid-template-columns: 1fr;
-  }
-}
-
-.profileInfoList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.profileInfoItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 0;
-  font-size: 14px;
-}
-
-.profileLabel {
-  color: #8c8c8c;
-  flex-shrink: 0;
-}
-
-.profileValue {
-  font-weight: 500;
-  color: #262626;
-  text-align: right;
-  word-break: break-word;
-}
-
-.profileMuted {
-  font-weight: 400;
-  color: #bfbfbf;
-  text-align: right;
-}
-
-.profileLink {
-  font-weight: 500;
-  color: #1677ff;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  &:hover { color: #4096ff; }
-}
-
-@media (max-width: 768px) {
-  .profileCard {
-    grid-template-columns: 1fr;
-  }
-}
-
-.card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  border: 1px solid #f0f0f0;
-}
-
-.cardTitle {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #141414;
-}
-
-.infoRows {
-  display: flex;
-  flex-direction: column;
-}
-
-.infoRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f5f5f5;
-  &:last-child { border-bottom: none; padding-bottom: 0; }
-  &:first-child { padding-top: 0; }
-}
-
-.infoLabel {
-  font-size: 13px;
-  color: #8c8c8c;
-}
-
-.infoValue {
-  font-size: 13px;
-  font-weight: 600;
-  color: #262626;
-  text-align: right;
-  max-width: 60%;
-  word-break: break-word;
-}
-
-.infoValueMuted {
-  @extend .infoValue;
-  color: #bfbfbf;
-  font-weight: 400;
-}
-
-.infoLink {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1677ff;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  &:hover { color: #4096ff; }
-}
-
-.formActions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
 }

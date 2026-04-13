@@ -27,9 +27,9 @@
 }
 
 .info {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1d4ed8;
+  background: v.$header-activity-info-bg;
+  border: 1px solid v.$header-activity-info-border;
+  color: v.$header-activity-info-text;
 }
 
 .archive {

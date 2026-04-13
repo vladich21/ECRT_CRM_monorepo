@@ -1,0 +1,221 @@
+@use '../../styles/variables' as v;
+
+@mixin content-surface {
+  background:
+    linear-gradient(180deg, rgba(30, 58, 95, 0.1) 0%, transparent 72px),
+    linear-gradient(180deg, #eef2f7 0%, #f8fafc 38%, #f1f5f9 100%);
+  min-height: 0;
+}
+
+@mixin type-body {
+  font-family: v.$font-sans;
+  font-size: v.$font-base;
+  line-height: v.$line-height-relaxed;
+}
+
+.shell {
+  padding: 24px 32px;
+  @include content-surface;
+}
+
+.shellInDetail {
+  margin: -24px -32px 0;
+  padding: 24px 32px;
+  @include content-surface;
+}
+
+.contentMax {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.cardsSurface {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.cardsSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.infoCard {
+  container-type: inline-size;
+  @include type-body;
+  width: 100%;
+  background: v.$bg-primary;
+  border-radius: 10px;
+  padding: 20px 20px 22px;
+  border: 1px solid v.$border-tertiary;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  min-width: 0;
+}
+
+.cardHead {
+  margin: 0 0 14px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: v.$font-sans;
+  font-size: v.$font-lg;
+  font-weight: 700;
+  color: v.$text-secondary;
+  letter-spacing: -0.01em;
+  line-height: v.$line-height-tight;
+}
+
+.fieldList {
+  display: flex;
+  flex-direction: column;
+}
+
+.field {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  & > :not(.fieldLabel) {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+  }
+}
+
+@container (max-width: 220px) {
+  .field {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    & > :not(.fieldLabel) {
+      text-align: left;
+      width: 100%;
+    }
+  }
+}
+
+.fieldLabel {
+  flex: 0 0 auto;
+  max-width: 38%;
+  padding-top: 2px;
+  font-family: v.$font-sans;
+  font-size: v.$font-base;
+  font-weight: 400;
+  color: v.$text-quaternary;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: v.$line-height-normal;
+}
+
+.fieldValue {
+  font-family: v.$font-sans;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$text-secondary;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.fieldValueMuted {
+  font-family: v.$font-sans;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$text-quaternary;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.fieldMono {
+  font-family: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', monospace;
+  font-size: v.$font-sm;
+  font-weight: 400;
+  color: v.$text-tertiary;
+  word-break: break-all;
+  line-height: v.$line-height-relaxed;
+}
+
+.valueLink {
+  font-family: v.$font-sans;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$info;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  line-height: 1.35;
+  text-align: right;
+
+  &:hover {
+    color: v.$primary-light;
+  }
+}
+
+.roleChipHeader {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 7px;
+  font-family: v.$font-sans;
+  font-size: v.$font-sm;
+  font-weight: 500;
+  line-height: v.$line-height-normal;
+  background: rgba(147, 197, 253, 0.16);
+  border: 1px solid rgba(147, 197, 253, 0.38);
+  color: #e0f2fe;
+}
+
+.roleChipHeaderAdmin {
+  background: rgba(254, 202, 202, 0.14);
+  border: 1px solid rgba(252, 165, 165, 0.4);
+  color: #fecaca;
+}
+
+.hrFieldsStart {
+  margin: 12px 0 4px;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid v.$border-tertiary;
+}

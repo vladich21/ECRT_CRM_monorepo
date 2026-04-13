@@ -30,7 +30,9 @@ interface DetailPageHeaderProps {
   backLabel: string;
   onBack: () => void;
   statusBadge?: DetailStatusBadge;
+  metaExtra?: ReactNode;
   metaItems?: ReactNode[];
+  lead?: ReactNode;
   badges?: ReactNode[];
   actions?: ReactNode;
   tabs: TabItem[];
@@ -49,7 +51,9 @@ export default function DetailPageHeader({
   backLabel,
   onBack,
   statusBadge,
+  metaExtra,
   metaItems,
+  lead,
   badges,
   actions,
   tabs,
@@ -77,9 +81,10 @@ export default function DetailPageHeader({
         <div className={styles.companyRow}>
           <div className={styles.companyInfo}>
             <div className={styles.nameRow}>
+              {lead ? <div className={styles.nameRowLead}>{lead}</div> : null}
               <h1 className={titleClassName}>{title}</h1>
-              {titleSuffix && <div className={styles.titleSuffix}>{titleSuffix}</div>}
-              {badges}
+              {titleSuffix ? <div className={styles.titleSuffix}>{titleSuffix}</div> : null}
+              {badges?.length ? <div className={styles.nameRowBadges}>{badges}</div> : null}
             </div>
 
             {subtitle && <div className={styles.subtitle}>{subtitle}</div>}
@@ -90,6 +95,7 @@ export default function DetailPageHeader({
                   {statusBadge.icon} {statusBadge.label}
                 </div>
               ) : null}
+              {metaExtra ? <div className={styles.metaRowTrail}>{metaExtra}</div> : null}
               {metaItems}
             </div>
           </div>

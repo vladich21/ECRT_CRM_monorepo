@@ -1,3 +1,5 @@
+@use '../../styles/variables' as v;
+
 .pageRoot {
   padding: 0;
   border-radius: 16px 16px 0 0;
@@ -9,7 +11,7 @@
 
 .header {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1a3a6b 100%);
-  padding: 28px 32px 0;
+  padding: 22px 32px 0;
   position: relative;
   overflow: hidden;
 }
@@ -34,7 +36,7 @@
   display: flex;
   align-items: flex-start;
   gap: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .companyInfo {
@@ -49,16 +51,58 @@
   margin-bottom: 6px;
   flex-wrap: wrap;
   min-width: 0;
+  font-family: v.$font-sans;
+}
+
+.nameRowLead {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.heroAvatar:global(.ant-avatar) {
+  width: 100px !important;
+  height: 100px !important;
+  min-width: 100px !important;
+  min-height: 100px !important;
+  flex-shrink: 0;
+  font-size: 42px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.heroAvatar:global(.ant-avatar) :global(.ant-avatar-image) > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+.nameRowBadges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headerRolesEmpty {
+  font-family: v.$font-sans;
+  font-size: v.$font-sm;
+  color: rgba(255, 255, 255, 0.42);
+  font-weight: 500;
 }
 
 .companyName {
   margin: 0;
   color: #fff;
+  font-family: v.$font-sans;
   font-size: 20px;
   font-weight: 700;
   line-height: 1.35;
+  letter-spacing: -0.01em;
   max-width: 100%;
   overflow-wrap: anywhere;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .companyNameMedium {
@@ -66,11 +110,13 @@
 }
 
 .subtitle {
-  font-size: 13px;
+  font-family: v.$font-sans;
+  font-size: 14px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.75);
-  margin: 0 0 14px;
-  max-width: 960px;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0 0 8px;
+  max-width: 72ch;
+  font-weight: 500;
 }
 
 .titleSuffix {
@@ -86,13 +132,25 @@
 .metaRow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
+  min-width: 0;
+}
+
+.metaRowTrail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .metaText {
   color: #fff;
-  font-size: 14px;
+  font-family: v.$font-sans;
+  font-size: v.$font-base;
+  line-height: v.$line-height-relaxed;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -121,7 +179,8 @@
 .tab {
   padding: 10px 20px;
   cursor: pointer;
-  font-size: 14px;
+  font-family: v.$font-sans;
+  font-size: v.$font-base;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.5);
   border-bottom: 3px solid transparent;

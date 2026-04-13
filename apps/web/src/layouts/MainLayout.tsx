@@ -58,7 +58,6 @@ function MainLayout({ children }: MainLayoutProps) {
               'Пользователь'
             }
             avatarUrl={user?.avatar_url}
-            collapsed={false}
             onClick={() => navigate('/profile')}
           />
         </div>
