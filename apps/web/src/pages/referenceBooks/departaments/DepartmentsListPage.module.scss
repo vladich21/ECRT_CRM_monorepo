@@ -1,0 +1,40 @@
+@use '../../../styles/variables' as v;
+@use '../../../components/pageLayout/listPageShared' as lp;
+
+.filterSection {
+  @include lp.filterSection;
+}
+
+.filterTabsRow {
+  @include lp.filterTabsRow;
+  justify-content: flex-end;
+}
+
+.filterTabsRight {
+  @include lp.filterTabsRight;
+}
+
+.searchInTabsRow {
+  @include lp.searchInput;
+}
+
+.searchIcon {
+  @include lp.searchIcon;
+}
+
+.resultCount {
+  @include lp.resultCount;
+}
+
+.loading {
+  padding: v.$spacing-4xl;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.empty {
+  text-align: center;
+  padding: 60px 0;
+  color: #8c8c8c;
+  font-size: 14px;
+}

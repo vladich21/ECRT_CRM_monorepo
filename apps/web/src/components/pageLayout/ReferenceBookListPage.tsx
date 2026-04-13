@@ -9,8 +9,8 @@ import styles from './ReferenceBookListPage.module.scss';
 interface ReferenceBookListPageProps {
   title: string;
   subtitle?: string;
-  addButtonLabel: string;
-  onAdd: () => void;
+  addButtonLabel?: string;
+  onAdd?: () => void;
   children: ReactNode;
   contextHolder?: ReactNode;
   extraActions?: ReactNode;
@@ -26,6 +26,19 @@ export default function ReferenceBookListPage({
   extraActions,
   filters,
 }: ReferenceBookListPageProps) {
+  const showAddButton = Boolean(addButtonLabel && onAdd);
+  const headerActions =
+    extraActions || showAddButton ? (
+      <div className={styles.actions}>
+        {extraActions}
+        {showAddButton ? (
+          <Button type='primary' icon={<PlusOutlined />} onClick={onAdd}>
+            {addButtonLabel}
+          </Button>
+        ) : null}
+      </div>
+    ) : undefined;
+
   return (
     <div className={styles.wrap}>
       {contextHolder}
@@ -34,14 +47,7 @@ export default function ReferenceBookListPage({
         title={title}
         subtitle={subtitle}
         filters={filters}
-        actions={
-          <div className={styles.actions}>
-            {extraActions}
-            <Button type='primary' icon={<PlusOutlined />} onClick={onAdd}>
-              {addButtonLabel}
-            </Button>
-          </div>
-        }
+        actions={headerActions}
       />
       <div className={styles.tableContainer}>{children}</div>
     </div>

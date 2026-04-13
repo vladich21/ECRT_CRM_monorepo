@@ -1,13 +1,11 @@
 import { asc, eq } from 'drizzle-orm';
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { departments } from '../../../database/schema';
 import { DepartmentResponseDto } from '../dto/department-response.dto';
 
 @Injectable()
 export class DepartmentsService {
-  private readonly logger = new Logger(DepartmentsService.name);
-
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(preview?: boolean): Promise<DepartmentResponseDto[] | Record<string, unknown>[]> {
@@ -36,18 +34,6 @@ export class DepartmentsService {
     return this.toResponse(row);
   }
 
-  async create(data: Record<string, unknown>): Promise<DepartmentResponseDto | Record<string, unknown> | null> {
-    const insertData = {
-      name: data.name != null ? String(data.name) : null,
-    };
-    try {
-      const [row] = await this.db.db.insert(departments).values(insertData).returning();
-      return row ? this.toResponse(row) : null;
-    } catch (error) {
-      this.handleDbConflict(error);
-    }
-  }
-
   async update(id: string, data: Record<string, unknown>): Promise<DepartmentResponseDto | Record<string, unknown> | null> {
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updateObj.name = data.name != null ? String(data.name) : null;
@@ -59,21 +45,10 @@ export class DepartmentsService {
     }
   }
 
-  async remove(id: string): Promise<DepartmentResponseDto | Record<string, unknown> | null> {
-    const row = await this.findOne(id);
-    if (!row) return null;
-    try {
-      await this.db.db.delete(departments).where(eq(departments.id, id));
-      return row;
-    } catch (error) {
-      this.handleDbConflict(error);
-    }
-  }
-
   private handleDbConflict(error: unknown): never {
     const dbError = (error as { cause?: { code?: string } })?.cause;
     if (dbError?.code === '23503') {
-      throw new ConflictException('Невозможно удалить/изменить отдел: есть связанные записи');
+      throw new ConflictException('Невозможно изменить отдел: есть связанные записи');
     }
     throw error as Error;
   }

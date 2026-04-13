@@ -19,17 +19,6 @@ export const useDepartmentById = (departmentId: string): UseQueryResult<Departme
   });
 };
 
-export const useCreateDepartment = (): UseMutationResult<Department, Error, Pick<Department, 'name'>> => {
-  const queryClient = useQueryClient();
-
-  return useMutation<Department, Error, Pick<Department, 'name'>>({
-    mutationFn: (data: Pick<Department, 'name'>) => departmentApi.addDepartment(data),
-    onSuccess: () => {
-      void invalidateDepartmentQueries(queryClient);
-    },
-  });
-};
-
 export const useUpdateDepartment = (): UseMutationResult<
   Department,
   Error,
@@ -39,17 +28,6 @@ export const useUpdateDepartment = (): UseMutationResult<
 
   return useMutation<Department, Error, { id: string; data: Partial<Department> }>({
     mutationFn: ({ id, data }: { id: string; data: Partial<Department> }) => departmentApi.editDepartment(id, data),
-    onSuccess: () => {
-      void invalidateDepartmentQueries(queryClient);
-    },
-  });
-};
-
-export const useDeleteDepartment = (): UseMutationResult<Department, Error, string, unknown> => {
-  const queryClient = useQueryClient();
-
-  return useMutation<Department, Error, string>({
-    mutationFn: (departmentId: string) => departmentApi.deleteDepartment(departmentId),
     onSuccess: () => {
       void invalidateDepartmentQueries(queryClient);
     },

@@ -44,7 +44,6 @@ import HomePage from "../pages/home/HomePage";
 import NotFound from "../pages/NotFound";
 import PatentsListPage from "../pages/patents/PatentsListPage";
 import ProfilePage from "../pages/profile/Profile";
-import DepartmentCreatePage from "../pages/referenceBooks/departaments/DepartmentCreatePage";
 import DepartmentDetailsPage from "../pages/referenceBooks/departaments/DepartmentDetailsPage";
 import DepartmentEditPage from "../pages/referenceBooks/departaments/DepartmentEditPage";
 import DepartmentsListPage from "../pages/referenceBooks/departaments/DepartmentsListPage";
@@ -83,7 +82,7 @@ export default function AppRoutes() {
 
         <Route path="departments">
           <Route index element={<DepartmentsListPage />}/>
-          <Route path="create" element={<DepartmentCreatePage />}/>
+          <Route path="create" element={<Navigate to="/departments" replace />}/>
           <Route path=":departmentId/edit" element={<DepartmentEditPage />}/>
           <Route path=":departmentId" element={<DepartmentDetailsPage />}/>
         </Route>
