@@ -19,11 +19,11 @@ export const useDepartmentById = (departmentId: string): UseQueryResult<Departme
   });
 };
 
-export const useCreateDepartment = (): UseMutationResult<Department, Error, Department> => {
+export const useCreateDepartment = (): UseMutationResult<Department, Error, Pick<Department, 'name'>> => {
   const queryClient = useQueryClient();
 
-  return useMutation<Department, Error, Department>({
-    mutationFn: (data: Department) => departmentApi.addDepartment(data),
+  return useMutation<Department, Error, Pick<Department, 'name'>>({
+    mutationFn: (data: Pick<Department, 'name'>) => departmentApi.addDepartment(data),
     onSuccess: () => {
       void invalidateDepartmentQueries(queryClient);
     },

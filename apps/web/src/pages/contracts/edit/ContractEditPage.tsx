@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
+import dayjs from 'dayjs';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useContractById, useUpdateContract } from '../../../api/contracts/contractApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getChangedFields } from '../../../helpers/getChangedFields';
+import { getEntityById } from '../../../helpers/getEntityById';
+import { formReferenceId } from '../../../helpers/formReferenceId';
+import { getNameById } from '../../../helpers/getNameById';
 import { contractUpdateFormMapper } from '../../../helpers/mappers/contractUpdateFormMapper';
 import {
   ContractFormClassificationFields,
@@ -23,9 +27,20 @@ import { applyVatDerivedAmounts } from '../create/contractCreateFormUtils';
 import styles from '../create/ContractCreatePage.module.scss';
 import { normalizeDraftDateFields } from '../../../utils/normalizeDraftDateFields';
 import tagStyles from '../list/ContractsListPage.module.scss';
+import detailsStyles from '../details/ContractDetails.module.scss';
+import {
+  buildContractDetailsBackLabel,
+  buildContractDetailsStatusBadge,
+  buildContractDetailsTitle,
+} from '../details/utils/contractDetailsHeaderUtils';
+import {
+  formatProjectChipLabel,
+  getDaysUntilDate,
+  shouldShowDeadlineBanner,
+} from '../utils/contractDetailsUtils';
+import { getContractStateTagClass, isContractDraft, isContractSignedState } from '../utils/contractStateUtils';
 import { applyDayjsDateFieldsToPayload } from './contractEditFormUtils';
 import { useContractEditFormWatchers } from './hooks/useContractEditFormWatchers';
-import { buildContractEditHeaderMeta } from './utils/contractEditHeaderUtils';
 
 const CONTRACT_EDIT_DRAFT_DATE_FIELDS = ['start_date', 'end_date', 'date_signed'] as const;
 
@@ -60,7 +75,9 @@ export default function ContractEditPage() {
     contract_type_id: watchContractTypeId,
     state_id: watchStateId,
     partner_id: watchPartnerId,
+    project_id: watchProjectId,
     date_signed: watchDateSigned,
+    end_date: watchEndDate,
   } = useContractEditFormWatchers(form);
 
   const isFormInitializedRef = useRef(false);
@@ -104,7 +121,8 @@ export default function ContractEditPage() {
     });
   };
 
-  const handleBack = () => navigate(`/contracts/${contractId}`);
+  const handleBack = () =>
+    navigate(`/contracts/${contractId}`, location.state != null ? { state: location.state } : undefined);
 
   const handleProjectChange = (project: { manager_id?: string | null; purchaser_id?: string | null } | null) => {
     if (!isFormInitializedRef.current) return;
@@ -171,71 +189,111 @@ export default function ContractEditPage() {
     );
   }
 
-  const {
-    title,
-    headerName,
-    contractState,
-    stateTagClass,
-    contractTypeName,
-    contractCategoryName,
-    partnerName,
-    isEffective: isContractEffectiveByState,
-    requireFullValidation,
-    signedDateLabel,
-  } = buildContractEditHeaderMeta(
-    {
-      number: watchContractNumber,
-      cipher: watchCipher,
-      name: watchContractName,
-      category_id: watchCategoryId,
-      contract_type_id: watchContractTypeId,
-      state_id: watchStateId,
-      partner_id: watchPartnerId,
-      date_signed: watchDateSigned,
-    },
-    contract,
-    referenceBooks,
-  );
+  const resolvedStateId = formReferenceId(watchStateId, contract.state_id);
+  const resolvedPartnerId = formReferenceId(watchPartnerId, contract.partner_id);
+  const resolvedCipher = (watchCipher ?? contract.cipher) || '';
+  const resolvedCategoryId = formReferenceId(watchCategoryId, contract.category_id);
+  const resolvedContractTypeId = formReferenceId(watchContractTypeId, contract.contract_type_id);
+  const resolvedProjectId = formReferenceId(watchProjectId, contract.project_id);
+
+  const dateSignedStr = (() => {
+    const v = watchDateSigned ?? contract.date_signed;
+    if (v == null || v === '') return contract.date_signed || '';
+    if (dayjs.isDayjs(v)) return v.format('YYYY-MM-DD');
+    if (typeof v === 'string') return v;
+    return contract.date_signed || '';
+  })();
+
+  const title = buildContractDetailsTitle({
+    ...contract,
+    number: (watchContractNumber ?? contract.number) || '',
+    name: (watchContractName ?? contract.name) || '',
+    date_signed: dateSignedStr,
+  });
+
+  const partnerName = getNameById(resolvedPartnerId, referenceBooks.partners) ?? '';
+  const contractCategoryName = getNameById(resolvedCategoryId, referenceBooks.contractCategories) ?? '';
+  const showSubtitle = Boolean(partnerName || resolvedCipher || contractCategoryName);
+  const subtitle = showSubtitle ? (
+    <div className={detailsStyles.detailHeaderSubtitle}>
+      {partnerName ? <span className={detailsStyles.detailHeaderPartner}>{partnerName}</span> : null}
+      {resolvedCipher ? (
+        <span>
+          {partnerName ? ' · ' : null}
+          Шифр: {resolvedCipher}
+        </span>
+      ) : null}
+      {contractCategoryName ? (
+        <span>
+          {partnerName || resolvedCipher ? ' · ' : null}
+          Категория: {contractCategoryName}
+        </span>
+      ) : null}
+    </div>
+  ) : undefined;
+
+  const contractState = getEntityById(resolvedStateId, referenceBooks.contractStates);
+  const contractTypeName = getNameById(resolvedContractTypeId, referenceBooks.contractTypes) ?? '';
+  const projectEntity = getEntityById(resolvedProjectId, referenceBooks.projects);
+  const projectChipLabel = formatProjectChipLabel(projectEntity);
+
+  const previewIsActive =
+    resolvedStateId !== contract.state_id
+      ? isContractSignedState(resolvedStateId, referenceBooks.contractStates)
+      : contract.is_active;
+  const statusBadge = buildContractDetailsStatusBadge({
+    ...contract,
+    is_active: previewIsActive,
+  });
+
+  const metaItems = [
+    contractState && (
+      <span
+        key='state'
+        className={tagStyles[getContractStateTagClass(contractState.code) as keyof typeof tagStyles]}
+      >
+        {contractState.name}
+      </span>
+    ),
+    contractTypeName ? (
+      <span key='type' className={tagStyles.cardCategory}>
+        {contractTypeName}
+      </span>
+    ) : null,
+    projectChipLabel ? (
+      <span key='project' className={[tagStyles.cardCategory, detailsStyles.detailHeaderProjectChip].join(' ')}>
+        {projectChipLabel}
+      </span>
+    ) : null,
+  ].filter(Boolean);
+
+  const endDateForBanner = (() => {
+    const v = watchEndDate ?? contract.end_date;
+    if (v == null || v === '') return contract.end_date || '';
+    if (dayjs.isDayjs(v)) return v.format('YYYY-MM-DD');
+    if (typeof v === 'string') return v;
+    return contract.end_date || '';
+  })();
+  const daysUntilEnd = getDaysUntilDate(endDateForBanner);
+  const showDeadlineBanner = shouldShowDeadlineBanner(daysUntilEnd);
+  const formattedEndDate = endDateForBanner
+    ? new Date(endDateForBanner).toLocaleDateString('ru-RU')
+    : '-';
+
+  const requireFullValidation = !isContractDraft(resolvedStateId, referenceBooks.contractStates);
+  const isContractEffectiveByState = isContractSignedState(resolvedStateId, referenceBooks.contractStates);
 
   const contractFormRefs = referenceBooks as ContractFormRefs;
+  const fromNav = (location.state as { from?: string } | null)?.from;
 
   return (
     <DetailPageHeader
       title={title}
-      titleSuffix={
-        <>
-          {contractTypeName ? <span className={hStyles.metaText}>{contractTypeName}</span> : null}
-          {signedDateLabel ? <span className={hStyles.metaText}>Подписан: {signedDateLabel}</span> : null}
-        </>
-      }
-      backLabel='Договоры'
+      subtitle={subtitle}
+      backLabel={buildContractDetailsBackLabel(fromNav)}
       onBack={handleBack}
-      statusBadge={{
-        label: isContractEffectiveByState ? 'Действует' : 'Не действует',
-        variant: isContractEffectiveByState ? 'success' : 'danger',
-      }}
-      metaItems={[
-        headerName ? (
-          <span key='name' className={hStyles.metaText}>
-            {headerName}
-          </span>
-        ) : null,
-        contractState && stateTagClass ? (
-          <span key='state' className={tagStyles[stateTagClass as keyof typeof tagStyles]}>
-            {contractState.name}
-          </span>
-        ) : null,
-        contractCategoryName ? (
-          <span key='category' className={tagStyles.cardCategory}>
-            {contractCategoryName}
-          </span>
-        ) : null,
-        partnerName ? (
-          <span key='partner' className={hStyles.metaText}>
-            {partnerName}
-          </span>
-        ) : null,
-      ].filter(Boolean)}
+      statusBadge={statusBadge}
+      metaItems={metaItems}
       actions={
         <>
           <Button icon={<CloseOutlined />} onClick={handleBack} disabled={isUpdateLoading}>
@@ -252,11 +310,18 @@ export default function ContractEditPage() {
           </Button>
         </>
       }
+      extraContent={
+        showDeadlineBanner ? (
+          <div className={detailsStyles.deadlineBanner}>
+            Срок действия договора истекает через <strong>{daysUntilEnd} дн.</strong> — до{' '}
+            <strong>{formattedEndDate}</strong>
+          </div>
+        ) : undefined
+      }
       tabs={[{ key: 'main', label: 'Редактирование' }]}
       activeTab='main'
       onTabChange={() => {}}
       contextHolder={contextHolder}
-      stickyHeader
     >
       <div className={styles.formCard}>
         <Form

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Contract, ContractStageState, ContractState, ContractType } from '../../types/contract';
 import { PartnerCategory, PartnerCompetence, PartnerStatus, PartnerType } from '../../types/partner';
 import { PatentArea } from '../../types/patent';
-import { Reference } from '../../types/referenceTypes';
+import { Department, Reference } from '../../types/referenceTypes';
 import { contractApi } from '../contracts/contractApi';
 import { contractTypeApi } from '../contracts/contractTypeApi';
 import { contractStageStateApi } from '../contractStages/contractStageStatesApi';
@@ -46,11 +46,7 @@ export type ReferenceType =
   | 'patentAreas';
 
 export interface ReferenceData {
-  departments: Array<{
-    id: string;
-    name: string;
-    short_name?: string;
-  }>;
+  departments: Department[];
   roles: Array<{
     id: string;
     name: string;

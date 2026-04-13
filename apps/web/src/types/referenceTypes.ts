@@ -5,12 +5,8 @@ export interface Reference {
 export interface Department {
   id: string;
   name: string;
-  short_name: string;
-  is_active: boolean;
-  manager_id: string;
-  parent_id: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 export interface Position {
   id: string;

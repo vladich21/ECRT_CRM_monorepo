@@ -1,5 +1,5 @@
-import { EditOutlined, IdcardOutlined, MailOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Button } from 'antd';
+import { IdcardOutlined, MailOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useUserById } from '../../../api/users/userApiHooks';
@@ -15,8 +15,6 @@ export default function UserDetailsPage() {
   const navigate = useNavigate();
   const { contextHolder } = useNotification();
   const { data: user, isLoading, isError } = useUserById(userId!);
-
-  const handleEdit = () => navigate(`/users/${userId}/edit`);
 
   if (isLoading) return <Loader />;
   if (isError || !user) return <NotFound errorMessage='Пользователь не найден' />;
@@ -57,11 +55,6 @@ export default function UserDetailsPage() {
           </span>
         ),
       ].filter(Boolean)}
-      actions={
-        <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
-          Редактировать
-        </Button>
-      }
       tabs={[{ key: 'main', label: 'Основное' }]}
       activeTab='main'
       onTabChange={() => {}}

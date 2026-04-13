@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 
 import CommentsList from "../components/comments/CommentsList";
 import { EntityFilesTab } from "../components/entityFiles/EntityFilesTab";
@@ -51,9 +51,7 @@ import DepartmentsListPage from "../pages/referenceBooks/departaments/Department
 import PositionsListPage from "../pages/referenceBooks/positions/PositionsListPage";
 import ProjectDetailsPage from "../pages/referenceBooks/projects/ProjectDetailsPage";
 import ProjectsListPage from "../pages/referenceBooks/projects/ProjectsListPage";
-import UserCreatePage from "../pages/referenceBooks/users/UserCreatePage";
 import UserDetailsPage from "../pages/referenceBooks/users/UserDetailsPage";
-import UserEditPage from "../pages/referenceBooks/users/UserEditPage";
 import UsersListPage from "../pages/referenceBooks/users/UsersListPage";
 
 import PrivateRoute from "./PrivateRoute";
@@ -61,6 +59,13 @@ import PrivateRoute from "./PrivateRoute";
 const Private = ({ children }: {
     children: React.ReactNode;
 }) => (<PrivateRoute>{children}</PrivateRoute>);
+
+const RedirectToUsersList = () => <Navigate to="/users" replace />;
+
+const RedirectUserEditToDetails = () => {
+    const { userId } = useParams();
+    return <Navigate to={userId ? `/users/${userId}` : "/users"} replace />;
+};
 export default function AppRoutes() {
     return (<Routes>
       <Route path="/auth" element={<LoginPage />}/>
@@ -71,8 +76,8 @@ export default function AppRoutes() {
         <Route path="profile" element={<ProfilePage />}/>
         <Route path="users">
           <Route index element={<UsersListPage />}/>
-          <Route path="create" element={<UserCreatePage />}/>
-          <Route path=":userId/edit" element={<UserEditPage />}/>
+          <Route path="create" element={<RedirectToUsersList />}/>
+          <Route path=":userId/edit" element={<RedirectUserEditToDetails />}/>
           <Route path=":userId" element={<UserDetailsPage />}/>
         </Route>
 

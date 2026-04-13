@@ -2,7 +2,6 @@
     color: #ffffff;
     margin-top: auto;
     min-height: 64px;
-    margin-bottom: 10px;
     display: flex;
     align-items: center;
     overflow: visible;
@@ -10,13 +9,10 @@
     justify-content: flex-start;
     margin-left: 16px;
     transition: all 0.3s ease-in;
-    /* Достаточно для полного ФИО в 1–2 строки без выталкивания меню */
     max-width: min(22rem, 100%);
 }
 
 .avatar {
-    background-color: #f59a55ff;
-    color: #f56a00;
     flex-shrink: 0;
     transition: all 0.3s ease-in;
 

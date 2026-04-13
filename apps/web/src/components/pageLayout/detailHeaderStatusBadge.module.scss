@@ -1,3 +1,4 @@
+@use '../../styles/variables' as v;
 
 .badge {
   display: inline-flex;
@@ -5,34 +6,24 @@
   gap: 6px;
   border-radius: 20px;
   padding: 4px 14px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
   box-sizing: border-box;
 }
 
-.activityActive {
-  background: rgba(82, 196, 26, 0.125);
-  border: 1px solid rgba(82, 196, 26, 0.314);
-  color: rgb(82, 196, 26);
-}
-
-.activityInactive {
-  background: rgba(255, 77, 79, 0.125);
-  border: 1px solid rgba(255, 77, 79, 0.314);
-  color: rgb(255, 77, 79);
-}
-
+.activityActive,
 .success {
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  color: #52c41a;
+  background: v.$header-activity-active-bg;
+  border: 1px solid v.$header-activity-active-border;
+  color: v.$success;
 }
 
+.activityInactive,
 .danger {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: v.$header-activity-inactive-bg;
+  border: 1px solid v.$header-activity-inactive-border;
+  color: v.$error;
 }
 
 .info {

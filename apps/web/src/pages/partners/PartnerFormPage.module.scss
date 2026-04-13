@@ -14,7 +14,6 @@
   @include fp.formActions;
 }
 
-/* Специфичность выше одного класса `.ant-tag` у Ant Design — без `!important`. */
 :global(.ant-tag).competenceTag {
   font-weight: 400;
   background-color: rgba(22, 119, 255, 0.12);

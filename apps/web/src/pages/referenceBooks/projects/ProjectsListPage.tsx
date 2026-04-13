@@ -84,13 +84,13 @@ export default function ProjectsListPage() {
     const base: ProjectsListParams = {
       search: debouncedSearch || undefined,
       list_tab: activeTab === 'deleted' ? 'all' : activeTab,
-      deleted_scope: activeTab === 'deleted' ? 'deleted' : 'all',
+      deleted_scope: activeTab === 'deleted' ? 'deleted' : 'active',
     };
     if (appliedFilters.managerId) {
       base.manager_id = appliedFilters.managerId;
     }
-    if (appliedFilters.createdById) {
-      base.created_by = appliedFilters.createdById;
+    if (appliedFilters.purchaserId) {
+      base.purchaser_id = appliedFilters.purchaserId;
     }
     if (appliedFilters.overlapRange?.[0] && appliedFilters.overlapRange?.[1]) {
       base.date_from = appliedFilters.overlapRange[0].format('YYYY-MM-DD');
@@ -129,7 +129,7 @@ export default function ProjectsListPage() {
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
   const selectOptions = useMemo(() => {
     const users = (referenceBooks?.users ?? []).map(user => ({ label: user.name, value: user.id }));
-    return { managers: users, creators: users };
+    return { managers: users };
   }, [referenceBooks]);
   const handleProjectClick = (project: Project) =>
     navigate(`/projects/${project.id}`, {

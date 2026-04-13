@@ -39,10 +39,6 @@ export class DepartmentsService {
   async create(data: Record<string, unknown>): Promise<DepartmentResponseDto | Record<string, unknown> | null> {
     const insertData = {
       name: data.name != null ? String(data.name) : null,
-      shortName: data.short_name != null ? String(data.short_name) : null,
-      managerId: data.manager_id != null && data.manager_id !== '' ? String(data.manager_id) : null,
-      parentId: data.parent_id != null && data.parent_id !== '' ? String(data.parent_id) : null,
-      isActive: data.is_active !== undefined ? Boolean(data.is_active) : true,
     };
     try {
       const [row] = await this.db.db.insert(departments).values(insertData).returning();
@@ -55,12 +51,6 @@ export class DepartmentsService {
   async update(id: string, data: Record<string, unknown>): Promise<DepartmentResponseDto | Record<string, unknown> | null> {
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updateObj.name = data.name != null ? String(data.name) : null;
-    if (data.short_name !== undefined) updateObj.shortName = data.short_name != null ? String(data.short_name) : null;
-    if (data.manager_id !== undefined)
-      updateObj.managerId = data.manager_id != null && data.manager_id !== '' ? String(data.manager_id) : null;
-    if (data.parent_id !== undefined)
-      updateObj.parentId = data.parent_id != null && data.parent_id !== '' ? String(data.parent_id) : null;
-    if (data.is_active !== undefined) updateObj.isActive = Boolean(data.is_active);
     try {
       await this.db.db.update(departments).set(updateObj).where(eq(departments.id, id));
       return this.findOne(id);
@@ -92,10 +82,6 @@ export class DepartmentsService {
     return {
       id: String(row.id),
       name: String(row.name ?? ''),
-      short_name: row.shortName ?? '',
-      parent_id: row.parentId ? String(row.parentId) : null,
-      manager_id: row.managerId ? String(row.managerId) : null,
-      is_active: row.isActive ?? false,
       created_at: row.createdAt ? row.createdAt.toISOString() : null,
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
     };

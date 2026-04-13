@@ -17,7 +17,7 @@ const ProfileButton = ({ name = 'Пользователь', avatarUrl, collapsed
     <div className={`${styles['profile-btn']} ${collapsed ? styles.collapsed : styles.expanded}`} onClick={onClick}>
       <Avatar
         className={`${styles.avatar} ${collapsed ? styles.collapsed : styles.expanded}`}
-        size={30}
+        size={40}
         src={hasPhoto ? avatarUrl! : undefined}
         icon={!hasPhoto ? <UserOutlined /> : undefined}
       />

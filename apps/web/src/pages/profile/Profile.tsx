@@ -1,26 +1,12 @@
 import { useEffect, useState } from 'react';
-import {
-  CameraOutlined,
-  CloseOutlined,
-  EditOutlined,
-  IdcardOutlined,
-  LogoutOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  SaveOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import { App, Avatar, Button, Form, Input, Select } from 'antd';
+import { CameraOutlined, LogoutOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons';
+import { App, Avatar, Button } from 'antd';
 
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { useUpdateUser } from '../../api/users/userApiHooks';
+import { refreshSessionUser } from '../../api/auth/refreshSessionUser';
 import { Loader } from '../../components/loader/Loader';
 import { UseLogout } from '../../customhooks/useLogout';
 import { useNotification } from '../../customhooks/useNotification';
-import { getChangedFields } from '../../helpers/getChangedFields';
-import { userUpdateFormMapper } from '../../helpers/mappers/userUpdateFormMapper';
-import useAuthStore, { useAuthStore as useAuthStoreFull } from '../../store/AuthStore';
+import useAuthStore from '../../store/AuthStore';
 import styles from './Profile.module.scss';
 
 const ProfilePage = () => {
@@ -28,70 +14,32 @@ const ProfilePage = () => {
   const { user } = useAuthStore(state => state);
   const { logout } = UseLogout();
   const { showNotification, contextHolder } = useNotification();
-  const [isEditing, setIsEditing] = useState(false);
-  const [form] = Form.useForm();
-  const { data: referenceBooks, isLoading: isReferencesLoading } = useReferenceData(['departments', 'positions']);
-  const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
+  const [profileReady, setProfileReady] = useState(false);
+
   useEffect(() => {
-    if (user) {
-      const formData = {
-        ...userUpdateFormMapper(user),
-        department_id: user.department?.id || null,
-        position_id: user.position?.id || null,
-      };
-      form.setFieldsValue(formData);
-    }
-  }, [user, form]);
+    let cancelled = false;
+    (async () => {
+      try {
+        await refreshSessionUser();
+      } catch {
+        /* остаёмся на данных из persist */
+      } finally {
+        if (!cancelled) setProfileReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!profileReady) return <Loader />;
+
   if (!user) {
     logout();
     return null;
   }
 
-  if (isReferencesLoading) return <Loader />;
-
-  const handleSave = async (values: any) => {
-    if (!user) return;
-    const payload = getChangedFields(values, userUpdateFormMapper(user));
-    if (Object.keys(payload).length === 0) {
-      showNotification('info', 'Информация', 'Нет изменений для сохранения');
-      setIsEditing(false);
-      return;
-    }
-    updateUser(
-      { id: user.id, data: payload },
-      {
-        onSuccess: () => {
-          showNotification('success', 'Успех', 'Профиль успешно обновлён');
-          setIsEditing(false);
-          if (user && referenceBooks) {
-            const formValues = form.getFieldsValue();
-            const updatedUser = { ...user };
-            if (formValues.email !== undefined) updatedUser.email = formValues.email;
-            if (formValues.phone !== undefined) updatedUser.phone = formValues.phone;
-            if (formValues.department_id && referenceBooks.departments) {
-              const dept = referenceBooks.departments.find(dept => dept.id === String(formValues.department_id));
-              if (dept) updatedUser.department = dept;
-            }
-            if (formValues.position_id && referenceBooks.positions) {
-              const position = referenceBooks.positions.find(position => position.id === String(formValues.position_id));
-              if (position) updatedUser.position = position;
-            }
-            useAuthStoreFull.getState().login(updatedUser);
-          }
-        },
-        onError: () => {
-          showNotification('error', 'Ошибка', 'Не удалось обновить профиль');
-        },
-      },
-    );
-  };
-
-  const handleCancel = () => {
-    form.setFieldsValue(userUpdateFormMapper(user));
-    setIsEditing(false);
-  };
-  
-  const fullName = `${user?.last_name || ''} ${user?.first_name || ''} ${user?.middle_name || ''}`.trim();
+  const fullName = `${user.last_name || ''} ${user.first_name || ''} ${user.middle_name || ''}`.trim();
   return (
     <div className={styles.pageRoot}>
       {contextHolder}
@@ -101,14 +49,10 @@ const ProfilePage = () => {
           <div className={styles.avatarWrap}>
             <Avatar
               size={96}
-              src={user?.avatar_url || undefined}
-              icon={!user?.avatar_url ? <UserOutlined /> : undefined}
+              src={user.avatar_url || undefined}
+              icon={!user.avatar_url ? <UserOutlined /> : undefined}
               className={styles.avatar}
-              style={
-                user?.avatar_url
-                  ? undefined
-                  : { backgroundColor: '#fde3cf', color: '#f56a00' }
-              }
+              style={user.avatar_url ? undefined : { backgroundColor: '#fde3cf', color: '#f56a00' }}
             />
             <button
               type='button'
@@ -122,7 +66,7 @@ const ProfilePage = () => {
           <div className={styles.headerInfo}>
             <h1 className={styles.userName}>{fullName}</h1>
             <div>
-              {user?.roles?.map(role => (
+              {user.roles?.map(role => (
                 <span
                   key={role.id}
                   className={role.role_name === 'admin' ? styles.roleTagAdmin : styles.roleTagDefault}
@@ -130,212 +74,125 @@ const ProfilePage = () => {
                   {role.role_name}
                 </span>
               ))}
-              <span
-                className={user?.is_active ? styles.statusBadgeActive : styles.statusBadgeInactive}
-              >
-                {user?.is_active ? 'Активен' : 'Неактивен'}
+              <span className={user.is_active ? styles.statusBadgeActive : styles.statusBadgeInactive}>
+                {user.is_active ? 'Активен' : 'Неактивен'}
               </span>
             </div>
           </div>
 
           <div className={styles.headerActions}>
-            {!isEditing ? (
-              <>
-                <Button type='primary' icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
-                  Редактировать
-                </Button>
-                <Button
-                  type='primary'
-                  danger
-                  icon={<LogoutOutlined />}
-                  onClick={() =>
-                    modal.confirm({
-                      title: 'Выход из системы',
-                      content: 'Вы точно хотите выйти?',
-                      okText: 'Выйти',
-                      cancelText: 'Отмена',
-                      okButtonProps: { danger: true },
-                      onOk: logout,
-                    })
-                  }
-                >
-                  Выйти
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button icon={<CloseOutlined />} onClick={handleCancel} disabled={isUpdating}>
-                  Отмена
-                </Button>
-                <Button type='primary' icon={<SaveOutlined />} onClick={() => form.submit()} loading={isUpdating}>
-                  Сохранить
-                </Button>
-              </>
-            )}
+            <Button
+              type='primary'
+              danger
+              icon={<LogoutOutlined />}
+              onClick={() =>
+                modal.confirm({
+                  title: 'Выход из системы',
+                  content: 'Вы точно хотите выйти?',
+                  okText: 'Выйти',
+                  cancelText: 'Отмена',
+                  okButtonProps: { danger: true },
+                  onOk: logout,
+                })
+              }
+            >
+              Выйти
+            </Button>
           </div>
         </div>
       </div>
 
       <div className={styles.contentWrap}>
-        <Form form={form} layout='vertical' onFinish={handleSave}>
-          {!isEditing ? (
-            <div className={styles.layout}>
-              <div className={styles.leftColumn}>
-                <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>Организация</h3>
-                  <div className={styles.infoRows}>
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Должность</span>
-                      <span className={user?.position?.name ? styles.infoValue : styles.infoValueMuted}>
-                        {user?.position?.name || 'Не указано'}
-                      </span>
-                    </div>
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Отдел</span>
-                      <span className={user?.department?.name ? styles.infoValue : styles.infoValueMuted}>
-                        {user?.department?.name || 'Не указано'}
-                      </span>
-                    </div>
-                  </div>
+        <div className={styles.layout}>
+          <div className={styles.leftColumn}>
+            <div className={styles.card}>
+              <h3 className={styles.cardTitle}>Организация</h3>
+              <div className={styles.infoRows}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Должность</span>
+                  <span className={user.position?.name ? styles.infoValue : styles.infoValueMuted}>
+                    {user.position?.name || 'Не указано'}
+                  </span>
                 </div>
-                <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>Контактная информация</h3>
-                  <div className={styles.infoRows}>
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Email</span>
-                      {user?.email ? (
-                        <a href={`mailto:${user.email}`} className={styles.infoLink}>
-                          <MailOutlined /> {user.email}
-                        </a>
-                      ) : (
-                        <span className={styles.infoValueMuted}>Не указано</span>
-                      )}
-                    </div>
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Телефон</span>
-                      {user?.phone ? (
-                        <a href={`tel:${user.phone.replace(/\D/g, '')}`} className={styles.infoLink}>
-                          <PhoneOutlined /> {user.phone}
-                        </a>
-                      ) : (
-                        <span className={styles.infoValueMuted}>Не указано</span>
-                      )}
-                    </div>
-                    {user?.internal_phone != null && user.internal_phone !== '' && (
-                      <div className={styles.infoRow}>
-                        <span className={styles.infoLabel}>Внутренний телефон</span>
-                        <span className={styles.infoValue}>{user.internal_phone}</span>
-                      </div>
-                    )}
-                  </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Отдел</span>
+                  <span className={user.department?.name ? styles.infoValue : styles.infoValueMuted}>
+                    {user.department?.name || 'Не указано'}
+                  </span>
                 </div>
-                {(user?.personnel_number ||
-                  user?.hired_at ||
-                  user?.quit_date ||
-                  user?.supervisor?.name) && (
-                  <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Данные из HR</h3>
-                    <div className={styles.infoRows}>
-                      {user?.personnel_number != null && user.personnel_number !== '' && (
-                        <div className={styles.infoRow}>
-                          <span className={styles.infoLabel}>Табельный номер</span>
-                          <span className={styles.infoValue}>{user.personnel_number}</span>
-                        </div>
-                      )}
-                      {user?.hired_at != null && user.hired_at !== '' && (
-                        <div className={styles.infoRow}>
-                          <span className={styles.infoLabel}>Дата приёма</span>
-                          <span className={styles.infoValue}>{user.hired_at}</span>
-                        </div>
-                      )}
-                      {user?.quit_date != null && user.quit_date !== '' && (
-                        <div className={styles.infoRow}>
-                          <span className={styles.infoLabel}>Дата увольнения</span>
-                          <span className={styles.infoValue}>{user.quit_date}</span>
-                        </div>
-                      )}
-                      {user?.supervisor?.name != null && user.supervisor.name !== '' && (
-                        <div className={styles.infoRow}>
-                          <span className={styles.infoLabel}>Руководитель</span>
-                          <span className={styles.infoValue}>
-                            {user.supervisor.name}
-                            {user.supervisor.email ? ` (${user.supervisor.email})` : ''}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+              </div>
+            </div>
+            <div className={styles.card}>
+              <h3 className={styles.cardTitle}>Контактная информация</h3>
+              <div className={styles.infoRows}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Email</span>
+                  {user.email ? (
+                    <a href={`mailto:${user.email}`} className={styles.infoLink}>
+                      <MailOutlined /> {user.email}
+                    </a>
+                  ) : (
+                    <span className={styles.infoValueMuted}>Не указано</span>
+                  )}
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Телефон</span>
+                  {user.phone ? (
+                    <a href={`tel:${user.phone.replace(/\D/g, '')}`} className={styles.infoLink}>
+                      <PhoneOutlined /> {user.phone}
+                    </a>
+                  ) : (
+                    <span className={styles.infoValueMuted}>Не указано</span>
+                  )}
+                </div>
+                {user.internal_phone != null && user.internal_phone !== '' && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Внутренний телефон</span>
+                    <span className={styles.infoValue}>{user.internal_phone}</span>
                   </div>
                 )}
               </div>
-              <div className={styles.sidebar} />
             </div>
-          ) : (
-            <div className={`${styles.card} ${styles.editCard}`}>
-              <h3 className={styles.cardTitle}>Редактирование профиля</h3>
-              <div className={styles.editGrid}>
-                <Form.Item label='Должность' name='position_id'>
-                  <Select
-                    showSearch
-                    optionFilterProp='children'
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder='Выберите должность'
-                    allowClear
-                    suffixIcon={<IdcardOutlined />}
-                  >
-                    {referenceBooks?.positions?.map(position => (
-                      <Select.Option key={position.id} value={position.id}>
-                        {position.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item label='Отдел' name='department_id'>
-                  <Select
-                    showSearch
-                    optionFilterProp='children'
-                    filterOption={(input, option) =>
-                      String(option?.children ?? '')
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    placeholder='Выберите отдел'
-                    allowClear
-                    suffixIcon={<TeamOutlined />}
-                  >
-                    {referenceBooks?.departments?.map(dept => (
-                      <Select.Option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item label='Email' name='email' rules={[{ type: 'email', message: 'Введите корректный email' }]}>
-                  <Input prefix={<MailOutlined />} placeholder='email@example.com' type='email' />
-                </Form.Item>
-
-                <Form.Item
-                  label='Телефон'
-                  name='phone'
-                  rules={[
-                    {
-                      pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/,
-                      message: 'Введите корректный номер',
-                    },
-                    { max: 25, message: 'Максимум 25 символов' },
-                  ]}
-                >
-                  <Input prefix={<PhoneOutlined />} placeholder='+7 (999) 123-45-67' />
-                </Form.Item>
+            {(user.personnel_number ||
+              user.hired_at ||
+              user.quit_date ||
+              user.supervisor?.name) && (
+              <div className={styles.card}>
+                <h3 className={styles.cardTitle}>Данные из HR</h3>
+                <div className={styles.infoRows}>
+                  {user.personnel_number != null && user.personnel_number !== '' && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Табельный номер</span>
+                      <span className={styles.infoValue}>{user.personnel_number}</span>
+                    </div>
+                  )}
+                  {user.hired_at != null && user.hired_at !== '' && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Дата приёма</span>
+                      <span className={styles.infoValue}>{user.hired_at}</span>
+                    </div>
+                  )}
+                  {user.quit_date != null && user.quit_date !== '' && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Дата увольнения</span>
+                      <span className={styles.infoValue}>{user.quit_date}</span>
+                    </div>
+                  )}
+                  {user.supervisor?.name != null && user.supervisor.name !== '' && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Руководитель</span>
+                      <span className={styles.infoValue}>
+                        {user.supervisor.name}
+                        {user.supervisor.email ? ` (${user.supervisor.email})` : ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </Form>
+            )}
+          </div>
+          <div className={styles.sidebar} />
+        </div>
       </div>
     </div>
   );

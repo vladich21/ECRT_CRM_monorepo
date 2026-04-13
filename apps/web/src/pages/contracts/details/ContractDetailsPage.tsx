@@ -20,7 +20,6 @@ import {
 import type { ContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 import { getContractStateTagClass } from '../utils/contractStateUtils';
 import styles from './ContractDetails.module.scss';
-import { DEMO_ADDITIONAL_AGREEMENTS } from './tabs/additionalAgreements/ContractAdditionalAgreementsTab';
 import { ContractDetailsAside } from './tabs/main/ContractDetailsAside';
 import { useContractDetailsData } from './hooks/useContractDetailsData';
 import { useContractDetailsActions } from './hooks/useContractDetailsActions';
@@ -78,7 +77,6 @@ export default function ContractDetailsPage() {
   const headerTabs = CONTRACT_DETAILS_TABS.map(tab => {
     let count: number | undefined;
     if (tab.key === 'files') count = contractFiles.length;
-    if (tab.key === 'additional-agreements') count = DEMO_ADDITIONAL_AGREEMENTS.length;
     return { key: tab.key, label: count !== undefined ? `${tab.label} (${count})` : tab.label };
   });
 

@@ -9,7 +9,7 @@ export interface ProjectsListParams {
   list_tab?: ProjectListTabParam;
   deleted_scope?: DeletionScope;
   manager_id?: string;
-  created_by?: string;
+  purchaser_id?: string;
   date_from?: string;
   date_to?: string;
   start_date_from?: string;

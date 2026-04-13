@@ -20,13 +20,20 @@ function unpackRange(storedRange: [string, string] | null | undefined): [Dayjs, 
   return [dayjs(storedRange[0]), dayjs(storedRange[1])];
 }
 
+function legacyPurchaserFromSnapshot(applied: unknown): string | null {
+  if (typeof applied !== 'object' || applied === null) return null;
+  const rec = applied as Record<string, unknown>;
+  const legacy = rec.createdById;
+  return typeof legacy === 'string' ? legacy : null;
+}
+
 export type ProjectsListNavSnapshot = {
   version: 1;
   searchQuery: string;
   activeTab: ProjectFilterTab;
   applied: {
     managerId: string | null;
-    createdById: string | null;
+    purchaserId: string | null;
     overlapRange: [string, string] | null;
     startDateRange: [string, string] | null;
     endDateRange: [string, string] | null;
@@ -48,7 +55,7 @@ export function buildProjectsListNavSnapshot(
     activeTab,
     applied: {
       managerId: applied.managerId,
-      createdById: applied.createdById,
+      purchaserId: applied.purchaserId,
       overlapRange: packRange(applied.overlapRange),
       startDateRange: packRange(applied.startDateRange),
       endDateRange: packRange(applied.endDateRange),
@@ -75,7 +82,10 @@ export function parseProjectsListNavSnapshot(raw: unknown): {
     activeTab: isProjectTab(snapshotRecord.activeTab) ? snapshotRecord.activeTab : 'all',
     appliedFilters: {
       managerId: typeof appliedSnapshot?.managerId === 'string' ? appliedSnapshot.managerId : null,
-      createdById: typeof appliedSnapshot?.createdById === 'string' ? appliedSnapshot.createdById : null,
+      purchaserId:
+        typeof appliedSnapshot?.purchaserId === 'string'
+          ? appliedSnapshot.purchaserId
+          : legacyPurchaserFromSnapshot(appliedSnapshot),
       overlapRange: unpackRange(appliedSnapshot?.overlapRange ?? null),
       startDateRange: unpackRange(appliedSnapshot?.startDateRange ?? null),
       endDateRange: unpackRange(appliedSnapshot?.endDateRange ?? null),

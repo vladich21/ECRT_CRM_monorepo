@@ -17,7 +17,6 @@ type Props = {
   onReset: () => void;
   selectOptions: {
     managers: SelectOption[];
-    creators: SelectOption[];
   };
 };
 export function ProjectFiltersModal({
@@ -66,16 +65,16 @@ export function ProjectFiltersModal({
           />
         </div>
         <div className={styles.filtersModalField}>
-          <span className={styles.filtersModalLabel}>Кто создал</span>
+          <span className={styles.filtersModalLabel}>Ответственный закупщик</span>
           <Select
             className={styles.filtersModalControl}
-            placeholder='Все пользователи'
+            placeholder='Все закупщики'
             allowClear
             showSearch
             optionFilterProp='label'
-            options={selectOptions.creators}
-            value={draftFilters.createdById ?? undefined}
-            onChange={value => onUpdateDraftFilter({ createdById: value ?? null })}
+            options={selectOptions.managers}
+            value={draftFilters.purchaserId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ purchaserId: value ?? null })}
           />
         </div>
         <div className={styles.filtersModalField}>

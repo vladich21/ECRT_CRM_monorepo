@@ -1,7 +1,8 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { Layout, Menu, theme } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import { refreshSessionUser } from '../api/auth/refreshSessionUser';
 import ecrtLogoMin from '../assets/svg/ecrt-logo-min.svg';
 import ProfileButton from '../components/profileButton/ProfileButton';
 import useAuthStore from '../store/AuthStore';
@@ -17,10 +18,16 @@ interface MainLayoutProps {
 function MainLayout({ children }: MainLayoutProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const isAuth = useAuthStore(state => state.isAuth);
   const user = useAuthStore(state => state.user);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  useEffect(() => {
+    if (!isAuth) return;
+    void refreshSessionUser().catch(() => {});
+  }, [isAuth]);
 
   const getSelectedKeys = () => {
     const path = pathname.split('/')[1] || '/';

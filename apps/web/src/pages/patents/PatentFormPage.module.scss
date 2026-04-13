@@ -13,7 +13,6 @@
   @include fp.formActions;
 }
 
-/** Единый шаг между верхним блоком и парой колонок, и между двумя колонками */
 $section-gap: 16px;
 
 .formSectionsStack {
@@ -26,7 +25,6 @@ $section-gap: 16px;
   margin-top: $section-gap;
 }
 
-/** Как на ProjectEditPage: две колонки с рамками */
 .twoColSections {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

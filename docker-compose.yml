@@ -36,6 +36,7 @@ services:
       - EXTERNAL_HR_API_TOKEN=${EXTERNAL_HR_API_TOKEN:-}
       - EXTERNAL_HR_ASSET_BASE_URL=${EXTERNAL_HR_ASSET_BASE_URL:-}
       - HR_USERS_SYNC_SECRET=${HR_USERS_SYNC_SECRET:-}
+      - HR_SYNC_INTERVAL_MINUTES=${HR_SYNC_INTERVAL_MINUTES:-15}
     volumes:
       - /data/pmdb/uploads:/app/apps/backend-nest/uploads
     restart: unless-stopped

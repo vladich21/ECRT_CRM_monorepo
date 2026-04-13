@@ -64,18 +64,20 @@ export const relUsersGroups = pgTable('rel_users_groups', {
   groupId: uuid('group_id').notNull(),
 });
 
-export const departments = pgTable('departments', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 255 }),
-  shortName: varchar('short_name', { length: 255 }),
-  parentId: uuid('parent_id'),
-  managerId: uuid('manager_id'),
-  isActive: boolean('is_active'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }),
-  createdBy: uuid('created_by'),
-  updatedBy: uuid('updated_by'),
-});
+export const departments = pgTable(
+  'departments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 255 }),
+    /** UUID отдела во внешнем HR; для upsert при hr-sync */
+    externalHrId: uuid('external_hr_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+    createdBy: uuid('created_by'),
+    updatedBy: uuid('updated_by'),
+  },
+  (t) => [uniqueIndex('departments_external_hr_id_uidx').on(t.externalHrId)],
+);
 
 export const contracts = pgTable('contracts', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -124,14 +126,20 @@ export const contractStages = pgTable('contract_stages', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
 });
 
-export const positions = pgTable('positions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 255 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }),
-  createdBy: uuid('created_by'),
-  updatedBy: uuid('updated_by'),
-});
+export const positions = pgTable(
+  'positions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 255 }),
+    /** UUID должности во внешнем HR; для upsert при hr-sync */
+    externalHrId: uuid('external_hr_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+    createdBy: uuid('created_by'),
+    updatedBy: uuid('updated_by'),
+  },
+  (t) => [uniqueIndex('positions_external_hr_id_uidx').on(t.externalHrId)],
+);
 
 export const refGroups = pgTable('ref_groups', {
   id: uuid('id').primaryKey().defaultRandom(),

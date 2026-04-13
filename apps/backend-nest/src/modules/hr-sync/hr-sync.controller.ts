@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Controller,
   ForbiddenException,
   Post,
@@ -24,6 +25,18 @@ export class HrSyncController {
   ) {}
 
   /**
+   * Ручной запуск из UI (cookie JWT). Секрет в заголовке не нужен.
+   */
+  @Post('users/now')
+  async syncUsersNow() {
+    const out = await this.hrSync.runSyncWithLock();
+    if (out.skipped) {
+      throw new ConflictException('Синхронизация уже выполняется, подождите завершения');
+    }
+    return out.result;
+  }
+
+  /**
    * Запуск синхронизации пользователей из внешнего HR API в PMDB.
    * Защита: заголовок X-HR-Sync-Secret должен совпадать с HR_USERS_SYNC_SECRET в .env
    * (не путать с вкладкой Authorization Bearer — нужен отдельный заголовок в Headers).
@@ -44,6 +57,10 @@ export class HrSyncController {
           'ключ X-HR-Sync-Secret, значение = HR_USERS_SYNC_SECRET из .env (не Bearer).',
       );
     }
-    return this.hrSync.syncUsersFromHrApi();
+    const out = await this.hrSync.runSyncWithLock();
+    if (out.skipped) {
+      throw new ConflictException('Синхронизация уже выполняется');
+    }
+    return out.result;
   }
 }

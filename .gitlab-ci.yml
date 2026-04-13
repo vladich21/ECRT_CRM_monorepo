@@ -82,6 +82,7 @@ prod:deploy:
       export EXTERNAL_HR_API_TOKEN="${EXTERNAL_HR_API_TOKEN:-}"
       export EXTERNAL_HR_ASSET_BASE_URL="${EXTERNAL_HR_ASSET_BASE_URL:-}"
       export HR_USERS_SYNC_SECRET="${HR_USERS_SYNC_SECRET:-}"
+      export HR_SYNC_INTERVAL_MINUTES="${HR_SYNC_INTERVAL_MINUTES:-15}"
       # Если пусто — compose подставит пустую строку в контейнер → 503 на /partners/inn-lookup
       if [ -z "${DATANEWTON_API_KEY:-}" ]; then
         echo "ERROR: DATANEWTON_API_KEY пустая или не видна этой джобе."

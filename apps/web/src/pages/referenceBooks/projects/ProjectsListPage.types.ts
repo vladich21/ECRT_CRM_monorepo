@@ -6,7 +6,7 @@ export type ProjectFilterTab = 'all' | 'active' | 'completed' | 'pending' | 'pau
 export type ProjectEndDatePresenceFilter = 'any' | 'set' | 'empty';
 export type ProjectAdvancedFilters = {
   managerId: string | null;
-  createdById: string | null;
+  purchaserId: string | null;
   overlapRange: [Dayjs, Dayjs] | null;
   startDateRange: [Dayjs, Dayjs] | null;
   endDateRange: [Dayjs, Dayjs] | null;
@@ -14,7 +14,7 @@ export type ProjectAdvancedFilters = {
 };
 export const DEFAULT_PROJECT_FILTERS: ProjectAdvancedFilters = {
   managerId: null,
-  createdById: null,
+  purchaserId: null,
   overlapRange: null,
   startDateRange: null,
   endDateRange: null,

@@ -14,7 +14,7 @@ export const departmentApi = {
     return response.data[0];
   },
 
-  addDepartment: async (data: Department): Promise<Department> => {
+  addDepartment: async (data: Pick<Department, 'name'>): Promise<Department> => {
     const response = await apiClient.post(`/departments`, data);
     return response.data[0];
   },

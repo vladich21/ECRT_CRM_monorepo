@@ -1,6 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { DatabaseService } from '../../database/database.service';
 import { departments, positions, users } from '../../database/schema';
 
@@ -8,6 +8,14 @@ const MAX_NAME_LEN = 50;
 const MAX_PHONE_LEN = 20;
 const MAX_PERSONNEL_LEN = 32;
 const MAX_EMAIL_LEN = 100;
+const MAX_DEPT_POS_NAME = 255;
+
+function hrRecordUuid(raw: string | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const v = raw.trim().toLowerCase();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)) return null;
+  return v;
+}
 
 function clip(s: string | null | undefined, max: number): string | null {
   if (s == null || s === '') return null;
@@ -38,16 +46,169 @@ type HrUserRow = {
   supervisor?: { id: string; email: string; name: string } | null;
 };
 
+export type HrSyncRunResult = {
+  created: number;
+  updated: number;
+  errors: string[];
+  departments: { created: number; updated: number };
+  positions: { created: number; updated: number };
+};
+
 @Injectable()
 export class HrSyncService {
   private readonly logger = new Logger(HrSyncService.name);
+  private syncInProgress = false;
 
   constructor(
     private readonly db: DatabaseService,
     private readonly config: ConfigService,
   ) {}
 
-  async syncUsersFromHrApi(): Promise<{ created: number; updated: number; errors: string[] }> {
+  async runSyncWithLock(): Promise<{ skipped: true } | { skipped: false; result: HrSyncRunResult }> {
+    if (this.syncInProgress) {
+      return { skipped: true };
+    }
+    this.syncInProgress = true;
+    try {
+      const result = await this.syncUsersFromHrApi();
+      return { skipped: false, result };
+    } finally {
+      this.syncInProgress = false;
+    }
+  }
+
+  isSyncRunning(): boolean {
+    return this.syncInProgress;
+  }
+
+  private async syncDepartmentsAndPositionsFromHr(list: HrUserRow[]): Promise<{
+    departments: { created: number; updated: number };
+    positions: { created: number; updated: number };
+  }> {
+    const db = this.db.db;
+    let deptCreated = 0;
+    let deptUpdated = 0;
+    let posCreated = 0;
+    let posUpdated = 0;
+
+    const hrDepts = new Map<string, string>();
+    const hrPos = new Map<string, string>();
+    for (const row of list) {
+      const dId = hrRecordUuid(row.department?.id);
+      const dName = row.department?.name?.trim();
+      if (dId && dName) {
+        const nm = clip(dName, MAX_DEPT_POS_NAME) ?? dName.slice(0, MAX_DEPT_POS_NAME);
+        hrDepts.set(dId, nm);
+      }
+      const pId = hrRecordUuid(row.position?.id);
+      const pName = row.position?.name?.trim();
+      if (pId && pName) {
+        const nm = clip(pName, MAX_DEPT_POS_NAME) ?? pName.slice(0, MAX_DEPT_POS_NAME);
+        hrPos.set(pId, nm);
+      }
+    }
+
+    for (const [extId, nm] of hrDepts) {
+      const norm = nm.toLowerCase();
+      const [byExt] = await db
+        .select({ id: departments.id, name: departments.name })
+        .from(departments)
+        .where(eq(departments.externalHrId, extId))
+        .limit(1);
+
+      if (byExt?.id) {
+        if (byExt.name !== nm) {
+          await db
+            .update(departments)
+            .set({ name: nm, updatedAt: new Date() })
+            .where(eq(departments.id, byExt.id));
+          deptUpdated += 1;
+        }
+        continue;
+      }
+
+      const [byName] = await db
+        .select({ id: departments.id })
+        .from(departments)
+        .where(and(isNull(departments.externalHrId), sql`lower(trim(coalesce(${departments.name}, ''))) = ${norm}`))
+        .limit(1);
+
+      if (byName?.id) {
+        await db
+          .update(departments)
+          .set({ externalHrId: extId, name: nm, updatedAt: new Date() })
+          .where(eq(departments.id, byName.id));
+        deptUpdated += 1;
+        continue;
+      }
+
+      await db.insert(departments).values({
+        name: nm,
+        externalHrId: extId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      deptCreated += 1;
+    }
+
+    for (const [extId, nm] of hrPos) {
+      const norm = nm.toLowerCase();
+      const [byExt] = await db
+        .select({ id: positions.id, name: positions.name })
+        .from(positions)
+        .where(eq(positions.externalHrId, extId))
+        .limit(1);
+
+      if (byExt?.id) {
+        if (byExt.name !== nm) {
+          await db
+            .update(positions)
+            .set({ name: nm, updatedAt: new Date() })
+            .where(eq(positions.id, byExt.id));
+          posUpdated += 1;
+        }
+        continue;
+      }
+
+      const [byName] = await db
+        .select({ id: positions.id })
+        .from(positions)
+        .where(
+          and(
+            isNull(positions.externalHrId),
+            sql`lower(trim(coalesce(${positions.name}, ''))) = ${norm}`,
+          ),
+        )
+        .limit(1);
+
+      if (byName?.id) {
+        await db
+          .update(positions)
+          .set({ externalHrId: extId, name: nm, updatedAt: new Date() })
+          .where(eq(positions.id, byName.id));
+        posUpdated += 1;
+        continue;
+      }
+
+      await db.insert(positions).values({
+        name: nm,
+        externalHrId: extId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      posCreated += 1;
+    }
+
+    this.logger.log(
+      `HR справочники: отделы +${deptCreated}/~${deptUpdated}, должности +${posCreated}/~${posUpdated}`,
+    );
+    return {
+      departments: { created: deptCreated, updated: deptUpdated },
+      positions: { created: posCreated, updated: posUpdated },
+    };
+  }
+
+  async syncUsersFromHrApi(): Promise<HrSyncRunResult> {
     const url = this.config.get<string>('EXTERNAL_HR_USERS_URL')?.trim();
     const token = this.config.get<string>('EXTERNAL_HR_API_TOKEN')?.trim();
     if (!url || !token) {
@@ -72,15 +233,13 @@ export class HrSyncService {
 
     const db = this.db.db;
 
-    const deptRows = await db
-      .select({ id: departments.id, name: departments.name, shortName: departments.shortName })
-      .from(departments);
+    const refStats = await this.syncDepartmentsAndPositionsFromHr(list);
+
+    const deptRows = await db.select({ id: departments.id, name: departments.name }).from(departments);
     const deptByNormName = new Map<string, string>();
     for (const d of deptRows) {
-      for (const label of [d.name, d.shortName]) {
-        const k = label?.trim().toLowerCase();
-        if (k) deptByNormName.set(k, String(d.id));
-      }
+      const k = d.name?.trim().toLowerCase();
+      if (k) deptByNormName.set(k, String(d.id));
     }
 
     const posRows = await db.select({ id: positions.id, name: positions.name }).from(positions);
@@ -188,6 +347,6 @@ export class HrSyncService {
     }
 
     this.logger.log(`HR sync: создано ${created}, обновлено ${updated}, ошибок ${errors.length}`);
-    return { created, updated, errors };
+    return { created, updated, errors, ...refStats };
   }
 }

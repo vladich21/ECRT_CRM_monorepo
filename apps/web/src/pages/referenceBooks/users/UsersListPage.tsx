@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { CloudSyncOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
+import { useHrSyncNow } from '../../../api/hr/useHrSyncNow';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useUsers } from '../../../api/users/userApiHooks';
 import { BackButton } from '../../../components/backButton/BackButton';
@@ -31,7 +32,7 @@ function filterByTab(users: User[], tab: FilterTab): User[] {
 }
 export default function UsersListPage() {
   const navigate = useNavigate();
-  const { contextHolder } = useNotification();
+  const { contextHolder, showNotification } = useNotification();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [appliedFilters, setAppliedFilters] = useState<UserFilters>(EMPTY_USER_FILTERS);
@@ -40,6 +41,7 @@ export default function UsersListPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const { data, isLoading, isError } = useUsers(2, true);
+  const hrSyncMutation = useHrSyncNow();
   const { data: references } = useReferenceData(['departments', 'positions', 'roles']);
   const allUsers = data?.data ?? [];
   const resetToFirstPage = useCallback(() => setPage(1), []);
@@ -151,15 +153,42 @@ export default function UsersListPage() {
         actions={
           <>
             <Button
+              icon={<CloudSyncOutlined />}
+              loading={hrSyncMutation.isPending}
+              onClick={() => {
+                hrSyncMutation.mutate(undefined, {
+                  onSuccess: res => {
+                    const refLine = `Отделы: +${res.departments.created}/~${res.departments.updated}; должности: +${res.positions.created}/~${res.positions.updated}.`;
+                    const summary = `Пользователи: создано ${res.created}, обновлено ${res.updated}. ${refLine}`;
+                    if (res.errors.length > 0) {
+                      showNotification(
+                        'warning',
+                        'Синхронизация с HR завершена с предупреждениями',
+                        `${summary} Записей в отчёте: ${res.errors.length} (см. логи сервера).`,
+                      );
+                    } else {
+                      showNotification('success', 'Синхронизация с HR завершена', summary);
+                    }
+                  },
+                  onError: (err: unknown) => {
+                    const ax = err as { response?: { data?: { message?: string } } };
+                    const msg =
+                      ax.response?.data?.message ??
+                      (err instanceof Error ? err.message : 'Не удалось выполнить синхронизацию');
+                    showNotification('error', 'Ошибка синхронизации с HR', msg);
+                  },
+                });
+              }}
+            >
+              Обновить пользователей
+            </Button>
+            <Button
               icon={<FilterOutlined />}
               onClick={openFiltersModal}
               className={activeFiltersCount > 0 ? styles.filtersBtnActive : undefined}
             >
               Фильтры
               {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
-            </Button>
-            <Button type='primary' icon={<PlusOutlined />} onClick={() => navigate('/users/create')}>
-              Добавить пользователя
             </Button>
           </>
         }

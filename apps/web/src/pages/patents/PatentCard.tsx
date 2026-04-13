@@ -1,5 +1,5 @@
 import { CalendarOutlined, FileTextOutlined, NumberOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
-import { Tag, Tooltip } from 'antd';
+import { Tag } from 'antd';
 
 import { getPatentRecordSurface, mutedTagStyle } from '../../constants/statusBadgeSurfaces';
 import { getNameById } from '../../helpers/getNameById';
@@ -34,9 +34,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
       {/* Основная информация */}
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
-          <Tooltip title={patent.name}>
-            <span className={styles.name}>{patent.name || '—'}</span>
-          </Tooltip>
+          <span className={styles.name}>{patent.name || '—'}</span>
         </div>
         <div className={styles.metaRow}>
           <Tag bordered={false} style={mutedTagStyle(surface, { fontSize: 12 })}>

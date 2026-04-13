@@ -1,5 +1,5 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, eq, gte, ilike, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, count, eq, gte, ilike, isNotNull, isNull, lte, notInArray, or, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { projects } from '../../../database/schema';
@@ -8,6 +8,8 @@ import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-sc
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 
 const REQUIRED_CREATE_FIELDS = ['code', 'name', 'short_name', 'start_date', 'status'] as const;
+
+const PROJECT_NON_ACTIVE_STATUSES = ['completed', 'pending', 'paused', 'cancelled'] as const;
 
 export type ProjectListTab =
   | 'all'
@@ -24,7 +26,7 @@ export interface ProjectQueryFilters {
   listTab?: ProjectListTab;
   deletedScope?: DeletedScope;
   managerId?: string;
-  createdBy?: string;
+  purchaserId?: string;
   dateFrom?: string;
   dateTo?: string;
   startDateFrom?: string;
@@ -74,8 +76,8 @@ export class ProjectsService {
       parts.push(eq(projects.managerId, filters.managerId));
     }
 
-    if (filters.createdBy) {
-      parts.push(eq(projects.createdBy, filters.createdBy));
+    if (filters.purchaserId) {
+      parts.push(eq(projects.purchaserId, filters.purchaserId));
     }
 
     if (filters.dateFrom && filters.dateTo) {
@@ -131,6 +133,13 @@ export class ProjectsService {
 
   private tabStatusCondition(tab: ProjectListTab): SQL | undefined {
     if (tab === 'all') return undefined;
+    if (tab === 'active') {
+      return or(
+        eq(projects.status, 'active'),
+        sql`trim(both from coalesce(${projects.status}, '')) = ''`,
+        notInArray(projects.status, [...PROJECT_NON_ACTIVE_STATUSES]),
+      )!;
+    }
     return eq(projects.status, tab);
   }
 
@@ -284,7 +293,7 @@ export class ProjectsService {
       const tabSql = this.tabStatusCondition(tab);
       const parts = [
         ...(tabSql ? [...baseParts, tabSql] : [...baseParts]),
-        ...sqlPartsForDeletedScope(projects.isDeleted, 'all'),
+        ...sqlPartsForDeletedScope(projects.isDeleted, 'active'),
       ];
       const where = this.mergeWhereParts(parts);
       return this.countWhere(where);
@@ -298,13 +307,9 @@ export class ProjectsService {
     ];
     const listWhere = this.mergeWhereParts(listParts);
 
-    const partsForCurrentListTabOnly = listTabSql ? [...baseParts, listTabSql] : [...baseParts];
     const countDeletionSlice = (scope: DeletedScope) =>
       this.countWhere(
-        this.mergeWhereParts([
-          ...partsForCurrentListTabOnly,
-          ...sqlPartsForDeletedScope(projects.isDeleted, scope),
-        ]),
+        this.mergeWhereParts([...baseParts, ...sqlPartsForDeletedScope(projects.isDeleted, scope)]),
       );
 
     const countPromises = tabs.map((t) => countForTab(t));
