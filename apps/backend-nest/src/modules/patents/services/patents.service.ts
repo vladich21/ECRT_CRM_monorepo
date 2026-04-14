@@ -1,5 +1,5 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, eq, exists, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, ilike, inArray, or, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
@@ -22,7 +22,9 @@ export interface PatentFindAllParams {
   departmentId?: string;
   statusId?: string;
   authorIds: string[];
-  createdBy?: string;
+  responsibleForPatentingId?: string;
+  registrationYears?: number[];
+  projectId?: string;
 }
 
 export interface PatentsListPayload {
@@ -124,7 +126,9 @@ export class PatentsService {
     departmentId?: string;
     statusId?: string;
     authorIds: string[];
-    createdBy?: string;
+    responsibleForPatentingId?: string;
+    registrationYears?: number[];
+    projectId?: string;
   }): SQL[] {
     const parts: SQL[] = [];
 
@@ -150,8 +154,24 @@ export class PatentsService {
     if (params.statusId && UUID_RE.test(params.statusId)) {
       parts.push(eq(patents.statusId, params.statusId));
     }
-    if (params.createdBy && UUID_RE.test(params.createdBy)) {
-      parts.push(eq(patents.createdBy, params.createdBy));
+    if (params.responsibleForPatentingId && UUID_RE.test(params.responsibleForPatentingId)) {
+      parts.push(eq(patents.responsibleForPatentId, params.responsibleForPatentingId));
+    }
+
+    const years = (params.registrationYears ?? []).filter(
+      (y) => Number.isInteger(y) && y >= 1900 && y <= 2100,
+    );
+    if (years.length > 0) {
+      parts.push(
+        sql`extract(year from ${patents.registrationDate})::int in (${sql.join(
+          years.map((y) => sql`${y}`),
+          sql`, `,
+        )})`,
+      );
+    }
+
+    if (params.projectId && UUID_RE.test(params.projectId)) {
+      parts.push(eq(patents.projectId, params.projectId));
     }
 
     const validAuthorIds = params.authorIds.filter((id) => UUID_RE.test(id));
@@ -193,7 +213,9 @@ export class PatentsService {
       departmentId,
       statusId,
       authorIds,
-      createdBy,
+      responsibleForPatentingId,
+      registrationYears,
+      projectId,
     } = params;
     const { limit = 50, offset = 0 } = pagination;
 
@@ -202,7 +224,9 @@ export class PatentsService {
       departmentId,
       statusId,
       authorIds,
-      createdBy,
+      responsibleForPatentingId,
+      registrationYears,
+      projectId,
     });
     const listWhere = this.whereForListScope(baseParts, deletedScope);
 
@@ -210,8 +234,8 @@ export class PatentsService {
       const rows = await this.db.db
         .select({ id: patents.id, name: patents.name })
         .from(patents)
-        .where(listWhere)
-        .orderBy(asc(patents.name))
+               .where(listWhere)
+        .orderBy(desc(patents.createdAt), desc(patents.id))
         .limit(limit)
         .offset(offset);
       return rows.map((row) => ({
@@ -232,7 +256,7 @@ export class PatentsService {
         .select()
         .from(patents)
         .where(listWhere)
-        .orderBy(asc(patents.name))
+        .orderBy(desc(patents.createdAt), desc(patents.id))
         .limit(limit)
         .offset(offset),
     ]);

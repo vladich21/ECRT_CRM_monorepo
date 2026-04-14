@@ -22,7 +22,10 @@ export interface PatentListQuery {
   department_id?: string;
   status_id?: string;
   author_ids?: string[];
-  created_by?: string;
+  responsible_for_patenting_id?: string;
+  /** Годы по registration_date (ИЦ ЖТ), через запятую */
+  registration_years?: string;
+  project_id?: string;
 }
 
 function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | number> {
@@ -35,7 +38,9 @@ function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | nu
   if (q.department_id) params.department_id = q.department_id;
   if (q.status_id) params.status_id = q.status_id;
   if (q.author_ids?.length) params.author_ids = q.author_ids.join(',');
-  if (q.created_by) params.created_by = q.created_by;
+  if (q.responsible_for_patenting_id) params.responsible_for_patenting_id = q.responsible_for_patenting_id;
+  if (q.registration_years?.trim()) params.registration_years = q.registration_years.trim();
+  if (q.project_id) params.project_id = q.project_id;
   return params;
 }
 

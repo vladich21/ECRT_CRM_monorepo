@@ -18,6 +18,8 @@ type PatentFiltersModalProps = {
     departments: SelectOption[];
     statuses: SelectOption[];
     users: SelectOption[];
+    projects: SelectOption[];
+    calendarYears: Array<{ label: string; value: number }>;
   };
 };
 export function PatentFiltersModal({
@@ -66,6 +68,31 @@ export function PatentFiltersModal({
           />
         </div>
         <div className={styles.filtersModalField}>
+          <span className={styles.filtersModalLabel}>Проект</span>
+          <Select
+            className={styles.filtersModalControl}
+            placeholder='Все проекты'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.projects}
+            value={draftFilters.projectId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ projectId: value ?? null })}
+          />
+        </div>
+        <div className={styles.filtersModalField}>
+          <span className={styles.filtersModalLabel}>Календарный год (дата регистрации ИЦ ЖТ)</span>
+          <Select
+            className={styles.filtersModalControl}
+            mode='multiple'
+            placeholder='Все годы'
+            allowClear
+            options={selectOptions.calendarYears}
+            value={draftFilters.registrationYears.length > 0 ? draftFilters.registrationYears : undefined}
+            onChange={value => onUpdateDraftFilter({ registrationYears: value ?? [] })}
+          />
+        </div>
+        <div className={styles.filtersModalField}>
           <span className={styles.filtersModalLabel}>Состояние</span>
           <Select
             className={styles.filtersModalControl}
@@ -77,10 +104,10 @@ export function PatentFiltersModal({
           />
         </div>
         <div className={styles.filtersModalField}>
-          <span className={styles.filtersModalLabel}>Авторы (Исполнители)</span>
+          <span className={styles.filtersModalLabel}>Исполнители</span>
           <Select
             className={styles.filtersModalControl}
-            placeholder='Все авторы'
+            placeholder='Все исполнители'
             allowClear
             showSearch
             optionFilterProp='label'
@@ -91,10 +118,10 @@ export function PatentFiltersModal({
           />
         </div>
         <div className={styles.filtersModalField}>
-          <span className={styles.filtersModalLabel}>Ответственный</span>
+          <span className={styles.filtersModalLabel}>Ответственный за патентование</span>
           <Select
             className={styles.filtersModalControl}
-            placeholder='Все сотрудники'
+            placeholder='Все ответственные'
             allowClear
             showSearch
             optionFilterProp='label'

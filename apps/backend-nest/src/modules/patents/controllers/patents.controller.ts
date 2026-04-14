@@ -8,6 +8,14 @@ function parseAuthorIds(raw?: string): string[] {
   return raw.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
+function parseRegistrationYears(raw?: string): number[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(',')
+    .map((s) => Number.parseInt(s.trim(), 10))
+    .filter((y) => Number.isInteger(y) && y >= 1900 && y <= 2100);
+}
+
 @Controller('patents')
 export class PatentsController {
   constructor(private readonly service: PatentsService) {}
@@ -27,10 +35,13 @@ export class PatentsController {
     @Query('department_id') departmentId?: string,
     @Query('status_id') statusId?: string,
     @Query('author_ids') authorIdsRaw?: string,
-    @Query('created_by') createdBy?: string,
+    @Query('responsible_for_patenting_id') responsibleForPatentingId?: string,
+    @Query('registration_years') registrationYearsRaw?: string,
+    @Query('project_id') projectId?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
+    const registrationYears = parseRegistrationYears(registrationYearsRaw);
     const params: PatentFindAllParams = {
       preview: preview === '1',
       deletedScope: parseDeletedScope(deletedScopeRaw),
@@ -39,7 +50,9 @@ export class PatentsController {
       departmentId: departmentId?.trim() || undefined,
       statusId: statusId?.trim() || undefined,
       authorIds: parseAuthorIds(authorIdsRaw),
-      createdBy: createdBy?.trim() || undefined,
+      responsibleForPatentingId: responsibleForPatentingId?.trim() || undefined,
+      registrationYears: registrationYears.length > 0 ? registrationYears : undefined,
+      projectId: projectId?.trim() || undefined,
     };
     return this.service.findAll(params);
   }
@@ -51,10 +64,13 @@ export class PatentsController {
     @Query('department_id') departmentId?: string,
     @Query('status_id') statusId?: string,
     @Query('author_ids') authorIdsRaw?: string,
-    @Query('created_by') createdBy?: string,
+    @Query('responsible_for_patenting_id') responsibleForPatentingId?: string,
+    @Query('registration_years') registrationYearsRaw?: string,
+    @Query('project_id') projectId?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
+    const registrationYears = parseRegistrationYears(registrationYearsRaw);
     const params: PatentFindAllParams = {
       preview: preview === '1',
       deletedScope: 'deleted',
@@ -63,7 +79,9 @@ export class PatentsController {
       departmentId: departmentId?.trim() || undefined,
       statusId: statusId?.trim() || undefined,
       authorIds: parseAuthorIds(authorIdsRaw),
-      createdBy: createdBy?.trim() || undefined,
+      responsibleForPatentingId: responsibleForPatentingId?.trim() || undefined,
+      registrationYears: registrationYears.length > 0 ? registrationYears : undefined,
+      projectId: projectId?.trim() || undefined,
     };
     return this.service.findAll(params);
   }

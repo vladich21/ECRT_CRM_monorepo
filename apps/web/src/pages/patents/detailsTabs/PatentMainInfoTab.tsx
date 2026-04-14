@@ -239,7 +239,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>
             <TeamOutlined style={{ marginRight: 6 }} />
-            Авторы ({authorNames.length})
+            Исполнители ({authorNames.length})
           </h3>
           {authorNames.length > 0 ? (
             authorNames.map(name => (

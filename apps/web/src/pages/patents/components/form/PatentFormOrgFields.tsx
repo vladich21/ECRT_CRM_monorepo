@@ -70,7 +70,7 @@ export function PatentFormOrgFields({ refs, incomeContracts, onProjectChange }: 
 
       <Row gutter={16}>
         <Col xs={24}>
-          <Form.Item label='Авторы (Исполнители)' name='author_ids'>
+          <Form.Item label='Исполнители' name='author_ids'>
             <Select
               mode='multiple'
               showSearch

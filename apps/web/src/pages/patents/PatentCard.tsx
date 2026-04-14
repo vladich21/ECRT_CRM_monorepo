@@ -73,7 +73,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
         )}
       </div>
 
-      {/* Дата регистрации + авторы */}
+      {/* Дата регистрации + исполнители */}
       <div className={styles.metricsCol}>
         <div className={styles.statsBlock}>
           <div className={styles.statValue}>
@@ -86,7 +86,11 @@ export function PatentCard({ patent, refs, onClick }: Props) {
           <div className={styles.periodInfo}>
             <FileTextOutlined style={{ fontSize: 11 }} />
             {patent.author_ids.length}{' '}
-            {patent.author_ids.length === 1 ? 'автор' : patent.author_ids.length <= 4 ? 'автора' : 'авторов'}
+            {patent.author_ids.length === 1
+              ? 'исполнитель'
+              : patent.author_ids.length <= 4
+                ? 'исполнителя'
+                : 'исполнителей'}
           </div>
         )}
       </div>

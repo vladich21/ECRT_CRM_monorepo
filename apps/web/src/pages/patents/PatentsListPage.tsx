@@ -86,6 +86,8 @@ export default function PatentsListPage() {
       statusId: appliedFilters.statusId,
       authorIds: appliedFilters.authorIds,
       responsibleId: appliedFilters.responsibleId,
+      registrationYears: appliedFilters.registrationYears,
+      projectId: appliedFilters.projectId,
     }),
     [debouncedSearch, appliedFilters],
   );
@@ -120,8 +122,14 @@ export default function PatentsListPage() {
       handleTableChange({ current: maxPage, pageSize } as never);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-  const selectOptions = useMemo(
-    () => ({
+  const selectOptions = useMemo(() => {
+    const endYear = 2050;
+    const startYear = 2022;
+    const calendarYears: Array<{ label: string; value: number }> = [];
+    for (let y = startYear; y <= endYear; y++) {
+      calendarYears.push({ label: String(y), value: y });
+    }
+    return {
       departments: (refs?.departments ?? []).map(department => ({
         label: department.name,
         value: department.id,
@@ -134,9 +142,13 @@ export default function PatentsListPage() {
         label: user.name,
         value: user.id,
       })),
-    }),
-    [refs],
-  );
+      projects: (refs?.projects ?? []).map(project => ({
+        label: project.code ? `${project.code} — ${project.name}` : project.name,
+        value: project.id,
+      })),
+      calendarYears,
+    };
+  }, [refs]);
   const handlePatentClick = (patent: Patent) =>
     navigate(`/patents/${patent.id}`, {
       state: {

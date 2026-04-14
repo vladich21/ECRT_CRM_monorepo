@@ -26,7 +26,11 @@ export function buildPatentsListNavSnapshot(
     version: 1,
     searchQuery,
     activeTab,
-    applied: { ...applied, authorIds: [...applied.authorIds] },
+    applied: {
+      ...applied,
+      authorIds: [...applied.authorIds],
+      registrationYears: [...applied.registrationYears],
+    },
     page,
     pageSize,
   };
@@ -53,6 +57,10 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
         ? appliedSnapshot.authorIds.filter((id): id is string => typeof id === 'string')
         : [],
       responsibleId: typeof appliedSnapshot?.responsibleId === 'string' ? appliedSnapshot.responsibleId : null,
+      registrationYears: Array.isArray(appliedSnapshot?.registrationYears)
+        ? appliedSnapshot.registrationYears.filter((y): y is number => typeof y === 'number' && Number.isInteger(y))
+        : [],
+      projectId: typeof appliedSnapshot?.projectId === 'string' ? appliedSnapshot.projectId : null,
     },
     page,
     pageSize,

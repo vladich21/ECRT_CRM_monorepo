@@ -12,6 +12,8 @@ export type PatentsListServerFilters = {
   statusId?: string | null;
   authorIds: string[];
   responsibleId?: string | null;
+  registrationYears: number[];
+  projectId?: string | null;
 };
 
 function buildListQuery(
@@ -29,7 +31,10 @@ function buildListQuery(
     department_id: filters.departmentId ?? undefined,
     status_id: filters.statusId ?? undefined,
     author_ids: filters.authorIds.length > 0 ? filters.authorIds : undefined,
-    created_by: filters.responsibleId ?? undefined,
+    responsible_for_patenting_id: filters.responsibleId ?? undefined,
+    registration_years:
+      filters.registrationYears.length > 0 ? filters.registrationYears.join(',') : undefined,
+    project_id: filters.projectId ?? undefined,
   };
 }
 
