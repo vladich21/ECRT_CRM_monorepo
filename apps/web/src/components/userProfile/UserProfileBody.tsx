@@ -1,5 +1,3 @@
-import { MailOutlined, PhoneOutlined } from '@ant-design/icons';
-
 import type { User } from '../../types/user';
 import pi from '../pageLayout/profileInfoCards.module.scss';
 
@@ -74,7 +72,7 @@ export function UserProfileBody({ user, shellClassName }: Props) {
                       <div className={pi.field}>
                         <span className={pi.fieldLabel}>Email руководителя</span>
                         <a href={`mailto:${user.supervisor.email}`} className={pi.valueLink}>
-                          <MailOutlined /> {user.supervisor.email}
+                          {user.supervisor.email}
                         </a>
                       </div>
                     )}
@@ -129,7 +127,7 @@ export function UserProfileBody({ user, shellClassName }: Props) {
                     <span className={pi.fieldLabel}>Email</span>
                     {user.email ? (
                       <a href={`mailto:${user.email}`} className={pi.valueLink}>
-                        <MailOutlined /> {user.email}
+                        {user.email}
                       </a>
                     ) : (
                       <span className={pi.fieldValueMuted}>Не указано</span>
@@ -139,7 +137,7 @@ export function UserProfileBody({ user, shellClassName }: Props) {
                     <span className={pi.fieldLabel}>Телефон</span>
                     {user.phone ? (
                       <a href={`tel:${user.phone.replace(/\D/g, '')}`} className={pi.valueLink}>
-                        <PhoneOutlined /> {user.phone}
+                        {user.phone}
                       </a>
                     ) : (
                       <span className={pi.fieldValueMuted}>Не указано</span>
