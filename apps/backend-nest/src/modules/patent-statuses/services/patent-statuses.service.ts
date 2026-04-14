@@ -13,10 +13,11 @@ export class PatentStatusesService {
     const rows = await this.db.db
       .select()
       .from(refPatentStatuses)
-      .orderBy(asc(refPatentStatuses.name));
+      .orderBy(asc(refPatentStatuses.sortOrder), asc(refPatentStatuses.name));
     return rows.map((row) => ({
       id: String(row.id),
       name: row.name ?? '',
+      sort_order: row.sortOrder,
     }));
   }
 }

@@ -1,7 +1,11 @@
 import { CalendarOutlined, FileTextOutlined, NumberOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 
-import { getPatentRecordSurface, mutedTagStyle } from '../../constants/statusBadgeSurfaces';
+import {
+  getPatentRecordSurface,
+  getPatentRidWorkflowSurface,
+  mutedTagStyle,
+} from '../../constants/statusBadgeSurfaces';
 import { getNameById } from '../../helpers/getNameById';
 import { Patent } from '../../types/patent';
 import type { ReferenceDataForPatents } from './data';
@@ -22,8 +26,8 @@ export function PatentCard({ patent, refs, onClick }: Props) {
   const ipTypeName = getNameById(patent.intellectprop_id, refs?.patentIntellectProps) || '';
   const statusName = getNameById(patent.status_id, refs?.patentStatuses) || '';
   const deptName = getNameById(patent.department_id, refs?.departments) || '';
-  const surface = getPatentRecordSurface(patent.is_deleted);
-  const statusLabel = patent.is_deleted ? 'Удалён' : 'Активен';
+  const deletedSurface = getPatentRecordSurface(true);
+  const ridSurface = getPatentRidWorkflowSurface(statusName);
 
   return (
     <div
@@ -37,10 +41,19 @@ export function PatentCard({ patent, refs, onClick }: Props) {
           <span className={styles.name}>{patent.name || '—'}</span>
         </div>
         <div className={styles.metaRow}>
-          <Tag bordered={false} style={mutedTagStyle(surface, { fontSize: 12 })}>
-            {statusLabel}
-          </Tag>
-          {statusName && <Tag className={styles.chipSmall}>{statusName}</Tag>}
+          {patent.is_deleted ? (
+            <Tag bordered={false} style={mutedTagStyle(deletedSurface, { fontSize: 12 })}>
+              Удалён
+            </Tag>
+          ) : statusName ? (
+            <Tag bordered={false} style={mutedTagStyle(ridSurface, { fontSize: 12 })}>
+              {statusName}
+            </Tag>
+          ) : (
+            <Tag bordered={false} style={mutedTagStyle(ridSurface, { fontSize: 12 })}>
+              Статус не указан
+            </Tag>
+          )}
           <span className={styles.metaNumber}>
             <NumberOutlined style={{ fontSize: 11, marginRight: 4 }} />№ {patent.registration_number || '—'}
           </span>

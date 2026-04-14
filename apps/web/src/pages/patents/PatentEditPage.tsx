@@ -9,7 +9,7 @@ import { usePatentById, useUpdatePatent } from '../../api/patents/patentApiHooks
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import DetailPageHeader, {
-  detailHeaderVariantForPatentRecord,
+  detailHeaderVariantForPatentRidStatus,
   detailPageHeaderStyles as hStyles,
 } from '../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../customhooks/useNotification';
@@ -104,8 +104,6 @@ export default function PatentEditPage() {
   }
 
   const refs = referenceBooks as PatentFormRefs;
-  const recordStatusLabel = patent.is_deleted ? 'Удалён' : 'Активен';
-  const recordStatusVariant = detailHeaderVariantForPatentRecord(patent.is_deleted);
   const headerName = (watchName ?? patent.name) || '';
   const headerRegNumber = (watchRegNumber ?? patent.registration_number) || '';
   const intellectpropId = formReferenceId(watchIntellectPropId, patent.intellectprop_id);
@@ -114,6 +112,12 @@ export default function PatentEditPage() {
   const ipTypeName = getNameById(intellectpropId, referenceBooks.patentIntellectProps) || '';
   const statusName = getNameById(patentStatusId, referenceBooks.patentStatuses) || '';
   const deptName = getNameById(departmentId, referenceBooks.departments) || '';
+  const headerStatusBadge = patent.is_deleted
+    ? { label: 'Удалён' as const, variant: 'danger' as const }
+    : {
+        label: statusName || 'Статус не выбран',
+        variant: detailHeaderVariantForPatentRidStatus(statusName),
+      };
 
   return (
     <DetailPageHeader
@@ -121,10 +125,7 @@ export default function PatentEditPage() {
       titleWeight='medium'
       backLabel='Реестр РИД'
       onBack={() => navigate(-1)}
-      statusBadge={{
-        label: recordStatusLabel,
-        variant: recordStatusVariant,
-      }}
+      statusBadge={headerStatusBadge}
       metaItems={[
         headerName ? (
           <span key='name' className={hStyles.metaText}>
@@ -134,11 +135,6 @@ export default function PatentEditPage() {
         ipTypeName ? (
           <span key='ipType' className={hStyles.metaType}>
             {ipTypeName}
-          </span>
-        ) : null,
-        statusName ? (
-          <span key='status' className={hStyles.metaType}>
-            {statusName}
           </span>
         ) : null,
         deptName ? (

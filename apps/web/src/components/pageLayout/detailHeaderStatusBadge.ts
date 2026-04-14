@@ -89,3 +89,22 @@ export function detailHeaderVariantForContractHeader(
 export function detailHeaderVariantForPatentRecord(isDeleted: boolean): DetailHeaderStatusBadgeVariant {
   return isDeleted ? 'danger' : 'success';
 }
+
+/** Статусы РИД (справочник ref_patent_statuses) — вариант плашки в шапке карточки. */
+export function detailHeaderVariantForPatentRidStatus(statusName: string | undefined): DetailHeaderStatusBadgeVariant {
+  switch (statusName?.trim()) {
+    case 'Отказ в выдаче':
+      return 'danger';
+    case 'Выдан патент':
+    case 'Решение о выдаче':
+      return 'success';
+    case 'На рассмотрении, запрос':
+      return 'warning';
+    case 'Заявка подана / на рассмотрении в ведомстве':
+    case 'Сдано в ЦИР':
+      return 'info';
+    case 'Подготовка документации':
+    default:
+      return 'neutral';
+  }
+}

@@ -193,6 +193,7 @@ export const projects = pgTable('projects', {
 export const refPatentStatuses = pgTable('ref_patent_statuses', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }),
+  sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }),
 });

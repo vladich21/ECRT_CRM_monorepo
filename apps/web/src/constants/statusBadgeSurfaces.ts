@@ -85,6 +85,25 @@ export function getPatentRecordSurface(isDeleted: boolean): StatusBadgeSurface {
   return isDeleted ? SURFACE_BLOCKED : SURFACE_ACTIVE;
 }
 
+/** Цвет тега статуса РИД в списке (по названию из справочника). */
+export function getPatentRidWorkflowSurface(statusName: string | undefined): StatusBadgeSurface {
+  switch (statusName?.trim()) {
+    case 'Отказ в выдаче':
+      return SURFACE_BLOCKED;
+    case 'Выдан патент':
+    case 'Решение о выдаче':
+      return SURFACE_ACTIVE;
+    case 'На рассмотрении, запрос':
+      return SURFACE_WARNING;
+    case 'Заявка подана / на рассмотрении в ведомстве':
+    case 'Сдано в ЦИР':
+      return SURFACE_POTENTIAL;
+    case 'Подготовка документации':
+    default:
+      return SURFACE_NEUTRAL;
+  }
+}
+
 export function getContractHeaderSurface(isDeleted: boolean, isActive: boolean): StatusBadgeSurface {
   if (isDeleted) return SURFACE_BLOCKED;
   return isActive ? SURFACE_ACTIVE : SURFACE_BLOCKED;

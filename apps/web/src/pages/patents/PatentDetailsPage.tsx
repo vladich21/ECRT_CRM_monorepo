@@ -7,7 +7,7 @@ import { useDeletePatent, usePatentById, useRestorePatent } from '../../api/pate
 import { usePatentGrants } from '../../api/patents/patentGrantsApiHooks';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader, { detailHeaderVariantForPatentRecord } from '../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { getNameById } from '../../helpers/getNameById';
@@ -85,15 +85,19 @@ export default function PatentDetailsPage() {
   const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
   const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses) || '';
   const deptName = getNameById(patent.department_id, referenceBooks?.departments) || '';
-  const statusLabel = patent.is_deleted ? 'Удалён' : 'Активен';
-  const statusVariant = detailHeaderVariantForPatentRecord(patent.is_deleted);
+  const headerStatusBadge = patent.is_deleted
+    ? { label: 'Удалён' as const, variant: 'danger' as const }
+    : {
+        label: statusName || 'Статус не указан',
+        variant: detailHeaderVariantForPatentRidStatus(statusName),
+      };
   return (
     <DetailPageHeader
       title={`РИД ${patent.registration_number || '—'}`}
       titleWeight='medium'
       backLabel='Реестр РИД'
       onBack={handleBack}
-      statusBadge={{ label: statusLabel, variant: statusVariant }}
+      statusBadge={headerStatusBadge}
       metaItems={[
         patent.name && (
           <span key='name' className={styles.metaText}>
@@ -103,11 +107,6 @@ export default function PatentDetailsPage() {
         ipTypeName && (
           <span key='ipType' className={styles.metaType}>
             {ipTypeName}
-          </span>
-        ),
-        statusName && (
-          <span key='status' className={styles.metaType}>
-            {statusName}
           </span>
         ),
         deptName && (

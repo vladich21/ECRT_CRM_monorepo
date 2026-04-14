@@ -15,6 +15,7 @@ export {
   detailHeaderVariantForPartnerStatus,
   detailHeaderVariantForPartnerStatusName,
   detailHeaderVariantForPatentRecord,
+  detailHeaderVariantForPatentRidStatus,
   detailHeaderVariantForProjectStatus,
 } from './detailHeaderStatusBadge';
 
