@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 
 import { Patent } from '../../types/patent';
+import type { PatentGrantRegionKey } from './patentGrantRegions';
 import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
 import { invalidatePatentQueries, patentQueryKeys } from './patentQueryKeys';
 
@@ -11,9 +12,13 @@ export type PatentsListServerFilters = {
   departmentId?: string | null;
   statusId?: string | null;
   authorIds: string[];
+  areaIds: string[];
   responsibleId?: string | null;
   registrationYears: number[];
+  registrationCirYears: number[];
   projectId?: string | null;
+  contractId?: string | null;
+  grantRegionKeys: PatentGrantRegionKey[];
 };
 
 function buildListQuery(
@@ -22,6 +27,11 @@ function buildListQuery(
   pageSize: number,
   filters: PatentsListServerFilters,
 ): PatentListQuery {
+  const authorIds = filters.authorIds ?? [];
+  const areaIds = filters.areaIds ?? [];
+  const registrationYears = filters.registrationYears ?? [];
+  const registrationCirYears = filters.registrationCirYears ?? [];
+  const grantRegionKeys = filters.grantRegionKeys ?? [];
   return {
     preview: false,
     deletedScope,
@@ -30,12 +40,24 @@ function buildListQuery(
     search: filters.search.trim() || undefined,
     department_id: filters.departmentId ?? undefined,
     status_id: filters.statusId ?? undefined,
-    author_ids: filters.authorIds.length > 0 ? filters.authorIds : undefined,
+    author_ids: authorIds.length > 0 ? authorIds : undefined,
+    area_ids: areaIds.length > 0 ? areaIds : undefined,
     responsible_for_patenting_id: filters.responsibleId ?? undefined,
-    registration_years:
-      filters.registrationYears.length > 0 ? filters.registrationYears.join(',') : undefined,
+    registration_years: registrationYears.length > 0 ? registrationYears.join(',') : undefined,
+    registration_cir_years: registrationCirYears.length > 0 ? registrationCirYears.join(',') : undefined,
     project_id: filters.projectId ?? undefined,
+    contract_id: filters.contractId ?? undefined,
+    grant_regions: grantRegionKeys.length > 0 ? grantRegionKeys.join(',') : undefined,
   };
+}
+
+export function usePatentsLinkedContractIds(
+  deletedScope: PatentsDeletedScope,
+): UseQueryResult<string[], Error> {
+  return useQuery<string[], Error>({
+    queryKey: patentQueryKeys.linkedContractIds(deletedScope),
+    queryFn: () => patentApi.getLinkedContractIds(deletedScope),
+  });
 }
 
 export function usePatentsList(

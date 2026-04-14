@@ -2,16 +2,12 @@ import { CalendarOutlined, RightOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 
 import { PatentGrant } from '../../../types/patent';
+import { patentGrantStatusTagPreset } from './patentGrantStatusStyles';
 import styles from './PatentGrantsListPage.module.scss';
 
 function formatDate(dateStr?: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
-const STATUS_COLOR: Record<string, string> = {
-  Активный: '#52c41a',
-  Истек: '#8c8c8c',
-  Отозван: '#ff4d4f',
-};
 type Props = {
   grant: PatentGrant;
   onClick: (grant: PatentGrant) => void;
@@ -19,17 +15,13 @@ type Props = {
   onDelete: (grant: PatentGrant) => void;
 };
 export function PatentGrantCard({ grant, onClick, onEdit, onDelete }: Props) {
-  const statusColor = STATUS_COLOR[grant.status] || '#1677ff';
+  const statusTagPreset = patentGrantStatusTagPreset(grant.status);
   const dateStr = [formatDate(grant.grant_date), formatDate(grant.renewal_date)].filter(Boolean).join(' — ') || '—';
   return (
-    <div
-      className={styles.grantCard}
-      style={{ '--status-color': statusColor } as React.CSSProperties}
-      onClick={() => onClick(grant)}
-    >
+    <div className={styles.grantCard} onClick={() => onClick(grant)}>
       <div className={styles.mainInfo}>
         <div className={styles.grantNumber}>{grant.grant_number || '—'}</div>
-        <Tag color={statusColor} style={{ fontSize: 13 }}>
+        <Tag color={statusTagPreset} style={{ fontSize: 14 }}>
           {grant.status}
         </Tag>
         {grant.office && <div className={styles.office}>{grant.office}</div>}

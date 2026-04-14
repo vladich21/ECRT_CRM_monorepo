@@ -124,6 +124,14 @@
   font-weight: 400;
 }
 
+.contractRegistryLink {
+  color: #1677ff;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .tagsWrap {
   display: flex;
   gap: 4px;

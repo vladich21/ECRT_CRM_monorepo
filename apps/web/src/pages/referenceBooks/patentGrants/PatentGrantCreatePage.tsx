@@ -90,6 +90,7 @@ export default function PatentGrantCreatePage() {
           form={form}
           layout='vertical'
           size='middle'
+          initialValues={{ status: 'Активный' }}
           onFinish={handleCreate}
           disabled={isCreateLoading}
           onKeyPress={e => {

@@ -12,7 +12,7 @@ import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { getNameById } from '../../helpers/getNameById';
 import styles from './PatentDetails.module.scss';
-import type { ActionType } from './PatentsListPage';
+import type { ActionType } from './PatentsListPage.types';
 import type { PatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
 
 type PatentTab = 'main' | 'files' | 'comments' | 'grants';

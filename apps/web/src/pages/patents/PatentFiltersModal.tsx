@@ -1,12 +1,10 @@
 import { Button, Modal, Select } from 'antd';
 
-import styles from './PatentsListPage.module.scss';
-import type { PatentAdvancedFilters } from './PatentsListPage.types';
+import { PATENT_GRANT_REGION_OPTIONS } from '../../api/patents/patentGrantRegions';
 
-type SelectOption = {
-  label: string;
-  value: string;
-};
+import styles from './PatentsListPage.module.scss';
+import type { PatentAdvancedFilters, PatentListFiltersSelectOptions } from './PatentsListPage.types';
+
 type PatentFiltersModalProps = {
   open: boolean;
   draftFilters: PatentAdvancedFilters;
@@ -14,13 +12,7 @@ type PatentFiltersModalProps = {
   onClose: () => void;
   onApply: () => void;
   onReset: () => void;
-  selectOptions: {
-    departments: SelectOption[];
-    statuses: SelectOption[];
-    users: SelectOption[];
-    projects: SelectOption[];
-    calendarYears: Array<{ label: string; value: number }>;
-  };
+  selectOptions: PatentListFiltersSelectOptions;
 };
 export function PatentFiltersModal({
   open,
@@ -81,15 +73,56 @@ export function PatentFiltersModal({
           />
         </div>
         <div className={styles.filtersModalField}>
-          <span className={styles.filtersModalLabel}>Календарный год (дата регистрации ИЦ ЖТ)</span>
+          <span className={styles.filtersModalLabel}>Договор (работы по договору)</span>
+          <Select
+            className={styles.filtersModalControl}
+            placeholder='Все договоры'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.contracts}
+            value={draftFilters.contractId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ contractId: value ?? null })}
+          />
+        </div>
+        <div className={styles.filtersModalField}>
+          <span className={styles.filtersModalLabel}>Страна / регион выдачи (патентный грант)</span>
+          <Select
+            className={styles.filtersModalControl}
+            mode='multiple'
+            placeholder='Все'
+            allowClear
+            options={PATENT_GRANT_REGION_OPTIONS}
+            value={(draftFilters.grantRegionKeys ?? []).length > 0 ? draftFilters.grantRegionKeys : undefined}
+            onChange={value => onUpdateDraftFilter({ grantRegionKeys: value ?? [] })}
+          />
+        </div>
+        <div className={styles.filtersModalField}>
+          <span className={styles.filtersModalLabel}>Год регистрации (ИЦ ЖТ)</span>
           <Select
             className={styles.filtersModalControl}
             mode='multiple'
             placeholder='Все годы'
             allowClear
             options={selectOptions.calendarYears}
-            value={draftFilters.registrationYears.length > 0 ? draftFilters.registrationYears : undefined}
+            value={
+              (draftFilters.registrationYears ?? []).length > 0 ? draftFilters.registrationYears : undefined
+            }
             onChange={value => onUpdateDraftFilter({ registrationYears: value ?? [] })}
+          />
+        </div>
+        <div className={styles.filtersModalField}>
+          <span className={styles.filtersModalLabel}>Год регистрации (ЦИР)</span>
+          <Select
+            className={styles.filtersModalControl}
+            mode='multiple'
+            placeholder='Все годы'
+            allowClear
+            options={selectOptions.calendarYears}
+            value={
+              (draftFilters.registrationCirYears ?? []).length > 0 ? draftFilters.registrationCirYears : undefined
+            }
+            onChange={value => onUpdateDraftFilter({ registrationCirYears: value ?? [] })}
           />
         </div>
         <div className={styles.filtersModalField}>
@@ -104,6 +137,20 @@ export function PatentFiltersModal({
           />
         </div>
         <div className={styles.filtersModalField}>
+          <span className={styles.filtersModalLabel}>Область применения</span>
+          <Select
+            className={styles.filtersModalControl}
+            mode='multiple'
+            placeholder='Все области'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.applicationAreas}
+            value={(draftFilters.areaIds ?? []).length > 0 ? draftFilters.areaIds : undefined}
+            onChange={value => onUpdateDraftFilter({ areaIds: value ?? [] })}
+          />
+        </div>
+        <div className={styles.filtersModalField}>
           <span className={styles.filtersModalLabel}>Исполнители</span>
           <Select
             className={styles.filtersModalControl}
@@ -113,7 +160,7 @@ export function PatentFiltersModal({
             optionFilterProp='label'
             mode='multiple'
             options={selectOptions.users}
-            value={draftFilters.authorIds}
+            value={draftFilters.authorIds ?? []}
             onChange={value => onUpdateDraftFilter({ authorIds: value ?? [] })}
           />
         </div>

@@ -7,6 +7,7 @@ import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { patentGrantDetailHeaderBadgeVariant } from './patentGrantStatusStyles';
 import { useNotification } from '../../../customhooks/useNotification';
 
 export default function PatentGrantDetailsPage() {
@@ -70,7 +71,7 @@ export default function PatentGrantDetailsPage() {
         patentGrant.status
           ? {
               label: patentGrant.status,
-              variant: patentGrant.status === 'Активный' ? 'success' : 'danger',
+              variant: patentGrantDetailHeaderBadgeVariant(patentGrant.status),
             }
           : undefined
       }

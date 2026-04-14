@@ -1,35 +1,30 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input, Pagination, Spin } from 'antd';
+import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { usePatentsList, type PatentsDeletedScope } from '../../api/patents/patentApiHooks';
+import { usePatentsLinkedContractIds, usePatentsList } from '../../api/patents/patentApiHooks';
 import { BackButton } from '../../components/backButton/BackButton';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
+import { useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import type { Patent } from '../../types/patent';
 import type { ReferenceDataForPatents } from './data';
 import { usePatentListFilters } from './hooks/usePatentListFilters';
+import { usePatentsListContractIdsForFilter } from './hooks/usePatentsListContractIdsForFilter';
+import { usePatentsListPaginationClamp } from './hooks/usePatentsListPaginationClamp';
+import { usePatentsListRestoreFromDetail } from './hooks/usePatentsListRestoreFromDetail';
+import { usePatentsListSearchDebounce } from './hooks/usePatentsListSearchDebounce';
+import { usePatentsListSelectOptions } from './hooks/usePatentsListSelectOptions';
+import { usePatentsListServerFilters } from './hooks/usePatentsListServerFilters';
 import { PatentCard } from './PatentCard';
 import { PatentFiltersModal } from './PatentFiltersModal';
+import { PatentsListFiltersBar } from './PatentsListFiltersBar';
 import styles from './PatentsListPage.module.scss';
-import { PATENT_FILTER_TABS, type PatentFilterTab } from './PatentsListPage.types';
-import { buildPatentsListNavSnapshot, parsePatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
+import { buildPatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
+import { patentListTabToDeletedScope } from './utils/patentListTabScope';
 
-const SEARCH_DEBOUNCE_MS = 350;
-function tabToDeletedScope(tab: PatentFilterTab): PatentsDeletedScope {
-  if (tab === 'deleted') return 'deleted';
-  if (tab === 'active') return 'active';
-  return 'all';
-}
-export interface CounterType {
-  active?: number;
-  deleted?: number;
-}
-export type ActionType = 'active' | 'deleted';
 export default function PatentsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,53 +45,32 @@ export default function PatentsListPage() {
     resetDraftFilters,
     activeFiltersCount,
   } = usePatentListFilters();
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  useEffect(() => {
-    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(debounceTimerId);
-  }, [searchQuery]);
+
+  const { debouncedSearch, alignDebouncedWithQuery } = usePatentsListSearchDebounce(searchQuery);
+
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
-  const { skipNextListResetRef } = useListReturnFromDetail({
+
+  const { skipNextListResetRef } = usePatentsListRestoreFromDetail(
     location,
     navigate,
-    getRawSnapshot: navigationState => navigationState.patentsListReturn,
-    parse: parsePatentsListNavSnapshot,
-    applyParsed: restoredListState => {
-      setSearchQuery(restoredListState.searchQuery);
-      setDebouncedSearch(restoredListState.searchQuery);
-      setActiveTab(restoredListState.activeTab);
-      setAppliedFilters(restoredListState.appliedFilters);
-      setDraftFilters(restoredListState.appliedFilters);
-      setPage(restoredListState.page);
-      setPageSize(restoredListState.pageSize);
-    },
-    applyFallback: navigationState => {
-      const tabFromNavigation = navigationState.tab;
-      if (tabFromNavigation === 'all' || tabFromNavigation === 'active' || tabFromNavigation === 'deleted') {
-        setActiveTab(tabFromNavigation);
-      }
-    },
-  });
-  const deletedScope = tabToDeletedScope(activeTab);
-  const serverFilters = useMemo(
-    () => ({
-      search: debouncedSearch,
-      departmentId: appliedFilters.departmentId,
-      statusId: appliedFilters.statusId,
-      authorIds: appliedFilters.authorIds,
-      responsibleId: appliedFilters.responsibleId,
-      registrationYears: appliedFilters.registrationYears,
-      projectId: appliedFilters.projectId,
-    }),
-    [debouncedSearch, appliedFilters],
+    { setSearchQuery, alignDebouncedWithQuery },
+    { setActiveTab, setAppliedFilters, setDraftFilters },
+    { setPage, setPageSize },
   );
+
+  const deletedScope = patentListTabToDeletedScope(activeTab);
+  const serverFilters = usePatentsListServerFilters(debouncedSearch, appliedFilters);
+
   const {
     data: listData,
     isLoading,
     isError,
     isFetching,
   } = usePatentsList(deletedScope, page, pageSize, serverFilters);
+
+  const { data: patentLinkedContractIds = [] } = usePatentsLinkedContractIds(deletedScope);
+
   const {
     data: referenceBooks,
     isError: isRefsError,
@@ -109,46 +83,32 @@ export default function PatentsListPage() {
     'contractCategories',
     'patentStatuses',
     'patentIntellectProps',
+    'patentAreas',
   ]);
+
   const refs = referenceBooks as ReferenceDataForPatents;
   const patents = listData?.data ?? [];
   const total = listData?.total ?? 0;
   const tabCounts = listData?.tab_counts ?? { all: 0, active: 0, deleted: 0 };
+
   useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
-  useEffect(() => {
-    if (isRefsError || isError) return;
-    const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
-    if (page > maxPage) {
-      handleTableChange({ current: maxPage, pageSize } as never);
-    }
-  }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-  const selectOptions = useMemo(() => {
-    const endYear = 2050;
-    const startYear = 2022;
-    const calendarYears: Array<{ label: string; value: number }> = [];
-    for (let y = startYear; y <= endYear; y++) {
-      calendarYears.push({ label: String(y), value: y });
-    }
-    return {
-      departments: (refs?.departments ?? []).map(department => ({
-        label: department.name,
-        value: department.id,
-      })),
-      statuses: (refs?.patentStatuses ?? []).map(status => ({
-        label: status.name,
-        value: status.id,
-      })),
-      users: (refs?.users ?? []).map(user => ({
-        label: user.name,
-        value: user.id,
-      })),
-      projects: (refs?.projects ?? []).map(project => ({
-        label: project.code ? `${project.code} — ${project.name}` : project.name,
-        value: project.id,
-      })),
-      calendarYears,
-    };
-  }, [refs]);
+
+  usePatentsListPaginationClamp({
+    total,
+    page,
+    pageSize,
+    isError: isRefsError || isError,
+    handleTableChange,
+  });
+
+  const contractIdsForPatentFilter = usePatentsListContractIdsForFilter(
+    patentLinkedContractIds,
+    appliedFilters.contractId,
+    draftFilters.contractId,
+  );
+
+  const selectOptions = usePatentsListSelectOptions(refs, contractIdsForPatentFilter);
+
   const handlePatentClick = (patent: Patent) =>
     navigate(`/patents/${patent.id}`, {
       state: {
@@ -157,16 +117,20 @@ export default function PatentsListPage() {
         patentsListReturn: buildPatentsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
       },
     });
+
   const handlePageChange = (newPage: number, newPageSize?: number) =>
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
-    } as never);
+    });
+
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
+
   const isInitialLoad = isRefsLoading || (isLoading && !listData);
   const paginationConfig = getPaginationConfig(total);
+
   return (
     <div className={styles.wrap}>
       <BackButton path='/' />
@@ -198,36 +162,15 @@ export default function PatentsListPage() {
         }
         filters={
           !isInitialLoad ? (
-            <div className={styles.filterSection}>
-              <div className={styles.filterTabsRow}>
-                <div className={styles.filterTabs}>
-                  {PATENT_FILTER_TABS.map(({ key, label }) => (
-                    <button
-                      key={key}
-                      type='button'
-                      className={`${styles.filterTab}${activeTab === key ? ` ${styles.filterTabActive}` : ''}`}
-                      onClick={() => setActiveTab(key)}
-                    >
-                      {label} <span className={styles.filterTabCount}>{tabCounts[key]}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.filterTabsRight}>
-                  <Input.Search
-                    className={styles.searchInTabsRow}
-                    placeholder='Поиск по названию, номеру, КД...'
-                    allowClear
-                    enterButton={false}
-                    prefix={<SearchOutlined className={styles.searchIcon} />}
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                  />
-                  <span className={styles.resultCount}>
-                    Показано: <strong>{patents.length}</strong> из <strong>{total}</strong>
-                  </span>
-                </div>
-              </div>
-            </div>
+            <PatentsListFiltersBar
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              tabCounts={tabCounts}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              shownCount={patents.length}
+              totalCount={total}
+            />
           ) : undefined
         }
       />

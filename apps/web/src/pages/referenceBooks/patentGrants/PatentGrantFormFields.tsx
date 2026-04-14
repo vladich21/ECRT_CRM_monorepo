@@ -65,6 +65,7 @@ export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState 
               <Form.Item label='Статус' name='status' rules={[{ required: true, message: 'Выберите статус' }]}>
                 <Select placeholder='Выберите статус'>
                   <Select.Option value='Активный'>Активный</Select.Option>
+                  <Select.Option value='Неактивный'>Неактивный</Select.Option>
                   <Select.Option value='Истек'>Истек</Select.Option>
                   <Select.Option value='Отозван'>Отозван</Select.Option>
                 </Select>

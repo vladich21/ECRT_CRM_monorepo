@@ -5,7 +5,7 @@ import {
   SafetyCertificateOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 
 import { useContractById } from '../../../api/contracts/contractApiHooks';
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -223,9 +223,17 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Договор (доходный)</span>
-              <span className={incomeContract ? styles.infoValue : styles.infoValueMuted}>
-                {incomeContract?.number ?? 'Не указан'}
-              </span>
+              {incomeContract?.id ? (
+                <Link
+                  to={`/contracts/${incomeContract.id}`}
+                  state={{ from: `/patents/${patent.id}` }}
+                  className={`${styles.infoValue} ${styles.contractRegistryLink}`}
+                >
+                  {incomeContract.number?.trim() || incomeContract.name || '—'}
+                </Link>
+              ) : (
+                <span className={styles.infoValueMuted}>Не указан</span>
+              )}
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Шифр договора</span>

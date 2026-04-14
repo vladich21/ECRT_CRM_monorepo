@@ -1,15 +1,21 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, desc, eq, exists, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, ilike, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
+  contracts,
   patents,
+  projects,
   relPatentsApplicationAreas,
   patentGrants,
   relPatentAuthors,
 } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
 import { type DeletedScope, sqlPartsForDeletedScope } from '../../../common/deleted-scope';
+import {
+  appendPatentGrantRegionFilter,
+  type PatentGrantRegionKey,
+} from '../patent-grant-region-filter';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -22,9 +28,13 @@ export interface PatentFindAllParams {
   departmentId?: string;
   statusId?: string;
   authorIds: string[];
+  areaIds: string[];
   responsibleForPatentingId?: string;
   registrationYears?: number[];
+  registrationCirYears?: number[];
   projectId?: string;
+  contractId?: string;
+  grantRegionKeys?: PatentGrantRegionKey[];
 }
 
 export interface PatentsListPayload {
@@ -46,6 +56,22 @@ export class PatentsService {
       .where(eq(patents.id, patentId))
       .limit(1);
     return Boolean(rows[0]);
+  }
+
+  async findLinkedContractIds(deletedScope: DeletedScope): Promise<string[]> {
+    const scopeParts = sqlPartsForDeletedScope(patents.isDeleted, deletedScope);
+    const whereClause =
+      scopeParts.length > 0
+        ? and(isNotNull(patents.contractId), ...scopeParts)!
+        : isNotNull(patents.contractId);
+    const rows = await this.db.db
+      .selectDistinct({ contractId: patents.contractId })
+      .from(patents)
+      .where(whereClause);
+    return rows
+      .map((row) => (row.contractId ? String(row.contractId) : ''))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
   }
 
   async findOne(id: string) {
@@ -126,9 +152,13 @@ export class PatentsService {
     departmentId?: string;
     statusId?: string;
     authorIds: string[];
+    areaIds: string[];
     responsibleForPatentingId?: string;
     registrationYears?: number[];
+    registrationCirYears?: number[];
     projectId?: string;
+    contractId?: string;
+    grantRegionKeys?: PatentGrantRegionKey[];
   }): SQL[] {
     const parts: SQL[] = [];
 
@@ -137,12 +167,41 @@ export class PatentsService {
       const safe = rawSearch.replace(/[%_]/g, '');
       if (safe.length > 0) {
         const pattern = `%${safe}%`;
+        const contractMatch = exists(
+          this.db.db
+            .select({ one: sql`1` })
+            .from(contracts)
+            .where(
+              and(
+                eq(contracts.id, patents.contractId),
+                or(
+                  ilike(contracts.cipher, pattern),
+                  ilike(contracts.number, pattern),
+                  ilike(contracts.name, pattern),
+                )!,
+              ),
+            ),
+        );
+        const projectMatch = exists(
+          this.db.db
+            .select({ one: sql`1` })
+            .from(projects)
+            .where(
+              and(
+                eq(projects.id, patents.projectId),
+                or(ilike(projects.code, pattern), ilike(projects.name, pattern))!,
+              ),
+            ),
+        );
         parts.push(
           or(
             ilike(patents.name, pattern),
             ilike(patents.registrationNumber, pattern),
             ilike(patents.kdNumber, pattern),
             ilike(patents.applicationNumber, pattern),
+            ilike(patents.registrationNumberCir, pattern),
+            contractMatch,
+            projectMatch,
           )!,
         );
       }
@@ -170,9 +229,27 @@ export class PatentsService {
       );
     }
 
+    const cirYears = (params.registrationCirYears ?? []).filter(
+      (y) => Number.isInteger(y) && y >= 1900 && y <= 2100,
+    );
+    if (cirYears.length > 0) {
+      parts.push(
+        sql`extract(year from ${patents.registrationDateCir})::int in (${sql.join(
+          cirYears.map((y) => sql`${y}`),
+          sql`, `,
+        )})`,
+      );
+    }
+
     if (params.projectId && UUID_RE.test(params.projectId)) {
       parts.push(eq(patents.projectId, params.projectId));
     }
+
+    if (params.contractId && UUID_RE.test(params.contractId)) {
+      parts.push(eq(patents.contractId, params.contractId));
+    }
+
+    appendPatentGrantRegionFilter(parts, this.db.db, params.grantRegionKeys ?? []);
 
     const validAuthorIds = params.authorIds.filter((id) => UUID_RE.test(id));
     if (validAuthorIds.length > 0) {
@@ -185,6 +262,23 @@ export class PatentsService {
               and(
                 eq(relPatentAuthors.patentId, patents.id),
                 inArray(relPatentAuthors.userId, validAuthorIds),
+              ),
+            ),
+        ),
+      );
+    }
+
+    const validAreaIds = params.areaIds.filter((id) => UUID_RE.test(id));
+    if (validAreaIds.length > 0) {
+      parts.push(
+        exists(
+          this.db.db
+            .select({ one: sql`1` })
+            .from(relPatentsApplicationAreas)
+            .where(
+              and(
+                eq(relPatentsApplicationAreas.patentId, patents.id),
+                inArray(relPatentsApplicationAreas.areaId, validAreaIds),
               ),
             ),
         ),
@@ -213,9 +307,13 @@ export class PatentsService {
       departmentId,
       statusId,
       authorIds,
+      areaIds,
       responsibleForPatentingId,
       registrationYears,
+      registrationCirYears,
       projectId,
+      contractId,
+      grantRegionKeys,
     } = params;
     const { limit = 50, offset = 0 } = pagination;
 
@@ -224,9 +322,13 @@ export class PatentsService {
       departmentId,
       statusId,
       authorIds,
+      areaIds,
       responsibleForPatentingId,
       registrationYears,
+      registrationCirYears,
       projectId,
+      contractId,
+      grantRegionKeys,
     });
     const listWhere = this.whereForListScope(baseParts, deletedScope);
 

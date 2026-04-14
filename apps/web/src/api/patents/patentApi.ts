@@ -22,10 +22,15 @@ export interface PatentListQuery {
   department_id?: string;
   status_id?: string;
   author_ids?: string[];
+  area_ids?: string[];
   responsible_for_patenting_id?: string;
   /** Годы по registration_date (ИЦ ЖТ), через запятую */
   registration_years?: string;
+  registration_cir_years?: string;
   project_id?: string;
+  contract_id?: string;
+  /** Ключи регионов выдачи (patent_grants.office), через запятую */
+  grant_regions?: string;
 }
 
 function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | number> {
@@ -38,13 +43,23 @@ function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | nu
   if (q.department_id) params.department_id = q.department_id;
   if (q.status_id) params.status_id = q.status_id;
   if (q.author_ids?.length) params.author_ids = q.author_ids.join(',');
+  if (q.area_ids?.length) params.area_ids = q.area_ids.join(',');
   if (q.responsible_for_patenting_id) params.responsible_for_patenting_id = q.responsible_for_patenting_id;
   if (q.registration_years?.trim()) params.registration_years = q.registration_years.trim();
+  if (q.registration_cir_years?.trim()) params.registration_cir_years = q.registration_cir_years.trim();
   if (q.project_id) params.project_id = q.project_id;
+  if (q.contract_id) params.contract_id = q.contract_id;
+  if (q.grant_regions?.trim()) params.grant_regions = q.grant_regions.trim();
   return params;
 }
 
 export const patentApi = {
+  getLinkedContractIds: async (deletedScope: string): Promise<string[]> => {
+    const response = await apiClient.get<string[]>('/patents/filter/linked-contract-ids', {
+      params: { deleted_scope: deletedScope },
+    });
+    return response.data;
+  },
   getPatents: async (query: PatentListQuery = {}): Promise<Patent[] | PatentsListResponse> => {
     const params = buildPatentsQueryParams({
       ...query,

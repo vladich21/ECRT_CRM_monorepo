@@ -17,5 +17,8 @@ export function buildContractDetailsBackLabel(from: string | undefined): string 
   if (typeof from === 'string' && from.includes('/partners/') && from.includes('/contracts')) {
     return 'К договорам контрагента';
   }
+  if (typeof from === 'string' && from.startsWith('/patents/')) {
+    return 'К РИД';
+  }
   return 'Договоры';
 }

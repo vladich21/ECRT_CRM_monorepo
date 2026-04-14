@@ -5,6 +5,7 @@ import type { PatentListQuery } from './patentApi';
 export const patentQueryKeys = {
   all: ['patents'] as const,
   list: (listQuery: PatentListQuery) => [...patentQueryKeys.all, 'list', listQuery] as const,
+  linkedContractIds: (deletedScope: string) => [...patentQueryKeys.all, 'linkedContractIds', deletedScope] as const,
   detail: (patentId: string) => [...patentQueryKeys.all, patentId] as const,
 } as const;
 
