@@ -62,7 +62,7 @@ export function useContractStageManager(
     [filteredStages, ui.expandedStageIds],
   );
 
-  const completedStagesCount = stagesState.filter(s => Boolean(s.actual_end_date)).length;
+  const completedStagesCount = stagesState.filter(stage => Boolean(stage.actual_end_date)).length;
   const totalProgressPercent = stagesState.length > 0 ? (completedStagesCount / stagesState.length) * 100 : 0;
   const nextStageIndexOneBased = completedStagesCount + 1;
   const currentStageDisplayIndex = Math.min(nextStageIndexOneBased, stagesState.length) || 1;
@@ -153,7 +153,7 @@ export function useContractStageManager(
 
     try {
       if (ui.editingStageId) {
-        const existingStage = stagesState.find(s => s.id === ui.editingStageId);
+        const existingStage = stagesState.find(stage => stage.id === ui.editingStageId);
         const updatedForState: ContractStage = {
           ...(existingStage ?? ({} as ContractStage)),
           ...stageData,

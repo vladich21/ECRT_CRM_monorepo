@@ -31,11 +31,14 @@ export function computePartnerSupplierEvalKpi(rows: SupplierEvaluationListItem[]
   }
 
   const perProject = oneRowPerProject(rows);
-  const sum = perProject.reduce((acc, r) => acc + Number(r.weighted_score), 0);
+  const sum = perProject.reduce((acc, row) => acc + Number(row.weighted_score), 0);
   const avgScore = Math.round((sum / perProject.length) * 100) / 100;
 
-  const dates = perProject.map(r => r.next_reevaluation_date).filter((d): d is string => Boolean(d));
-  const nextReevaluationIso = dates.length === 0 ? null : dates.reduce((a, b) => (a <= b ? a : b));
+  const dates = perProject
+    .map(row => row.next_reevaluation_date)
+    .filter((dateIso): dateIso is string => Boolean(dateIso));
+  const nextReevaluationIso =
+    dates.length === 0 ? null : dates.reduce((earlier, later) => (earlier <= later ? earlier : later));
 
   const today = dayjs().format('YYYY-MM-DD');
   const nextReevaluationOverdue =

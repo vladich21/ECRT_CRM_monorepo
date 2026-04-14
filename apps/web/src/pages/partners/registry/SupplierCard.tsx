@@ -62,9 +62,10 @@ export default function SupplierCard({
   initialEvaluationLoading,
   onClick,
 }: SupplierCardProps) {
-  const statusName = references?.partnerStatuses?.find(s => s.id === partner.status_id)?.name ?? '—';
+  const statusName =
+    references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
   const typeNames = (partner.type_ids ?? [])
-    .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
+    .map(typeId => references?.partnerTypes?.find(partnerType => partnerType.id === typeId)?.name)
     .filter(Boolean);
 
   const hasProjectAvg = evaluationKpi?.avgScore != null;

@@ -32,16 +32,16 @@ export function nextReevaluationDateForCategory(
 }
 
 function addCalendarMonths(isoDate: string, months: number): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
-  if (!m) return isoDate;
-  const y = Number(m[1]);
-  const mo = Number(m[2]);
-  const d = Number(m[3]);
+  const dateParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
+  if (!dateParts) return isoDate;
+  const year = Number(dateParts[1]);
+  const mo = Number(dateParts[2]);
+  const day = Number(dateParts[3]);
   const totalMonths = mo - 1 + months;
-  const newY = y + Math.floor(totalMonths / 12);
+  const newY = year + Math.floor(totalMonths / 12);
   const newM = (totalMonths % 12) + 1;
   const lastDay = daysInMonth(newY, newM);
-  const newD = Math.min(d, lastDay);
+  const newD = Math.min(day, lastDay);
   return `${String(newY).padStart(4, '0')}-${String(newM).padStart(2, '0')}-${String(newD).padStart(2, '0')}`;
 }
 

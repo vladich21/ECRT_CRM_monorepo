@@ -61,12 +61,16 @@ export function usePartnerDetailsData(partnerId: string | undefined, pathname: s
 
   const categoryName = useMemo(() => {
     if (!partner || !references?.partnerCategories) return null;
-    return references.partnerCategories.find(c => String(c.id) === String(partner.category_id))?.name ?? null;
+    return (
+      references.partnerCategories.find(
+        category => String(category.id) === String(partner.category_id),
+      )?.name ?? null
+    );
   }, [partner, references?.partnerCategories]);
 
   const statusName = useMemo(() => {
     if (!partner || !references?.partnerStatuses) return undefined;
-    return references.partnerStatuses.find(s => s.id === partner.status_id)?.name;
+    return references.partnerStatuses.find(status => status.id === partner.status_id)?.name;
   }, [partner, references?.partnerStatuses]);
 
   return {

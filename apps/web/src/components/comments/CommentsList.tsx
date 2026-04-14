@@ -41,7 +41,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
   const { mutate: createComment } = useCreateComment();
   const { mutate: updateComment } = useUpdateComment();
   const findCommentById = useCallback((commentId: string, commentsList: Comment[]): Comment | null => {
-    return commentsList.find(c => c.id === commentId) || null;
+    return commentsList.find(comment => comment.id === commentId) || null;
   }, []);
 
   const handleStartReply = useCallback(
@@ -85,7 +85,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
           try {
             setFilesToDelete(prev => [...prev, fileId]);
             if (editingComment) {
-              const updatedFiles = editingComment.files.filter(f => f.id !== fileId);
+              const updatedFiles = editingComment.files.filter(file => file.id !== fileId);
               setEditingComment({
                 ...editingComment,
                 files: updatedFiles,

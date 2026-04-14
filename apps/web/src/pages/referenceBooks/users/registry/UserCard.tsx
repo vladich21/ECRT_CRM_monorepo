@@ -15,7 +15,7 @@ function getFio(user: User): string {
 export default function UserCard({ user, onClick }: UserCardProps) {
   const statusLabel = user.is_active ? 'Активный' : 'Неактивный';
   const statusSurface = getActiveInactiveSurface(user.is_active);
-  const roleNames = user.roles?.map(r => r.role_name || r.id).filter(Boolean) ?? [];
+  const roleNames = user.roles?.map(role => role.role_name || role.id).filter(Boolean) ?? [];
   return (
     <div
       className={styles.card}

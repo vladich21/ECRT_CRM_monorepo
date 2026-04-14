@@ -12,7 +12,7 @@ export const useCommentHelpers = (allComments: Comment[], usersBook: User[]) => 
 
   const findParentComment = (parentId: string | null): Comment | null => {
     if (!parentId) return null;
-    return allComments.find(c => c.id === parentId) || null;
+    return allComments.find(comment => comment.id === parentId) || null;
   };
 
   const getUserName = (comment: Comment): string => {

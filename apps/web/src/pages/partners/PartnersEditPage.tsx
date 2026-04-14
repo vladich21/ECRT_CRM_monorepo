@@ -47,7 +47,9 @@ export default function PartnerEditPage() {
 
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses && !isFormInitializedRef.current) {
-      const archiveEntry = referenceBooks.partnerStatuses.find(s => (s.name ?? '').trim() === 'Архив');
+      const archiveEntry = referenceBooks.partnerStatuses.find(
+        status => (status.name ?? '').trim() === 'Архив',
+      );
       const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
       form.setFieldsValue(partnerUpdateFormMapper(partner, { is_archived: isArchived }));
       isFormInitializedRef.current = true;
@@ -68,7 +70,9 @@ export default function PartnerEditPage() {
   const handleSave = async (values: PartnerFormSubmitValues) => {
     if (isSubmittingRef.current || !referenceBooks || !partner) return;
     isSubmittingRef.current = true;
-    const archiveEntry = referenceBooks.partnerStatuses?.find(s => (s.name ?? '').trim() === 'Архив');
+    const archiveEntry = referenceBooks.partnerStatuses?.find(
+      status => (status.name ?? '').trim() === 'Архив',
+    );
     const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
     const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived }));
     payload.type_ids = values.type_ids ?? [];

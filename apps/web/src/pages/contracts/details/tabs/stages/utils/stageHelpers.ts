@@ -40,7 +40,12 @@ type StageStateRef = {
 };
 export function syncContractStageStateId(stage: ContractStage, contractStageStates?: StageStateRef[]): string {
   const { status } = getStageStatusFromDates(stage);
-  return contractStageStates?.find(s => s.code === status)?.id ?? contractStageStates?.[0]?.id ?? stage.state_id ?? '';
+  return (
+    contractStageStates?.find(stateRef => stateRef.code === status)?.id ??
+    contractStageStates?.[0]?.id ??
+    stage.state_id ??
+    ''
+  );
 }
 export type StageStatusIconType = 'CheckCircleOutlined' | 'ExclamationCircleOutlined' | 'ClockCircleOutlined';
 export const getStageStatusDisplay = (

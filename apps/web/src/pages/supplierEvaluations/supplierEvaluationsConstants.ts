@@ -73,15 +73,15 @@ export function evaluationYearFilterToApi(yearFilterValue: string): number | und
 }
 
 export function supplierEvaluationEvaluatedAtRangePresets(): { label: string; value: [Dayjs, Dayjs] }[] {
-  const cy = dayjs().year();
+  const currentYear = dayjs().year();
   const presets: { label: string; value: [Dayjs, Dayjs] }[] = [
     { label: 'Текущий год', value: [dayjs().startOf('year'), dayjs().endOf('year')] },
   ];
   for (let back = 1; back <= 12; back += 1) {
-    const y = cy - back;
+    const presetYear = currentYear - back;
     presets.push({
-      label: String(y),
-      value: [dayjs().year(y).startOf('year'), dayjs().year(y).endOf('year')],
+      label: String(presetYear),
+      value: [dayjs().year(presetYear).startOf('year'), dayjs().year(presetYear).endOf('year')],
     });
   }
   return presets;

@@ -28,8 +28,8 @@ export const SUPPLIER_EVAL_CATEGORY_COLOR: Record<SupplierEvaluationCategory, st
 const SCORE_DOT_COLORS = ['#8b0000', '#cc5500', '#ffbf00', '#88cc00', '#008000'] as const;
 
 export function scoreStepColor(step: number): string {
-  const i = Math.min(4, Math.max(0, Math.round(step) - 1));
-  return SCORE_DOT_COLORS[i];
+  const colorIndex = Math.min(4, Math.max(0, Math.round(step) - 1));
+  return SCORE_DOT_COLORS[colorIndex];
 }
 
 export function categoryFromWeightedScore(weighted: number): SupplierEvaluationCategory {
@@ -119,8 +119,8 @@ export function lineWeightedScore(row: SupplierEvaluationScoreDetail): number {
 }
 
 export function scoreColor(weighted: number): string {
-  const w = Math.min(5, Math.max(1, weighted));
-  return SUPPLIER_EVAL_CATEGORY_COLOR[categoryFromWeightedScore(w)];
+  const clampedWeighted = Math.min(5, Math.max(1, weighted));
+  return SUPPLIER_EVAL_CATEGORY_COLOR[categoryFromWeightedScore(clampedWeighted)];
 }
 
 export function CategoryTag({

@@ -1,48 +1,44 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input, Spin } from 'antd';
-import { useNavigate } from 'react-router-dom';
 
 import { useDepartments } from '../../../api/departments/departmentsApiHooks';
 import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { Department } from '../../../types/referenceTypes';
 import styles from './DepartmentsListPage.module.scss';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
 export default function DepartmentsListPage() {
-  const navigate = useNavigate();
   const { data: departments = [], isLoading, isError } = useDepartments();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   useEffect(() => {
-    const id = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(id);
+    const debounceTimerId = window.setTimeout(
+      () => setDebouncedSearch(searchQuery.trim()),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => window.clearTimeout(debounceTimerId);
   }, [searchQuery]);
 
   const sorted = useMemo(
-    () => [...departments].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'ru')),
+    () =>
+      [...departments].sort((left, right) =>
+        (left.name ?? '').localeCompare(right.name ?? '', 'ru'),
+      ),
     [departments],
   );
 
   const filtered = useMemo(() => {
-    const q = debouncedSearch.toLowerCase();
-    if (!q) return sorted;
-    return sorted.filter(d => (d.name ?? '').toLowerCase().includes(q));
+    const searchLower = debouncedSearch.toLowerCase();
+    if (!searchLower) return sorted;
+    return sorted.filter(department =>
+      (department.name ?? '').toLowerCase().includes(searchLower),
+    );
   }, [sorted, debouncedSearch]);
-
-  const handleOpen = (record: Department) => {
-    navigate(`/departments/${record.id}`, {
-      state: {
-        department: record,
-        from: 'departments-list',
-      },
-    });
-  };
 
   if (isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
@@ -88,11 +84,7 @@ export default function DepartmentsListPage() {
       ) : (
         <ReferenceBookCardList>
           {filtered.map(department => (
-            <ReferenceBookItemCard
-              key={department.id}
-              title={department.name || '—'}
-              onClick={() => handleOpen(department)}
-            />
+            <ReferenceBookItemCard key={department.id} title={department.name || '—'} />
           ))}
         </ReferenceBookCardList>
       )}

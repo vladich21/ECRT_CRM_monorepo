@@ -357,17 +357,17 @@ export class UsersService {
 
   private toAbsoluteAvatarUrl(relativeOrAbsolute: string | null): string | null {
     if (!relativeOrAbsolute?.trim()) return null;
-    const v = relativeOrAbsolute.trim();
-    if (v.startsWith('http://') || v.startsWith('https://')) return v;
-    if (!this.hrAssetBaseUrl) return v;
-    return `${this.hrAssetBaseUrl}${v.startsWith('/') ? '' : '/'}${v}`;
+    const trimmedPath = relativeOrAbsolute.trim();
+    if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) return trimmedPath;
+    if (!this.hrAssetBaseUrl) return trimmedPath;
+    return `${this.hrAssetBaseUrl}${trimmedPath.startsWith('/') ? '' : '/'}${trimmedPath}`;
   }
 
-  private formatDate(d: Date | string | null | undefined): string | null {
-    if (d == null) return null;
-    if (d instanceof Date) return d.toISOString().slice(0, 10);
-    const s = String(d);
-    return s.length >= 10 ? s.slice(0, 10) : s;
+  private formatDate(value: Date | string | null | undefined): string | null {
+    if (value == null) return null;
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    const asString = String(value);
+    return asString.length >= 10 ? asString.slice(0, 10) : asString;
   }
 
   private toResponse(

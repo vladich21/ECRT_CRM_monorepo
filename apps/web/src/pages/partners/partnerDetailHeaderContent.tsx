@@ -137,7 +137,7 @@ export function partnerDetailHeaderMetaItems(
   initialEvalLoading?: boolean,
 ): ReactNode[] {
   const typeNames = (partner.type_ids ?? [])
-    .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
+    .map(typeId => references?.partnerTypes?.find(partnerType => partnerType.id === typeId)?.name)
     .filter(Boolean);
 
   const items: ReactNode[] = [];

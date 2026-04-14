@@ -49,16 +49,16 @@ function parseUiStatus(raw?: string): SupplierEvaluationUiStatusFilter | undefin
 
 function parseEvaluatedYear(raw?: string): number | undefined {
   if (raw == null || raw === '') return undefined;
-  const y = Number(raw);
-  return Number.isFinite(y) && y >= 1990 && y <= 2100 ? y : undefined;
+  const year = Number(raw);
+  return Number.isFinite(year) && year >= 1990 && year <= 2100 ? year : undefined;
 }
 
 function parseEvaluatedAtDate(raw?: string): string | undefined {
   if (raw == null || raw.trim() === '') return undefined;
-  const s = raw.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined;
-  const t = Date.parse(`${s}T12:00:00.000Z`);
-  return Number.isFinite(t) ? s : undefined;
+  const dateString = raw.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return undefined;
+  const parsedUtcMillis = Date.parse(`${dateString}T12:00:00.000Z`);
+  return Number.isFinite(parsedUtcMillis) ? dateString : undefined;
 }
 
 function parseSortField(raw?: string): 'evaluated_at' | 'weighted_score' | undefined {

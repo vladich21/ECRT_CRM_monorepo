@@ -38,30 +38,36 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
   const [excluded, setExcluded] = useState<Record<string, boolean>>({});
 
   const criteriaOrdered = useMemo(
-    () => [...criteria].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    () =>
+      [...criteria].sort(
+        (left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0),
+      ),
     [criteria],
   );
 
   useEffect(() => {
     if (open && criteriaOrdered.length) {
       setScores(defaultScores(criteriaOrdered));
-      setExcluded(Object.fromEntries(criteriaOrdered.map(c => [c.id, false])));
+      setExcluded(Object.fromEntries(criteriaOrdered.map(criterion => [criterion.id, false])));
       form.setFieldsValue({ evaluated_at: dayjs(), comment: undefined });
     }
   }, [open, criteriaOrdered, form]);
 
   const includedCriteria = useMemo(
-    () => criteriaOrdered.filter(c => !excluded[c.id]),
+    () => criteriaOrdered.filter(criterion => !excluded[criterion.id]),
     [criteriaOrdered, excluded],
   );
 
-  const sumWeights = useMemo(() => includedCriteria.reduce((acc, c) => acc + Number(c.weight), 0), [includedCriteria]);
+  const sumWeights = useMemo(
+    () => includedCriteria.reduce((acc, criterion) => acc + Number(criterion.weight), 0),
+    [includedCriteria],
+  );
 
   const weighted = useMemo(() => {
     if (!includedCriteria.length || !Number.isFinite(sumWeights) || sumWeights <= 0) return 0;
-    const raw = includedCriteria.reduce((acc, c) => {
-      const score = scores[c.id] ?? 4;
-      return acc + score * (Number(c.weight) / sumWeights);
+    const raw = includedCriteria.reduce((acc, criterion) => {
+      const score = scores[criterion.id] ?? 4;
+      return acc + score * (Number(criterion.weight) / sumWeights);
     }, 0);
     return Math.round(raw * 100) / 100;
   }, [includedCriteria, scores, sumWeights]);
@@ -79,7 +85,10 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
           partner_id: partnerId,
           evaluated_at: values.evaluated_at.format('YYYY-MM-DD'),
           comment: values.comment?.trim() || undefined,
-          scores: includedCriteria.map(c => ({ criterion_id: c.id, score: scores[c.id] ?? 4 })),
+          scores: includedCriteria.map(criterion => ({
+            criterion_id: criterion.id,
+            score: scores[criterion.id] ?? 4,
+          })),
         },
         {
           onSuccess: () => {

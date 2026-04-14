@@ -12,6 +12,6 @@ export function parseThousandSeparatedNumber(displayValue: string | undefined): 
     return 0;
   }
   const normalized = String(displayValue).replace(/\s/g, '').replace(',', '.');
-  const n = Number(normalized);
-  return Number.isFinite(n) ? n : 0;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
 }

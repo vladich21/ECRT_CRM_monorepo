@@ -53,7 +53,11 @@ export const UniversalFilters: React.FC<UniversalFiltersProps> = ({ filterConfig
 
   const getActiveFiltersCount = () => {
     return Object.values(value).filter(
-      val => val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0),
+      storedValue =>
+        storedValue !== undefined &&
+        storedValue !== null &&
+        storedValue !== '' &&
+        !(Array.isArray(storedValue) && storedValue.length === 0),
     ).length;
   };
 
@@ -68,16 +72,16 @@ export const UniversalFilters: React.FC<UniversalFiltersProps> = ({ filterConfig
     if (Array.isArray(value)) {
       if (config.type === 'multi-select' || config.type === 'checkbox') {
         return value
-          .map(val => {
-            const option = config.options?.find(opt => opt.id === val);
-            return option?.name || val;
+          .map(selectedId => {
+            const option = config.options?.find(optionItem => optionItem.id === selectedId);
+            return option?.name || selectedId;
           })
           .join(', ');
       }
     }
 
     if (config.type === 'select') {
-      const option = config.options?.find(opt => opt.id === value);
+      const option = config.options?.find(optionItem => optionItem.id === value);
       return option?.name || String(value);
     }
 
@@ -92,15 +96,27 @@ export const UniversalFilters: React.FC<UniversalFiltersProps> = ({ filterConfig
             <div className={styles.activeFiltersList}>
               <span className={styles.activeFiltersLabel}>Активные фильтры:</span>
 
-              {Object.entries(value).map(([key, val]) => {
-                if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
+              {Object.entries(value).map(([filterKey, activeValue]) => {
+                if (
+                  activeValue === undefined ||
+                  activeValue === null ||
+                  activeValue === '' ||
+                  (Array.isArray(activeValue) && activeValue.length === 0)
+                ) {
                   return null;
                 }
 
                 return (
-                  <Tag key={key} closable onClose={() => removeFilter(key)} className={styles.filterTag}>
-                    {getFieldConfig(key)?.label || key}
-                    {getFieldConfig(key)?.type === 'search' ? null : `: ${getFilterDisplayValue(key, val)}`}
+                  <Tag
+                    key={filterKey}
+                    closable
+                    onClose={() => removeFilter(filterKey)}
+                    className={styles.filterTag}
+                  >
+                    {getFieldConfig(filterKey)?.label || filterKey}
+                    {getFieldConfig(filterKey)?.type === 'search'
+                      ? null
+                      : `: ${getFilterDisplayValue(filterKey, activeValue)}`}
                   </Tag>
                 );
               })}

@@ -8,28 +8,31 @@ import styles from './DetailSidebar.module.scss';
 
 /** Контакт для карточки сайдбара: основной или первый в списке. */
 function pickFeaturedContact(contacts: PartnerContact[]): PartnerContact {
-  return contacts.find(c => c.is_primary) ?? contacts[0];
+  return contacts.find(contact => contact.is_primary) ?? contacts[0];
 }
 
 function countOtherContacts(contacts: PartnerContact[], featuredId: string): number {
-  return contacts.reduce((n, c) => n + (c.id === featuredId ? 0 : 1), 0);
+  return contacts.reduce(
+    (count, contact) => count + (contact.id === featuredId ? 0 : 1),
+    0,
+  );
 }
 
 /** «1 контакт / 2 контакта / 5 контактов» для фразы «Ещё N …». */
-function pluralContactsRu(n: number): string {
-  const x = Math.max(0, Math.floor(n));
-  const m10 = x % 10;
-  const m100 = x % 100;
-  if (m100 >= 11 && m100 <= 14) return `${x} контактов`;
-  if (m10 === 1) return `${x} контакт`;
-  if (m10 >= 2 && m10 <= 4) return `${x} контакта`;
-  return `${x} контактов`;
+function pluralContactsRu(contactCount: number): string {
+  const countFloored = Math.max(0, Math.floor(contactCount));
+  const lastDigit = countFloored % 10;
+  const lastTwoDigits = countFloored % 100;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return `${countFloored} контактов`;
+  if (lastDigit === 1) return `${countFloored} контакт`;
+  if (lastDigit >= 2 && lastDigit <= 4) return `${countFloored} контакта`;
+  return `${countFloored} контактов`;
 }
 
 function websiteHref(raw: string): string {
-  const t = raw.trim();
-  if (/^https?:\/\//i.test(t)) return t;
-  return `https://${t}`;
+  const trimmedUrl = raw.trim();
+  if (/^https?:\/\//i.test(trimmedUrl)) return trimmedUrl;
+  return `https://${trimmedUrl}`;
 }
 
 /** Строки «лейбл — значение» для блока «Контактные лица». */
@@ -118,14 +121,16 @@ interface DetailSidebarProps {
   };
 }
 export default function DetailSidebar({ partner, references, contacts = [] }: DetailSidebarProps) {
-  const statusName = references?.partnerStatuses?.find(s => s.id === partner.status_id)?.name ?? '—';
+  const statusName =
+    references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
   const typeNames = (partner.type_ids ?? [])
-    .map(id => references?.partnerTypes?.find(t => t.id === id)?.name)
+    .map(typeId => references?.partnerTypes?.find(partnerType => partnerType.id === typeId)?.name)
     .filter(Boolean);
   const econCategory = references?.partnerEconomicCategories?.find(
-    c => c.id === partner.partner_economic_category_id,
+    economicCategory => economicCategory.id === partner.partner_economic_category_id,
   )?.name;
-  const categoryName = references?.partnerCategories?.find(c => c.id === partner.category_id)?.name ?? '—';
+  const categoryName =
+    references?.partnerCategories?.find(category => category.id === partner.category_id)?.name ?? '—';
   const approvedByRules = computePartnerIsApproved({
     kind: inferPartnerCategoryKind(categoryName),
     legalCheckPassed: partner.legal_check_passed,

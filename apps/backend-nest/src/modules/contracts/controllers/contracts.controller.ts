@@ -29,8 +29,8 @@ function parseContractListTab(raw?: string): ContractListTab {
 
 function parseOptionalNumber(raw?: string): number | undefined {
   if (raw == null || raw === '') return undefined;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 @Controller('contracts')

@@ -40,7 +40,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
   );
 
   const removeFile = (fileId: string) => {
-    setFiles(prev => prev.filter(f => f.id !== fileId));
+    setFiles(prev => prev.filter(file => file.id !== fileId));
   };
 
   const clearAllFiles = () => {
@@ -58,10 +58,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ isLoading, onConfirm }) => {
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
-    const k = 1024;
+    const bytesPerUnit = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const unitIndex = Math.floor(Math.log(bytes) / Math.log(bytesPerUnit));
+    return (
+      parseFloat((bytes / Math.pow(bytesPerUnit, unitIndex)).toFixed(2)) + ' ' + sizes[unitIndex]
+    );
   };
 
   return (

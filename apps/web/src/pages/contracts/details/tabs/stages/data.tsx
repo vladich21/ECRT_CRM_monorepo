@@ -117,7 +117,8 @@ export const getStageColumnsData = (
       const timeProgress = Math.min((passedDays / totalDays) * 100, 100);
       const budgetProgress = record.planned_budget > 0 ? (record.actual_budget / record.planned_budget) * 100 : 0;
       const isDelayed = timeProgress > 100 && !record.actual_end_date;
-      const statusCode = references.contractStageStates?.find(s => s.id === record.state_id)?.code || 'completed';
+      const statusCode =
+        references.contractStageStates?.find(stateRow => stateRow.id === record.state_id)?.code || 'completed';
       return (
         <div>
           <div className={styles.progressContainer}>
@@ -160,7 +161,7 @@ export const getStageColumnsData = (
     key: 'status_id',
     width: 120,
     render: (status_id: string) => {
-      const status = references.contractStageStates?.find(s => s.id === status_id);
+      const status = references.contractStageStates?.find(stateRow => stateRow.id === status_id);
       const code = status?.code ?? 'planned';
       const toneClass = STAGE_STATE_TAG_CLASS[code] ?? styles.tagNeutral;
       return (

@@ -28,7 +28,7 @@ const FILTER_TABS: {
 ];
 function filterByTab(users: User[], tab: FilterTab): User[] {
   if (tab === 'all') return users;
-  return users.filter(u => (tab === 'active' ? u.is_active : !u.is_active));
+  return users.filter(user => (tab === 'active' ? user.is_active : !user.is_active));
 }
 export default function UsersListPage() {
   const navigate = useNavigate();
@@ -65,8 +65,8 @@ export default function UsersListPage() {
   const tabCounts = useMemo(
     () => ({
       all: allUsers.length,
-      active: allUsers.filter(u => u.is_active).length,
-      inactive: allUsers.filter(u => !u.is_active).length,
+      active: allUsers.filter(user => user.is_active).length,
+      inactive: allUsers.filter(user => !user.is_active).length,
     }),
     [allUsers],
   );
@@ -78,29 +78,29 @@ export default function UsersListPage() {
   }, [filteredUsers, page, pageSize]);
   const selectOptions = useMemo(
     () => ({
-      departments: (references?.departments ?? []).map(d => ({
-        label: d.name,
-        value: d.id,
+      departments: (references?.departments ?? []).map(department => ({
+        label: department.name,
+        value: department.id,
       })),
-      positions: (references?.positions ?? []).map(p => ({
-        label: p.name,
-        value: p.id,
+      positions: (references?.positions ?? []).map(position => ({
+        label: position.name,
+        value: position.id,
       })),
-      roles: (references?.roles ?? []).map(r => ({
+      roles: (references?.roles ?? []).map(role => ({
         label:
           (
-            r as {
+            role as {
               role_name?: string;
               name?: string;
             }
           ).role_name ??
           (
-            r as {
+            role as {
               name?: string;
             }
           ).name ??
-          r.id,
-        value: r.id,
+          role.id,
+        value: role.id,
       })),
     }),
     [references],

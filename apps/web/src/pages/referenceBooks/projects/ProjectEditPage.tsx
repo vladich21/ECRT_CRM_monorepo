@@ -77,10 +77,14 @@ export default function ProjectEditPage() {
     );
   };
   const statusBadge = (() => {
-    const s = (wStatus ?? (project as any)?.status) as string | undefined;
-    if (!s) return undefined;
-    const st = (PROJECT_STATUS_CONFIG as any)[s] ?? PROJECT_STATUS_CONFIG.active;
-    return { label: st.label, variant: detailHeaderVariantForProjectStatus(s) };
+    const statusCode = (wStatus ?? (project as any)?.status) as string | undefined;
+    if (!statusCode) return undefined;
+    const statusConfig =
+      (PROJECT_STATUS_CONFIG as any)[statusCode] ?? PROJECT_STATUS_CONFIG.active;
+    return {
+      label: statusConfig.label,
+      variant: detailHeaderVariantForProjectStatus(statusCode),
+    };
   })();
   const headerName = (wName ?? project.name ?? '').trim();
   const headerTitle = headerName || '—';

@@ -102,9 +102,9 @@ export class SupplierEvaluationsService {
       .groupBy(projects.id, projects.name, projects.code)
       .orderBy(asc(projects.name));
 
-    return rows.map((r) => ({
-      id: String(r.id),
-      label: (r.name ?? r.code ?? String(r.id)).trim() || String(r.id),
+    return rows.map((projectRow) => ({
+      id: String(projectRow.id),
+      label: (projectRow.name ?? projectRow.code ?? String(projectRow.id)).trim() || String(projectRow.id),
     }));
   }
 
@@ -137,17 +137,17 @@ export class SupplierEvaluationsService {
         ),
     ]);
 
-    const blockedProjectCount = new Set(blockRows.map((r) => String(r.projectId))).size;
+    const blockedProjectCount = new Set(blockRows.map((row) => String(row.projectId))).size;
 
     type EvalPick = (typeof evalRows)[number];
     const byProject = new Map<string, EvalPick>();
-    for (const r of evalRows) {
-      const pid = String(r.projectId);
-      const prev = byProject.get(pid);
-      const evAt = this.isoDateOnly(r.evaluatedAt);
+    for (const evaluationRow of evalRows) {
+      const projectIdKey = String(evaluationRow.projectId);
+      const prev = byProject.get(projectIdKey);
+      const evAt = this.isoDateOnly(evaluationRow.evaluatedAt);
       const prevAt = prev ? this.isoDateOnly(prev.evaluatedAt) : '';
       if (!prev || evAt > prevAt) {
-        byProject.set(pid, r);
+        byProject.set(projectIdKey, evaluationRow);
       }
     }
     const perProject = [...byProject.values()];
@@ -155,12 +155,13 @@ export class SupplierEvaluationsService {
     let avgScore: number | null = null;
     let nextReevaluationDate: string | null = null;
     if (perProject.length > 0) {
-      const sum = perProject.reduce((acc, r) => acc + Number(r.weightedScore), 0);
+      const sum = perProject.reduce((acc, row) => acc + Number(row.weightedScore), 0);
       avgScore = Math.round((sum / perProject.length) * 100) / 100;
       const dates = perProject
-        .map((r) => (r.nextReevaluationDate ? this.isoDateOnly(r.nextReevaluationDate) : null))
-        .filter((d): d is string => Boolean(d));
-      nextReevaluationDate = dates.length === 0 ? null : dates.reduce((a, b) => (a <= b ? a : b));
+        .map((row) => (row.nextReevaluationDate ? this.isoDateOnly(row.nextReevaluationDate) : null))
+        .filter((dateIso): dateIso is string => Boolean(dateIso));
+      nextReevaluationDate =
+        dates.length === 0 ? null : dates.reduce((earlier, later) => (earlier <= later ? earlier : later));
     }
 
     const nextReevaluationOverdue =
@@ -175,18 +176,18 @@ export class SupplierEvaluationsService {
   }
 
   private calendarTodayIso(): string {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const day = d.getDate();
-    return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
 
-  private isoDateOnly(v: unknown): string {
-    if (v == null) return '';
-    if (typeof v === 'string') return v.length >= 10 ? v.slice(0, 10) : v;
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
-    return String(v).slice(0, 10);
+  private isoDateOnly(value: unknown): string {
+    if (value == null) return '';
+    if (typeof value === 'string') return value.length >= 10 ? value.slice(0, 10) : value;
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    return String(value).slice(0, 10);
   }
 
   async deleteEvaluation(evaluationId: string) {
@@ -256,15 +257,15 @@ export class SupplierEvaluationsService {
       .offset(offset);
 
     return {
-      data: rows.map((r) =>
+      data: rows.map((listRow) =>
         this.evaluationToResponse(
-          r.ev,
+          listRow.ev,
           {
-            lastName: r.creatorLastName,
-            firstName: r.creatorFirstName,
-            middleName: r.creatorMiddleName,
+            lastName: listRow.creatorLastName,
+            firstName: listRow.creatorFirstName,
+            middleName: listRow.creatorMiddleName,
           },
-          { shortName: r.partnerShortName, name: r.partnerName },
+          { shortName: listRow.partnerShortName, name: listRow.partnerName },
         ),
       ),
       total,
@@ -290,8 +291,8 @@ export class SupplierEvaluationsService {
         };
         const whereClause = this.buildListWhere(listFilters);
         const listWhere = whereClause ?? sql`true`;
-        const n = await this.countMatchingWhere(listWhere);
-        return [key, n] as const;
+        const matchingCount = await this.countMatchingWhere(listWhere);
+        return [key, matchingCount] as const;
       }),
     );
     return Object.fromEntries(entries) as SupplierEvaluationTabCounts;
@@ -352,16 +353,16 @@ export class SupplierEvaluationsService {
         },
         { shortName: row.partnerShortName, name: row.partnerName },
       ),
-      scores: scoreRows.map((s) => ({
-        id: String(s.id),
-        criterion_id: String(s.criterion_id),
-        score: this.roundScore(Number(s.score)),
-        criterion_code: s.criterion_code ?? '',
-        criterion_name: s.criterion_name ?? '',
-        criterion_weight: Number(s.criterion_weight),
-        sort_order: s.sort_order,
+      scores: scoreRows.map((scoreRow) => ({
+        id: String(scoreRow.id),
+        criterion_id: String(scoreRow.criterion_id),
+        score: this.roundScore(Number(scoreRow.score)),
+        criterion_code: scoreRow.criterion_code ?? '',
+        criterion_name: scoreRow.criterion_name ?? '',
+        criterion_weight: Number(scoreRow.criterion_weight),
+        sort_order: scoreRow.sort_order,
         weighted_line:
-          Math.round(Number(s.score) * Number(s.criterion_weight) * 1000) / 1000,
+          Math.round(Number(scoreRow.score) * Number(scoreRow.criterion_weight) * 1000) / 1000,
       })),
     };
   }
@@ -381,15 +382,15 @@ export class SupplierEvaluationsService {
       throw new BadRequestException('В справочнике нет активных критериев оценки');
     }
 
-    const criterionIds = new Set(criteriaRows.map((c) => String(c.id)));
+    const criterionIds = new Set(criteriaRows.map((criterionRow) => String(criterionRow.id)));
     const seen = new Set<string>();
-    for (const s of dto.scores) {
-      if (seen.has(s.criterion_id)) {
-        throw new BadRequestException(`Критерий ${s.criterion_id} указан более одного раза`);
+    for (const scoreInput of dto.scores) {
+      if (seen.has(scoreInput.criterion_id)) {
+        throw new BadRequestException(`Критерий ${scoreInput.criterion_id} указан более одного раза`);
       }
-      seen.add(s.criterion_id);
-      if (!criterionIds.has(s.criterion_id)) {
-        throw new BadRequestException(`Неизвестный или неактивный критерий: ${s.criterion_id}`);
+      seen.add(scoreInput.criterion_id);
+      if (!criterionIds.has(scoreInput.criterion_id)) {
+        throw new BadRequestException(`Неизвестный или неактивный критерий: ${scoreInput.criterion_id}`);
       }
     }
 
@@ -399,10 +400,12 @@ export class SupplierEvaluationsService {
       );
     }
 
-    const weightById = new Map(criteriaRows.map((c) => [String(c.id), Number(c.weight)]));
+    const weightById = new Map(
+      criteriaRows.map((criterionRow) => [String(criterionRow.id), Number(criterionRow.weight)]),
+    );
     let weighted = 0;
-    for (const s of dto.scores) {
-      weighted += s.score * (weightById.get(s.criterion_id) ?? 0);
+    for (const scoreInput of dto.scores) {
+      weighted += scoreInput.score * (weightById.get(scoreInput.criterion_id) ?? 0);
     }
     weighted = Math.round(weighted * 100) / 100;
 
@@ -449,10 +452,10 @@ export class SupplierEvaluationsService {
         const evaluationId = inserted.id;
 
         await tx.insert(supplierEvaluationCriterionScores).values(
-          dto.scores.map((s) => ({
+          dto.scores.map((scoreInput) => ({
             evaluationId,
-            criterionId: s.criterion_id,
-            score: String(s.score),
+            criterionId: scoreInput.criterion_id,
+            score: String(scoreInput.score),
           })),
         );
 
@@ -483,9 +486,9 @@ export class SupplierEvaluationsService {
       const created = await this.findOne(String(result.id));
       await this.partnersService.refreshPartnerDerivedStatus(dto.partner_id);
       return created;
-    } catch (err) {
-      this.logger.warn(`Ошибка создания оценки: ${err}`);
-      throw err;
+    } catch (error: unknown) {
+      this.logger.warn(`Ошибка создания оценки: ${error}`);
+      throw error;
     }
   }
 
@@ -519,12 +522,12 @@ export class SupplierEvaluationsService {
 
   async createInitial(dto: CreateInitialSupplierEvaluationDto, createdByUserId?: string) {
     this.validateEvaluatedAt(dto.evaluated_at);
-    const [p] = await this.db.db
+    const [partnerRow] = await this.db.db
       .select({ id: partners.id })
       .from(partners)
       .where(and(eq(partners.id, dto.partner_id), eq(partners.isDeleted, false)))
       .limit(1);
-    if (!p) {
+    if (!partnerRow) {
       throw new BadRequestException('Контрагент не найден или удалён');
     }
 
@@ -537,17 +540,19 @@ export class SupplierEvaluationsService {
       throw new BadRequestException('В справочнике нет активных критериев оценки');
     }
 
-    const activeCriterionIds = new Set(criteriaRows.map((c) => String(c.id)));
-    const weightById = new Map(criteriaRows.map((c) => [String(c.id), Number(c.weight)]));
+    const activeCriterionIds = new Set(criteriaRows.map((criterionRow) => String(criterionRow.id)));
+    const weightById = new Map(
+      criteriaRows.map((criterionRow) => [String(criterionRow.id), Number(criterionRow.weight)]),
+    );
 
     const seen = new Set<string>();
-    for (const s of dto.scores) {
-      if (seen.has(s.criterion_id)) {
-        throw new BadRequestException(`Критерий ${s.criterion_id} указан более одного раза`);
+    for (const scoreInput of dto.scores) {
+      if (seen.has(scoreInput.criterion_id)) {
+        throw new BadRequestException(`Критерий ${scoreInput.criterion_id} указан более одного раза`);
       }
-      seen.add(s.criterion_id);
-      if (!activeCriterionIds.has(s.criterion_id)) {
-        throw new BadRequestException(`Неизвестный или неактивный критерий: ${s.criterion_id}`);
+      seen.add(scoreInput.criterion_id);
+      if (!activeCriterionIds.has(scoreInput.criterion_id)) {
+        throw new BadRequestException(`Неизвестный или неактивный критерий: ${scoreInput.criterion_id}`);
       }
     }
 
@@ -555,15 +560,18 @@ export class SupplierEvaluationsService {
       throw new BadRequestException('Нужен минимум один критерий для первичной оценки');
     }
 
-    const sumWeights = dto.scores.reduce((acc, s) => acc + (weightById.get(s.criterion_id) ?? 0), 0);
+    const sumWeights = dto.scores.reduce(
+      (acc, scoreLine) => acc + (weightById.get(scoreLine.criterion_id) ?? 0),
+      0,
+    );
     if (!Number.isFinite(sumWeights) || sumWeights <= 0) {
       throw new BadRequestException('Сумма весов выбранных критериев должна быть больше 0');
     }
 
     let weighted = 0;
-    for (const s of dto.scores) {
-      const w = weightById.get(s.criterion_id) ?? 0;
-      weighted += s.score * (w / sumWeights);
+    for (const scoreLine of dto.scores) {
+      const criterionWeight = weightById.get(scoreLine.criterion_id) ?? 0;
+      weighted += scoreLine.score * (criterionWeight / sumWeights);
     }
     weighted = Math.round(weighted * 100) / 100;
 
@@ -603,10 +611,10 @@ export class SupplierEvaluationsService {
       if (!row) throw new Error('INSERT supplier_evaluations (initial) не вернул строку');
 
       await tx.insert(supplierEvaluationCriterionScores).values(
-        dto.scores.map((s) => ({
+        dto.scores.map((scoreInput) => ({
           evaluationId: row.id,
-          criterionId: s.criterion_id,
-          score: String(s.score),
+          criterionId: scoreInput.criterion_id,
+          score: String(scoreInput.score),
         })),
       );
 
@@ -696,9 +704,9 @@ export class SupplierEvaluationsService {
       if (from) parts.push(gte(supplierEvaluations.evaluatedAt, from));
       if (to) parts.push(lte(supplierEvaluations.evaluatedAt, to));
     } else if (filters.evaluatedYear != null && Number.isFinite(filters.evaluatedYear)) {
-      const y = filters.evaluatedYear;
-      parts.push(gte(supplierEvaluations.evaluatedAt, `${y}-01-01`));
-      parts.push(lte(supplierEvaluations.evaluatedAt, `${y}-12-31`));
+      const evaluatedYear = filters.evaluatedYear;
+      parts.push(gte(supplierEvaluations.evaluatedAt, `${evaluatedYear}-01-01`));
+      parts.push(lte(supplierEvaluations.evaluatedAt, `${evaluatedYear}-12-31`));
     }
 
     const ui = filters.uiStatus ?? 'all';
@@ -751,25 +759,25 @@ export class SupplierEvaluationsService {
     firstName?: string | null;
     middleName?: string | null;
   }): string {
-    const s = [parts.lastName, parts.firstName, parts.middleName].filter(Boolean).join(' ').trim();
-    return s || '';
+    const fullName = [parts.lastName, parts.firstName, parts.middleName].filter(Boolean).join(' ').trim();
+    return fullName || '';
   }
 
   private async assertPartnerAndProjectExist(partnerId: string, projectId: string) {
-    const [p] = await this.db.db
+    const [partnerRow] = await this.db.db
       .select({ id: partners.id })
       .from(partners)
       .where(and(eq(partners.id, partnerId), eq(partners.isDeleted, false)))
       .limit(1);
-    if (!p) {
+    if (!partnerRow) {
       throw new BadRequestException('Контрагент не найден или удалён');
     }
-    const [pr] = await this.db.db
+    const [projectRow] = await this.db.db
       .select({ id: projects.id })
       .from(projects)
       .where(and(eq(projects.id, projectId), eq(projects.isDeleted, false)))
       .limit(1);
-    if (!pr) {
+    if (!projectRow) {
       throw new BadRequestException('Проект не найден или удалён');
     }
   }

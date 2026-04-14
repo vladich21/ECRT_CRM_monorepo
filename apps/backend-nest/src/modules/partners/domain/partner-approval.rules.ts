@@ -2,9 +2,9 @@
 export type PartnerCategoryKind = 'resource' | 'engineering' | 'default';
 
 export function inferPartnerCategoryKind(categoryName: string | null | undefined): PartnerCategoryKind {
-  const n = (categoryName ?? '').toLowerCase().trim();
-  if (n.includes('ресурс')) return 'resource';
-  if (n.includes('инжинир')) return 'engineering';
+  const normalizedName = (categoryName ?? '').toLowerCase().trim();
+  if (normalizedName.includes('ресурс')) return 'resource';
+  if (normalizedName.includes('инжинир')) return 'engineering';
   return 'default';
 }
 

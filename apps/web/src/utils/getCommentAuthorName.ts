@@ -23,6 +23,6 @@ export const getCommentAuthorName = (
 
   if (!userId || !usersBook) return 'Пользователь';
 
-  const user = usersBook.find(u => u.id === userId);
+  const user = usersBook.find(bookUser => bookUser.id === userId);
   return user?.name || 'Пользователь';
 };

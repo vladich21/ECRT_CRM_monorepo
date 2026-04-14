@@ -83,7 +83,10 @@ export default function SupplierEvaluationsRegistryPage() {
 
   const { data: projects = [] } = useProjectsPreview();
   const projectNameById = useMemo(
-    () => Object.fromEntries(projects.map(p => [p.id, p.name || p.code || p.id])),
+    () =>
+      Object.fromEntries(
+        projects.map(project => [project.id, project.name || project.code || project.id]),
+      ),
     [projects],
   );
 
@@ -93,16 +96,19 @@ export default function SupplierEvaluationsRegistryPage() {
     staleTime: 5 * 60 * 1000,
   });
   const partnerNameById = useMemo(
-    () => Object.fromEntries(partners.map(p => [p.id, p.short_name || p.name || p.id])),
+    () =>
+      Object.fromEntries(
+        partners.map(partner => [partner.id, partner.short_name || partner.name || partner.id]),
+      ),
     [partners],
   );
 
   const { data: usersResponse } = useUsers(2, true);
   const buyerOptions = useMemo(
     () =>
-      (usersResponse?.data ?? []).map(u => ({
-        value: u.id,
-        label: formatSrmUserName(u),
+      (usersResponse?.data ?? []).map(userRow => ({
+        value: userRow.id,
+        label: formatSrmUserName(userRow),
       })),
     [usersResponse?.data],
   );

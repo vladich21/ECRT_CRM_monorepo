@@ -151,12 +151,12 @@ export class PartnersService {
         )
         .orderBy(asc(partners.name));
       const data = rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
-      const n = data.length;
+      const partnerCount = data.length;
       return {
         data,
-        total: n,
-        tab_counts: { all: n, ready: 0, in_progress: 0, key_supplier: 0 },
-        deletion_tab_counts: { active: n, deleted: 0, all: n },
+        total: partnerCount,
+        tab_counts: { all: partnerCount, ready: 0, in_progress: 0, key_supplier: 0 },
+        deletion_tab_counts: { active: partnerCount, deleted: 0, all: partnerCount },
       };
     }
 
@@ -222,20 +222,20 @@ export class PartnersService {
       : [[], []];
 
     const typeMap = new Map<string, string[]>();
-    for (const t of typeRows) {
-      if (t.partnerId && t.typeId) {
-        const arr = typeMap.get(String(t.partnerId)) ?? [];
-        arr.push(String(t.typeId));
-        typeMap.set(String(t.partnerId), arr);
+    for (const typeLinkRow of typeRows) {
+      if (typeLinkRow.partnerId && typeLinkRow.typeId) {
+        const arr = typeMap.get(String(typeLinkRow.partnerId)) ?? [];
+        arr.push(String(typeLinkRow.typeId));
+        typeMap.set(String(typeLinkRow.partnerId), arr);
       }
     }
 
     const compMap = new Map<string, string[]>();
-    for (const c of compRows) {
-      if (c.partnerId && c.competenceId) {
-        const arr = compMap.get(String(c.partnerId)) ?? [];
-        arr.push(String(c.competenceId));
-        compMap.set(String(c.partnerId), arr);
+    for (const competenceLinkRow of compRows) {
+      if (competenceLinkRow.partnerId && competenceLinkRow.competenceId) {
+        const arr = compMap.get(String(competenceLinkRow.partnerId)) ?? [];
+        arr.push(String(competenceLinkRow.competenceId));
+        compMap.set(String(competenceLinkRow.partnerId), arr);
       }
     }
 
@@ -573,9 +573,9 @@ export class PartnersService {
 
   private parseManualArchiveFlag(data: Record<string, unknown>): boolean | undefined {
     if (!('manual_archive' in data) || data.manual_archive === undefined) return undefined;
-    const v = data.manual_archive;
-    if (v === true || v === 'true') return true;
-    if (v === false || v === 'false') return false;
+    const manualArchiveRaw = data.manual_archive;
+    if (manualArchiveRaw === true || manualArchiveRaw === 'true') return true;
+    if (manualArchiveRaw === false || manualArchiveRaw === 'false') return false;
     return undefined;
   }
 
@@ -599,9 +599,9 @@ export class PartnersService {
       .select({ id: refPartnerStatuses.id, name: refPartnerStatuses.name })
       .from(refPartnerStatuses);
     const byLower = new Map<string, string>();
-    for (const r of rows) {
-      const k = (r.name ?? '').trim().toLowerCase();
-      if (k) byLower.set(k, String(r.id));
+    for (const statusRow of rows) {
+      const normalizedStatusKey = (statusRow.name ?? '').trim().toLowerCase();
+      if (normalizedStatusKey) byLower.set(normalizedStatusKey, String(statusRow.id));
     }
     const need = (ru: string) => {
       const id = byLower.get(ru.toLowerCase());
@@ -637,11 +637,11 @@ export class PartnersService {
     return rows.length > 0;
   }
 
-  private isoDateOnlyEval(v: unknown): string {
-    if (v == null) return '';
-    if (typeof v === 'string') return v.length >= 10 ? v.slice(0, 10) : v;
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
-    return String(v).slice(0, 10);
+  private isoDateOnlyEval(value: unknown): string {
+    if (value == null) return '';
+    if (typeof value === 'string') return value.length >= 10 ? value.slice(0, 10) : value;
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    return String(value).slice(0, 10);
   }
 
   private async partnerAvgWeightedScoreFromActiveEvaluations(partnerId: string): Promise<number | null> {
@@ -656,18 +656,18 @@ export class PartnersService {
 
     type EvalPick = (typeof evalRows)[number];
     const byProject = new Map<string, EvalPick>();
-    for (const r of evalRows) {
-      const pid = String(r.projectId);
-      const prev = byProject.get(pid);
-      const evAt = this.isoDateOnlyEval(r.evaluatedAt);
+    for (const evaluationRow of evalRows) {
+      const projectIdKey = String(evaluationRow.projectId);
+      const prev = byProject.get(projectIdKey);
+      const evAt = this.isoDateOnlyEval(evaluationRow.evaluatedAt);
       const prevAt = prev ? this.isoDateOnlyEval(prev.evaluatedAt) : '';
       if (!prev || evAt > prevAt) {
-        byProject.set(pid, r);
+        byProject.set(projectIdKey, evaluationRow);
       }
     }
     const perProject = [...byProject.values()];
     if (perProject.length === 0) return null;
-    const sum = perProject.reduce((acc, r) => acc + Number(r.weightedScore), 0);
+    const sum = perProject.reduce((acc, row) => acc + Number(row.weightedScore), 0);
     return Math.round((sum / perProject.length) * 100) / 100;
   }
 

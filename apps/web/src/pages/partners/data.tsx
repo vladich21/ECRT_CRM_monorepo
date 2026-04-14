@@ -73,7 +73,7 @@ export const getColumnsData = (
     key: 'status_id',
     width: 120,
     render: (statusId: string) => {
-      const status = references.partnerStatuses?.find(s => s.id === statusId);
+      const status = references.partnerStatuses?.find(statusRow => statusRow.id === statusId);
       return status ? <Tag color='green'>{status.name}</Tag> : '-';
     },
   },
@@ -88,7 +88,9 @@ export const getColumnsData = (
       return (
         <Space wrap>
           {competenceIds.map(competenceId => {
-            const competence = references.competencies?.find(c => c.id === competenceId);
+            const competence = references.competencies?.find(
+              competenceRow => competenceRow.id === competenceId,
+            );
             return (
               <Tag key={competenceId} color='geekblue'>
                 {competence?.name || '-'}

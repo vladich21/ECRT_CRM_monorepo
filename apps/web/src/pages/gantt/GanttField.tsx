@@ -269,7 +269,7 @@ export const GanttField = () => {
           setILinks([...links, link]);
         }}
         onILinkDelete={(link: ILink) => {
-          setILinks(links.filter(l => l.id !== link.id));
+          setILinks(links.filter(linkItem => linkItem.id !== link.id));
         }}
         zoom
       />

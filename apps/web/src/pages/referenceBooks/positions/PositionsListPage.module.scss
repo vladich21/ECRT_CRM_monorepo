@@ -52,9 +52,6 @@
   border-radius: 12px;
   border: 1px solid #f0f0f0;
   padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
   margin-bottom: 10px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -65,37 +62,10 @@
   }
 }
 
-.cardMain {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Согласовано с размером иконок в кнопках Ant (как на /admin/partner-types) */
-.cardIcon {
-  font-size: 14px;
-  color: rgba(0, 47, 85, 0.85);
-  flex-shrink: 0;
-}
-
 .cardTitle {
   font-weight: 700;
   font-size: 15px;
   line-height: 1.25;
   color: rgba(0, 0, 0, 0.88);
   word-break: break-word;
-}
-
-.cardActions {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Как .actionBtn в ReferenceBookItemCard — размер иконок как на /admin/partner-types */
-.actionBtn {
-  padding: 0 8px;
 }

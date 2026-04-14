@@ -26,7 +26,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
 
   const handleProjectChange = (value: string | undefined) => {
     if (!onProjectChange) return;
-    const project = refs.projects?.find(p => p.id === value) ?? null;
+    const project = refs.projects?.find(projectRow => projectRow.id === value) ?? null;
     onProjectChange(project);
   };
 

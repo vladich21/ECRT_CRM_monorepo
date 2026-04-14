@@ -12,16 +12,16 @@ const MAX_DEPT_POS_NAME = 255;
 
 function hrRecordUuid(raw: string | undefined): string | null {
   if (!raw?.trim()) return null;
-  const v = raw.trim().toLowerCase();
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)) return null;
-  return v;
+  const uuidLowerCase = raw.trim().toLowerCase();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(uuidLowerCase)) return null;
+  return uuidLowerCase;
 }
 
-function clip(s: string | null | undefined, max: number): string | null {
-  if (s == null || s === '') return null;
-  const t = s.trim();
-  if (!t) return null;
-  return t.length <= max ? t : t.slice(0, max);
+function clip(value: string | null | undefined, max: number): string | null {
+  if (value == null || value === '') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.length <= max ? trimmed : trimmed.slice(0, max);
 }
 
 type HrPersonal = {
@@ -94,33 +94,35 @@ export class HrSyncService {
     const hrDepts = new Map<string, string>();
     const hrPos = new Map<string, string>();
     for (const row of list) {
-      const dId = hrRecordUuid(row.department?.id);
-      const dName = row.department?.name?.trim();
-      if (dId && dName) {
-        const nm = clip(dName, MAX_DEPT_POS_NAME) ?? dName.slice(0, MAX_DEPT_POS_NAME);
-        hrDepts.set(dId, nm);
+      const departmentExternalUuid = hrRecordUuid(row.department?.id);
+      const departmentName = row.department?.name?.trim();
+      if (departmentExternalUuid && departmentName) {
+        const displayName =
+          clip(departmentName, MAX_DEPT_POS_NAME) ?? departmentName.slice(0, MAX_DEPT_POS_NAME);
+        hrDepts.set(departmentExternalUuid, displayName);
       }
-      const pId = hrRecordUuid(row.position?.id);
-      const pName = row.position?.name?.trim();
-      if (pId && pName) {
-        const nm = clip(pName, MAX_DEPT_POS_NAME) ?? pName.slice(0, MAX_DEPT_POS_NAME);
-        hrPos.set(pId, nm);
+      const positionExternalUuid = hrRecordUuid(row.position?.id);
+      const positionName = row.position?.name?.trim();
+      if (positionExternalUuid && positionName) {
+        const displayName =
+          clip(positionName, MAX_DEPT_POS_NAME) ?? positionName.slice(0, MAX_DEPT_POS_NAME);
+        hrPos.set(positionExternalUuid, displayName);
       }
     }
 
-    for (const [extId, nm] of hrDepts) {
-      const norm = nm.toLowerCase();
+    for (const [externalHrUuid, displayName] of hrDepts) {
+      const nameNormalizedLower = displayName.toLowerCase();
       const [byExt] = await db
         .select({ id: departments.id, name: departments.name })
         .from(departments)
-        .where(eq(departments.externalHrId, extId))
+        .where(eq(departments.externalHrId, externalHrUuid))
         .limit(1);
 
       if (byExt?.id) {
-        if (byExt.name !== nm) {
+        if (byExt.name !== displayName) {
           await db
             .update(departments)
-            .set({ name: nm, updatedAt: new Date() })
+            .set({ name: displayName, updatedAt: new Date() })
             .where(eq(departments.id, byExt.id));
           deptUpdated += 1;
         }
@@ -130,40 +132,45 @@ export class HrSyncService {
       const [byName] = await db
         .select({ id: departments.id })
         .from(departments)
-        .where(and(isNull(departments.externalHrId), sql`lower(trim(coalesce(${departments.name}, ''))) = ${norm}`))
+        .where(
+          and(
+            isNull(departments.externalHrId),
+            sql`lower(trim(coalesce(${departments.name}, ''))) = ${nameNormalizedLower}`,
+          ),
+        )
         .limit(1);
 
       if (byName?.id) {
         await db
           .update(departments)
-          .set({ externalHrId: extId, name: nm, updatedAt: new Date() })
+          .set({ externalHrId: externalHrUuid, name: displayName, updatedAt: new Date() })
           .where(eq(departments.id, byName.id));
         deptUpdated += 1;
         continue;
       }
 
       await db.insert(departments).values({
-        name: nm,
-        externalHrId: extId,
+        name: displayName,
+        externalHrId: externalHrUuid,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
       deptCreated += 1;
     }
 
-    for (const [extId, nm] of hrPos) {
-      const norm = nm.toLowerCase();
+    for (const [externalHrUuid, displayName] of hrPos) {
+      const nameNormalizedLower = displayName.toLowerCase();
       const [byExt] = await db
         .select({ id: positions.id, name: positions.name })
         .from(positions)
-        .where(eq(positions.externalHrId, extId))
+        .where(eq(positions.externalHrId, externalHrUuid))
         .limit(1);
 
       if (byExt?.id) {
-        if (byExt.name !== nm) {
+        if (byExt.name !== displayName) {
           await db
             .update(positions)
-            .set({ name: nm, updatedAt: new Date() })
+            .set({ name: displayName, updatedAt: new Date() })
             .where(eq(positions.id, byExt.id));
           posUpdated += 1;
         }
@@ -176,7 +183,7 @@ export class HrSyncService {
         .where(
           and(
             isNull(positions.externalHrId),
-            sql`lower(trim(coalesce(${positions.name}, ''))) = ${norm}`,
+            sql`lower(trim(coalesce(${positions.name}, ''))) = ${nameNormalizedLower}`,
           ),
         )
         .limit(1);
@@ -184,15 +191,15 @@ export class HrSyncService {
       if (byName?.id) {
         await db
           .update(positions)
-          .set({ externalHrId: extId, name: nm, updatedAt: new Date() })
+          .set({ externalHrId: externalHrUuid, name: displayName, updatedAt: new Date() })
           .where(eq(positions.id, byName.id));
         posUpdated += 1;
         continue;
       }
 
       await db.insert(positions).values({
-        name: nm,
-        externalHrId: extId,
+        name: displayName,
+        externalHrId: externalHrUuid,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -233,20 +240,20 @@ export class HrSyncService {
 
     const db = this.db.db;
 
-    const refStats = await this.syncDepartmentsAndPositionsFromHr(list);
+    const { departments: deptStats, positions: posStats } = await this.syncDepartmentsAndPositionsFromHr(list);
 
     const deptRows = await db.select({ id: departments.id, name: departments.name }).from(departments);
     const deptByNormName = new Map<string, string>();
-    for (const d of deptRows) {
-      const k = d.name?.trim().toLowerCase();
-      if (k) deptByNormName.set(k, String(d.id));
+    for (const departmentRow of deptRows) {
+      const normalizedNameKey = departmentRow.name?.trim().toLowerCase();
+      if (normalizedNameKey) deptByNormName.set(normalizedNameKey, String(departmentRow.id));
     }
 
     const posRows = await db.select({ id: positions.id, name: positions.name }).from(positions);
     const posByNormName = new Map<string, string>();
-    for (const p of posRows) {
-      const k = p.name?.trim().toLowerCase();
-      if (k) posByNormName.set(k, String(p.id));
+    for (const positionRow of posRows) {
+      const normalizedNameKey = positionRow.name?.trim().toLowerCase();
+      if (normalizedNameKey) posByNormName.set(normalizedNameKey, String(positionRow.id));
     }
 
     const resolveDeptId = (name: string | null | undefined): string | null => {
@@ -267,12 +274,12 @@ export class HrSyncService {
           continue;
         }
 
-        const deptId = resolveDeptId(row.department?.name);
-        const posId = resolvePosId(row.position?.name);
-        if (!deptId && row.department?.name) {
+        const resolvedDepartmentId = resolveDeptId(row.department?.name);
+        const resolvedPositionId = resolvePosId(row.position?.name);
+        if (!resolvedDepartmentId && row.department?.name) {
           errors.push(`Отдел не найден по имени «${row.department.name}» (${emailRaw})`);
         }
-        if (!posId && row.position?.name) {
+        if (!resolvedPositionId && row.position?.name) {
           errors.push(`Должность не найдена по имени «${row.position.name}» (${emailRaw})`);
         }
 
@@ -289,8 +296,8 @@ export class HrSyncService {
           middleName: clip(row.personal?.middle_name ?? null, MAX_NAME_LEN),
           phone: clip(row.personal?.phone ?? null, MAX_PHONE_LEN),
           isActive: row.is_active !== false,
-          departmentId: deptId,
-          positionId: posId,
+          departmentId: resolvedDepartmentId,
+          positionId: resolvedPositionId,
           supervisorId: null as string | null,
           updatedAt: new Date(),
         };
@@ -311,8 +318,8 @@ export class HrSyncService {
           });
           created += 1;
         }
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
         errors.push(`${row.email ?? row.id}: ${msg}`);
         this.logger.warn(`HR sync row error: ${msg}`);
       }
@@ -323,30 +330,36 @@ export class HrSyncService {
         const emailRaw = row.email?.trim().toLowerCase();
         if (!emailRaw || !row.supervisor?.email?.trim()) continue;
         const supEmail = row.supervisor.email.trim().toLowerCase();
-        const [u] = await db
+        const [employeeRow] = await db
           .select({ id: users.id })
           .from(users)
           .where(sql`lower(${users.email}) = ${emailRaw}`)
           .limit(1);
-        const [s] = await db
+        const [supervisorRow] = await db
           .select({ id: users.id })
           .from(users)
           .where(sql`lower(${users.email}) = ${supEmail}`)
           .limit(1);
-        if (u?.id && s?.id && String(u.id) !== String(s.id)) {
+        if (employeeRow?.id && supervisorRow?.id && String(employeeRow.id) !== String(supervisorRow.id)) {
           await db
             .update(users)
-            .set({ supervisorId: String(s.id), updatedAt: new Date() })
-            .where(eq(users.id, u.id));
+            .set({ supervisorId: String(supervisorRow.id), updatedAt: new Date() })
+            .where(eq(users.id, employeeRow.id));
         }
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
         errors.push(`supervisor ${row.email}: ${msg}`);
         this.logger.warn(`HR sync supervisor error: ${msg}`);
       }
     }
 
     this.logger.log(`HR sync: создано ${created}, обновлено ${updated}, ошибок ${errors.length}`);
-    return { created, updated, errors, ...refStats };
+    return {
+      created,
+      updated,
+      errors,
+      departments: deptStats,
+      positions: posStats,
+    };
   }
 }

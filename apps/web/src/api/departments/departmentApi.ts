@@ -8,14 +8,4 @@ export const departmentApi = {
     });
     return response.data;
   },
-
-  getDepartmentById: async (departmentId: string): Promise<Department> => {
-    const response = await apiClient.get(`/departments/${departmentId}`);
-    return response.data[0];
-  },
-
-  editDepartment: async (departmentId: string, data: Partial<Department>): Promise<Department> => {
-    const response = await apiClient.put(`/departments/${departmentId}`, data);
-    return response.data[0];
-  },
 };

@@ -42,10 +42,10 @@ export class CommentsService {
             .where(and(eq(files.entityType, 'comment'), inArray(files.tableId, commentIds)))
         : [];
     const filesByCommentId = new Map<string, (typeof fileRows)[number][]>();
-    for (const f of fileRows) {
-      const tid = f.tableId ? String(f.tableId) : '';
-      if (!filesByCommentId.has(tid)) filesByCommentId.set(tid, []);
-      filesByCommentId.get(tid)!.push(f);
+    for (const fileRow of fileRows) {
+      const commentTableIdKey = fileRow.tableId ? String(fileRow.tableId) : '';
+      if (!filesByCommentId.has(commentTableIdKey)) filesByCommentId.set(commentTableIdKey, []);
+      filesByCommentId.get(commentTableIdKey)!.push(fileRow);
     }
     return rows.map((row) => this.toResponse(row.comment, row, filesByCommentId));
   }

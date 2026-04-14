@@ -77,8 +77,8 @@ export function getPartnerRegistryStatusSurface(status: PartnerRegistryStatus): 
 }
 
 export function getProjectStatusSurface(status: string): StatusBadgeSurface {
-  const s = PROJECT_STATUS_SURFACES[status as keyof typeof PROJECT_STATUS_SURFACES];
-  return s ?? SURFACE_ACTIVE;
+  const surface = PROJECT_STATUS_SURFACES[status as keyof typeof PROJECT_STATUS_SURFACES];
+  return surface ?? SURFACE_ACTIVE;
 }
 
 export function getPatentRecordSurface(isDeleted: boolean): StatusBadgeSurface {

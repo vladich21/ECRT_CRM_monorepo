@@ -8,7 +8,7 @@ const formatDateValue = (date: string | null | undefined): string => {
 };
 const calculateProgress = (stages: ContractStage[]): number => {
   if (stages.length === 0) return 0;
-  const completedStages = stages.filter(s => Boolean(s.actual_end_date)).length;
+  const completedStages = stages.filter(stage => Boolean(stage.actual_end_date)).length;
   return (completedStages / stages.length) * 100;
 };
 const calculateTotalPlannedBudget = (stages: ContractStage[]): number => {
@@ -22,7 +22,7 @@ const calculateBudgetDeviation = (plannedBudget: number, actualBudget: number): 
   return ((actualBudget - plannedBudget) / plannedBudget) * 100;
 };
 const createProgressMetric = (stages: ContractStage[]): MetricRow[] => {
-  const completedStages = stages.filter(s => Boolean(s.actual_end_date)).length;
+  const completedStages = stages.filter(stage => Boolean(stage.actual_end_date)).length;
   const totalProgress = calculateProgress(stages);
   return [
     { label: 'Прогресс: ', value: `${Math.round(totalProgress)}%`, isStrong: true },
@@ -82,7 +82,7 @@ export const createContractMetrics = (
   };
 } => {
   const stateEntity = contract.state_id
-    ? referenceBooks.contractStates?.find((s: any) => s.id === contract.state_id)
+    ? referenceBooks.contractStates?.find((state: any) => state.id === contract.state_id)
     : null;
   return {
     progress: createProgressMetric(stages),

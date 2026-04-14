@@ -197,10 +197,10 @@ export default function ContractEditPage() {
   const resolvedProjectId = formReferenceId(watchProjectId, contract.project_id);
 
   const dateSignedStr = (() => {
-    const v = watchDateSigned ?? contract.date_signed;
-    if (v == null || v === '') return contract.date_signed || '';
-    if (dayjs.isDayjs(v)) return v.format('YYYY-MM-DD');
-    if (typeof v === 'string') return v;
+    const dateSignedValue = watchDateSigned ?? contract.date_signed;
+    if (dateSignedValue == null || dateSignedValue === '') return contract.date_signed || '';
+    if (dayjs.isDayjs(dateSignedValue)) return dateSignedValue.format('YYYY-MM-DD');
+    if (typeof dateSignedValue === 'string') return dateSignedValue;
     return contract.date_signed || '';
   })();
 
@@ -268,10 +268,10 @@ export default function ContractEditPage() {
   ].filter(Boolean);
 
   const endDateForBanner = (() => {
-    const v = watchEndDate ?? contract.end_date;
-    if (v == null || v === '') return contract.end_date || '';
-    if (dayjs.isDayjs(v)) return v.format('YYYY-MM-DD');
-    if (typeof v === 'string') return v;
+    const endDateValue = watchEndDate ?? contract.end_date;
+    if (endDateValue == null || endDateValue === '') return contract.end_date || '';
+    if (dayjs.isDayjs(endDateValue)) return endDateValue.format('YYYY-MM-DD');
+    if (typeof endDateValue === 'string') return endDateValue;
     return contract.end_date || '';
   })();
   const daysUntilEnd = getDaysUntilDate(endDateForBanner);

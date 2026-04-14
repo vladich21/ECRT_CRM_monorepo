@@ -4,23 +4,23 @@ import type { ProjectAdvancedFilters, ProjectFilterTab } from '../ProjectsListPa
 const PROJECT_NON_ACTIVE_STATUSES = new Set(['completed', 'pending', 'paused', 'cancelled']);
 
 export function countActiveProjectFilters(filters: ProjectAdvancedFilters): number {
-  let c = 0;
-  if (filters.managerId) c++;
-  if (filters.purchaserId) c++;
-  if (filters.overlapRange?.[0] && filters.overlapRange?.[1]) c++;
-  if (filters.startDateRange?.[0] || filters.startDateRange?.[1]) c++;
-  if (filters.endDateRange?.[0] || filters.endDateRange?.[1]) c++;
-  if (filters.endDatePresence !== 'any') c++;
-  return c;
+  let activeFilterCount = 0;
+  if (filters.managerId) activeFilterCount++;
+  if (filters.purchaserId) activeFilterCount++;
+  if (filters.overlapRange?.[0] && filters.overlapRange?.[1]) activeFilterCount++;
+  if (filters.startDateRange?.[0] || filters.startDateRange?.[1]) activeFilterCount++;
+  if (filters.endDateRange?.[0] || filters.endDateRange?.[1]) activeFilterCount++;
+  if (filters.endDatePresence !== 'any') activeFilterCount++;
+  return activeFilterCount;
 }
 export function filterByTab(projects: Project[], tab: ProjectFilterTab): Project[] {
   if (tab === 'all') return projects;
   if (tab === 'deleted') return projects.filter(project => project.is_deleted);
   if (tab === 'active') {
     return projects.filter(project => {
-      const s = (project.status ?? '').trim();
-      if (s === '' || s === 'active') return true;
-      return !PROJECT_NON_ACTIVE_STATUSES.has(s);
+      const statusNormalized = (project.status ?? '').trim();
+      if (statusNormalized === '' || statusNormalized === 'active') return true;
+      return !PROJECT_NON_ACTIVE_STATUSES.has(statusNormalized);
     });
   }
   return projects.filter(project => project.status === tab);

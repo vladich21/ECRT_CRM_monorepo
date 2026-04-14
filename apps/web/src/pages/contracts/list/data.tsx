@@ -60,7 +60,7 @@ export const getColumnsData = (
     key: 'partner_id',
     width: 150,
     render: (partnerId: string) => {
-      const partner = references.partners?.find(p => p.id === partnerId);
+      const partner = references.partners?.find(partnerRow => partnerRow.id === partnerId);
       return partner?.name || '-';
     },
   },

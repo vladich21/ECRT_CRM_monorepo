@@ -42,17 +42,19 @@ export interface ContractsListResponse {
 }
 
 function normalizeContractFlags(contract: Contract): Contract {
-  const r = contract as unknown as Record<string, unknown>;
+  const contractRecord = contract as unknown as Record<string, unknown>;
   return {
     ...contract,
-    is_deleted: Boolean(r.is_deleted ?? r.isDeleted),
+    is_deleted: Boolean(contractRecord.is_deleted ?? contractRecord.isDeleted),
   };
 }
 
 function compactParams(
   obj: Record<string, string | number | boolean | undefined>,
 ): Record<string, string | number | boolean> {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== '')) as Record<
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined && value !== ''),
+  ) as Record<
     string,
     string | number | boolean
   >;
@@ -62,10 +64,10 @@ function listParamsToQuery(
   limit: number,
   offset: number,
 ): Record<string, string | number | boolean | undefined> {
-  const p = params ?? {};
+  const listParams = params ?? {};
   return {
-    ...p,
-    deleted_scope: p.deleted_scope ?? 'active',
+    ...listParams,
+    deleted_scope: listParams.deleted_scope ?? 'active',
     limit,
     offset,
   };
