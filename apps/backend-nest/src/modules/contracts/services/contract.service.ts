@@ -314,16 +314,22 @@ export class ContractsService {
     preview?: boolean,
     partnerId?: string,
     pagination?: PaginationParams,
-    options?: { forReference?: boolean; filters?: ContractQueryFilters },
+    options?: {
+      forReference?: boolean;
+      /** Для справочников: включать неактивные (закрытые) договоры, не только is_active. */
+      forReferenceIncludeInactive?: boolean;
+      filters?: ContractQueryFilters;
+    },
   ): Promise<ContractsListResult> {
     const forReference = options?.forReference && !partnerId;
     const filters = options?.filters;
     if (forReference) {
-      const key = `contracts:for_reference:signed:${preview ? '1' : '0'}`;
+      const signedOnly = !options?.forReferenceIncludeInactive;
+      const key = `contracts:for_reference:${signedOnly ? 'signed' : 'all'}:${preview ? '1' : '0'}`;
       const cached = this.getValidCache(key);
       if (cached) return { data: cached.data, total: cached.total };
       const rows = await this.getContractsRows(!!preview, undefined, undefined, {
-        referenceSignedContractsOnly: true,
+        referenceSignedContractsOnly: signedOnly,
       });
       const result = {
         data: this.mapContractsRows(rows, !!preview),

@@ -114,7 +114,8 @@ const referenceApiMethods = {
   partnerTypes: partnerTypeApi.getPartnerTypes,
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,
-  contracts: () => contractApi.getContractsForReference().then(r => r.data),
+  contracts: (opts?: { includeInactive?: boolean }) =>
+    contractApi.getContractsForReference(opts).then(r => r.data),
   contractStates: contractApi.getContractsStates,
   contractCategories: contractApi.getContractsCategories,
   contractTypes: contractTypeApi.getContractTypes,
@@ -126,19 +127,32 @@ const referenceApiMethods = {
   patentAreas: patentAreasApi.getPatentAreas,
 };
 
-export const useReferenceData = (neededReferences: ReferenceType[] = []) => {
+export type UseReferenceDataOptions = {
+  contractsIncludeInactive?: boolean;
+};
+
+export const useReferenceData = (
+  neededReferences: ReferenceType[] = [],
+  options: UseReferenceDataOptions = {},
+) => {
   const sortedReferences = [...neededReferences].sort();
+  const { contractsIncludeInactive = false } = options;
   return useQuery({
-    queryKey: ['reference-data', ...sortedReferences],
+    queryKey: ['reference-data', ...sortedReferences, contractsIncludeInactive],
     queryFn: async (): Promise<Partial<ReferenceData>> => {
       const promises = neededReferences.map(refType => {
         const apiMethod = referenceApiMethods[refType];
-        return apiMethod
-          ? apiMethod().then(data => ({
-              type: refType,
-              data,
-            }))
-          : Promise.resolve({ type: refType, data: [] });
+        if (!apiMethod) return Promise.resolve({ type: refType, data: [] });
+        const dataPromise =
+          refType === 'contracts'
+            ? (apiMethod as (o?: { includeInactive?: boolean }) => Promise<unknown>)({
+                includeInactive: contractsIncludeInactive,
+              })
+            : (apiMethod as () => Promise<unknown>)();
+        return dataPromise.then(data => ({
+          type: refType,
+          data,
+        }));
       });
       const results = await Promise.allSettled(promises);
       const formattedData: Partial<ReferenceData> = {};

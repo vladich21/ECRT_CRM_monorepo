@@ -139,11 +139,15 @@ export function PatentFormOrgFields({ refs, incomeContracts, onProjectChange }: 
               placeholder='Выберите договор'
               allowClear
             >
-              {incomeContracts.map(row => (
-                <Select.Option key={row.id} value={row.id}>
-                  {row.number || row.name || row.id}
-                </Select.Option>
-              ))}
+              {incomeContracts.map(row => {
+                const base = row.number || row.name || row.id;
+                const label = row.is_active === false ? `${base} (закрыт)` : base;
+                return (
+                  <Select.Option key={row.id} value={row.id}>
+                    {label}
+                  </Select.Option>
+                );
+              })}
             </Select>
           </Form.Item>
         </Col>

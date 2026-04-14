@@ -53,6 +53,7 @@ export class ContractsController {
     @Query('preview') preview?: string,
     @Query('partner_id') partnerId?: string,
     @Query('for_reference') forReference?: string,
+    @Query('include_inactive') includeInactive?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
     @Query('search') search?: string,
@@ -66,7 +67,10 @@ export class ContractsController {
     @Query('deleted_scope') deletedScopeRaw?: string,
   ) {
     if (forReference === '1' && !partnerId) {
-      return this.service.findAll(preview === '1', undefined, undefined, { forReference: true });
+      return this.service.findAll(preview === '1', undefined, undefined, {
+        forReference: true,
+        forReferenceIncludeInactive: includeInactive === '1',
+      });
     }
     const pagination = parsePagination(limit, offset);
     const filters: ContractQueryFilters = {

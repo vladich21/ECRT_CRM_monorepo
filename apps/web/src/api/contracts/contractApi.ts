@@ -88,9 +88,12 @@ export const contractApi = {
     };
   },
  
-  getContractsForReference: async (): Promise<ContractsListResponse> => {
+  getContractsForReference: async (opts?: { includeInactive?: boolean }): Promise<ContractsListResponse> => {
     const response = await apiClient.get('/contracts', {
-      params: { for_reference: 1 },
+      params: compactParams({
+        for_reference: 1,
+        ...(opts?.includeInactive ? { include_inactive: 1 } : {}),
+      }),
     });
     return response.data;
   },

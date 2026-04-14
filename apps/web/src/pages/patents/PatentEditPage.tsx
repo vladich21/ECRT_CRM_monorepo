@@ -38,15 +38,18 @@ export default function PatentEditPage() {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData([
-    'departments',
-    'users',
-    'contracts',
-    'projects',
-    'patentIntellectProps',
-    'patentStatuses',
-    'patentAreas',
-  ]);
+  } = useReferenceData(
+    [
+      'departments',
+      'users',
+      'contracts',
+      'projects',
+      'patentIntellectProps',
+      'patentStatuses',
+      'patentAreas',
+    ],
+    { contractsIncludeInactive: true },
+  );
   const { mutate, isPending: isUpdateLoading } = useUpdatePatent();
 
   useEffect(() => {

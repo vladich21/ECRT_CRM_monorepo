@@ -38,6 +38,9 @@ export function PatentCard({ patent, refs, onClick }: Props) {
       {/* Основная информация */}
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
+      <span className={styles.metaNumber}>
+            <div style={{ fontSize: 16, marginRight: 4, fontWeight: 700}}>№ {patent.registration_number || '—'}</div>
+          </span>
           <span className={styles.name}>{patent.name || '—'}</span>
         </div>
         <div className={styles.metaRow}>
@@ -54,9 +57,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
               Статус не указан
             </Tag>
           )}
-          <span className={styles.metaNumber}>
-            <NumberOutlined style={{ fontSize: 11, marginRight: 4 }} />№ {patent.registration_number || '—'}
-          </span>
+         
         </div>
         {ipTypeName && (
           <div className={`${styles.metaRow} ${styles.metaSubRow}`}>

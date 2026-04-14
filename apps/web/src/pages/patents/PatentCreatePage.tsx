@@ -31,15 +31,18 @@ export default function PatentCreatePage() {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData([
-    'departments',
-    'users',
-    'contracts',
-    'projects',
-    'patentIntellectProps',
-    'patentStatuses',
-    'patentAreas',
-  ]);
+  } = useReferenceData(
+    [
+      'departments',
+      'users',
+      'contracts',
+      'projects',
+      'patentIntellectProps',
+      'patentStatuses',
+      'patentAreas',
+    ],
+    { contractsIncludeInactive: true },
+  );
   const { mutate, isPending: isCreateLoading } = useCreatePatent();
   const addAreaMutation = useCreatePatentArea();
   const { handleOpenModal: openMutateModal, data: addAreaResult } = useMutateByModal<PatentArea, Error>({
