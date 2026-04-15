@@ -2,6 +2,7 @@ export interface FileResponseDto {
   id: string;
   entitytype: string;
   name: string;
+  document_section: string;
   size: string | null;
   url: string;
   uploadedby_id: string | null;

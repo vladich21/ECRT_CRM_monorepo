@@ -2,6 +2,7 @@ import { DeleteOutlined, EditOutlined, UndoOutlined, UserOutlined } from '@ant-d
 import { Button } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { useDeletePatent, usePatentById, useRestorePatent } from '@/api/patents/patentApiHooks';
 import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
@@ -38,6 +39,7 @@ export default function PatentDetailsPage() {
   const patentsListReturn = navState?.patentsListReturn;
   const { contextHolder, showNotification } = useNotification();
   const { data: patent, isLoading, isError } = usePatentById(patentId!);
+  const { data: patentFiles, isLoading: isPatentFilesLoading } = useFilesByEntity('patent', patentId!);
   const { data: patentGrants = [] } = usePatentGrants(patentId!);
   const { data: referenceBooks } = useReferenceData([
     'patentStatuses',
@@ -105,6 +107,10 @@ export default function PatentDetailsPage() {
         variant: detailHeaderVariantForPatentRidStatus(statusName),
       };
   const title = formatPatentRegistryCardHeading(patent);
+  const filesTabLabel =
+    isPatentFilesLoading && patentFiles === undefined
+      ? 'Файлы'
+      : `Файлы (${patentFiles?.length ?? 0})`;
   return (
     <DetailPageHeader
       title={title}
@@ -156,7 +162,7 @@ export default function PatentDetailsPage() {
       }
       tabs={[
         { key: 'main', label: 'Основная информация' },
-        { key: 'files', label: 'Файлы' },
+        { key: 'files', label: filesTabLabel },
         { key: 'comments', label: 'Комментарии' },
         { key: 'grants', label: `Охранные документы (${patentGrants.length})` },
       ]}

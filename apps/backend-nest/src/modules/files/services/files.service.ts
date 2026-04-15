@@ -8,6 +8,16 @@ import { files } from '../../../database/schema';
 import { getFileBaseUrl, getUploadPath } from '../files-config';
 import type { FileResponseDto, UploadItemDto } from '../dto';
 
+const PATENT_FILE_SECTIONS = new Set(['application', 'consent', 'notification']);
+
+function normalizeDocumentSection(entityType: string, raw?: string | null): string {
+  if (entityType === 'patent') {
+    if (raw && PATENT_FILE_SECTIONS.has(raw)) return raw;
+    return 'application';
+  }
+  return 'default';
+}
+
 @Injectable()
 export class FilesService {
   constructor(
@@ -20,8 +30,11 @@ export class FilesService {
     entityType: string,
     entityId: string,
     uploadedById?: string,
+    documentSectionRaw?: string | null,
   ): Promise<UploadItemDto[]> {
     if (!uploadedFiles?.length) return [];
+
+    const documentSection = normalizeDocumentSection(entityType, documentSectionRaw);
 
     const uploadPath = getUploadPath(this.config);
     const baseUrl = getFileBaseUrl(this.config);
@@ -42,6 +55,7 @@ export class FilesService {
         fileType,
         file.size,
         uploadedById,
+        documentSection,
       );
 
       const url = `${baseUrl}/${entityType}/${entityId}/${encodeURIComponent(file.originalname)}`;
@@ -62,7 +76,8 @@ export class FilesService {
     name: string,
     fileType: string,
     size: number,
-    uploadedById?: string,
+    uploadedById: string | undefined,
+    documentSection: string,
   ): Promise<void> {
     await this.db.db
       .insert(files)
@@ -70,12 +85,13 @@ export class FilesService {
         entityType,
         tableId,
         name,
+        documentSection,
         type: fileType,
         size,
         uploadedById: uploadedById || undefined,
       })
       .onConflictDoUpdate({
-        target: [files.entityType, files.tableId, files.name],
+        target: [files.entityType, files.tableId, files.documentSection, files.name],
         set: {
           type: fileType,
           size,
@@ -196,6 +212,7 @@ export class FilesService {
       id: String(r.id),
       entitytype: r.entityType,
       name: r.name,
+      document_section: r.documentSection ?? 'default',
       size: r.size != null ? String(r.size) : null,
       url,
       uploadedby_id: r.uploadedById ? String(r.uploadedById) : null,

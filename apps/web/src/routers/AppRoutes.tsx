@@ -158,7 +158,7 @@ export default function AppRoutes() {
           <Route path=":patentId/edit" element={<PatentEditPage />} />
           <Route path=":patentId" element={<PatentDetailsPage />}>
             <Route index element={<PatentMainInfoTab />} />
-            <Route path="files" element={<EntityFilesTab entityType="patent" />} />
+            <Route path="files" element={<EntityFilesTab entityType="patent" patentFileSections />} />
             <Route path="comments" element={<CommentsList entityType="patent" />} />
             <Route path="grants" element={<PatentGrantsListPage />} />
           </Route>

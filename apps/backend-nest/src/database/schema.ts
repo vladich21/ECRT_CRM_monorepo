@@ -344,6 +344,8 @@ export const files = pgTable(
     entityType: varchar('entitytype', { length: 255 }).notNull(),
     tableId: uuid('table_id'),
     name: varchar('name', { length: 255 }).notNull(),
+    /** Для патентов: application | consent | notification; для прочих сущностей: default */
+    documentSection: varchar('document_section', { length: 32 }).notNull().default('default'),
     type: varchar('type', { length: 255 }).notNull(),
     size: integer('size'),
     uploadedById: uuid('uploadedby_id'),
@@ -354,9 +356,10 @@ export const files = pgTable(
     updatedBy: uuid('updated_by'),
   },
   (table) => [
-    uniqueIndex('files_entitytype').on(
+    uniqueIndex('files_entity_section_name').on(
       table.entityType,
       table.tableId,
+      table.documentSection,
       table.name,
     ),
   ],

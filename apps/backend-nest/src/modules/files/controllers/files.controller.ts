@@ -56,11 +56,13 @@ export class FilesController {
     if (!entityType || !entityId) {
       throw new BadRequestException('entityType и entityId обязательны');
     }
+    const documentSection = req.body?.documentSection as string | undefined;
     return this.service.upload(
       files ?? [],
       entityType,
       entityId,
       req.user?.user_id,
+      documentSection,
     );
   }
 

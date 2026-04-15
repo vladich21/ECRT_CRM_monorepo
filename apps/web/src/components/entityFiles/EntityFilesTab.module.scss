@@ -4,6 +4,50 @@
   gap: 16px;
 }
 
+.sectionsStack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sectionBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  height: 100%;
+  padding: 14px 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* Внутри узкой колонки карточки файлов — вертикальный список, без горизонтального переполнения */
+.sectionFileGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  margin: 0 !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+
+.sectionHint {
+  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: -2px;
+}
+
 .draggerEmpty {
   :global(.ant-upload-drag) {
     border-radius: 8px;
