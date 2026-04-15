@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import dayjs from 'dayjs';
@@ -13,6 +13,7 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { getChangedFields } from '../../../helpers/getChangedFields';
 import { PatentGrantFormFields } from './components/PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
+import { buildPatentGrantRidSelectLabel } from './utils/patentGrantCardHelpers';
 
 export default function PatentGrantEditPage() {
   const { grantId } = useParams();
@@ -27,15 +28,15 @@ export default function PatentGrantEditPage() {
     isError: isReferencesError,
   } = useReferenceData(['patents']);
   const { mutate, isPending: isUpdateLoading } = useUpdatePatentGrant();
-  useEffect(() => {
-    if (patentGrant) {
-      const formData = {
-        ...patentGrant,
-        grant_date: patentGrant.grant_date ? dayjs(patentGrant.grant_date) : null,
-        renewal_date: patentGrant.renewal_date ? dayjs(patentGrant.renewal_date) : null,
-      };
-      form.setFieldsValue(formData);
-    }
+  /** До paint: иначе Select «РИД» может показать uuid, пока не смонтированы опции. */
+  useLayoutEffect(() => {
+    if (!patentGrant) return;
+    const formData = {
+      ...patentGrant,
+      grant_date: patentGrant.grant_date ? dayjs(patentGrant.grant_date) : null,
+      renewal_date: patentGrant.renewal_date ? dayjs(patentGrant.renewal_date) : null,
+    };
+    form.setFieldsValue(formData);
   }, [patentGrant, form]);
   const handleSave = async (values: any) => {
     const payload = getChangedFields(values, patentGrant!);
@@ -102,6 +103,7 @@ export default function PatentGrantEditPage() {
     >
       <div className={styles.formCard}>
         <Form
+          key={grantId}
           form={form}
           layout='vertical'
           size='middle'
@@ -117,6 +119,11 @@ export default function PatentGrantEditPage() {
             referenceBooks={referenceBooks}
             patentIdFromState={null}
             savedOfficeForLegacy={patentGrant.office}
+            patentSelectFallback={
+              patentGrant.patent_id?.trim()
+                ? { id: patentGrant.patent_id.trim(), name: buildPatentGrantRidSelectLabel(patentGrant) }
+                : null
+            }
           />
         </Form>
       </div>

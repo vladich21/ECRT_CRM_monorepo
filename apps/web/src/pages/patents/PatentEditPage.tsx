@@ -1,30 +1,33 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CloseOutlined, SaveOutlined, TeamOutlined } from '@ant-design/icons';
+import { useLayoutEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { CloseOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useContractById } from '@/api/contracts/contractApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
-import { usePatentById, useUpdatePatent } from '@/api/patents/patentApiHooks';
+import { patentsListServerFiltersEmpty, usePatentById, usePatentsList, useUpdatePatent } from '@/api/patents/patentApiHooks';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
-import DetailPageHeader, {
-  detailHeaderVariantForPatentRidStatus,
-  detailPageHeaderStyles as hStyles,
-} from '@/components/pageLayout/DetailPageHeader';
+import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '@/components/pageLayout/DetailPageHeader';
 import { useNotification } from '@/customhooks/useNotification';
 import { formReferenceId } from '@/helpers/formReferenceId';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { patentUpdateFormMapper } from '@/helpers/mappers/patentUpdateFormMapper';
+import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
+import listCardStyles from '@/pages/patents/PatentsListPage.module.scss';
+import { formatPatentRegistryCardHeading } from '@/pages/patents/utils/patentRegistryCardUtils';
 import {
   PatentFormIdentityFields,
   PatentFormOrgFields,
   PatentFormRegistrationFields,
+  PatentFormTransformationFields,
   type PatentFormRefs,
 } from './components/form';
 import { buildPatentFormPayload } from './patentFormPayload';
 import type { Patent } from '@/types/patent';
+import patentHeaderStyles from './PatentDetails.module.scss';
 import styles from './PatentFormPage.module.scss';
 
 export default function PatentEditPage() {
@@ -51,21 +54,49 @@ export default function PatentEditPage() {
     { contractsIncludeInactive: true },
   );
   const { mutate, isPending: isUpdateLoading } = useUpdatePatent();
+  const { data: patentsPickList, isLoading: isPatentsPickListLoading } = usePatentsList(
+    'all',
+    1,
+    500,
+    patentsListServerFiltersEmpty,
+  );
 
-  useEffect(() => {
-    if (patent) form.setFieldsValue(patentUpdateFormMapper(patent, referenceBooks));
-  }, [patent, form, referenceBooks]);
+  const transformationTargetOptions = useMemo(() => {
+    const rows = patentsPickList && 'data' in patentsPickList ? patentsPickList.data : [];
+    return rows
+      .filter(p => p.id !== patentId)
+      .map(p => ({
+        value: p.id,
+        label: `${p.registration_number?.trim() || '—'} — ${(p.name || '').slice(0, 80)}`,
+      }));
+  }, [patentsPickList, patentId]);
+
+  /**
+   * После cold start `useEffect` отрабатывает после paint — Ant Design Select иногда показывает value (uuid),
+   * пока опции не «привязались». useLayoutEffect + key на Form синхронизируют значения до отрисовки.
+   */
+  useLayoutEffect(() => {
+    if (!patent || !referenceBooks) return;
+    form.setFieldsValue(patentUpdateFormMapper(patent, referenceBooks));
+  }, [patent, referenceBooks, form]);
 
   const handleUpdate = (values: Record<string, unknown>) => {
+    const payload = buildPatentFormPayload(values, {
+      patentStatuses: referenceBooks?.patentStatuses,
+    }) as Partial<Patent>;
     mutate(
-      { id: patentId!, data: buildPatentFormPayload(values) as Partial<Patent> },
+      { id: patentId!, data: payload },
       {
         onSuccess: () => {
           showNotification('success', 'Успех', 'Патент успешно изменён');
           setTimeout(() => navigate(-1), 1000);
         },
-        onError: () => {
-          showNotification('error', 'Ошибка', 'Не удалось изменить патент');
+        onError: (e: unknown) => {
+          const msg = axios.isAxiosError(e)
+            ? (e.response?.data as { message?: string } | undefined)?.message
+            : undefined;
+          const fallback = e instanceof Error ? e.message : '';
+          showNotification('error', 'Ошибка', msg || fallback || 'Не удалось изменить патент');
         },
       },
     );
@@ -83,8 +114,10 @@ export default function PatentEditPage() {
   const watchName = Form.useWatch('name', form);
   const watchIntellectPropId = Form.useWatch('intellectprop_id', form);
   const watchStatusId = Form.useWatch('status_id', form);
-  const watchDepartmentId = Form.useWatch('department_id', form);
   const watchRegNumber = Form.useWatch('registration_number', form);
+  const watchRegistrationDate = Form.useWatch('registration_date', form);
+  const watchProjectId = Form.useWatch('project_id', form);
+  const watchResponsibleId = Form.useWatch('responsible_for_patenting_id', form);
 
   const incomeContractMissingFromPicker =
     Boolean(patent?.contract_id) &&
@@ -111,10 +144,18 @@ export default function PatentEditPage() {
   const headerRegNumber = (watchRegNumber ?? patent.registration_number) || '';
   const intellectpropId = formReferenceId(watchIntellectPropId, patent.intellectprop_id);
   const patentStatusId = formReferenceId(watchStatusId, patent.status_id);
-  const departmentId = formReferenceId(watchDepartmentId, patent.department_id);
+  const responsibleId = formReferenceId(watchResponsibleId, patent.responsible_for_patenting_id);
+  const projectId = formReferenceId(watchProjectId, patent.project_id);
   const ipTypeName = getNameById(intellectpropId, referenceBooks.patentIntellectProps) || '';
   const statusName = getNameById(patentStatusId, referenceBooks.patentStatuses) || '';
-  const deptName = getNameById(departmentId, referenceBooks.departments) || '';
+  const responsibleName = getNameById(responsibleId, referenceBooks.users ?? []) || '—';
+  const projectEntity = getEntityById(projectId, referenceBooks.projects ?? []);
+  const projectChipLabel = formatProjectChipLabel(projectEntity);
+  const headingLine = formatPatentRegistryCardHeading({
+    registration_number: headerRegNumber,
+    registration_date: watchRegistrationDate ?? patent.registration_date,
+    name: headerName,
+  });
   const headerStatusBadge = patent.is_deleted
     ? { label: 'Удалён' as const, variant: 'danger' as const }
     : {
@@ -124,25 +165,29 @@ export default function PatentEditPage() {
 
   return (
     <DetailPageHeader
-      title={`Редактирование: РИД ${headerRegNumber || '—'}`}
+      title={`Редактирование: ${headingLine}`}
       titleWeight='medium'
       backLabel='Реестр РИД'
       onBack={() => navigate(-1)}
       statusBadge={headerStatusBadge}
+      subtitle={
+        <div className={patentHeaderStyles.detailHeaderSubtitle}>
+          <UserOutlined style={{ fontSize: 14 }} />
+          <span>{responsibleName}</span>
+        </div>
+      }
       metaItems={[
-        headerName ? (
-          <span key='name' className={hStyles.metaText}>
-            {headerName}
-          </span>
-        ) : null,
         ipTypeName ? (
-          <span key='ipType' className={hStyles.metaType}>
+          <span key='ipType' className={`${listCardStyles.typeChip} ${listCardStyles.chipTight}`}>
             {ipTypeName}
           </span>
         ) : null,
-        deptName ? (
-          <span key='dept' className={hStyles.metaText}>
-            <TeamOutlined /> {deptName}
+        projectChipLabel ? (
+          <span
+            key='project'
+            className={`${listCardStyles.projectChip} ${listCardStyles.chipTight} ${patentHeaderStyles.detailHeaderProjectChip}`}
+          >
+            {projectChipLabel}
           </span>
         ) : null,
       ].filter(Boolean)}
@@ -170,6 +215,7 @@ export default function PatentEditPage() {
     >
       <div className={styles.formCard}>
         <Form
+          key={patent.id}
           form={form}
           layout='vertical'
           size='middle'
@@ -182,6 +228,11 @@ export default function PatentEditPage() {
         >
           <div className={styles.formSectionsStack}>
             <PatentFormIdentityFields refs={refs} areasField='multi' />
+            <PatentFormTransformationFields
+              refs={refs}
+              targetPatentOptions={transformationTargetOptions}
+              targetPatentOptionsLoading={isPatentsPickListLoading}
+            />
             <div className={styles.twoColSections}>
               <PatentFormRegistrationFields />
               <PatentFormOrgFields

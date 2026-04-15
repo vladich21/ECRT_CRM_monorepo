@@ -1,15 +1,17 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, desc, eq, exists, ilike, inArray, isNotNull, or, sql } from 'drizzle-orm';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
   contracts,
   patents,
   projects,
+  refPatentStatuses,
   relPatentsApplicationAreas,
   patentGrants,
   relPatentAuthors,
 } from '../../../database/schema';
+import { isPatentRidTransformationStatusName } from '../patent-rid-transformation.util';
 import { mapPatentGrantToApiDto } from '../../patent-grants/patent-grant.mapper';
 import { PaginationParams } from '../../../common/pagination';
 import { type DeletedScope, sqlPartsForDeletedScope } from '../../../common/deleted-scope';
@@ -99,7 +101,8 @@ export class PatentsService {
       this.getAreaIdsForPatent(id),
       this.getAuthorIdsForPatent(id),
     ]);
-    return this.toResponse(row, areaIds, authorIds);
+    const base = this.toResponse(row, areaIds, authorIds);
+    return this.enrichPatentTransformationSnapshots(base, row);
   }
 
   private async getAreaIdsForPatent(patentId: string): Promise<string[]> {
@@ -497,7 +500,88 @@ export class PatentsService {
       created_at: row.createdAt ? row.createdAt.toISOString() : '',
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
       created_by: row.createdBy ? String(row.createdBy) : '',
+      transformed_into_patent_id: row.transformedIntoPatentId ? String(row.transformedIntoPatentId) : '',
+      transformed_from_patent_id: row.transformedFromPatentId ? String(row.transformedFromPatentId) : '',
+      transformation_notification_ic_zht: row.transformationNotificationIcZht ?? '',
+      transformation_notification_cir: row.transformationNotificationCir ?? '',
     };
+  }
+
+  private async enrichPatentTransformationSnapshots(
+    base: Record<string, unknown>,
+    row: typeof patents.$inferSelect,
+  ) {
+    const intoId = row.transformedIntoPatentId ? String(row.transformedIntoPatentId) : '';
+    const fromId = row.transformedFromPatentId ? String(row.transformedFromPatentId) : '';
+    if (!intoId && !fromId) {
+      return base;
+    }
+    const [intoRow, fromRow] = await Promise.all([
+      intoId
+        ? this.db.db
+            .select({ registrationNumber: patents.registrationNumber })
+            .from(patents)
+            .where(eq(patents.id, intoId))
+            .limit(1)
+        : Promise.resolve([]),
+      fromId
+        ? this.db.db
+            .select({ registrationNumber: patents.registrationNumber })
+            .from(patents)
+            .where(eq(patents.id, fromId))
+            .limit(1)
+        : Promise.resolve([]),
+    ]);
+    return {
+      ...base,
+      ...(intoId && intoRow[0]
+        ? { transformation_target_registration_number: intoRow[0].registrationNumber ?? '' }
+        : {}),
+      ...(fromId && fromRow[0]
+        ? { transformation_source_registration_number: fromRow[0].registrationNumber ?? '' }
+        : {}),
+    };
+  }
+
+  private async getPatentRow(id: string): Promise<(typeof patents.$inferSelect) | undefined> {
+    const rows = await this.db.db.select().from(patents).where(eq(patents.id, id)).limit(1);
+    return rows[0];
+  }
+
+  private async getPatentStatusName(statusId: string | null | undefined): Promise<string | undefined> {
+    if (!statusId) return undefined;
+    const rows = await this.db.db
+      .select({ name: refPatentStatuses.name })
+      .from(refPatentStatuses)
+      .where(eq(refPatentStatuses.id, statusId))
+      .limit(1);
+    return rows[0]?.name ?? undefined;
+  }
+
+  private async validateTransformationTarget(targetId: string, sourceId: string): Promise<void> {
+    if (targetId === sourceId) {
+      throw new BadRequestException('Нельзя указать тот же РИД в качестве цели преобразования.');
+    }
+    const rows = await this.db.db
+      .select({
+        id: patents.id,
+        isDeleted: patents.isDeleted,
+        transformedFromPatentId: patents.transformedFromPatentId,
+      })
+      .from(patents)
+      .where(eq(patents.id, targetId))
+      .limit(1);
+    const target = rows[0];
+    if (!target) {
+      throw new BadRequestException('Целевой РИД не найден.');
+    }
+    if (target.isDeleted) {
+      throw new BadRequestException('Нельзя ссылаться на удалённый РИД.');
+    }
+    const from = target.transformedFromPatentId ? String(target.transformedFromPatentId) : '';
+    if (from && from !== sourceId) {
+      throw new ConflictException('Выбранный РИД уже указан как результат преобразования другого РИД.');
+    }
   }
 
   async create(data: Record<string, unknown>) {
@@ -507,6 +591,34 @@ export class PatentsService {
       v == null || v === '' ? null : typeof v === 'string' ? v : null;
     const departmentId = toUuid(data.department_id);
     if (!departmentId) throw new BadRequestException('department_id обязателен');
+    const statusId = toUuid(data.status_id);
+    const statusName = await this.getPatentStatusName(statusId);
+    const isTransformation = isPatentRidTransformationStatusName(statusName);
+    const intoId = toUuid(data.transformed_into_patent_id);
+    const icZht =
+      data.transformation_notification_ic_zht != null
+        ? String(data.transformation_notification_ic_zht).trim()
+        : '';
+    const icCir =
+      data.transformation_notification_cir != null
+        ? String(data.transformation_notification_cir).trim()
+        : '';
+
+    if (isTransformation) {
+      if (!intoId) {
+        throw new BadRequestException('Укажите РИД, в который выполняется преобразование.');
+      }
+      if (!icZht) {
+        throw new BadRequestException('Укажите номер уведомления ИЦ ЖТ.');
+      }
+      if (!icCir) {
+        throw new BadRequestException('Укажите номер уведомления ЦИР.');
+      }
+      if (icZht.length > 255 || icCir.length > 255) {
+        throw new BadRequestException('Номер уведомления не длиннее 255 символов.');
+      }
+    }
+
     const insertData = {
       name: data.name != null ? String(data.name) : '',
       registrationNumber: data.registration_number != null ? String(data.registration_number) : null,
@@ -520,12 +632,30 @@ export class PatentsService {
       kdNumber: data.kd_number != null ? String(data.kd_number) : null,
       intellectpropId: toUuid(data.intellectprop_id),
       intellectualPropertyTypeId: toUuid(data.intellectual_property_type_id),
-      statusId: toUuid(data.status_id),
+      statusId,
       responsibleForPatentId: toUuid(data.responsible_for_patenting_id),
+      transformedIntoPatentId: isTransformation ? intoId : null,
+      transformedFromPatentId: null,
+      transformationNotificationIcZht: isTransformation ? icZht : null,
+      transformationNotificationCir: isTransformation ? icCir : null,
     };
-    const [row] = await this.db.db.insert(patents).values(insertData).returning();
-    if (!row) return null;
-    const patentId = String(row.id);
+
+    const patentId = await this.db.db.transaction(async (tx) => {
+      const [row] = await tx.insert(patents).values(insertData).returning();
+      if (!row) {
+        throw new BadRequestException('Не удалось создать патент');
+      }
+      const id = String(row.id);
+      if (isTransformation && intoId) {
+        await this.validateTransformationTarget(intoId, id);
+        await tx
+          .update(patents)
+          .set({ transformedFromPatentId: id, updatedAt: new Date() })
+          .where(eq(patents.id, intoId));
+      }
+      return id;
+    });
+
     await this.syncAreaIds(patentId, data);
     await this.syncAuthorIds(patentId, data);
     return this.findOne(patentId);
@@ -542,8 +672,62 @@ export class PatentsService {
   }
 
   async update(id: string, data: Record<string, unknown>) {
-    const current = await this.findOne(id);
-    if (!current) return null;
+    const currentRow = await this.getPatentRow(id);
+    if (!currentRow) return null;
+
+    const toUuid = (v: unknown): string | null =>
+      v == null || v === '' ? null : typeof v === 'string' ? v : null;
+
+    const newStatusId =
+      data.status_id !== undefined
+        ? toUuid(data.status_id)
+        : currentRow.statusId
+          ? String(currentRow.statusId)
+          : null;
+    const oldStatusName = await this.getPatentStatusName(currentRow.statusId ? String(currentRow.statusId) : null);
+    const newStatusName = await this.getPatentStatusName(newStatusId);
+    const wasTransformation = isPatentRidTransformationStatusName(oldStatusName);
+    const isTransformation = isPatentRidTransformationStatusName(newStatusName);
+
+    let intoId: string | null = currentRow.transformedIntoPatentId
+      ? String(currentRow.transformedIntoPatentId)
+      : null;
+    if (data.transformed_into_patent_id !== undefined) {
+      intoId = toUuid(data.transformed_into_patent_id);
+    }
+
+    let icZht = currentRow.transformationNotificationIcZht ?? '';
+    if (data.transformation_notification_ic_zht !== undefined) {
+      icZht =
+        data.transformation_notification_ic_zht == null || data.transformation_notification_ic_zht === ''
+          ? ''
+          : String(data.transformation_notification_ic_zht).trim();
+    }
+    let icCir = currentRow.transformationNotificationCir ?? '';
+    if (data.transformation_notification_cir !== undefined) {
+      icCir =
+        data.transformation_notification_cir == null || data.transformation_notification_cir === ''
+          ? ''
+          : String(data.transformation_notification_cir).trim();
+    }
+
+    if (isTransformation) {
+      if (!intoId) {
+        throw new BadRequestException('Укажите РИД, в который выполняется преобразование.');
+      }
+      if (!icZht) {
+        throw new BadRequestException('Укажите номер уведомления ИЦ ЖТ.');
+      }
+      if (!icCir) {
+        throw new BadRequestException('Укажите номер уведомления ЦИР.');
+      }
+      if (icZht.length > 255 || icCir.length > 255) {
+        throw new BadRequestException('Номер уведомления не длиннее 255 символов.');
+      }
+    }
+
+    const oldIntoId = currentRow.transformedIntoPatentId ? String(currentRow.transformedIntoPatentId) : null;
+
     const map: Record<string, string> = {
       name: 'name',
       registration_number: 'registrationNumber',
@@ -567,7 +751,39 @@ export class PatentsService {
         updateObj[camel] = val == null || val === '' ? null : val;
       }
     }
-    await this.db.db.update(patents).set(updateObj).where(eq(patents.id, id));
+
+    if (!isTransformation) {
+      updateObj.transformedIntoPatentId = null;
+      updateObj.transformationNotificationIcZht = null;
+      updateObj.transformationNotificationCir = null;
+    } else {
+      updateObj.transformedIntoPatentId = intoId;
+      updateObj.transformationNotificationIcZht = icZht;
+      updateObj.transformationNotificationCir = icCir;
+    }
+
+    if (isTransformation && intoId) {
+      await this.validateTransformationTarget(intoId, id);
+    }
+
+    await this.db.db.transaction(async (tx) => {
+      if (wasTransformation && oldIntoId && (!isTransformation || oldIntoId !== intoId)) {
+        await tx
+          .update(patents)
+          .set({ transformedFromPatentId: null, updatedAt: new Date() })
+          .where(and(eq(patents.id, oldIntoId), eq(patents.transformedFromPatentId, id)));
+      }
+
+      await tx.update(patents).set(updateObj).where(eq(patents.id, id));
+
+      if (isTransformation && intoId) {
+        await tx
+          .update(patents)
+          .set({ transformedFromPatentId: id, updatedAt: new Date() })
+          .where(eq(patents.id, intoId));
+      }
+    });
+
     await this.syncAreaIds(id, data);
     await this.syncAuthorIds(id, data);
     return this.findOne(id);

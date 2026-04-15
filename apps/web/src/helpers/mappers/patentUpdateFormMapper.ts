@@ -24,7 +24,11 @@ export const patentUpdateFormMapper = (
     contract_id: patentData.contract_id || null,
     intellectprop_id: patentData.intellectprop_id || null,
     status_id: patentData.status_id || null,
+    responsible_for_patenting_id: patentData.responsible_for_patenting_id || null,
     kd_number: patentData.kd_number || '',
+    transformed_into_patent_id: patentData.transformed_into_patent_id || null,
+    transformation_notification_ic_zht: patentData.transformation_notification_ic_zht ?? '',
+    transformation_notification_cir: patentData.transformation_notification_cir ?? '',
 
     ...(referenceBooks && {
       contract_cipher: patentData.contract_id

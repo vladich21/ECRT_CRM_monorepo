@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import axios from 'axios';
 import { SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
-import { useCreatePatent } from '@/api/patents/patentApiHooks';
+import { patentsListServerFiltersEmpty, useCreatePatent, usePatentsList } from '@/api/patents/patentApiHooks';
 import { useCreatePatentArea } from '@/api/patents/patentAreasApiHooks';
 import { BackButton } from '@/components/backButton/BackButton';
 import { Loader } from '@/components/loader/Loader';
@@ -18,6 +19,7 @@ import {
   PatentFormIdentityFields,
   PatentFormOrgFields,
   PatentFormRegistrationFields,
+  PatentFormTransformationFields,
   type PatentFormRefs,
 } from './components/form';
 import { buildPatentFormPayload } from './patentFormPayload';
@@ -44,6 +46,19 @@ export default function PatentCreatePage() {
     { contractsIncludeInactive: true },
   );
   const { mutate, isPending: isCreateLoading } = useCreatePatent();
+  const { data: patentsPickList, isLoading: isPatentsPickListLoading } = usePatentsList(
+    'all',
+    1,
+    500,
+    patentsListServerFiltersEmpty,
+  );
+  const transformationTargetOptions = useMemo(() => {
+    const rows = patentsPickList && 'data' in patentsPickList ? patentsPickList.data : [];
+    return rows.map(p => ({
+      value: p.id,
+      label: `${p.registration_number?.trim() || '—'} — ${(p.name || '').slice(0, 80)}`,
+    }));
+  }, [patentsPickList]);
   const addAreaMutation = useCreatePatentArea();
   const { handleOpenModal: openMutateModal, data: addAreaResult } = useMutateByModal<PatentArea, Error>({
     isEdit: false,
@@ -72,13 +87,20 @@ export default function PatentCreatePage() {
   }, [addAreaResult, form]);
 
   const handleCreate = (values: Record<string, unknown>) => {
-    mutate(buildPatentFormPayload(values) as Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>, {
+    const payload = buildPatentFormPayload(values, {
+      patentStatuses: referenceBooks?.patentStatuses,
+    }) as Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>;
+    mutate(payload, {
       onSuccess: () => {
         showNotification('success', 'Успех', 'Патент успешно создан');
         setTimeout(() => navigate(-1), 1000);
       },
-      onError: () => {
-        showNotification('error', 'Ошибка', 'Не удалось создать патент');
+      onError: (e: unknown) => {
+        const msg = axios.isAxiosError(e)
+          ? (e.response?.data as { message?: string } | undefined)?.message
+          : undefined;
+        const fallback = e instanceof Error ? e.message : '';
+        showNotification('error', 'Ошибка', msg || fallback || 'Не удалось создать патент');
       },
     });
   };
@@ -123,6 +145,11 @@ export default function PatentCreatePage() {
         >
           <div className={styles.formSectionsStack}>
             <PatentFormIdentityFields refs={refs} areasField='quickAdd' onOpenAreaModal={openMutateModal} />
+            <PatentFormTransformationFields
+              refs={refs}
+              targetPatentOptions={transformationTargetOptions}
+              targetPatentOptionsLoading={isPatentsPickListLoading}
+            />
             <div className={styles.twoColSections}>
               <PatentFormRegistrationFields />
               <PatentFormOrgFields

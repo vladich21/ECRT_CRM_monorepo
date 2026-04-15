@@ -240,6 +240,12 @@ export const patents = pgTable('patents', {
   intellectpropId: uuid('intellectprop_id'),
   statusId: uuid('status_id'),
   responsibleForPatentId: uuid('responsible_for_patenting_id'),
+  /** РИД, в который оформлено преобразование (статус «Преобразование»). */
+  transformedIntoPatentId: uuid('transformed_into_patent_id'),
+  /** Обратная ссылка: исходный РИД, из которого пришло преобразование. */
+  transformedFromPatentId: uuid('transformed_from_patent_id'),
+  transformationNotificationIcZht: varchar('transformation_notification_ic_zht', { length: 255 }),
+  transformationNotificationCir: varchar('transformation_notification_cir', { length: 255 }),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
   isDeleted: boolean('is_deleted').notNull().default(false),

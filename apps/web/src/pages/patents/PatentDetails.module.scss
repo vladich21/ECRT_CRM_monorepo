@@ -1,6 +1,23 @@
 // ── Patent Details — page-specific styles ──
 // Header and content wrap styles are in DetailPageHeader shared component
 
+.detailHeaderSubtitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 8px;
+  max-width: 72ch;
+}
+
+.detailHeaderProjectChip {
+  font-weight: 500;
+}
+
 .metaText {
   color: #fff;
   font-size: 14px;

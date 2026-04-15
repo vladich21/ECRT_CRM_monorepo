@@ -14,6 +14,7 @@ import type { SupplierEvaluationListItem, SupplierEvaluationScoreDetail } from '
 import {
   ScoreDots,
   calendarDaysUntil,
+  formatCriterionScoreLabel,
   getRowUiStatus,
   lineWeightedScore,
   scoreColor,
@@ -86,8 +87,12 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
       align: 'right',
       render: (_value, scoreDetail) => (
         <span className={styles.scoreRow}>
-          <ScoreDots value={scoreDetail.score} />
-          <Text strong>{scoreDetail.score}</Text>
+          <span className={styles.scoreDotsCell}>
+            <ScoreDots value={scoreDetail.score} dotsRowClassName={styles.scoreDotsStrip} />
+          </span>
+          <span className={styles.scoreValueCell}>
+            <Text strong>{formatCriterionScoreLabel(scoreDetail.score)}</Text>
+          </span>
         </span>
       ),
     },

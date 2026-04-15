@@ -7,7 +7,6 @@ export function formatPatentGrantIssueDateRu(dateStr?: string): string {
   return `Выдан: ${new Date(dateStr).toLocaleDateString('ru-RU')}`;
 }
 
-/** Текст блока «РИД» на карточке (как в реестре). */
 export function buildPatentGrantRidDescription(grant: PatentGrant): string | undefined {
   const reg = grant.patent_registration_number?.trim();
   const name = grant.patent_name?.trim();
@@ -20,4 +19,15 @@ export function buildPatentGrantRidDescription(grant: PatentGrant): string | und
     return `РИД: ${regPart} · ${namePart}`;
   }
   return `РИД: ${regPart || namePart}`;
+}
+
+export function buildPatentGrantRidSelectLabel(
+  grant: Pick<PatentGrant, 'patent_name' | 'patent_registration_number'>,
+): string {
+  const reg = grant.patent_registration_number?.trim();
+  const name = grant.patent_name?.trim();
+  if (reg && name) return `${reg} — ${name}`;
+  if (reg) return reg;
+  if (name) return name;
+  return 'РИД';
 }

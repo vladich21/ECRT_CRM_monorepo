@@ -1,7 +1,9 @@
 import { FileTextOutlined, GlobalOutlined } from '@ant-design/icons';
-import { Col, Divider, Form, Input, Row, Select } from 'antd';
+import { Alert, Col, Divider, Form, Input, Row, Select } from 'antd';
 
 import { SelectWithQuickAdd } from '@/components/selectWithQuickAdd/SelectWithQuickAdd';
+import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
+import { getNameById } from '@/helpers/getNameById';
 import type { Reference } from '@/types/referenceTypes';
 
 import type { PatentFormRefs } from './patentForm.types';
@@ -10,6 +12,10 @@ import styles from '../../PatentFormPage.module.scss';
 
 const { TextArea } = Input;
 
+/** Подсказка при статусе «Отказ в выдаче»: дальнейшее оформление преобразования (поля появятся при выборе «Преобразование»). */
+const REFUSAL_TO_TRANSFORMATION_HINT =
+  'При необходимости оформите преобразование в другой РИД: смените статус на „Преобразование" и укажите целевой РИД и номера уведомлений ИЦ ЖТ и ЦИР.';
+
 type Props =
   | { refs: PatentFormRefs; areasField: 'quickAdd'; onOpenAreaModal: () => void }
   | { refs: PatentFormRefs; areasField: 'multi' };
@@ -17,6 +23,10 @@ type Props =
 export function PatentFormIdentityFields(props: Props) {
   const { refs, areasField } = props;
   const onOpenAreaModal = props.areasField === 'quickAdd' ? props.onOpenAreaModal : undefined;
+  const statusId = Form.useWatch('status_id');
+  const statusName = getNameById(statusId, refs.patentStatuses);
+  const showRefusalTransformationHint = patentRidWorkflowKind(statusName) === 'refusal';
+
   return (
     <div className={styles.sectionBox}>
       <Divider orientation='left'>
@@ -124,6 +134,14 @@ export function PatentFormIdentityFields(props: Props) {
           </Form.Item>
         </Col>
       </Row>
+
+      {showRefusalTransformationHint ? (
+        <Row gutter={16}>
+          <Col span={24}>
+            <Alert type='info' showIcon message={REFUSAL_TO_TRANSFORMATION_HINT} style={{ marginTop: 4 }} />
+          </Col>
+        </Row>
+      ) : null}
     </div>
   );
 }

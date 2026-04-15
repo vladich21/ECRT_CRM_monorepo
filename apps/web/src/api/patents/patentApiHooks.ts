@@ -3,6 +3,21 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 import { Patent } from '../../types/patent';
 import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
 import type { PatentsListServerFilters } from './patentListFilters.types';
+
+/** Пустые фильтры для загрузки кандидатов в целевой РИД (преобразование). */
+export const patentsListServerFiltersEmpty: PatentsListServerFilters = {
+  search: '',
+  departmentId: null,
+  statusId: null,
+  authorIds: [],
+  areaIds: [],
+  responsibleId: null,
+  registrationYears: [],
+  registrationCirYears: [],
+  projectId: null,
+  contractId: null,
+  grantRegionKeys: [],
+};
 import { invalidatePatentQueries, patentQueryKeys } from './patentQueryKeys';
 
 export type PatentsDeletedScope = 'active' | 'deleted' | 'all';

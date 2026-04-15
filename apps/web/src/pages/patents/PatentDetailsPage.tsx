@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, TeamOutlined, UndoOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, UndoOutlined, UserOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -10,7 +10,11 @@ import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '@/components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '@/customhooks/useConfirmByModal';
 import { useNotification } from '@/customhooks/useNotification';
+import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
+import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
+import { formatPatentRegistryCardHeading } from '@/pages/patents/utils/patentRegistryCardUtils';
+import listCardStyles from '@/pages/patents/PatentsListPage.module.scss';
 import styles from './PatentDetails.module.scss';
 import type { ActionType } from './types/PatentsListPage.types';
 import type { PatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
@@ -35,7 +39,13 @@ export default function PatentDetailsPage() {
   const { contextHolder, showNotification } = useNotification();
   const { data: patent, isLoading, isError } = usePatentById(patentId!);
   const { data: patentGrants = [] } = usePatentGrants(patentId!);
-  const { data: referenceBooks } = useReferenceData(['patentStatuses', 'patentIntellectProps', 'departments']);
+  const { data: referenceBooks } = useReferenceData([
+    'patentStatuses',
+    'patentIntellectProps',
+    'departments',
+    'users',
+    'projects',
+  ]);
   const deleteMutation = useDeletePatent();
   const restoreMutation = useRestorePatent();
   const activeTab = getActiveTabFromPath(location.pathname);
@@ -84,36 +94,44 @@ export default function PatentDetailsPage() {
   if (isError || !patent) return <NotFound errorMessage='Патент не найден' />;
   const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
   const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses) || '';
-  const deptName = getNameById(patent.department_id, referenceBooks?.departments) || '';
+  const responsibleName =
+    getNameById(patent.responsible_for_patenting_id, referenceBooks?.users ?? []) || '—';
+  const projectEntity = getEntityById(patent.project_id, referenceBooks?.projects ?? []);
+  const projectChipLabel = formatProjectChipLabel(projectEntity);
   const headerStatusBadge = patent.is_deleted
     ? { label: 'Удалён' as const, variant: 'danger' as const }
     : {
         label: statusName || 'Статус не указан',
         variant: detailHeaderVariantForPatentRidStatus(statusName),
       };
+  const title = formatPatentRegistryCardHeading(patent);
   return (
     <DetailPageHeader
-      title={`РИД ${patent.registration_number || '—'}`}
+      title={title}
       titleWeight='medium'
       backLabel='Реестр РИД'
       onBack={handleBack}
       statusBadge={headerStatusBadge}
+      subtitle={
+        <div className={styles.detailHeaderSubtitle}>
+          <UserOutlined style={{ fontSize: 14 }} />
+          <span>{responsibleName}</span>
+        </div>
+      }
       metaItems={[
-        patent.name && (
-          <span key='name' className={styles.metaText}>
-            {patent.name}
-          </span>
-        ),
-        ipTypeName && (
-          <span key='ipType' className={styles.metaType}>
+        ipTypeName ? (
+          <span key='ipType' className={`${listCardStyles.typeChip} ${listCardStyles.chipTight}`}>
             {ipTypeName}
           </span>
-        ),
-        deptName && (
-          <span key='dept' className={styles.metaText}>
-            <TeamOutlined /> {deptName}
+        ) : null,
+        projectChipLabel ? (
+          <span
+            key='project'
+            className={`${listCardStyles.projectChip} ${listCardStyles.chipTight} ${styles.detailHeaderProjectChip}`}
+          >
+            {projectChipLabel}
           </span>
-        ),
+        ) : null,
       ].filter(Boolean)}
       actions={
         <>

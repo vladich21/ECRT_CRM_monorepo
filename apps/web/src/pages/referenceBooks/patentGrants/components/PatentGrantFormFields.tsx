@@ -6,6 +6,8 @@ import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrant
 import { Reference } from '../../../../types/referenceTypes';
 import styles from '../PatentGrantFormPage.module.scss';
 
+export type PatentGrantPatentSelectFallback = { id: string; name: string };
+
 const { TextArea } = Input;
 
 function buildOfficeSelectOptions(savedOffice?: string | null) {
@@ -23,13 +25,34 @@ interface PatentGrantFormFieldsProps {
   };
   patentIdFromState?: string | null;
   savedOfficeForLegacy?: string | null;
+  patentSelectFallback?: PatentGrantPatentSelectFallback | null;
 }
 export function PatentGrantFormFields({
   referenceBooks,
   patentIdFromState,
   savedOfficeForLegacy,
+  patentSelectFallback,
 }: PatentGrantFormFieldsProps) {
   const officeOptions = useMemo(() => buildOfficeSelectOptions(savedOfficeForLegacy), [savedOfficeForLegacy]);
+
+  const patentsForSelect = useMemo(() => {
+    const list = [...(referenceBooks.patents ?? [])];
+    const fb = patentSelectFallback;
+    if (!fb?.id?.trim()) return list;
+    const id = fb.id.trim();
+    const idx = list.findIndex(p => p.id === id);
+    if (idx === -1) {
+      return [{ id, name: fb.name }, ...list];
+    }
+    const row = list[idx]!;
+    if (!row.name?.trim() && fb.name.trim()) {
+      const next = [...list];
+      next[idx] = { ...row, name: fb.name };
+      return next;
+    }
+    return list;
+  }, [referenceBooks.patents, patentSelectFallback]);
+
   return (
     <>
       <div className={styles.twoColSections}>
@@ -62,9 +85,9 @@ export function PatentGrantFormFields({
                   }
                   suffixIcon={<CopyrightOutlined />}
                 >
-                  {referenceBooks?.patents?.map((patent: Reference) => (
+                  {patentsForSelect.map((patent: Reference) => (
                     <Select.Option key={patent.id} value={patent.id}>
-                      {patent.name || `Патенг ${patent.id}`}
+                      {patent.name?.trim() || `Патент ${patent.id}`}
                     </Select.Option>
                   ))}
                 </Select>

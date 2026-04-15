@@ -21,6 +21,28 @@ $warning: #d48806;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
+  width: 100%;
+  gap: 8px;
+}
+
+.scoreDotsCell {
+  flex: 0 0 64px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.scoreValueCell {
+  flex: 0 0 3.25rem;
+  min-width: 4.5ch;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreDotsStrip {
+  margin-right: 0;
 }
 
 .weightedValue {

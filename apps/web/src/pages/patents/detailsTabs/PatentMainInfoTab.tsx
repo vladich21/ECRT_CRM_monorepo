@@ -3,6 +3,7 @@ import {
   FileTextOutlined,
   NumberOutlined,
   SafetyCertificateOutlined,
+  SwapOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import { Link, useOutletContext } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { useContractById } from '@/api/contracts/contractApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
+import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { Patent } from '@/types/patent';
@@ -67,6 +69,14 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const areaNames = (patent.area_ids ?? [])
     .map(id => referenceBooks.patentAreas?.find(area => area.id === id)?.name)
     .filter((name): name is string => Boolean(name));
+
+  const showTransformationCard =
+    Boolean(patent.transformed_into_patent_id) ||
+    Boolean(patent.transformed_from_patent_id) ||
+    Boolean(patent.transformation_notification_ic_zht?.trim()) ||
+    Boolean(patent.transformation_notification_cir?.trim()) ||
+    patentRidWorkflowKind(statusName) === 'transformation';
+
   return (
     <div className={styles.layout}>
       <div className={styles.leftColumn}>
@@ -211,6 +221,53 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
           </div>
         </div>
+
+        {showTransformationCard ? (
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>
+              <SwapOutlined style={{ marginRight: 6 }} />
+              Преобразование РИД
+            </h3>
+            <div className={styles.infoRows}>
+              {patent.transformed_into_patent_id ? (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Преобразован в РИД</span>
+                  <Link
+                    to={`/patents/${patent.transformed_into_patent_id}`}
+                    className={`${styles.infoValue} ${styles.contractRegistryLink}`}
+                  >
+                    {patent.transformation_target_registration_number?.trim() ||
+                      patent.transformed_into_patent_id}
+                  </Link>
+                </div>
+              ) : null}
+              {patent.transformed_from_patent_id ? (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Продолжение РИД</span>
+                  <Link
+                    to={`/patents/${patent.transformed_from_patent_id}`}
+                    className={`${styles.infoValue} ${styles.contractRegistryLink}`}
+                  >
+                    {patent.transformation_source_registration_number?.trim() ||
+                      patent.transformed_from_patent_id}
+                  </Link>
+                </div>
+              ) : null}
+              {patent.transformation_notification_ic_zht?.trim() ? (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Уведомление ИЦ ЖТ</span>
+                  <span className={styles.infoValue}>{patent.transformation_notification_ic_zht}</span>
+                </div>
+              ) : null}
+              {patent.transformation_notification_cir?.trim() ? (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Уведомление ЦИР</span>
+                  <span className={styles.infoValue}>{patent.transformation_notification_cir}</span>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Документация</h3>

@@ -71,6 +71,16 @@ export function formatEvaluatedAtRu(isoDate: string): string {
   return isoDate;
 }
 
+export function formatCriterionScoreLabel(value: number): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  const stepped = Math.round(n * 10) / 10;
+  if (Number.isInteger(stepped)) {
+    return String(stepped);
+  }
+  return stepped.toFixed(1);
+}
+
 export function getRowUiStatus(row: SupplierEvaluationListItem): UiEvalRowStatus {
   if (row.status === 'archived') return 'archived';
   if (row.category === 'D' && !row.next_reevaluation_date) return 'blocked';
@@ -82,7 +92,7 @@ export function getRowUiStatus(row: SupplierEvaluationListItem): UiEvalRowStatus
   return 'active';
 }
 
-export function ScoreDots({ value }: { value: number }) {
+export function ScoreDots({ value, dotsRowClassName }: { value: number; dotsRowClassName?: string }) {
   const filled = Math.floor(value);
   const half = value % 1 > 0;
   const color = scoreColor(value);
@@ -102,7 +112,9 @@ export function ScoreDots({ value }: { value: number }) {
       />,
     );
   }
-  return <span className={uiStyles.dotsRow}>{cells}</span>;
+  return (
+    <span className={[uiStyles.dotsRow, dotsRowClassName].filter(Boolean).join(' ')}>{cells}</span>
+  );
 }
 
 export function weightPercent(weight: number): string {
