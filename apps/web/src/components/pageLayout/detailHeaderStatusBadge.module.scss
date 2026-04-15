@@ -49,3 +49,28 @@
   border: 1px solid #e8e8e8;
   color: #737373;
 }
+
+/* RGB синхронизирован с semanticStatusTintFromRgb в statusBadgeSurfaces.ts */
+.ridCir {
+  @include v.semantic-tinted-badge(22, 119, 255, #1677ff);
+}
+
+.ridOfficePending {
+  @include v.semantic-tinted-badge(250, 173, 20, #d48806);
+}
+
+.ridQuery {
+  @include v.semantic-tinted-badge(250, 140, 22, #d4380d);
+}
+
+.ridDecision {
+  @include v.semantic-tinted-badge(24, 144, 255, #0050b3);
+}
+
+.ridTransform {
+  @include v.semantic-tinted-badge(235, 47, 150, #c41d7f);
+}
+
+.ridDraft {
+  @include v.semantic-tinted-badge(140, 140, 140, #737373);
+}

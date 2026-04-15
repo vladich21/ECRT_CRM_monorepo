@@ -59,6 +59,16 @@ $header-activity-info-bg: rgba(22, 119, 255, 0.125);
 $header-activity-info-border: rgba(22, 119, 255, 0.314);
 $header-activity-info-text: #1677ff;
 
+// Полупрозрачный фон бейджа по базовому RGB (как success / danger в шапке)
+$semantic-status-tint-bg-alpha: 0.125;
+$semantic-status-tint-border-alpha: 0.314;
+
+@mixin semantic-tinted-badge($r, $g, $b, $text-color) {
+  background: rgba($r, $g, $b, $semantic-status-tint-bg-alpha);
+  border: 1px solid rgba($r, $g, $b, $semantic-status-tint-border-alpha);
+  color: $text-color;
+}
+
 $app-color-error: #e84749;
 
 $spacing-2xs: 2px;

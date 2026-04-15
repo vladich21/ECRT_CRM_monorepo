@@ -104,9 +104,9 @@ export default function PatentGrantsRegistryPage() {
       <BackButton path='/' />
 
       <PageHeader
-        title='Охранные документы'
+        title='Реестр охранных документов'
         titleWeight='medium'
-        subtitle='учёт охранных документов и переход к связанному РИД'
+        subtitle='учёт охранных документов'
         actions={
           <>
             <Button

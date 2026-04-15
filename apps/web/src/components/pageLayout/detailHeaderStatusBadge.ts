@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 
+import type { PatentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
+import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
+
 import badgeStyles from './detailHeaderStatusBadge.module.scss';
 
 export type DetailHeaderStatusBadgeVariant =
@@ -10,7 +13,13 @@ export type DetailHeaderStatusBadgeVariant =
   | 'info'
   | 'archive'
   | 'warning'
-  | 'neutral';
+  | 'neutral'
+  | 'ridCir'
+  | 'ridOfficePending'
+  | 'ridQuery'
+  | 'ridDecision'
+  | 'ridTransform'
+  | 'ridDraft';
 
 export type DetailStatusBadge = {
   label: string;
@@ -27,6 +36,24 @@ const VARIANT_CLASS: Record<DetailHeaderStatusBadgeVariant, string> = {
   archive: `${badgeStyles.badge} ${badgeStyles.archive}`,
   warning: `${badgeStyles.badge} ${badgeStyles.warning}`,
   neutral: `${badgeStyles.badge} ${badgeStyles.neutral}`,
+  ridCir: `${badgeStyles.badge} ${badgeStyles.ridCir}`,
+  ridOfficePending: `${badgeStyles.badge} ${badgeStyles.ridOfficePending}`,
+  ridQuery: `${badgeStyles.badge} ${badgeStyles.ridQuery}`,
+  ridDecision: `${badgeStyles.badge} ${badgeStyles.ridDecision}`,
+  ridTransform: `${badgeStyles.badge} ${badgeStyles.ridTransform}`,
+  ridDraft: `${badgeStyles.badge} ${badgeStyles.ridDraft}`,
+};
+
+const PATENT_RID_HEADER_VARIANT_BY_KIND: Record<PatentRidWorkflowKind, DetailHeaderStatusBadgeVariant> = {
+  doc_prep: 'ridDraft',
+  submitted_cir: 'ridCir',
+  office_review: 'ridOfficePending',
+  review_query: 'ridQuery',
+  refusal: 'danger',
+  transformation: 'ridTransform',
+  decision: 'ridDecision',
+  issued: 'success',
+  unknown: 'ridDraft',
 };
 
 export function detailHeaderStatusBadgeClass(variant: DetailHeaderStatusBadgeVariant): string {
@@ -90,21 +117,6 @@ export function detailHeaderVariantForPatentRecord(isDeleted: boolean): DetailHe
   return isDeleted ? 'danger' : 'success';
 }
 
-/** Статусы РИД (справочник ref_patent_statuses) — вариант плашки в шапке карточки. */
 export function detailHeaderVariantForPatentRidStatus(statusName: string | undefined): DetailHeaderStatusBadgeVariant {
-  switch (statusName?.trim()) {
-    case 'Отказ в выдаче':
-      return 'danger';
-    case 'Выдан патент':
-    case 'Решение о выдаче':
-      return 'success';
-    case 'На рассмотрении, запрос':
-      return 'warning';
-    case 'Заявка подана / на рассмотрении в ведомстве':
-    case 'Сдано в ЦИР':
-      return 'info';
-    case 'Подготовка документации':
-    default:
-      return 'neutral';
-  }
+  return PATENT_RID_HEADER_VARIANT_BY_KIND[patentRidWorkflowKind(statusName)];
 }

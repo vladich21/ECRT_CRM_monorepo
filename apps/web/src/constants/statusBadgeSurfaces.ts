@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 
 import { APP_COLOR_SUCCESS, APP_COLOR_SUCCESS_BG, APP_COLOR_SUCCESS_BORDER } from './appColors';
+import { patentRidWorkflowKind, type PatentRidWorkflowKind } from './patentRidWorkflowKind';
 import type { PartnerRegistryStatus } from '../types/partnerRegistry';
 import type { SupplierEvaluationCategory } from '../types/supplierEvaluation';
 
@@ -9,6 +10,18 @@ export type StatusBadgeSurface = {
   borderColor: string;
   color: string;
 };
+
+/** Как у `.success` / `.activityActive` в шапке: rgba-фон и бордер от одного базового цвета (Ant Design pattern). */
+export const SEMANTIC_STATUS_TINT_BG_ALPHA = 0.125;
+export const SEMANTIC_STATUS_TINT_BORDER_ALPHA = 0.314;
+
+export function semanticStatusTintFromRgb(r: number, g: number, b: number, foreground: string): StatusBadgeSurface {
+  return {
+    background: `rgba(${r}, ${g}, ${b}, ${SEMANTIC_STATUS_TINT_BG_ALPHA})`,
+    borderColor: `rgba(${r}, ${g}, ${b}, ${SEMANTIC_STATUS_TINT_BORDER_ALPHA})`,
+    color: foreground,
+  };
+}
 
 export const SURFACE_ACTIVE: StatusBadgeSurface = {
   background: APP_COLOR_SUCCESS_BG,
@@ -85,23 +98,32 @@ export function getPatentRecordSurface(isDeleted: boolean): StatusBadgeSurface {
   return isDeleted ? SURFACE_BLOCKED : SURFACE_ACTIVE;
 }
 
-/** Цвет тега статуса РИД в списке (по названию из справочника). */
+/**
+ * Цвета РИД: один базовый RGB → полупрозрачный фон/бордер (см. `semantic-tinted-badge` в variables.scss).
+ * Отказ — тот же красный тон, что и `.danger` в шапке.
+ */
+export const SURFACE_RID_SUBMITTED_CIR = semanticStatusTintFromRgb(22, 119, 255, '#1677ff');
+export const SURFACE_RID_OFFICE_REVIEW = semanticStatusTintFromRgb(250, 173, 20, '#d48806');
+export const SURFACE_RID_REVIEW_QUERY = semanticStatusTintFromRgb(250, 140, 22, '#d4380d');
+export const SURFACE_RID_REFUSAL = semanticStatusTintFromRgb(255, 77, 79, '#ff4d4f');
+export const SURFACE_RID_TRANSFORMATION = semanticStatusTintFromRgb(235, 47, 150, '#c41d7f');
+export const SURFACE_RID_DECISION = semanticStatusTintFromRgb(24, 144, 255, '#0050b3');
+export const SURFACE_RID_DRAFT = semanticStatusTintFromRgb(140, 140, 140, '#737373');
+
+const PATENT_RID_SURFACE_BY_KIND: Record<PatentRidWorkflowKind, StatusBadgeSurface> = {
+  doc_prep: SURFACE_RID_DRAFT,
+  submitted_cir: SURFACE_RID_SUBMITTED_CIR,
+  office_review: SURFACE_RID_OFFICE_REVIEW,
+  review_query: SURFACE_RID_REVIEW_QUERY,
+  refusal: SURFACE_RID_REFUSAL,
+  transformation: SURFACE_RID_TRANSFORMATION,
+  decision: SURFACE_RID_DECISION,
+  issued: semanticStatusTintFromRgb(82, 196, 26, '#52c41a'),
+  unknown: SURFACE_RID_DRAFT,
+};
+
 export function getPatentRidWorkflowSurface(statusName: string | undefined): StatusBadgeSurface {
-  switch (statusName?.trim()) {
-    case 'Отказ в выдаче':
-      return SURFACE_BLOCKED;
-    case 'Выдан патент':
-    case 'Решение о выдаче':
-      return SURFACE_ACTIVE;
-    case 'На рассмотрении, запрос':
-      return SURFACE_WARNING;
-    case 'Заявка подана / на рассмотрении в ведомстве':
-    case 'Сдано в ЦИР':
-      return SURFACE_POTENTIAL;
-    case 'Подготовка документации':
-    default:
-      return SURFACE_NEUTRAL;
-  }
+  return PATENT_RID_SURFACE_BY_KIND[patentRidWorkflowKind(statusName)];
 }
 
 export function getContractHeaderSurface(isDeleted: boolean, isActive: boolean): StatusBadgeSurface {
@@ -109,17 +131,9 @@ export function getContractHeaderSurface(isDeleted: boolean, isActive: boolean):
   return isActive ? SURFACE_ACTIVE : SURFACE_BLOCKED;
 }
 
-export const SURFACE_ACTIVITY_ACTIVE: StatusBadgeSurface = {
-  background: 'rgba(82, 196, 26, 0.125)',
-  borderColor: 'rgba(82, 196, 26, 0.314)',
-  color: 'rgb(82, 196, 26)',
-};
+export const SURFACE_ACTIVITY_ACTIVE = semanticStatusTintFromRgb(82, 196, 26, 'rgb(82, 196, 26)');
 
-export const SURFACE_ACTIVITY_INACTIVE: StatusBadgeSurface = {
-  background: 'rgba(255, 77, 79, 0.125)',
-  borderColor: 'rgba(255, 77, 79, 0.314)',
-  color: 'rgb(255, 77, 79)',
-};
+export const SURFACE_ACTIVITY_INACTIVE = semanticStatusTintFromRgb(255, 77, 79, 'rgb(255, 77, 79)');
 
 export function getActiveInactiveSurface(isActive: boolean): StatusBadgeSurface {
   return isActive ? SURFACE_ACTIVITY_ACTIVE : SURFACE_ACTIVITY_INACTIVE;
