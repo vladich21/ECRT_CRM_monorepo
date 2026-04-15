@@ -140,7 +140,7 @@ export default function PatentDetailsPage() {
         { key: 'main', label: 'Основная информация' },
         { key: 'files', label: 'Файлы' },
         { key: 'comments', label: 'Комментарии' },
-        { key: 'grants', label: `Выданные патенты (${patentGrants.length})` },
+        { key: 'grants', label: `Охранные документы (${patentGrants.length})` },
       ]}
       activeTab={activeTab}
       onTabChange={handleTabChange}

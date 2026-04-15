@@ -54,7 +54,7 @@ export default function PatentGrantsListPage() {
   return (
     <ReferenceBookListPage
       title='Охранные документы'
-      addButtonLabel='Добавить охранный документ'
+      addButtonLabel='Добавить'
       onAdd={() => navigate('/patent-grants/create', { state: { patentId } })}
       contextHolder={contextHolder}
     >
