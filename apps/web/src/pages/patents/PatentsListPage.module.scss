@@ -215,6 +215,12 @@
   min-width: 0;
   flex: 1;
   text-align: left;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  align-self: flex-start;
 }
 
 .grantMiniIssued {

@@ -22,6 +22,8 @@ import {
 import type { ReferenceDataForPatents } from '@/pages/patents/types/data';
 import styles from '../../PatentsListPage.module.scss';
 
+const MAX_GRANT_MINI_CARDS_IN_LIST = 2;
+
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
 }
@@ -51,6 +53,9 @@ export function PatentCard({ patent, refs, onClick }: Props) {
   const grantsCount = patent.patent_grants_count ?? 0;
   const grantsPreview = patent.patent_grants_preview ?? [];
   const moreGrants = grantsCount > grantsPreview.length ? grantsCount - grantsPreview.length : 0;
+  const visibleGrantsPreview = grantsPreview.slice(0, MAX_GRANT_MINI_CARDS_IN_LIST);
+  const hiddenInPreview = Math.max(0, grantsPreview.length - visibleGrantsPreview.length);
+  const collapsedGrantsTotal = hiddenInPreview + moreGrants;
 
   return (
     <div
@@ -103,7 +108,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
             <FileProtectOutlined style={{ fontSize: 11, marginRight: 6 }} />
             Охранные документы{grantsCount > 1 ? ` (${grantsCount})` : ''}
           </div>
-          {grantsPreview.map((previewItem, index) => {
+          {visibleGrantsPreview.map((previewItem, index) => {
             const grantTitle = previewItem.grant_number?.trim() || '—';
             const grantStatusLabel = previewItem.status?.trim() ?? '';
             const officeLabel = previewItem.office?.trim() ?? '';
@@ -136,12 +141,12 @@ export function PatentCard({ patent, refs, onClick }: Props) {
               </div>
             );
           })}
-          {moreGrants > 0 && (
+          {collapsedGrantsTotal > 0 && (
             <div
               className={styles.grantMore}
               title='Откройте карточку РИД и перейдите в раздел «Охранные документы», там полный список.'
             >
-              {grantsRemainderLabel(moreGrants)} — полный список в карточке РИД
+              {grantsRemainderLabel(collapsedGrantsTotal)} — полный список в карточке РИД
             </div>
           )}
         </div>
