@@ -3,17 +3,17 @@ import { SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { useCreatePatent } from '../../api/patents/patentApiHooks';
-import { useCreatePatentArea } from '../../api/patents/patentAreasApiHooks';
-import { BackButton } from '../../components/backButton/BackButton';
-import { Loader } from '../../components/loader/Loader';
-import { NotFound } from '../../components/notFound/NotFound';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useMutateByModal } from '../../customhooks/useMutateByModal';
-import { useNotification } from '../../customhooks/useNotification';
-import { getEntityById } from '../../helpers/getEntityById';
-import type { Patent, PatentArea } from '../../types/patent';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { useCreatePatent } from '@/api/patents/patentApiHooks';
+import { useCreatePatentArea } from '@/api/patents/patentAreasApiHooks';
+import { BackButton } from '@/components/backButton/BackButton';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { useMutateByModal } from '@/customhooks/useMutateByModal';
+import { useNotification } from '@/customhooks/useNotification';
+import { getEntityById } from '@/helpers/getEntityById';
+import type { Patent, PatentArea } from '@/types/patent';
 import {
   PatentFormIdentityFields,
   PatentFormOrgFields,

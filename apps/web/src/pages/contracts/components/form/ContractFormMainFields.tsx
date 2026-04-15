@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Row, Select } from 'antd';
 
-import type { ProjectPreviewItem } from '../../../../api/projects/projectApi';
+import type { ProjectPreviewItem } from '@/api/projects/projectApi';
 import type { ContractFormMode, ContractFormRefs } from './contractForm.types';
 import formFieldStyles from './ContractFormMainFields.module.scss';
 

@@ -1,9 +1,9 @@
 import { WarningOutlined } from '@ant-design/icons';
 import { Alert, Avatar, Card, Descriptions, Divider, Progress, Space, Statistic, Tag, Typography } from 'antd';
 
-import type { ReferenceData } from '../../../../../api/hooks/useReferences';
-import { getNameById } from '../../../../../helpers/getNameById';
-import type { Contract, ContractStage } from '../../../../../types/contract';
+import type { ReferenceData } from '@/api/hooks/useReferences';
+import { getNameById } from '@/helpers/getNameById';
+import type { Contract, ContractStage } from '@/types/contract';
 import detailStyles from '../../ContractDetails.module.scss';
 import styles from './ContractDetailsAside.module.scss';
 import { buildDetailItems } from './contractInfoItems';

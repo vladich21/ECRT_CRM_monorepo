@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import { Card, Row, Typography } from 'antd';
 import { useOutletContext } from 'react-router-dom';
 
-import { useReferenceData } from '../../../../../api/hooks/useReferences';
-import { Loader } from '../../../../../components/loader/Loader';
-import { NotFound } from '../../../../../components/notFound/NotFound';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
 import pageStyles from '../../ContractDetails.module.scss';
 import { StageCard } from '../stages/StageCard';
 import { ContractMainInfoSummaryCard } from './components/ContractMainInfoSummaryCard';

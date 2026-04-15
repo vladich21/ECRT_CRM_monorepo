@@ -1,4 +1,4 @@
-import type { Contract, ContractStage } from '../../../../../../types/contract';
+import type { Contract, ContractStage } from '@/types/contract';
 
 export type ContractMainInfoOutletContext = {
   contract: Contract;

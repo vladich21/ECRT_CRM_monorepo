@@ -1,12 +1,12 @@
 import { Descriptions, Space, Tag, Typography } from 'antd';
-import { useOutletContext } from 'react-router-dom';
+import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 
 import { useReferenceData } from '../../../../api/hooks/useReferences';
 import { Loader } from '../../../../components/loader/Loader';
 import { NotFound } from '../../../../components/notFound/NotFound';
 import { getNameById } from '../../../../helpers/getNameById';
 import { PatentGrant } from '../../../../types/patent';
-import { patentGrantStatusTagPreset } from '../patentGrantStatusStyles';
+import { patentGrantStatusTagPreset } from '../constants/patentGrantStatusStyles';
 import styles from './PatentGrantMainInfoTab.module.scss';
 
 const { Text } = Typography;
@@ -35,6 +35,11 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
       ? new Date(iso).toLocaleDateString('ru-RU')
       : <Text type='secondary'>Не указана</Text>;
 
+  const ridDisplayName =
+    patentGrant?.patent_name?.trim() ||
+    getNameById(patentGrant?.patent_id, referenceBooks.patents)?.trim() ||
+    '';
+
   return (
     <Space direction='vertical' size='middle' className={styles.container}>
       <Descriptions title='Основная информация' column={1} bordered size='middle' className={styles.descriptions}>
@@ -44,9 +49,9 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
 
         <Descriptions.Item label='РИД'>
           {patentGrant?.patent_id ? (
-            <Tag color='blue' style={{ fontSize: 12 }}>
-              {getNameById(patentGrant.patent_id, referenceBooks.patents)}
-            </Tag>
+            <RouterLink to={`/patents/${patentGrant.patent_id}`} className={styles.ridLink}>
+              {ridDisplayName || 'Карточка РИД'}
+            </RouterLink>
           ) : (
             <Text type='secondary'>Не указан</Text>
           )}

@@ -1,7 +1,7 @@
 import { Button, Form, Modal, Select } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 
-import type { ReferenceData } from '../../../../../../api/hooks/useReferences';
+import type { ReferenceData } from '@/api/hooks/useReferences';
 
 type ContractStageFiltersModalProps = {
   open: boolean;

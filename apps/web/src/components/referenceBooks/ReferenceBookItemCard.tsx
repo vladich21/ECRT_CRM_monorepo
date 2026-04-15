@@ -29,6 +29,22 @@ export function ReferenceBookItemCard({
   onEdit,
   onDelete,
 }: Props) {
+  const previewEl =
+    previewBgColor && previewTextColor ? (
+      <div>
+        <span
+          className={styles.previewTag}
+          style={{
+            backgroundColor: previewBgColor,
+            color: previewTextColor,
+            borderColor: previewBorderColor || 'transparent',
+          }}
+        >
+          {previewText || 'Пример текста'}
+        </span>
+      </div>
+    ) : null;
+
   return (
     <div className={styles.card}>
       <div
@@ -57,20 +73,7 @@ export function ReferenceBookItemCard({
 
         {subtitle ? <div className={styles.subtitle}>{subtitle}</div> : null}
         {description ? <div className={styles.description}>{description}</div> : null}
-        {previewBgColor && previewTextColor ? (
-          <div>
-            <span
-              className={styles.previewTag}
-              style={{
-                backgroundColor: previewBgColor,
-                color: previewTextColor,
-                borderColor: previewBorderColor || 'transparent',
-              }}
-            >
-              {previewText || 'Пример текста'}
-            </span>
-          </div>
-        ) : null}
+        {previewEl}
       </div>
 
       <div className={styles.actions}>

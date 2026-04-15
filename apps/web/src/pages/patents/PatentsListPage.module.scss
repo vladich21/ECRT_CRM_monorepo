@@ -5,17 +5,14 @@
   padding: 0;
 }
 
-// ─── Кнопка «Фильтры» ─────────────────────────────────────────────────────
 .filtersBtnActive { @include lp.filtersBtnActive; }
 .filtersBadge     { @include lp.filtersBadge; }
 
-// ─── Модальное окно фильтров ──────────────────────────────────────────────
 .filtersModalGrid    { @include lp.filtersModalGrid; }
 .filtersModalField   { @include lp.filtersModalField; }
 .filtersModalLabel   { @include lp.filtersModalLabel; }
 .filtersModalControl { @include lp.filtersModalControl; }
 
-// ─── Filter section ─────────────────────────────────────────────────────────
 .filterSection   { @include lp.filterSection; }
 .filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
 .filterTabsRight { @include lp.filterTabsRight; }
@@ -23,13 +20,11 @@
 .searchIcon      { @include lp.searchIcon; }
 .resultCount     { @include lp.resultCount; }
 
-// ─── Filter tabs ────────────────────────────────────────────────────────────
 .filterTabs      { @include lp.filterTabs; }
 .filterTab       { @include lp.filterTab; }
 .filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
 .filterTabCount  { @include lp.filterTabCount; }
 
-// ─── Card list ──────────────────────────────────────────────────────────────
 .cardList {
   margin-top: 16px;
 }
@@ -39,7 +34,6 @@
   transition: opacity 0.15s ease;
 }
 
-// ─── Patent card (Partners SupplierCard style) ──────────────────────────────
 .card {
   background: #fff;
   border-radius: 12px;
@@ -60,7 +54,6 @@
   }
 }
 
-// ─── Main info column ───────────────────────────────────────────────────────
 .mainInfo {
   flex: 1;
   min-width: 0;
@@ -135,7 +128,109 @@
   font-weight: 500;
 }
 
-// ─── Category column (IP type) ──────────────────────────────────────────────
+.grantsCol {
+  flex: 0 0 350px;
+  width: 350px;
+  min-width: 350px;
+  max-width: 350px;
+  border-left: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+  padding-left: 14px;
+  padding-right: 14px;
+  margin-left: 4px;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.grantsHeading {
+  font-size: 14px;
+  font-weight: 500;
+  color: #8c8c8c;
+  letter-spacing: 0.03em;
+}
+
+.grantMiniCard {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+  border-radius: 8px;
+  padding: 6px 10px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.grantMiniTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.grantMiniTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.88);
+  line-height: 1.25;
+  min-width: 0;
+  flex: 0 1 auto;
+  max-width: 72%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grantMiniMeta {
+  flex-shrink: 0;
+  margin: 0 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.grantMiniSubtitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.grantMiniOffice {
+  font-size: 14px;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.grantMiniIssued {
+  font-size: 14px;
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.grantMore {
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 1.35;
+  white-space: normal;
+}
+
 .categoryCol {
   flex: 1;
   min-width: 0;
@@ -166,10 +261,10 @@
   border: 1px solid #e8e8e8;
 }
 
-// ─── Metrics column ─────────────────────────────────────────────────────────
 .metricsCol {
   flex: 0 0 180px;
-  margin-left: auto;
+  margin-left: 100px;
+  padding-left: 14px;
 }
 
 .periodInfo {
@@ -212,9 +307,7 @@
   gap: 4px;
 }
 
-// ─── Activity column ────────────────────────────────────────────────────────
 .activityCol {
-  flex: 0 0 120px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -233,10 +326,8 @@
   color: #d9d9d9;
 }
 
-// ─── Pagination ─────────────────────────────────────────────────────────────
 .pagination { @include lp.pagination; }
 
-// ─── Loading / Empty ────────────────────────────────────────────────────────
 .loading {
   padding: v.$spacing-4xl;
   text-align: center;

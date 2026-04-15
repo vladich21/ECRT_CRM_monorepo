@@ -1,8 +1,8 @@
 import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 
-import styles from './PatentsListPage.module.scss';
-import { PATENT_FILTER_TABS, type PatentFilterTab } from './PatentsListPage.types';
+import styles from '../../PatentsListPage.module.scss';
+import { PATENT_FILTER_TABS, type PatentFilterTab } from '@/pages/patents/types/PatentsListPage.types';
 
 export type PatentsListTabCounts = Record<PatentFilterTab, number>;
 

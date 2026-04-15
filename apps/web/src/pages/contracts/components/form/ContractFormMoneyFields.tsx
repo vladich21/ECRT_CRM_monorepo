@@ -1,7 +1,7 @@
 import { CalculatorOutlined } from '@ant-design/icons';
 import { Col, Divider, Form, Input, InputNumber, Row, Space } from 'antd';
 
-import { numberFormatter, parseThousandSeparatedNumber } from '../../../../helpers/numberFormatters';
+import { numberFormatter, parseThousandSeparatedNumber } from '@/helpers/numberFormatters';
 
 import type { ContractFormMode } from './contractForm.types';
 

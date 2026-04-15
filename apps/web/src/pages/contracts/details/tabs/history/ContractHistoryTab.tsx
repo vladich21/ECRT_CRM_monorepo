@@ -1,7 +1,7 @@
 import { Card, Empty, Typography } from 'antd';
 import { useOutletContext } from 'react-router-dom';
 
-import type { Contract } from '../../../../../types/contract';
+import type { Contract } from '@/types/contract';
 import styles from '../additionalAgreements/ContractSupplementTabs.module.scss';
 
 const { Text, Title } = Typography;

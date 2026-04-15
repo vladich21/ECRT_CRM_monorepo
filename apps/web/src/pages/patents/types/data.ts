@@ -1,4 +1,4 @@
-import { ReferenceData } from '../../api/hooks/useReferences';
+import { ReferenceData } from '@/api/hooks/useReferences';
 
 export type ReferenceDataForPatents = Pick<
   ReferenceData,

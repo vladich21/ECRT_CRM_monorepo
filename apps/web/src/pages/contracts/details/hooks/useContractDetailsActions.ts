@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
 
-import { useDeleteContract, useRestoreContract } from '../../../../api/contracts/contractApiHooks';
-import type { ContractDeleteResult } from '../../../../api/contracts/contractApi';
-import { useConfirmByModal } from '../../../../customhooks/useConfirmByModal';
-import { useNotification } from '../../../../customhooks/useNotification';
-import type { Contract } from '../../../../types/contract';
+import { useDeleteContract, useRestoreContract } from '@/api/contracts/contractApiHooks';
+import type { ContractDeleteResult } from '@/api/contracts/contractApi';
+import { useConfirmByModal } from '@/customhooks/useConfirmByModal';
+import { useNotification } from '@/customhooks/useNotification';
+import type { Contract } from '@/types/contract';
 import type { FilterTab } from '../../list/ContractsListPage.types';
-import { isContractDraft } from '../../utils/contractStateUtils';
-import type { ReferenceData } from '../../../../api/hooks/useReferences';
+import { isContractDraft } from '@/pages/contracts/utils/contractStateUtils';
+import type { ReferenceData } from '@/api/hooks/useReferences';
 
 type NavBase = Record<string, unknown>;
 

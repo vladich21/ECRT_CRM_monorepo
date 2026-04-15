@@ -7,13 +7,13 @@ import {
 } from '@ant-design/icons';
 import { Link, useOutletContext } from 'react-router-dom';
 
-import { useContractById } from '../../../api/contracts/contractApiHooks';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
-import { Patent } from '../../../types/patent';
+import { useContractById } from '@/api/contracts/contractApiHooks';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { Patent } from '@/types/patent';
 import styles from './PatentMainInfoTab.module.scss';
 
 function formatDate(dateString: string) {

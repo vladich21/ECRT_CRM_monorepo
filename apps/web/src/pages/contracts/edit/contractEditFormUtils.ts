@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 
-import type { Contract } from '../../../types/contract';
+import type { Contract } from '@/types/contract';
 
 export function applyDayjsDateFieldsToPayload(payload: Record<string, unknown>): Partial<Contract> {
   const out: Record<string, unknown> = { ...payload };

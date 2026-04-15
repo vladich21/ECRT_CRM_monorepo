@@ -1,9 +1,12 @@
 import { Button, Modal, Select } from 'antd';
 
-import { PATENT_GRANT_REGION_OPTIONS } from '../../api/patents/patentGrantRegions';
+import { PATENT_GRANT_REGION_OPTIONS } from '@/api/patents/patentGrantRegions';
 
-import styles from './PatentsListPage.module.scss';
-import type { PatentAdvancedFilters, PatentListFiltersSelectOptions } from './PatentsListPage.types';
+import styles from '../../PatentsListPage.module.scss';
+import type {
+  PatentAdvancedFilters,
+  PatentListFiltersSelectOptions,
+} from '@/pages/patents/types/PatentsListPage.types';
 
 type PatentFiltersModalProps = {
   open: boolean;
@@ -13,6 +16,7 @@ type PatentFiltersModalProps = {
   onApply: () => void;
   onReset: () => void;
   selectOptions: PatentListFiltersSelectOptions;
+  modalTitle?: string;
 };
 export function PatentFiltersModal({
   open,
@@ -22,10 +26,11 @@ export function PatentFiltersModal({
   onApply,
   onReset,
   selectOptions,
+  modalTitle = 'Фильтры РИД',
 }: PatentFiltersModalProps) {
   return (
     <Modal
-      title='Фильтры РИД'
+      title={modalTitle}
       open={open}
       onCancel={onClose}
       onOk={onApply}

@@ -1,10 +1,10 @@
 import { ColumnType } from 'antd/es/table';
 
-import { PatentGrant } from '../../../types/patent';
+import { PatentGrant } from '../../../../types/patent';
 
 export const columns: ColumnType<PatentGrant>[] = [
   {
-    title: 'Номер гранта',
+    title: 'Номер охранного документа',
     dataIndex: 'grant_number',
     key: 'grant_number',
     width: 200,

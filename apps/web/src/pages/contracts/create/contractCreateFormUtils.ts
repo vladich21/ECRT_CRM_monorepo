@@ -1,7 +1,7 @@
 import type { FormInstance } from 'antd/es/form/Form';
 import dayjs from 'dayjs';
 
-import type { CreateContractPayload } from '../../../api/contracts/contractApi';
+import type { CreateContractPayload } from '@/api/contracts/contractApi';
 
 type ContractStateOption = { id: string; name: string; code?: string | null };
 

@@ -3,11 +3,11 @@ import { Button } from 'antd';
 import { useLayoutEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { APP_COLOR_SUCCESS } from '../../../constants/appColors';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import type { DeletionScope } from '../../../constants/deletionScope';
+import { APP_COLOR_SUCCESS } from '@/constants/appColors';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
+import type { DeletionScope } from '@/constants/deletionScope';
 import { CONTRACTS_REGISTRY_PATH, getContractEditPath } from '../constants/routes';
 import tagStyles from '../list/ContractsListPage.module.scss';
 import {

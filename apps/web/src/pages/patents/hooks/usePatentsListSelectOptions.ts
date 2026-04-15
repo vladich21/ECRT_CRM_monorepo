@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
-import type { ReferenceDataForPatents } from '../data';
-import type { PatentListFiltersSelectOptions } from '../PatentsListPage.types';
+import type { ReferenceDataForPatents } from '../types/data';
+import type { PatentListFiltersSelectOptions } from '../types/PatentsListPage.types';
 
 const CALENDAR_YEAR_START = 2022;
 const CALENDAR_YEAR_END = 2050;

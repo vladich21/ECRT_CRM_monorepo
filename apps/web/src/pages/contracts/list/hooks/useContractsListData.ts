@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 
-import type { ContractsListParams } from '../../../../api/contracts/contractApi';
-import { useContracts } from '../../../../api/contracts/contractApiHooks';
-import { useReferenceData } from '../../../../api/hooks/useReferences';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../../../constants/deletionScope';
+import type { ContractsListParams } from '@/api/contracts/contractApi';
+import { useContracts } from '@/api/contracts/contractApiHooks';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { EMPTY_DELETION_TAB_COUNTS } from '@/constants/deletionScope';
 import type { ContractListReferences } from '../ContractsListPage.types';
 
 function buildSelectOptions(references: ContractListReferences) {

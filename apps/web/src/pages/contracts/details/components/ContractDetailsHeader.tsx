@@ -1,10 +1,10 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 
-import headerStyles from '../../../../components/pageLayout/PageHeader.module.scss';
-import type { ContractState } from '../../../../types/contract';
+import headerStyles from '@/components/pageLayout/PageHeader.module.scss';
+import type { ContractState } from '@/types/contract';
 import tagStyles from '../../list/ContractsListPage.module.scss';
-import { getContractStateTagClass } from '../../utils/contractStateUtils';
+import { getContractStateTagClass } from '@/pages/contracts/utils/contractStateUtils';
 import detailsStyles from '../ContractDetails.module.scss';
 
 type ContractDetailsHeaderProps = {

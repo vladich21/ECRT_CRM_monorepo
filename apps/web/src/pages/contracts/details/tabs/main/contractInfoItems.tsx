@@ -1,11 +1,11 @@
 import { Typography } from 'antd';
 
-import type { ReferenceData } from '../../../../../api/hooks/useReferences';
-import { getEntityById } from '../../../../../helpers/getEntityById';
-import { getNameById } from '../../../../../helpers/getNameById';
-import type { Contract } from '../../../../../types/contract';
+import type { ReferenceData } from '@/api/hooks/useReferences';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import type { Contract } from '@/types/contract';
 import listStyles from '../../../list/ContractsListPage.module.scss';
-import { getContractStateTagClass } from '../../../utils/contractStateUtils';
+import { getContractStateTagClass } from '@/pages/contracts/utils/contractStateUtils';
 import { formatDate } from '../stages/data';
 
 const { Text } = Typography;

@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import type { TablePaginationConfig } from 'antd/es/table';
 
-import { BackButton } from '../../../components/backButton/BackButton';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
-import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
-import { Contract } from '../../../types/contract';
+import { BackButton } from '@/components/backButton/BackButton';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { useNotification } from '@/customhooks/useNotification';
+import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '@/hooks/useListReturnFromDetail';
+import { useServerTablePagination } from '@/hooks/useServerTablePagination';
+import { Contract } from '@/types/contract';
 import { useContractListFilters } from '../hooks/useContractListFilters';
 import { buildContractsListNavSnapshot, parseContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 import { useContractsListData } from './hooks/useContractsListData';
@@ -21,6 +22,10 @@ import styles from './ContractsListPage.module.scss';
 import { FILTER_TABS, type FilterTab } from './ContractsListPage.types';
 
 const SEARCH_DEBOUNCE_MS = 350;
+function coerceFilterTab(rawTab: unknown): FilterTab | null {
+  return FILTER_TABS.some(tab => tab.key === rawTab) ? (rawTab as FilterTab) : null;
+}
+
 export default function ContractsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,7 +76,10 @@ export default function ContractsListPage() {
     },
     applyFallback: navigationState => {
       if (navigationState.listTab != null) {
-        setActiveTab(navigationState.listTab as FilterTab);
+        const fallbackTab = coerceFilterTab(navigationState.listTab);
+        if (fallbackTab) {
+          setActiveTab(fallbackTab);
+        }
         return;
       }
       if (navigationState.deletionScope === 'deleted') setActiveTab('deleted');
@@ -101,7 +109,8 @@ export default function ContractsListPage() {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
     if (page > maxPage) {
-      handleTableChange({ current: maxPage, pageSize } as never);
+      const pagination: TablePaginationConfig = { current: maxPage, pageSize };
+      handleTableChange(pagination);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
 
@@ -128,7 +137,7 @@ export default function ContractsListPage() {
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
-    } as never);
+    });
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;

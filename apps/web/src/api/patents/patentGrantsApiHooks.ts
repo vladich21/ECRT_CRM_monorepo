@@ -1,20 +1,35 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 
 import { PatentGrant } from '../../types/patent';
-import { patentGrantsApi } from './patentGrantsApi';
+import {
+  patentGrantsApi,
+  type PatentGrantsRegistryListQuery,
+  type PatentGrantsRegistryResponse,
+} from './patentGrantsApi';
 import { invalidatePatentGrantQueries, patentGrantQueryKeys } from './patentGrantQueryKeys';
+import { invalidatePatentQueries } from './patentQueryKeys';
 
 export const usePatentGrants = (patentId?: string): UseQueryResult<PatentGrant[], Error> => {
   return useQuery<PatentGrant[], Error>({
-    queryKey: patentGrantQueryKeys.entry(patentId),
-    queryFn: () => patentGrantsApi.getPatentGrants(patentId),
+    queryKey: patentGrantQueryKeys.listByPatentId(patentId),
+    queryFn: () => patentGrantsApi.getPatentGrants(patentId!),
     enabled: !!patentId,
   });
 };
 
+export function usePatentGrantsRegistry(
+  listQuery: PatentGrantsRegistryListQuery,
+): UseQueryResult<PatentGrantsRegistryResponse, Error> {
+  return useQuery<PatentGrantsRegistryResponse, Error>({
+    queryKey: patentGrantQueryKeys.registryList(listQuery),
+    queryFn: () => patentGrantsApi.getPatentGrantsRegistry(listQuery),
+    placeholderData: previousData => previousData,
+  });
+}
+
 export const usePatentGrantById = (grantId: string): UseQueryResult<PatentGrant, Error> => {
   return useQuery<PatentGrant, Error>({
-    queryKey: patentGrantQueryKeys.entry(grantId),
+    queryKey: patentGrantQueryKeys.detail(grantId),
     queryFn: () => patentGrantsApi.getPatentGrantById(grantId),
     enabled: !!grantId,
   });
@@ -31,6 +46,7 @@ export const useCreatePatentGrant = (): UseMutationResult<PatentGrant, Error, Cr
     mutationFn: ({ patentId, data }) => patentGrantsApi.createPatentGrant(patentId, data),
     onSuccess: () => {
       void invalidatePatentGrantQueries(queryClient);
+      void invalidatePatentQueries(queryClient);
     },
   });
 };
@@ -47,6 +63,7 @@ export const useUpdatePatentGrant = (): UseMutationResult<
       patentGrantsApi.updatePatentGrant(id, data),
     onSuccess: () => {
       void invalidatePatentGrantQueries(queryClient);
+      void invalidatePatentQueries(queryClient);
     },
   });
 };
@@ -57,10 +74,13 @@ export const useDeletePatentGrant = (): UseMutationResult<void, Error, string> =
   return useMutation<void, Error, string>({
     mutationFn: (grantId: string) => patentGrantsApi.deletePatentGrant(grantId),
     onSuccess: (_, grantId) => {
-      void queryClient.removeQueries({ queryKey: patentGrantQueryKeys.entry(grantId) });
+  
       void queryClient.invalidateQueries({
-        predicate: query => query.queryKey[0] === 'patentGrants' && query.queryKey[1] !== grantId,
+        predicate: query =>
+          query.queryKey[0] === 'patentGrants' &&
+          !(query.queryKey[1] === 'detail' && query.queryKey[2] === grantId),
       });
+      void invalidatePatentQueries(queryClient);
     },
   });
 };

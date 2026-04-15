@@ -1,3 +1,10 @@
+export type PatentGrantListPreviewItem = {
+  grant_number: string;
+  grant_date?: string;
+  office?: string;
+  status?: string;
+};
+
 export interface Patent {
   id: string;
   registration_number: string;
@@ -20,6 +27,9 @@ export interface Patent {
   created_at: string;
   updated_at: string;
   created_by: number;
+
+  patent_grants_count?: number;
+  patent_grants_preview?: PatentGrantListPreviewItem[];
 }
 
 export interface PatentArea {
@@ -42,4 +52,6 @@ export interface PatentGrant {
   notes?: string;
   created_at: string;
   updated_at: string;
+  patent_name?: string;
+  patent_registration_number?: string;
 }

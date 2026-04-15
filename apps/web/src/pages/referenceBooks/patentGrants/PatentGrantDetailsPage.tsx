@@ -7,13 +7,15 @@ import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { patentGrantDetailHeaderBadgeVariant } from './patentGrantStatusStyles';
+import { patentGrantDetailHeaderBadgeVariant } from './constants/patentGrantStatusStyles';
+import { getPatentGrantListBackTarget } from './navigation/patentGrantListNavigation';
 import { useNotification } from '../../../customhooks/useNotification';
 
 export default function PatentGrantDetailsPage() {
   const { grantId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const backTarget = getPatentGrantListBackTarget(location.state);
   const { contextHolder, showNotification } = useNotification();
   const { data: patentGrant, isLoading, isError } = usePatentGrantById(grantId!);
   const mutation = useDeletePatentGrant();
@@ -30,9 +32,9 @@ export default function PatentGrantDetailsPage() {
     mutation,
     successMessage: 'Охранный документ успешно удалён',
     errorMessage: 'Не удалось удалить охранный документ',
+    redirectPath: backTarget.path,
     getMutationProps: () => grantId!,
     showNotification,
-    onSuccess: () => setTimeout(() => navigate(-1), 1000),
   });
 
   const handleEdit = () => {
@@ -65,8 +67,8 @@ export default function PatentGrantDetailsPage() {
   return (
     <DetailPageHeader
       title={`Охранный документ ${patentGrant.grant_number}`}
-      backLabel='Охранные документы'
-      onBack={() => navigate(`/patents/${patentGrant.patent_id}/grants`)}
+      backLabel={backTarget.label}
+      onBack={() => navigate(backTarget.path)}
       statusBadge={
         patentGrant.status
           ? {

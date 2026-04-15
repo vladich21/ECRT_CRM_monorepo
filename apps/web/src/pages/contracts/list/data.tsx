@@ -1,11 +1,11 @@
 import { Tag } from 'antd';
 import { ColumnType } from 'antd/es/table';
 
-import { ReferenceData } from '../../../api/hooks/useReferences';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
-import { getTagColorByData } from '../../../helpers/getTagColorByData';
-import { Contract } from '../../../types/contract';
+import { ReferenceData } from '@/api/hooks/useReferences';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { getTagColorByData } from '@/helpers/getTagColorByData';
+import { Contract } from '@/types/contract';
 
 const formatMoney = (amount: number | null | undefined) => {
   if (amount == null) return '-';

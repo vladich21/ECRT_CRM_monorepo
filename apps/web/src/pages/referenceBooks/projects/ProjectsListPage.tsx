@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
+import type { TablePaginationConfig } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -124,7 +125,8 @@ export default function ProjectsListPage() {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
     if (page > maxPage) {
-      handleTableChange({ current: maxPage, pageSize } as never);
+      const pagination: TablePaginationConfig = { current: maxPage, pageSize };
+      handleTableChange(pagination);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
   const selectOptions = useMemo(() => {
@@ -143,7 +145,7 @@ export default function ProjectsListPage() {
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
-    } as never);
+    });
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }

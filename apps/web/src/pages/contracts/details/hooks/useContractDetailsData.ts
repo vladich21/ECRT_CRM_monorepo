@@ -1,10 +1,10 @@
-import { useContractById } from '../../../../api/contracts/contractApiHooks';
-import { useContractStages } from '../../../../api/contractStages/contractStagesApiHooks';
-import { useFilesByEntity } from '../../../../api/files/fileApiHooks';
-import { useReferenceData, type ReferenceType } from '../../../../api/hooks/useReferences';
-import { getEntityById } from '../../../../helpers/getEntityById';
-import { getNameById } from '../../../../helpers/getNameById';
-import { getDaysUntilDate, shouldShowDeadlineBanner } from '../../utils/contractDetailsUtils';
+import { useContractById } from '@/api/contracts/contractApiHooks';
+import { useContractStages } from '@/api/contractStages/contractStagesApiHooks';
+import { useFilesByEntity } from '@/api/files/fileApiHooks';
+import { useReferenceData, type ReferenceType } from '@/api/hooks/useReferences';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { getDaysUntilDate, shouldShowDeadlineBanner } from '@/pages/contracts/utils/contractDetailsUtils';
 
 const REFERENCE_TYPES: ReferenceType[] = [
   'contractStates',

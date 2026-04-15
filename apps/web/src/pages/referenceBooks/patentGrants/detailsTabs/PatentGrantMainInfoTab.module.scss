@@ -9,3 +9,12 @@
     font-weight: 600;
   }
 }
+
+.ridLink {
+  color: var(--ant-color-link, #1677ff);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--ant-color-link-hover, #4096ff);
+  }
+}

@@ -77,3 +77,9 @@ export function appendPatentGrantRegionFilter(parts: SQL[], db: DrizzleDb, keys:
   );
   parts.push(existsClauses.length === 1 ? existsClauses[0] : or(...existsClauses)!);
 }
+
+export function appendCurrentGrantRowRegionFilter(parts: SQL[], keys: PatentGrantRegionKey[]): void {
+  if (keys.length === 0) return;
+  const clauses = keys.map((key) => and(isNotNull(patentGrants.office), regionOfficeCondition(key))!);
+  parts.push(clauses.length === 1 ? clauses[0] : or(...clauses)!);
+}

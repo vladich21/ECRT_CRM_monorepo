@@ -2,8 +2,8 @@ import React from 'react';
 import { CalendarOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
 import { Tag, Typography } from 'antd';
 
-import { getNameById } from '../../../../../helpers/getNameById';
-import { ContractStage } from '../../../../../types/contract';
+import { getNameById } from '@/helpers/getNameById';
+import { ContractStage } from '@/types/contract';
 import styles from '../../ContractDetails.module.scss';
 import { formatDate } from './data';
 import { getDeadlineCountdownTone, pluralDaysRu } from './utils/stageHelpers';

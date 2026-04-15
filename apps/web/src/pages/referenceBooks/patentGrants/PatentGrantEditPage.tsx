@@ -11,7 +11,7 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getChangedFields } from '../../../helpers/getChangedFields';
-import { PatentGrantFormFields } from './PatentGrantFormFields';
+import { PatentGrantFormFields } from './components/PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
 
 export default function PatentGrantEditPage() {
@@ -113,7 +113,11 @@ export default function PatentGrantEditPage() {
           }}
           scrollToFirstError
         >
-          <PatentGrantFormFields form={form} referenceBooks={referenceBooks} patentIdFromState={null} />
+          <PatentGrantFormFields
+            referenceBooks={referenceBooks}
+            patentIdFromState={null}
+            savedOfficeForLegacy={patentGrant.office}
+          />
         </Form>
       </div>
     </DetailPageHeader>

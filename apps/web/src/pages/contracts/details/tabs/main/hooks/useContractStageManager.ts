@@ -2,15 +2,15 @@ import { useLayoutEffect, useMemo, useState } from 'react';
 import { Form } from 'antd';
 import dayjs from 'dayjs';
 
-import { useNotification } from '../../../../../../customhooks/useNotification';
+import { useNotification } from '@/customhooks/useNotification';
 
 import {
   useCreateContractStage,
   useDeleteContractStage,
   useUpdateContractStage,
-} from '../../../../../../api/contractStages/contractStagesApiHooks';
-import type { ReferenceData } from '../../../../../../api/hooks/useReferences';
-import type { Contract, ContractStage } from '../../../../../../types/contract';
+} from '@/api/contractStages/contractStagesApiHooks';
+import type { ReferenceData } from '@/api/hooks/useReferences';
+import type { Contract, ContractStage } from '@/types/contract';
 import { syncContractStageStateId } from '../../stages/utils/stageHelpers';
 import {
   DEFAULT_STAGE_LIST_FILTERS,

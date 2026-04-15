@@ -1,6 +1,6 @@
 import type { Dayjs } from 'dayjs';
 
-import type { ReferenceData } from '../../../api/hooks/useReferences';
+import type { ReferenceData } from '@/api/hooks/useReferences';
 
 export type FilterTab = 'all' | 'active' | 'draft' | 'inactive' | 'deleted';
 export type AdvancedFilters = {

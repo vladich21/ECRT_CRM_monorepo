@@ -1,8 +1,8 @@
 import { FileTextOutlined, GlobalOutlined } from '@ant-design/icons';
 import { Col, Divider, Form, Input, Row, Select } from 'antd';
 
-import { SelectWithQuickAdd } from '../../../../components/selectWithQuickAdd/SelectWithQuickAdd';
-import type { Reference } from '../../../../types/referenceTypes';
+import { SelectWithQuickAdd } from '@/components/selectWithQuickAdd/SelectWithQuickAdd';
+import type { Reference } from '@/types/referenceTypes';
 
 import type { PatentFormRefs } from './patentForm.types';
 

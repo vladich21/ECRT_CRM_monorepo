@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Card, Col, Popconfirm, Row, Tag, Typography } from 'antd';
 
-import { ContractStage } from '../../../../../types/contract';
+import { ContractStage } from '@/types/contract';
 import styles from '../../ContractDetails.module.scss';
 import { StageInfoItem } from './StageInfoItem';
 import {

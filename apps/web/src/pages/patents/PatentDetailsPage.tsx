@@ -2,17 +2,17 @@ import { DeleteOutlined, EditOutlined, TeamOutlined, UndoOutlined } from '@ant-d
 import { Button } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { useDeletePatent, usePatentById, useRestorePatent } from '../../api/patents/patentApiHooks';
-import { usePatentGrants } from '../../api/patents/patentGrantsApiHooks';
-import { Loader } from '../../components/loader/Loader';
-import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '../../components/pageLayout/DetailPageHeader';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
-import { useNotification } from '../../customhooks/useNotification';
-import { getNameById } from '../../helpers/getNameById';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { useDeletePatent, usePatentById, useRestorePatent } from '@/api/patents/patentApiHooks';
+import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '@/components/pageLayout/DetailPageHeader';
+import { useConfirmByModal } from '@/customhooks/useConfirmByModal';
+import { useNotification } from '@/customhooks/useNotification';
+import { getNameById } from '@/helpers/getNameById';
 import styles from './PatentDetails.module.scss';
-import type { ActionType } from './PatentsListPage.types';
+import type { ActionType } from './types/PatentsListPage.types';
 import type { PatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
 
 type PatentTab = 'main' | 'files' | 'comments' | 'grants';
@@ -30,7 +30,7 @@ export default function PatentDetailsPage() {
     tab?: ActionType;
     patentsListReturn?: PatentsListNavSnapshot;
   } | null;
-  const returnTab = navState?.tab ?? 'active';
+  const returnTab = navState?.tab === 'deleted' ? 'deleted' : 'all';
   const patentsListReturn = navState?.patentsListReturn;
   const { contextHolder, showNotification } = useNotification();
   const { data: patent, isLoading, isError } = usePatentById(patentId!);

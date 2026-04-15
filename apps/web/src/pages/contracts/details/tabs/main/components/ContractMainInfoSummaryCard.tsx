@@ -1,8 +1,8 @@
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Button, Card, Collapse, Descriptions, Progress, Typography, type DescriptionsProps } from 'antd';
 
-import { APP_COLOR_PRIMARY } from '../../../../../../constants/appColors';
-import type { Contract } from '../../../../../../types/contract';
+import { APP_COLOR_PRIMARY } from '@/constants/appColors';
+import type { Contract } from '@/types/contract';
 import tabStyles from '../ContractMainInfoTab.module.scss';
 
 const { Text } = Typography;

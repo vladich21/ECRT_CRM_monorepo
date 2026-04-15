@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
+import type { TablePaginationConfig } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { BackButton } from '../../components/backButton/BackButton';
@@ -100,7 +101,8 @@ export default function PartnersListPage() {
     if (isRefsError || isError) return;
     const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
     if (page > maxPage) {
-      handleTableChange({ current: maxPage, pageSize } as never);
+      const pagination: TablePaginationConfig = { current: maxPage, pageSize };
+      handleTableChange(pagination);
     }
   }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
   const handleCardClick = (partner: Partner) => {
@@ -116,7 +118,7 @@ export default function PartnersListPage() {
     handleTableChange({
       current: newPage,
       pageSize: newPageSize ?? pageSize,
-    } as never);
+    });
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }

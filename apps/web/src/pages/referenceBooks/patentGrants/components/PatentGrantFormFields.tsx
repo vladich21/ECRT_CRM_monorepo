@@ -1,18 +1,35 @@
 import { CalendarOutlined, CopyrightOutlined, FileTextOutlined, NumberOutlined } from '@ant-design/icons';
 import { Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+import { useMemo } from 'react';
 
-import { Reference } from '../../../types/referenceTypes';
-import styles from './PatentGrantFormPage.module.scss';
+import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrantRegions';
+import { Reference } from '../../../../types/referenceTypes';
+import styles from '../PatentGrantFormPage.module.scss';
 
 const { TextArea } = Input;
+
+function buildOfficeSelectOptions(savedOffice?: string | null) {
+  const opts = [...PATENT_GRANT_OFFICE_OPTIONS];
+  const t = savedOffice?.trim();
+  if (t && !opts.some(o => o.value === t)) {
+    opts.unshift({ value: t, label: `${t} (текущее в записи)` });
+  }
+  return opts;
+}
+
 interface PatentGrantFormFieldsProps {
-  form: ReturnType<typeof Form.useForm>[0];
   referenceBooks: {
     patents?: Reference[];
   };
   patentIdFromState?: string | null;
+  savedOfficeForLegacy?: string | null;
 }
-export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState }: PatentGrantFormFieldsProps) {
+export function PatentGrantFormFields({
+  referenceBooks,
+  patentIdFromState,
+  savedOfficeForLegacy,
+}: PatentGrantFormFieldsProps) {
+  const officeOptions = useMemo(() => buildOfficeSelectOptions(savedOfficeForLegacy), [savedOfficeForLegacy]);
   return (
     <>
       <div className={styles.twoColSections}>
@@ -83,7 +100,13 @@ export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState 
             </Col>
             <Col xs={24}>
               <Form.Item label='Ведомство' name='office'>
-                <Input placeholder='Введите название ведомства' />
+                <Select
+                  placeholder='Выберите ведомство'
+                  allowClear
+                  showSearch
+                  optionFilterProp='label'
+                  options={officeOptions}
+                />
               </Form.Item>
             </Col>
           </Row>

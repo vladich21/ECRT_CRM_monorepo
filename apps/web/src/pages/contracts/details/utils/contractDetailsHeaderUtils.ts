@@ -1,6 +1,6 @@
-import type { Contract } from '../../../../types/contract';
-import { detailHeaderVariantForContractHeader } from '../../../../components/pageLayout/DetailPageHeader';
-import { formatContractDetailPageHeading } from '../../utils/contractDetailsUtils';
+import type { Contract } from '@/types/contract';
+import { detailHeaderVariantForContractHeader } from '@/components/pageLayout/DetailPageHeader';
+import { formatContractDetailPageHeading } from '@/pages/contracts/utils/contractDetailsUtils';
 
 export function buildContractDetailsTitle(contract: Contract): string {
   return formatContractDetailPageHeading(contract);

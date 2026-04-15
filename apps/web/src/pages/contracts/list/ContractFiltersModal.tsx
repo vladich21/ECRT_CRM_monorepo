@@ -1,7 +1,7 @@
 import { Button, DatePicker, InputNumber, Modal, Select } from 'antd';
 import type { Dayjs } from 'dayjs';
 
-import { parseThousandSeparatedNumber } from '../../../helpers/numberFormatters';
+import { parseThousandSeparatedNumber } from '@/helpers/numberFormatters';
 import styles from './ContractsListPage.module.scss';
 import type { AdvancedFilters } from './ContractsListPage.types';
 

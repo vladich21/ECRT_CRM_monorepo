@@ -1,4 +1,4 @@
-import { ContractState } from '../../../types/contract';
+import { ContractState } from '@/types/contract';
 
 export function isContractDraft(stateId: string | undefined, contractStates: ContractState[] | undefined): boolean {
   if (!stateId || !contractStates?.length) return false;

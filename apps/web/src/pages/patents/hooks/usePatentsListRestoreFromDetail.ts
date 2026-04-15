@@ -1,7 +1,7 @@
 import type { Location, NavigateFunction } from 'react-router-dom';
 
-import { useListReturnFromDetail } from '../../../hooks/useListReturnFromDetail';
-import type { PatentAdvancedFilters, PatentFilterTab } from '../PatentsListPage.types';
+import { useListReturnFromDetail } from '@/hooks/useListReturnFromDetail';
+import type { PatentAdvancedFilters, PatentFilterTab } from '../types/PatentsListPage.types';
 import { buildPatentsListNavSnapshot, parsePatentsListNavSnapshot } from '../utils/patentsListNavSnapshot';
 
 type PatentListPagination = {
@@ -43,8 +43,13 @@ export function usePatentsListRestoreFromDetail(
     },
     applyFallback: navigationState => {
       const tabFromNavigation = navigationState.tab;
-      if (tabFromNavigation === 'all' || tabFromNavigation === 'active' || tabFromNavigation === 'deleted') {
+      if (tabFromNavigation === 'all' || tabFromNavigation === 'deleted') {
         filters.setActiveTab(tabFromNavigation);
+        return;
+      }
+      // Legacy compatibility: старые переходы могли сохранять tab='active'.
+      if (tabFromNavigation === 'active') {
+        filters.setActiveTab('all');
       }
     },
   });

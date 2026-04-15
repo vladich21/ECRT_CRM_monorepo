@@ -3,20 +3,20 @@ import { CloseOutlined, SaveOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useContractById } from '../../api/contracts/contractApiHooks';
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { usePatentById, useUpdatePatent } from '../../api/patents/patentApiHooks';
-import { Loader } from '../../components/loader/Loader';
-import { NotFound } from '../../components/notFound/NotFound';
+import { useContractById } from '@/api/contracts/contractApiHooks';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { usePatentById, useUpdatePatent } from '@/api/patents/patentApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader, {
   detailHeaderVariantForPatentRidStatus,
   detailPageHeaderStyles as hStyles,
-} from '../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../customhooks/useNotification';
-import { formReferenceId } from '../../helpers/formReferenceId';
-import { getEntityById } from '../../helpers/getEntityById';
-import { getNameById } from '../../helpers/getNameById';
-import { patentUpdateFormMapper } from '../../helpers/mappers/patentUpdateFormMapper';
+} from '@/components/pageLayout/DetailPageHeader';
+import { useNotification } from '@/customhooks/useNotification';
+import { formReferenceId } from '@/helpers/formReferenceId';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { patentUpdateFormMapper } from '@/helpers/mappers/patentUpdateFormMapper';
 import {
   PatentFormIdentityFields,
   PatentFormOrgFields,
@@ -24,7 +24,7 @@ import {
   type PatentFormRefs,
 } from './components/form';
 import { buildPatentFormPayload } from './patentFormPayload';
-import type { Patent } from '../../types/patent';
+import type { Patent } from '@/types/patent';
 import styles from './PatentFormPage.module.scss';
 
 export default function PatentEditPage() {

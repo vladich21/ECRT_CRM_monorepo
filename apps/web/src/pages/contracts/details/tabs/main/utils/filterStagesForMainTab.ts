@@ -1,4 +1,4 @@
-import type { ContractStage, ContractState } from '../../../../../../types/contract';
+import type { ContractStage, ContractState } from '@/types/contract';
 import { calculateBudgetDeviation, calculateDaysUntilDeadline, getStageStatus } from '../../stages/utils/stageHelpers';
 import type { StageListFilters } from '../types/contractMainInfoTab.types';
 

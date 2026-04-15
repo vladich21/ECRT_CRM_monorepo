@@ -4,17 +4,17 @@ import { Button, Form } from 'antd';
 import dayjs from 'dayjs';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useContractById, useUpdateContract } from '../../../api/contracts/contractApiHooks';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { formReferenceId } from '../../../helpers/formReferenceId';
-import { getNameById } from '../../../helpers/getNameById';
-import { contractUpdateFormMapper } from '../../../helpers/mappers/contractUpdateFormMapper';
+import { useContractById, useUpdateContract } from '@/api/contracts/contractApiHooks';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
+import { useNotification } from '@/customhooks/useNotification';
+import { getChangedFields } from '@/helpers/getChangedFields';
+import { getEntityById } from '@/helpers/getEntityById';
+import { formReferenceId } from '@/helpers/formReferenceId';
+import { getNameById } from '@/helpers/getNameById';
+import { contractUpdateFormMapper } from '@/helpers/mappers/contractUpdateFormMapper';
 import {
   ContractFormClassificationFields,
   ContractFormDateFields,
@@ -25,7 +25,7 @@ import {
 } from '../components/form';
 import { applyVatDerivedAmounts } from '../create/contractCreateFormUtils';
 import styles from '../create/ContractCreatePage.module.scss';
-import { normalizeDraftDateFields } from '../../../utils/normalizeDraftDateFields';
+import { normalizeDraftDateFields } from '@/utils/normalizeDraftDateFields';
 import tagStyles from '../list/ContractsListPage.module.scss';
 import detailsStyles from '../details/ContractDetails.module.scss';
 import {

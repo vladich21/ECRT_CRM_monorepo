@@ -1,10 +1,10 @@
 import { CalendarOutlined, DollarOutlined, RightOutlined, UserOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 
-import type { ReferenceData } from '../../../api/hooks/useReferences';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
-import { Contract } from '../../../types/contract';
+import type { ReferenceData } from '@/api/hooks/useReferences';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { Contract } from '@/types/contract';
 import {
   formatContractRegistryCardHeading,
   formatProjectChipLabel,

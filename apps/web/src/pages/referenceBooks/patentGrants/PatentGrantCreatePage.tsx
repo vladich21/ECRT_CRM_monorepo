@@ -9,7 +9,7 @@ import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
-import { PatentGrantFormFields } from './PatentGrantFormFields';
+import { PatentGrantFormFields } from './components/PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
 
 export default function PatentGrantCreatePage() {
@@ -18,6 +18,7 @@ export default function PatentGrantCreatePage() {
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const patentIdFromState = location.state?.patentId;
+  const fromRegistry = location.state?.fromRegistry === true;
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
@@ -45,7 +46,9 @@ export default function PatentGrantCreatePage() {
       {
         onSuccess: () => {
           showNotification('success', 'Успех', 'Охранный документ успешно создан');
-          if (patentIdFromState) {
+          if (fromRegistry) {
+            setTimeout(() => navigate('/patent-grants'), 1000);
+          } else if (patentIdFromState) {
             setTimeout(() => navigate(`/patents/${patentIdFromState}/grants`), 1000);
           } else {
             setTimeout(() => navigate(-1), 1000);
@@ -67,8 +70,8 @@ export default function PatentGrantCreatePage() {
     <DetailPageHeader
       title='Создание нового охранного документа'
       titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания</span>}
-      backLabel='Охранные документы'
-      onBack={() => navigate(-1)}
+      backLabel={fromRegistry ? 'Реестр охранных документов' : 'Назад'}
+      onBack={() => (fromRegistry ? navigate('/patent-grants') : navigate(-1))}
       actions={
         <>
           <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
@@ -98,7 +101,7 @@ export default function PatentGrantCreatePage() {
           }}
           scrollToFirstError
         >
-          <PatentGrantFormFields form={form} referenceBooks={referenceBooks} patentIdFromState={patentIdFromState} />
+          <PatentGrantFormFields referenceBooks={referenceBooks} patentIdFromState={patentIdFromState} />
         </Form>
       </div>
     </DetailPageHeader>

@@ -1,4 +1,4 @@
-import type { ContractStage } from '../../../../../../types/contract';
+import type { ContractStage } from '@/types/contract';
 
 export function applyBulkExpandCollapseForStages(
   visibleStages: ContractStage[],

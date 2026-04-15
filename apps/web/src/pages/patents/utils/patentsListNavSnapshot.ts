@@ -1,22 +1,23 @@
-import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '../../../utils/listNavSnapshotShared';
+import { isPatentGrantRegionKey } from '@/api/patents/patentGrantRegions';
+import {
+  makeListReturnSnapshot,
+  readListReturnSnapshot,
+  type ListReturnSnapshot,
+} from '@/utils/listNavSnapshotShared';
 
-import { isPatentGrantRegionKey } from '../../../api/patents/patentGrantRegions';
+import {
+  DEFAULT_PATENT_FILTERS,
+  type PatentAdvancedFilters,
+  type PatentFilterTab,
+} from '../types/PatentsListPage.types';
 
-import { DEFAULT_PATENT_FILTERS, type PatentAdvancedFilters, type PatentFilterTab } from '../PatentsListPage.types';
-
-const TABS: PatentFilterTab[] = ['all', 'active', 'deleted'];
+const TABS: PatentFilterTab[] = ['all', 'deleted'];
 function isPatentTab(candidate: unknown): candidate is PatentFilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);
 }
 
-export type PatentsListNavSnapshot = {
-  version: 1;
-  searchQuery: string;
-  activeTab: PatentFilterTab;
-  applied: PatentAdvancedFilters;
-  page: number;
-  pageSize: number;
-};
+export type PatentsListNavSnapshot = ListReturnSnapshot<PatentFilterTab, PatentAdvancedFilters>;
+
 export function buildPatentsListNavSnapshot(
   searchQuery: string,
   activeTab: PatentFilterTab,
@@ -24,8 +25,7 @@ export function buildPatentsListNavSnapshot(
   page: number,
   pageSize: number,
 ): PatentsListNavSnapshot {
-  return {
-    version: 1,
+  return makeListReturnSnapshot({
     searchQuery,
     activeTab,
     applied: {
@@ -38,8 +38,9 @@ export function buildPatentsListNavSnapshot(
     },
     page,
     pageSize,
-  };
+  });
 }
+
 export function parsePatentsListNavSnapshot(raw: unknown): {
   searchQuery: string;
   activeTab: PatentFilterTab;
@@ -47,38 +48,36 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
   page: number;
   pageSize: number;
 } | null {
-  const body = asListNavSnapshotV1Record(raw);
-  if (!body) return null;
-  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 50);
-  const snapshotRecord = body as unknown as PatentsListNavSnapshot;
-  const appliedSnapshot = snapshotRecord.applied;
-  const parsed: PatentAdvancedFilters = {
-    departmentId: typeof appliedSnapshot?.departmentId === 'string' ? appliedSnapshot.departmentId : null,
-    statusId: typeof appliedSnapshot?.statusId === 'string' ? appliedSnapshot.statusId : null,
-    authorIds: Array.isArray(appliedSnapshot?.authorIds)
-      ? appliedSnapshot.authorIds.filter((id): id is string => typeof id === 'string')
-      : [],
-    areaIds: Array.isArray(appliedSnapshot?.areaIds)
-      ? appliedSnapshot.areaIds.filter((id): id is string => typeof id === 'string')
-      : [],
-    responsibleId: typeof appliedSnapshot?.responsibleId === 'string' ? appliedSnapshot.responsibleId : null,
-    registrationYears: Array.isArray(appliedSnapshot?.registrationYears)
-      ? appliedSnapshot.registrationYears.filter((y): y is number => typeof y === 'number' && Number.isInteger(y))
-      : [],
-    registrationCirYears: Array.isArray(appliedSnapshot?.registrationCirYears)
-      ? appliedSnapshot.registrationCirYears.filter((y): y is number => typeof y === 'number' && Number.isInteger(y))
-      : [],
-    projectId: typeof appliedSnapshot?.projectId === 'string' ? appliedSnapshot.projectId : null,
-    contractId: typeof appliedSnapshot?.contractId === 'string' ? appliedSnapshot.contractId : null,
-    grantRegionKeys: Array.isArray(appliedSnapshot?.grantRegionKeys)
-      ? appliedSnapshot.grantRegionKeys.filter(isPatentGrantRegionKey)
-      : [],
-  };
+  const parsed = readListReturnSnapshot(raw, {
+    defaultTab: 'all',
+    defaultPageSize: 50,
+    isTab: isPatentTab,
+    readApplied: rawApplied => {
+      const a = rawApplied && typeof rawApplied === 'object' ? (rawApplied as Record<string, unknown>) : {};
+      return {
+        departmentId: typeof a.departmentId === 'string' ? a.departmentId : null,
+        statusId: typeof a.statusId === 'string' ? a.statusId : null,
+        authorIds: Array.isArray(a.authorIds) ? a.authorIds.filter((id): id is string => typeof id === 'string') : [],
+        areaIds: Array.isArray(a.areaIds) ? a.areaIds.filter((id): id is string => typeof id === 'string') : [],
+        responsibleId: typeof a.responsibleId === 'string' ? a.responsibleId : null,
+        registrationYears: Array.isArray(a.registrationYears)
+          ? a.registrationYears.filter((y): y is number => typeof y === 'number' && Number.isInteger(y))
+          : [],
+        registrationCirYears: Array.isArray(a.registrationCirYears)
+          ? a.registrationCirYears.filter((y): y is number => typeof y === 'number' && Number.isInteger(y))
+          : [],
+        projectId: typeof a.projectId === 'string' ? a.projectId : null,
+        contractId: typeof a.contractId === 'string' ? a.contractId : null,
+        grantRegionKeys: Array.isArray(a.grantRegionKeys) ? a.grantRegionKeys.filter(isPatentGrantRegionKey) : [],
+      };
+    },
+  });
+  if (!parsed) return null;
+
+  const rawActiveTab = raw && typeof raw === 'object' ? (raw as Record<string, unknown>).activeTab : undefined;
   return {
-    searchQuery,
-    activeTab: isPatentTab(snapshotRecord.activeTab) ? snapshotRecord.activeTab : 'all',
-    appliedFilters: { ...DEFAULT_PATENT_FILTERS, ...parsed },
-    page,
-    pageSize,
+    ...parsed,
+    activeTab: rawActiveTab === 'active' ? 'all' : parsed.activeTab,
+    appliedFilters: { ...DEFAULT_PATENT_FILTERS, ...parsed.appliedFilters },
   };
 }

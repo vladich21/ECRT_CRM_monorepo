@@ -10,6 +10,7 @@ import {
   patentGrants,
   relPatentAuthors,
 } from '../../../database/schema';
+import { mapPatentGrantToApiDto } from '../../patent-grants/patent-grant.mapper';
 import { PaginationParams } from '../../../common/pagination';
 import { type DeletedScope, sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 import {
@@ -42,6 +43,18 @@ export interface PatentsListPayload {
   total: number;
   tab_counts: { active: number; deleted: number; all: number };
 }
+
+const PATENT_LIST_GRANT_PREVIEW_LIMIT = 4;
+
+type PatentGrantListPreviewForApi = {
+  count: number;
+  preview: Array<{
+    grant_number: string;
+    grant_date: string;
+    office: string;
+    status: string;
+  }>;
+};
 
 @Injectable()
 export class PatentsService {
@@ -124,6 +137,67 @@ export class PatentsService {
       }
     }
     return map;
+  }
+
+  private async getPatentGrantsPreviewByPatentIds(
+    patentIds: string[],
+  ): Promise<Record<string, PatentGrantListPreviewForApi>> {
+    if (patentIds.length === 0) {
+      return {};
+    }
+
+    const grantRowsForPage = await this.db.db
+      .select()
+      .from(patentGrants)
+      .where(inArray(patentGrants.patentId, patentIds));
+
+    type GrantTableRow = (typeof patentGrants.$inferSelect);
+    const grantsByPatentId: Record<string, GrantTableRow[]> = {};
+
+    for (const grantRow of grantRowsForPage) {
+      if (!grantRow.patentId) {
+        continue;
+      }
+      const patentId = String(grantRow.patentId);
+      if (!grantsByPatentId[patentId]) {
+        grantsByPatentId[patentId] = [];
+      }
+      grantsByPatentId[patentId].push(grantRow);
+    }
+
+    const previewByPatentId: Record<string, PatentGrantListPreviewForApi> = {};
+
+    for (const patentId of patentIds) {
+      const grantsForThisPatent = grantsByPatentId[patentId] ?? [];
+      if (grantsForThisPatent.length === 0) {
+        continue;
+      }
+
+      const sortedByGrantDateNewestFirst = [...grantsForThisPatent].sort((left, right) => {
+        const leftMillis = left.grantDate ? new Date(String(left.grantDate)).getTime() : 0;
+        const rightMillis = right.grantDate ? new Date(String(right.grantDate)).getTime() : 0;
+        if (rightMillis !== leftMillis) {
+          return rightMillis - leftMillis;
+        }
+        return String(right.id).localeCompare(String(left.id));
+      });
+
+      const previewItems = sortedByGrantDateNewestFirst
+        .slice(0, PATENT_LIST_GRANT_PREVIEW_LIMIT)
+        .map((grantRow) => ({
+          grant_number: grantRow.grantNumber ?? '',
+          grant_date: grantRow.grantDate ? String(grantRow.grantDate) : '',
+          office: grantRow.office ?? '',
+          status: grantRow.status ?? '',
+        }));
+
+      previewByPatentId[patentId] = {
+        count: grantsForThisPatent.length,
+        preview: previewItems,
+      };
+    }
+
+    return previewByPatentId;
   }
 
   private async getAuthorIdsMap(patentIds: string[]): Promise<Record<string, string[]>> {
@@ -367,13 +441,28 @@ export class PatentsService {
       deletedScope === 'active' ? tabActive : deletedScope === 'deleted' ? tabDeleted : tabAll;
 
     const patentIds = rows.map((row) => String(row.id));
-    const [areaIdsMap, authorIdsMap] = await Promise.all([
+    const [areaIdsMap, authorIdsMap, grantsPreviewByPatentId] = await Promise.all([
       this.getAreaIdsMap(patentIds),
       this.getAuthorIdsMap(patentIds),
+      this.getPatentGrantsPreviewByPatentIds(patentIds),
     ]);
-    const data = rows.map((row) =>
-      this.toResponse(row, areaIdsMap[String(row.id)] ?? [], authorIdsMap[String(row.id)] ?? []),
-    );
+    const data = rows.map((patentRow) => {
+      const patentId = String(patentRow.id);
+      const basePayload = this.toResponse(
+        patentRow,
+        areaIdsMap[patentId] ?? [],
+        authorIdsMap[patentId] ?? [],
+      );
+      const grantListPreview = grantsPreviewByPatentId[patentId];
+      if (!grantListPreview) {
+        return basePayload;
+      }
+      return {
+        ...basePayload,
+        patent_grants_count: grantListPreview.count,
+        patent_grants_preview: grantListPreview.preview,
+      };
+    });
 
     return {
       data,
@@ -529,22 +618,21 @@ export class PatentsService {
     if (!(await this.patentExists(patentId))) return null;
     try {
       const rows = await this.db.db
-        .select()
+        .select({
+          grant: patentGrants,
+          patentName: patents.name,
+          patentRegistrationNumber: patents.registrationNumber,
+        })
         .from(patentGrants)
+        .innerJoin(patents, eq(patentGrants.patentId, patents.id))
         .where(eq(patentGrants.patentId, patentId))
         .orderBy(asc(patentGrants.grantDate));
-      return rows.map((row) => ({
-        id: String(row.id),
-        patent_id: row.patentId ? String(row.patentId) : '',
-        grant_number: row.grantNumber ?? '',
-        grant_date: row.grantDate ? String(row.grantDate) : '',
-        office: row.office ?? '',
-        status: row.status ?? '',
-        renewal_date: row.renewalDate ? String(row.renewalDate) : '',
-        notes: row.notes ?? '',
-        created_at: row.createdAt ? row.createdAt.toISOString() : '',
-        updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
-      }));
+      return rows.map(({ grant: row, patentName, patentRegistrationNumber }) =>
+        mapPatentGrantToApiDto(row, {
+          name: patentName,
+          registrationNumber: patentRegistrationNumber,
+        }),
+      );
     } catch {
       return [];
     }

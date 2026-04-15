@@ -1,13 +1,13 @@
 import { Button, Space, Tag, Tooltip } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useContractRevisions } from '../../../../../api/contractRevisions/contractRevisionsApiHooks';
-import { useReferenceData } from '../../../../../api/hooks/useReferences';
-import BasicTable from '../../../../../components/basicTable/BasicTable';
-import { NotFound } from '../../../../../components/notFound/NotFound';
-import { useNotification } from '../../../../../customhooks/useNotification';
-import { formatDate } from '../../../../../helpers/formatDate';
-import { ContractRevision } from '../../../../../types/contract';
+import { useContractRevisions } from '@/api/contractRevisions/contractRevisionsApiHooks';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import BasicTable from '@/components/basicTable/BasicTable';
+import { NotFound } from '@/components/notFound/NotFound';
+import { useNotification } from '@/customhooks/useNotification';
+import { formatDate } from '@/helpers/formatDate';
+import { ContractRevision } from '@/types/contract';
 import { getRevisionColumnsData } from '../stages/data';
 import styles from './ContractRevisionsMainInfoTab.module.scss';
 

@@ -1,9 +1,10 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, Suspense, useEffect } from 'react';
 import { Layout, Menu, theme } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { refreshSessionUser } from '../api/auth/refreshSessionUser';
 import ecrtLogoMin from '../assets/svg/ecrt-logo-min.svg';
+import { Loader } from '../components/loader/Loader';
 import ProfileButton from '../components/profileButton/ProfileButton';
 import useAuthStore from '../store/AuthStore';
 import { menuItems } from './data';
@@ -70,7 +71,9 @@ function MainLayout({ children }: MainLayoutProps) {
           borderRadius: borderRadiusLG,
         }}
       >
-        <div className={styles.contentInner}>{children ?? <Outlet />}</div>
+        <div className={styles.contentInner}>
+          <Suspense fallback={<Loader />}>{children ?? <Outlet />}</Suspense>
+        </div>
       </Content>
     </Layout>
   );

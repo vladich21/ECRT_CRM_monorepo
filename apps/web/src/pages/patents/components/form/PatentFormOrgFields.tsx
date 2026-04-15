@@ -1,7 +1,7 @@
 import { ProjectOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import { Col, Divider, Form, Input, Row, Select } from 'antd';
 
-import type { Contract } from '../../../../types/contract';
+import type { Contract } from '@/types/contract';
 
 import type { PatentFormRefs } from './patentForm.types';
 

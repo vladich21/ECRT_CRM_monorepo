@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 
-import type { PatentsListServerFilters } from '../../../api/patents/patentApiHooks';
+import type { PatentsListServerFilters } from '@/api/patents/patentListFilters.types';
 
-import type { PatentAdvancedFilters } from '../PatentsListPage.types';
+import type { PatentAdvancedFilters } from '../types/PatentsListPage.types';
 
 export function usePatentsListServerFilters(
   debouncedSearch: string,

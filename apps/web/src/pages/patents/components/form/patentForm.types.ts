@@ -1,4 +1,4 @@
-import type { ReferenceData } from '../../../../api/hooks/useReferences';
+import type { ReferenceData } from '@/api/hooks/useReferences';
 
 export type PatentFormRefs = {
   departments?: ReferenceData['departments'];

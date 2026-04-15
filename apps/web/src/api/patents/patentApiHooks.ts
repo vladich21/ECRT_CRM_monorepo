@@ -1,25 +1,13 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 
 import { Patent } from '../../types/patent';
-import type { PatentGrantRegionKey } from './patentGrantRegions';
 import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
+import type { PatentsListServerFilters } from './patentListFilters.types';
 import { invalidatePatentQueries, patentQueryKeys } from './patentQueryKeys';
 
 export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
 
-export type PatentsListServerFilters = {
-  search: string;
-  departmentId?: string | null;
-  statusId?: string | null;
-  authorIds: string[];
-  areaIds: string[];
-  responsibleId?: string | null;
-  registrationYears: number[];
-  registrationCirYears: number[];
-  projectId?: string | null;
-  contractId?: string | null;
-  grantRegionKeys: PatentGrantRegionKey[];
-};
+export type { PatentsListServerFilters } from './patentListFilters.types';
 
 function buildListQuery(
   deletedScope: PatentsDeletedScope,

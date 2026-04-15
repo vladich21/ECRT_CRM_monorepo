@@ -84,7 +84,7 @@ const menuItems = [
       },
       {
         key: 'patent_grants',
-        label: <Link to='/patent-grants'>Патенты</Link>,
+        label: <Link to='/patent-grants'>Охранные документы</Link>,
       },
       {
         key: 'patent_references',

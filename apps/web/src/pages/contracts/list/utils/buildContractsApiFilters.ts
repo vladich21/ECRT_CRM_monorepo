@@ -1,4 +1,4 @@
-import type { ContractsListParams } from '../../../../api/contracts/contractApi';
+import type { ContractsListParams } from '@/api/contracts/contractApi';
 import type { AdvancedFilters, FilterTab } from '../ContractsListPage.types';
 
 type BuildContractsApiFiltersArgs = {

@@ -3,11 +3,11 @@ import { SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useCreateContract } from '../../../api/contracts/contractApiHooks';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { AsyncBoundary } from '../../../components/async/AsyncBoundary';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useCreateContract } from '@/api/contracts/contractApiHooks';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { AsyncBoundary } from '@/components/async/AsyncBoundary';
+import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
+import { useNotification } from '@/customhooks/useNotification';
 import { CONTRACTS_REGISTRY_PATH } from '../constants/routes';
 import {
   ContractFormClassificationFields,
@@ -19,7 +19,7 @@ import {
 } from '../components/form';
 import { initialFormValues } from '../list/data';
 import { isContractSignedState } from '../utils/contractStateUtils';
-import { normalizeDraftDateFields } from '../../../utils/normalizeDraftDateFields';
+import { normalizeDraftDateFields } from '@/utils/normalizeDraftDateFields';
 import {
   applyVatDerivedAmounts,
   buildCreateContractPayload,

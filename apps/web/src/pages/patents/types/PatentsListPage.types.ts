@@ -1,8 +1,8 @@
-import type { PatentGrantRegionKey } from '../../api/patents/patentGrantRegions';
+import type { PatentGrantRegionKey } from '@/api/patents/patentGrantRegions';
 
-export type PatentFilterTab = 'all' | 'active' | 'deleted';
+export type PatentFilterTab = 'all' | 'deleted';
 
-export type ActionType = 'active' | 'deleted';
+export type ActionType = PatentFilterTab;
 
 export type PatentListFilterSelectOption = { label: string; value: string };
 
@@ -44,6 +44,5 @@ export const DEFAULT_PATENT_FILTERS: PatentAdvancedFilters = {
 
 export const PATENT_FILTER_TABS: { key: PatentFilterTab; label: string }[] = [
   { key: 'all', label: 'Все' },
-  { key: 'active', label: 'Активные' },
   { key: 'deleted', label: 'Удалённые' },
 ];

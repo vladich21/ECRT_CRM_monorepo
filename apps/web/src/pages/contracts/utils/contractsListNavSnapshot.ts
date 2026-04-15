@@ -1,6 +1,10 @@
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '../../../utils/listNavSnapshotShared';
+import {
+  makeListReturnSnapshot,
+  readListReturnSnapshot,
+  type ListReturnSnapshot,
+} from '@/utils/listNavSnapshotShared';
 
 import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types';
 
@@ -9,21 +13,17 @@ function isFilterTab(candidate: unknown): candidate is FilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);
 }
 
-export type ContractsListNavSnapshot = {
-  version: 1;
-  searchQuery: string;
-  activeTab: FilterTab;
-  applied: {
-    partnerId: string | null;
-    categoryId: string | null;
-    stateId: string | null;
-    dateRange: [string, string] | null;
-    amountMin: number | null;
-    amountMax: number | null;
-  };
-  page: number;
-  pageSize: number;
+type ContractsAppliedSnapshot = {
+  partnerId: string | null;
+  categoryId: string | null;
+  stateId: string | null;
+  dateRange: [string, string] | null;
+  amountMin: number | null;
+  amountMax: number | null;
 };
+
+export type ContractsListNavSnapshot = ListReturnSnapshot<FilterTab, ContractsAppliedSnapshot>;
+
 export function buildContractsListNavSnapshot(
   searchQuery: string,
   activeTab: FilterTab,
@@ -31,8 +31,7 @@ export function buildContractsListNavSnapshot(
   page: number,
   pageSize: number,
 ): ContractsListNavSnapshot {
-  return {
-    version: 1,
+  return makeListReturnSnapshot({
     searchQuery,
     activeTab,
     applied: {
@@ -48,8 +47,9 @@ export function buildContractsListNavSnapshot(
     },
     page,
     pageSize,
-  };
+  });
 }
+
 export function parseContractsListNavSnapshot(raw: unknown): {
   searchQuery: string;
   activeTab: FilterTab;
@@ -57,27 +57,47 @@ export function parseContractsListNavSnapshot(raw: unknown): {
   page: number;
   pageSize: number;
 } | null {
-  const body = asListNavSnapshotV1Record(raw);
-  if (!body) return null;
-  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 20);
-  const snapshotRecord = body as unknown as ContractsListNavSnapshot;
-  const appliedSnapshot = snapshotRecord.applied;
-  const dateRange =
-    appliedSnapshot?.dateRange?.[0] && appliedSnapshot?.dateRange?.[1]
-      ? ([dayjs(appliedSnapshot.dateRange[0]), dayjs(appliedSnapshot.dateRange[1])] as [Dayjs, Dayjs])
-      : null;
-  return {
-    searchQuery,
-    activeTab: isFilterTab(snapshotRecord.activeTab) ? snapshotRecord.activeTab : 'all',
-    appliedFilters: {
-      partnerId: typeof appliedSnapshot?.partnerId === 'string' ? appliedSnapshot.partnerId : null,
-      categoryId: typeof appliedSnapshot?.categoryId === 'string' ? appliedSnapshot.categoryId : null,
-      stateId: typeof appliedSnapshot?.stateId === 'string' ? appliedSnapshot.stateId : null,
-      dateRange,
-      amountMin: typeof appliedSnapshot?.amountMin === 'number' ? appliedSnapshot.amountMin : null,
-      amountMax: typeof appliedSnapshot?.amountMax === 'number' ? appliedSnapshot.amountMax : null,
+  const parsed = readListReturnSnapshot(raw, {
+    defaultTab: 'all',
+    defaultPageSize: 20,
+    isTab: isFilterTab,
+    readApplied: rawApplied => {
+      const a = rawApplied && typeof rawApplied === 'object' ? (rawApplied as Record<string, unknown>) : {};
+      const dr = a.dateRange;
+      const dateRange =
+        Array.isArray(dr) && dr.length === 2 && typeof dr[0] === 'string' && typeof dr[1] === 'string'
+          ? ([dr[0], dr[1]] as [string, string])
+          : null;
+      return {
+        partnerId: typeof a.partnerId === 'string' ? a.partnerId : null,
+        categoryId: typeof a.categoryId === 'string' ? a.categoryId : null,
+        stateId: typeof a.stateId === 'string' ? a.stateId : null,
+        dateRange,
+        amountMin: typeof a.amountMin === 'number' ? a.amountMin : null,
+        amountMax: typeof a.amountMax === 'number' ? a.amountMax : null,
+      };
     },
-    page,
-    pageSize,
+  });
+  if (!parsed) return null;
+
+  const s = parsed.appliedFilters;
+  const dateRangeForForm =
+    s.dateRange?.[0] && s.dateRange?.[1]
+      ? ([dayjs(s.dateRange[0]), dayjs(s.dateRange[1])] as [Dayjs, Dayjs])
+      : null;
+
+  return {
+    searchQuery: parsed.searchQuery,
+    activeTab: parsed.activeTab,
+    appliedFilters: {
+      partnerId: s.partnerId,
+      categoryId: s.categoryId,
+      stateId: s.stateId,
+      dateRange: dateRangeForForm,
+      amountMin: s.amountMin,
+      amountMax: s.amountMax,
+    },
+    page: parsed.page,
+    pageSize: parsed.pageSize,
   };
 }

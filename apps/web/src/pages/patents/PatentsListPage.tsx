@@ -2,15 +2,15 @@ import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '../../api/hooks/useReferences';
-import { usePatentsLinkedContractIds, usePatentsList } from '../../api/patents/patentApiHooks';
-import { BackButton } from '../../components/backButton/BackButton';
-import { NotFound } from '../../components/notFound/NotFound';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
-import { useServerTablePagination } from '../../hooks/useServerTablePagination';
-import type { Patent } from '../../types/patent';
-import type { ReferenceDataForPatents } from './data';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { usePatentsLinkedContractIds, usePatentsList } from '@/api/patents/patentApiHooks';
+import { BackButton } from '@/components/backButton/BackButton';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { useResetServerPageUnlessSkipped } from '@/hooks/useListReturnFromDetail';
+import { useServerTablePagination } from '@/hooks/useServerTablePagination';
+import type { Patent } from '@/types/patent';
+import type { ReferenceDataForPatents } from './types/data';
 import { usePatentListFilters } from './hooks/usePatentListFilters';
 import { usePatentsListContractIdsForFilter } from './hooks/usePatentsListContractIdsForFilter';
 import { usePatentsListPaginationClamp } from './hooks/usePatentsListPaginationClamp';
@@ -18,9 +18,9 @@ import { usePatentsListRestoreFromDetail } from './hooks/usePatentsListRestoreFr
 import { usePatentsListSearchDebounce } from './hooks/usePatentsListSearchDebounce';
 import { usePatentsListSelectOptions } from './hooks/usePatentsListSelectOptions';
 import { usePatentsListServerFilters } from './hooks/usePatentsListServerFilters';
-import { PatentCard } from './PatentCard';
-import { PatentFiltersModal } from './PatentFiltersModal';
-import { PatentsListFiltersBar } from './PatentsListFiltersBar';
+import { PatentCard } from './components/cards/PatentCard';
+import { PatentFiltersModal } from './components/filters/PatentFiltersModal';
+import { PatentsListFiltersBar } from './components/filters/PatentsListFiltersBar';
 import styles from './PatentsListPage.module.scss';
 import { buildPatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
 import { patentListTabToDeletedScope } from './utils/patentListTabScope';
@@ -89,7 +89,7 @@ export default function PatentsListPage() {
   const refs = referenceBooks as ReferenceDataForPatents;
   const patents = listData?.data ?? [];
   const total = listData?.total ?? 0;
-  const tabCounts = listData?.tab_counts ?? { all: 0, active: 0, deleted: 0 };
+  const tabCounts = listData?.tab_counts ?? { all: 0, deleted: 0 };
 
   useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
 

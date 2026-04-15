@@ -2,12 +2,12 @@ import { CalendarOutlined, CheckCircleOutlined, DollarOutlined, NumberOutlined }
 import { Progress, Tag, Tooltip } from 'antd';
 import { ColumnType } from 'antd/es/table';
 
-import { ReferenceData } from '../../../../../api/hooks/useReferences';
-import { APP_COLOR_ERROR, APP_COLOR_PRIMARY } from '../../../../../constants/appColors';
-import { getEntityById } from '../../../../../helpers/getEntityById';
-import { getNameById } from '../../../../../helpers/getNameById';
-import { getTagColorByData } from '../../../../../helpers/getTagColorByData';
-import { ContractRevision, ContractStage } from '../../../../../types/contract';
+import { ReferenceData } from '@/api/hooks/useReferences';
+import { APP_COLOR_ERROR, APP_COLOR_PRIMARY } from '@/constants/appColors';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { getTagColorByData } from '@/helpers/getTagColorByData';
+import { ContractRevision, ContractStage } from '@/types/contract';
 import styles from './data.module.scss';
 
 const STAGE_STATE_TAG_CLASS: Record<string, string> = {
