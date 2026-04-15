@@ -50,13 +50,13 @@ export default function PatentGrantEditPage() {
       { id: grantId!, data: payload },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Патентный грант успешно изменён');
+          showNotification('success', 'Успех', 'Охранный документ успешно изменён');
           if (patentIdForRedirect) {
             setTimeout(() => navigate(`/patents/${patentIdForRedirect}/grants`), 1000);
           }
         },
-        onError: () => {
-          showNotification('error', 'Ошибка', 'Не удалось изменить патентный грант');
+        onError: () => {  
+          showNotification('error', 'Ошибка', 'Не удалось изменить охранный документ');
         },
       },
     );
@@ -71,12 +71,12 @@ export default function PatentGrantEditPage() {
     return <Loader />;
   }
   if (isReferencesError || isGrantError || !patentGrant || !referenceBooks) {
-    return <NotFound errorMessage='Не найден патентный грант или справочник' />;
+    return <NotFound errorMessage='Не найден охранный документ или справочник' />;
   }
   return (
     <DetailPageHeader
       title={`Редактирование: ${patentGrant.grant_number}`}
-      backLabel='Патентные гранты'
+      backLabel='Охранные документы'
       onBack={handleBack}
       actions={
         <>

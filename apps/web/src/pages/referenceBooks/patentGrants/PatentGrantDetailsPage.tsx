@@ -28,8 +28,8 @@ export default function PatentGrantDetailsPage() {
 
   const { handleOpenModal } = useConfirmByModal({
     mutation,
-    successMessage: 'Патентный грант успешно удалён',
-    errorMessage: 'Не удалось удалить патентный грант',
+    successMessage: 'Охранный документ успешно удалён',
+    errorMessage: 'Не удалось удалить охранный документ',
     getMutationProps: () => grantId!,
     showNotification,
     onSuccess: () => setTimeout(() => navigate(-1), 1000),
@@ -59,13 +59,13 @@ export default function PatentGrantDetailsPage() {
   }
 
   if (isError || !patentGrant) {
-    return <NotFound errorMessage='Патентный грант не найден' />;
+    return <NotFound errorMessage='Охранный документ не найден' />;
   }
 
   return (
     <DetailPageHeader
-      title={`Патентный грант ${patentGrant.grant_number}`}
-      backLabel='Патентные гранты'
+      title={`Охранный документ ${patentGrant.grant_number}`}
+      backLabel='Охранные документы'
       onBack={() => navigate(`/patents/${patentGrant.patent_id}/grants`)}
       statusBadge={
         patentGrant.status

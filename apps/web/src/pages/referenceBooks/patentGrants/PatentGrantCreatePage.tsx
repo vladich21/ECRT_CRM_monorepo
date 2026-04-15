@@ -44,7 +44,7 @@ export default function PatentGrantCreatePage() {
       { patentId, data },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Патентный грант успешно создан');
+          showNotification('success', 'Успех', 'Охранный документ успешно создан');
           if (patentIdFromState) {
             setTimeout(() => navigate(`/patents/${patentIdFromState}/grants`), 1000);
           } else {
@@ -52,7 +52,7 @@ export default function PatentGrantCreatePage() {
           }
         },
         onError: () => {
-          showNotification('error', 'Ошибка', 'Не удалось создать патентный грант');
+          showNotification('error', 'Ошибка', 'Не удалось создать охранный документ');
         },
       },
     );
@@ -65,9 +65,9 @@ export default function PatentGrantCreatePage() {
   }
   return (
     <DetailPageHeader
-      title='Создание нового патентного гранта'
-      titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания гранта</span>}
-      backLabel='Патентные гранты'
+      title='Создание нового охранного документа'
+      titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания</span>}
+      backLabel='Охранные документы'
       onBack={() => navigate(-1)}
       actions={
         <>
@@ -75,7 +75,7 @@ export default function PatentGrantCreatePage() {
             Очистить форму
           </Button>
           <Button type='primary' icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
-            Создать патентный грант
+            Создать
           </Button>
         </>
       }

@@ -36,8 +36,8 @@ export default function PatentGrantsListPage() {
       mutation: deletePatentGrantMutation,
       getVariables: () => deleteGrantIdRef.current,
       showNotification,
-      successMessage: 'Патентный грант успешно удален',
-      errorMessage: 'Не удалось удалить патентный грант',
+      successMessage: 'Охранный документ успешно удален',
+      errorMessage: 'Не удалось удалить охранный документ',
       navigate,
     });
   };
@@ -53,8 +53,8 @@ export default function PatentGrantsListPage() {
   };
   return (
     <ReferenceBookListPage
-      title='Патентные гранты'
-      addButtonLabel='Добавить патентный грант'
+      title='Охранные документы'
+      addButtonLabel='Добавить охранный документ'
       onAdd={() => navigate('/patent-grants/create', { state: { patentId } })}
       contextHolder={contextHolder}
     >
@@ -63,7 +63,7 @@ export default function PatentGrantsListPage() {
           <Spin size='large' />
         </div>
       ) : patentGrants.length === 0 ? (
-        <div className={styles.empty}>Патентные гранты не найдены</div>
+        <div className={styles.empty}>Охранные документы не найдены</div>
       ) : (
         <ReferenceBookCardList>
           {patentGrants.map(grant => (

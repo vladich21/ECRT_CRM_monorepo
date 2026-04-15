@@ -38,7 +38,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
   return (
     <Space direction='vertical' size='middle' className={styles.container}>
       <Descriptions title='Основная информация' column={1} bordered size='middle' className={styles.descriptions}>
-        <Descriptions.Item label='Номер гранта'>
+        <Descriptions.Item label='Номер охранного документа'>
           {patentGrant?.grant_number || <Text type='secondary'>Не указан</Text>}
         </Descriptions.Item>
 
@@ -63,7 +63,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
             <Text type='secondary'>Не указан</Text>
           )}
         </Descriptions.Item>
-        <Descriptions.Item label='Дата выдачи гранта'>{formatDate(patentGrant?.grant_date)}</Descriptions.Item>
+        <Descriptions.Item label='Дата выдачи'> {formatDate(patentGrant?.grant_date)}</Descriptions.Item>
         <Descriptions.Item label='Дата продления'>{formatDate(patentGrant?.renewal_date)}</Descriptions.Item>
         <Descriptions.Item label='Ведомство'>
           {patentGrant?.office?.trim() ? patentGrant.office : <Text type='secondary'>Не указано</Text>}

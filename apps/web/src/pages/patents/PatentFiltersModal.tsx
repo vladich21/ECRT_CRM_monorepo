@@ -86,7 +86,7 @@ export function PatentFiltersModal({
           />
         </div>
         <div className={styles.filtersModalField}>
-          <span className={styles.filtersModalLabel}>Страна / регион выдачи (патентный грант)</span>
+          <span className={styles.filtersModalLabel}>Страна / регион выдачи (Охранный документ)</span>
           <Select
             className={styles.filtersModalControl}
             mode='multiple'

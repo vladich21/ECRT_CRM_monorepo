@@ -23,9 +23,9 @@ export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState 
           <Row gutter={16}>
             <Col xs={24}>
               <Form.Item
-                label='Номер гранта'
+                label='Номер охранного документа'
                 name='grant_number'
-                rules={[{ required: true, message: 'Введите номер гранта' }]}
+                rules={[{ required: true, message: 'Введите номер охранного документа' }]}
               >
                 <Input placeholder='GR-2024-001' prefix={<NumberOutlined />} />
               </Form.Item>
@@ -72,7 +72,7 @@ export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState 
               </Form.Item>
             </Col>
             <Col xs={24}>
-              <Form.Item label='Дата выдачи гранта' name='grant_date'>
+              <Form.Item label='Дата выдачи' name='grant_date'>
                 <DatePicker placeholder='Выберите дату выдачи' style={{ width: '100%' }} format='DD.MM.YYYY' />
               </Form.Item>
             </Col>
@@ -96,7 +96,7 @@ export function PatentGrantFormFields({ form, referenceBooks, patentIdFromState 
       <Row gutter={16}>
         <Col xs={24}>
           <Form.Item label='Примечания' name='notes'>
-            <TextArea placeholder='Введите дополнительные сведения о гранте' rows={3} />
+            <TextArea placeholder='Введите дополнительные сведения о охранном документе' rows={3} />
           </Form.Item>
         </Col>
       </Row>
