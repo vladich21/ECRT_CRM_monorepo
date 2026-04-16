@@ -12,6 +12,7 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { formatSrmUserName } from '../../../helpers/formatSrmUserName';
 import useAuthStore from '../../../store/AuthStore';
 import type { SupplierEvaluationCriterion } from '../../../types/supplierEvaluation';
+import { shouldShowSupplierEvaluationModalNoProjectsWarning } from '../../supplierEvaluations/supplierEvaluationsRegistry.model';
 import {
   CategoryTag,
   SCORE_STEPS,
@@ -28,6 +29,8 @@ type Props = {
   onClose: () => void;
   partnerId: string;
   initialProjectId?: string;
+  /** Подпись проекта, если id есть в форме, но проекта ещё нет в списке по договорам (иначе показывали бы UUID). */
+  initialProjectLabel?: string;
   onSuccess?: () => void;
 };
 
@@ -40,6 +43,7 @@ export default function NewSupplierEvaluationModal({
   onClose,
   partnerId,
   initialProjectId,
+  initialProjectLabel,
   onSuccess,
 }: Props) {
   const [form] = Form.useForm<{ evaluated_at: Dayjs; project_id: string; comment?: string }>();
@@ -96,12 +100,19 @@ export default function NewSupplierEvaluationModal({
   const projectOptions = useMemo(() => {
     const base = contractProjects.map(project => ({ value: project.id, label: project.label }));
     if (initialProjectId && !base.some(option => option.value === initialProjectId)) {
-      return [{ value: initialProjectId, label: `Проект ${initialProjectId}` }, ...base];
+      const labelFromParent = initialProjectLabel?.trim();
+      const fallbackLabel = labelFromParent || `Проект ${initialProjectId}`;
+      return [{ value: initialProjectId, label: fallbackLabel }, ...base];
     }
     return base;
-  }, [contractProjects, initialProjectId]);
+  }, [contractProjects, initialProjectId, initialProjectLabel]);
 
   const hasActiveEvaluationForProject = Boolean(activeForProject?.data?.length);
+
+  const showNoContractProjectsWarning = shouldShowSupplierEvaluationModalNoProjectsWarning(
+    projectsLoading,
+    projectOptions.length,
+  );
 
   const handleOk = () =>
     form.validateFields().then(values => {
@@ -153,7 +164,7 @@ export default function NewSupplierEvaluationModal({
     >
       {contextHolder}
       <Form form={form} layout='vertical' className={styles.form}>
-        {!projectsLoading && contractProjects.length === 0 ? (
+        {showNoContractProjectsWarning ? (
           <Alert
             type='warning'
             showIcon
@@ -171,7 +182,7 @@ export default function NewSupplierEvaluationModal({
           />
         ) : null}
         <Row gutter={[16, 8]}>
-          <Col xs={24} sm={10} md={9}>
+          <Col xs={24} sm={10} md={5}>
             <Form.Item
               name='evaluated_at'
               label='Дата оценки'
@@ -181,7 +192,7 @@ export default function NewSupplierEvaluationModal({
               <DatePicker format='DD.MM.YYYY' className={styles.fullWidth} allowClear={false} />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={14} md={15}>
+          <Col xs={24} sm={14} md={19}>
             <Form.Item
               name='project_id'
               label='Проект'

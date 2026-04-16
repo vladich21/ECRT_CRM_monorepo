@@ -92,7 +92,18 @@ export class PartnersService {
     return Number(rows[0]?.value ?? 0);
   }
 
+  /**
+   * Автопересчёт operational status (Активный / Потенциальный / Заблокирован по договорам и оценкам).
+   * По умолчанию выключен на период миграции данных. Включение: `PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=true`.
+   * Логика пересчёта см. `applyDerivedPartnerStatus` / `computeAutoStatusIdForPartnerRow` (ниже по файлу).
+   */
+  private isOperationalStatusDeriveEnabled(): boolean {
+    const raw = process.env.PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE?.trim().toLowerCase();
+    return raw === 'true' || raw === '1' || raw === 'yes';
+  }
+
   private async syncDerivedPartnerStatusForPartnersMatching(where: SQL): Promise<void> {
+    if (!this.isOperationalStatusDeriveEnabled()) return;
     const idRows = await this.db.db
       .select({ id: partners.id })
       .from(partners)
@@ -194,7 +205,7 @@ export class PartnersService {
     const listWhere = this.whereWithDeletion(baseParts, tab, deletedScope);
 
     const shouldSyncDerivedStatusBeforeList =
-      Boolean(filters?.statusIds?.length) && limit > 1;
+      this.isOperationalStatusDeriveEnabled() && Boolean(filters?.statusIds?.length) && limit > 1;
 
     if (shouldSyncDerivedStatusBeforeList) {
       await this.syncDerivedPartnerStatusForPartnersMatching(listWhere);
@@ -223,14 +234,18 @@ export class PartnersService {
 
     const pagePartnerIds = rows.map((row) => row.id).filter(Boolean) as string[];
 
-    if (!shouldSyncDerivedStatusBeforeList && pagePartnerIds.length > 0) {
+    if (
+      this.isOperationalStatusDeriveEnabled() &&
+      !shouldSyncDerivedStatusBeforeList &&
+      pagePartnerIds.length > 0
+    ) {
       await Promise.all(
         pagePartnerIds.map((partnerId) => this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false })),
       );
     }
 
     let rowsForList = rows;
-    if (pagePartnerIds.length > 0) {
+    if (this.isOperationalStatusDeriveEnabled() && pagePartnerIds.length > 0) {
       const freshList = await this.db.db.select().from(partners).where(inArray(partners.id, pagePartnerIds));
       const freshByPartnerId = new Map(freshList.map((freshRow) => [String(freshRow.id), freshRow]));
       rowsForList = rows.map((originalRow) => freshByPartnerId.get(String(originalRow.id)) ?? originalRow);
@@ -316,18 +331,20 @@ export class PartnersService {
     const row = rows[0];
     if (!row) return null;
     const pid = String(row.id);
-    const statusNameBefore = await this.getPartnerStatusName(row.statusId ? String(row.statusId) : null);
-    if ((statusNameBefore ?? '').trim() !== 'Архив') {
-      await this.applyDerivedPartnerStatus(pid, { ignoreArchiveLock: false });
+    let rowForResponse = row;
+    if (this.isOperationalStatusDeriveEnabled()) {
+      const statusNameBefore = await this.getPartnerStatusName(row.statusId ? String(row.statusId) : null);
+      if ((statusNameBefore ?? '').trim() !== 'Архив') {
+        await this.applyDerivedPartnerStatus(pid, { ignoreArchiveLock: false });
+      }
+      const rowsFresh = await this.db.db
+        .select()
+        .from(partners)
+        .where(eq(partners.id, id))
+        .limit(1);
+      rowForResponse = rowsFresh[0] ?? row;
     }
-    const rowsFresh = await this.db.db
-      .select()
-      .from(partners)
-      .where(eq(partners.id, id))
-      .limit(1);
-    const rowFresh = rowsFresh[0] ?? row;
-
-    const catId = rowFresh.categoryId ? String(rowFresh.categoryId) : '';
+    const catId = rowForResponse.categoryId ? String(rowForResponse.categoryId) : '';
     const [typeRows, compRows, categoryNameById, blockedPartnerIds, initialEvalIds] = await Promise.all([
       this.db.db
         .select({ typeId: relPartnersTypes.typeId })
@@ -344,9 +361,9 @@ export class PartnersService {
     const catName = catId ? categoryNameById.get(catId) ?? null : null;
     const hasBlock = blockedPartnerIds.has(pid);
     const hasInitialEval = initialEvalIds.has(pid);
-    const extras = this.partnerApprovalExtras(rowFresh, catName, hasBlock, hasInitialEval);
+    const extras = this.partnerApprovalExtras(rowForResponse, catName, hasBlock, hasInitialEval);
     return {
-      ...this.toResponse(rowFresh, extras),
+      ...this.toResponse(rowForResponse, extras),
       type_ids: typeRows.map((typeRow) => String(typeRow.typeId)).filter(Boolean),
       competence_ids: compRows.map((compRow) => String(compRow.competenceId)).filter(Boolean),
     };
@@ -367,7 +384,7 @@ export class PartnersService {
     if (!row) return null;
     const partnerId = String(row.id);
     await this.syncRelTables(partnerId, data);
-    if (manualArchive !== true) {
+    if (manualArchive !== true && this.isOperationalStatusDeriveEnabled()) {
       await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: true });
     }
     return this.findOne(partnerId);
@@ -376,9 +393,9 @@ export class PartnersService {
   async update(id: string, data: Record<string, unknown>, userId?: string) {
     const current = await this.findOne(id);
     if (!current) return null;
-    const currentStatusName = await this.getPartnerStatusName(
-      current.status_id ? String(current.status_id) : null,
-    );
+    const currentStatusName = this.isOperationalStatusDeriveEnabled()
+      ? await this.getPartnerStatusName(current.status_id ? String(current.status_id) : null)
+      : null;
     const manualArchive = this.parseManualArchiveFlag(data);
     const merged = { ...current, ...data };
     this.validateInnKppRequired(merged);
@@ -428,10 +445,12 @@ export class PartnersService {
           ...(userId ? { updatedBy: userId } : {}),
         })
         .where(eq(partners.id, id));
-    } else if (manualArchive === false) {
-      await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: true });
-    } else if ((currentStatusName ?? '').trim() !== 'Архив') {
-      await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
+    } else if (this.isOperationalStatusDeriveEnabled()) {
+      if (manualArchive === false) {
+        await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: true });
+      } else if ((currentStatusName ?? '').trim() !== 'Архив') {
+        await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
+      }
     }
 
     return this.findOne(id);
@@ -468,8 +487,8 @@ export class PartnersService {
   }
 
   /**
-   * Активный / Потенциальный / Заблокирован пересчитываются по договорам и оценкам.
-   * Статус «Архив» не меняется при этом вызове (см. update + manual_archive).
+   * Вызывается из сервисов договоров и оценок. Пересчёт выполняется только если включён
+   * `PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE` (см. `isOperationalStatusDeriveEnabled`).
    */
   async refreshPartnerDerivedStatus(partnerId: string): Promise<void> {
     await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false });
@@ -609,12 +628,12 @@ export class PartnersService {
 
   private async getPartnerStatusName(statusId: string | null | undefined): Promise<string | null> {
     if (!statusId) return null;
-    const rows = await this.db.db
+    const nameRows = await this.db.db
       .select({ name: refPartnerStatuses.name })
       .from(refPartnerStatuses)
       .where(eq(refPartnerStatuses.id, statusId))
       .limit(1);
-    return rows[0]?.name?.trim() ?? null;
+    return nameRows[0]?.name?.trim() ?? null;
   }
 
   private async resolvePartnerOperationalStatusIds(): Promise<{
@@ -647,11 +666,10 @@ export class PartnersService {
   }
 
   /**
-   * Как вкладка «Действующие»: не мягко удалён + is_active (подписан → на бэке выставляется is_active).
-   * Одного такого договора достаточно для «Активный» (если не «Заблокирован» по средней оценке).
+   * Действующий договор: не удалён и `is_active = true` (подписан → на бэке выставляется is_active).
    */
   private async partnerHasAtLeastOneEffectiveContract(partnerId: string): Promise<boolean> {
-    const rows = await this.db.db
+    const contractRows = await this.db.db
       .select({ id: contracts.id })
       .from(contracts)
       .where(
@@ -662,7 +680,7 @@ export class PartnersService {
         )!,
       )
       .limit(1);
-    return rows.length > 0;
+    return contractRows.length > 0;
   }
 
   private isoDateOnlyEval(value: unknown): string {
@@ -699,13 +717,31 @@ export class PartnersService {
     return Math.round((sum / perProject.length) * 100) / 100;
   }
 
+  /**
+   * strict (по умолчанию): без действующего договора «Активный» в БД сменится на «Потенциальный».
+   * migration: если в БД уже «Активный», не понижать из‑за отсутствия договора.
+   * Альтернатива: `PARTNER_PRESERVE_ACTIVE_STATUS_WITHOUT_CONTRACT=true`.
+   */
+  private trustDbActiveStatusOverMissingContract(): boolean {
+    const mode = (process.env.PARTNER_OPERATIONAL_STATUS_MODE ?? 'strict').trim().toLowerCase();
+    if (mode === 'migration') return true;
+    return (
+      process.env.PARTNER_PRESERVE_ACTIVE_STATUS_WITHOUT_CONTRACT === 'true' ||
+      process.env.PARTNER_PRESERVE_ACTIVE_STATUS_WITHOUT_CONTRACT === '1'
+    );
+  }
+
   private async computeAutoStatusIdForPartnerRow(
     partnerId: string,
     ids: { activeId: string; potentialId: string; blockedId: string },
+    currentStatusId: string | null,
   ): Promise<string> {
     const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
     if (avg !== null && avg < 2) {
       return ids.blockedId;
+    }
+    if (this.trustDbActiveStatusOverMissingContract() && currentStatusId === ids.activeId) {
+      return ids.activeId;
     }
     const hasEffective = await this.partnerHasAtLeastOneEffectiveContract(partnerId);
     if (hasEffective) {
@@ -718,18 +754,21 @@ export class PartnersService {
     partnerId: string,
     opts: { ignoreArchiveLock: boolean },
   ): Promise<void> {
-    const rows = await this.db.db.select().from(partners).where(eq(partners.id, partnerId)).limit(1);
-    const row = rows[0];
-    if (!row) return;
+    if (!this.isOperationalStatusDeriveEnabled()) {
+      return;
+    }
+    const partnerRows = await this.db.db.select().from(partners).where(eq(partners.id, partnerId)).limit(1);
+    const partnerRow = partnerRows[0];
+    if (!partnerRow) return;
 
     const ids = await this.resolvePartnerOperationalStatusIds();
-    const statusName = await this.getPartnerStatusName(row.statusId ? String(row.statusId) : null);
+    const statusName = await this.getPartnerStatusName(partnerRow.statusId ? String(partnerRow.statusId) : null);
     if (statusName === 'Архив' && !opts.ignoreArchiveLock) {
       return;
     }
 
-    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids);
-    const curId = row.statusId ? String(row.statusId) : null;
+    const curId = partnerRow.statusId ? String(partnerRow.statusId) : null;
+    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids, curId);
     if (curId !== nextId) {
       await this.db.db
         .update(partners)

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Modal, Table, Tag, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 
 import { partnerApi } from '../../api/partners/partnerApi';
@@ -14,6 +14,7 @@ import {
   useSupplierEvaluationTabCounts,
   useSupplierEvaluationsList,
 } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import { invalidateSupplierEvaluationQueries } from '../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
@@ -21,6 +22,7 @@ import { useNotification } from '../../customhooks/useNotification';
 import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
 import type { SupplierEvaluationListItem, SupplierEvaluationUiStatusParam } from '../../types/supplierEvaluation';
 import EvaluationExpandedContent from '../partners/evaluations/EvaluationExpandedContent';
+import NewSupplierEvaluationModal from '../partners/evaluations/NewSupplierEvaluationModal';
 import {
   CategoryTag,
   formatReevaluationCell,
@@ -41,18 +43,17 @@ import {
   evaluationRegistrySortToRequestParams,
   evaluationYearsToApiParam,
 } from './supplierEvaluationsConstants';
+import {
+  SUPPLIER_EVALUATIONS_REGISTRY_PARTNER_LINK_STATE,
+  SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
+  SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_FETCH_LIMIT,
+  filterSupplierEvaluationRegistryRowsBySearch,
+} from './supplierEvaluationsRegistry.model';
 
 const { Text } = Typography;
 
-const SEARCH_DEBOUNCE_MS = 350;
-const SEARCH_FETCH_LIMIT = 2000;
-
-const PARTNER_LINK_STATE_FROM_SUPPLIER_EVAL_REGISTRY = {
-  returnToAfterPartner: '/supplier-evaluations',
-} as const;
-
 export default function SupplierEvaluationsRegistryPage() {
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { showNotification, contextHolder } = useNotification();
   const deleteMut = useDeleteSupplierEvaluation();
   const [searchInput, setSearchInput] = useState('');
@@ -65,13 +66,20 @@ export default function SupplierEvaluationsRegistryPage() {
     EMPTY_EVALUATIONS_REGISTRY_FILTERS,
   );
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+  const [reevaluationModalOpen, setReevaluationModalOpen] = useState(false);
+  const [reevaluationPartnerId, setReevaluationPartnerId] = useState<string | undefined>();
+  const [reevaluationProjectId, setReevaluationProjectId] = useState<string | undefined>();
+  const [reevaluationProjectLabel, setReevaluationProjectLabel] = useState<string | undefined>();
 
   const { page, pageSize, handleTableChange, getPaginationConfig, resetPage } = useServerTablePagination({
     defaultPageSize: 20,
   });
 
   useEffect(() => {
-    const debounceTimeoutId = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    const debounceTimeoutId = window.setTimeout(
+      () => setDebouncedSearch(searchInput.trim()),
+      SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
+    );
     return () => window.clearTimeout(debounceTimeoutId);
   }, [searchInput]);
 
@@ -151,7 +159,7 @@ export default function SupplierEvaluationsRegistryPage() {
       ...evaluationRegistrySortToRequestParams(appliedListFilters.sortPreset),
     };
     if (isSearchMode) {
-      return { ...base, limit: SEARCH_FETCH_LIMIT, offset: 0 };
+      return { ...base, limit: SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_FETCH_LIMIT, offset: 0 };
     }
     return { ...base, limit: pageSize, offset: (page - 1) * pageSize };
   }, [rowStatusTab, appliedListFilters, isSearchMode, page, pageSize]);
@@ -190,20 +198,16 @@ export default function SupplierEvaluationsRegistryPage() {
     resetPage();
   }, [rowStatusTab, appliedListFilters, debouncedSearch, resetPage]);
 
-  const filteredRows = useMemo(() => {
-    const rows = data?.data ?? [];
-    const searchLowercase = debouncedSearch.toLowerCase();
-    if (!searchLowercase) return rows;
-    return rows.filter(row => {
-      const refName = String(partnerNameById[row.partner_id] ?? '').trim();
-      const rowName = String(row.partner_name ?? '').trim();
-      const partnerMatches = [rowName, refName, row.partner_id]
-        .filter(Boolean)
-        .some(chunk => chunk.toLowerCase().includes(searchLowercase));
-      const projectLabel = String(projectNameById[row.project_id] ?? '').toLowerCase();
-      return partnerMatches || projectLabel.includes(searchLowercase);
-    });
-  }, [data?.data, debouncedSearch, partnerNameById, projectNameById]);
+  const filteredRows = useMemo(
+    () =>
+      filterSupplierEvaluationRegistryRowsBySearch(
+        data?.data ?? [],
+        debouncedSearch,
+        partnerNameById,
+        projectNameById,
+      ),
+    [data?.data, debouncedSearch, partnerNameById, projectNameById],
+  );
 
   const displayRows = useMemo(() => {
     if (!isSearchMode) return filteredRows;
@@ -229,7 +233,7 @@ export default function SupplierEvaluationsRegistryPage() {
           <Link
             className={registryStyles.tableCellMultiline}
             to={`/partners/${row.partner_id}/evaluations`}
-            state={PARTNER_LINK_STATE_FROM_SUPPLIER_EVAL_REGISTRY}
+            state={SUPPLIER_EVALUATIONS_REGISTRY_PARTNER_LINK_STATE}
           >
             {label}
           </Link>
@@ -433,17 +437,41 @@ export default function SupplierEvaluationsRegistryPage() {
               <EvaluationExpandedContent
                 row={record}
                 partnerId={record.partner_id}
-                onReevaluate={() =>
-                  navigate(`/partners/${record.partner_id}/evaluations`, {
-                    state: PARTNER_LINK_STATE_FROM_SUPPLIER_EVAL_REGISTRY,
-                  })
-                }
+                onReevaluate={projectId => {
+                  setReevaluationPartnerId(record.partner_id);
+                  setReevaluationProjectId(projectId);
+                  setReevaluationProjectLabel(
+                    String(projectNameById[record.project_id] ?? '').trim() || undefined,
+                  );
+                  setReevaluationModalOpen(true);
+                }}
               />
             ),
             rowExpandable: () => true,
           }}
         />
       </div>
+
+      <NewSupplierEvaluationModal
+        open={reevaluationModalOpen && Boolean(reevaluationPartnerId)}
+        partnerId={reevaluationPartnerId ?? ''}
+        initialProjectId={reevaluationProjectId}
+        initialProjectLabel={reevaluationProjectLabel}
+        onClose={() => {
+          setReevaluationModalOpen(false);
+          setReevaluationPartnerId(undefined);
+          setReevaluationProjectId(undefined);
+          setReevaluationProjectLabel(undefined);
+        }}
+        onSuccess={() => {
+          void invalidateSupplierEvaluationQueries(queryClient);
+          void refetch();
+          setReevaluationModalOpen(false);
+          setReevaluationPartnerId(undefined);
+          setReevaluationProjectId(undefined);
+          setReevaluationProjectLabel(undefined);
+        }}
+      />
     </div>
   );
 }

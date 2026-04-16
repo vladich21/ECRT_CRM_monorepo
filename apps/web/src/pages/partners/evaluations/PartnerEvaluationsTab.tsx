@@ -65,6 +65,7 @@ export default function PartnerEvaluationsTab() {
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
   const [initialEvaluationModalOpen, setInitialEvaluationModalOpen] = useState(false);
   const [reevaluationProjectId, setReevaluationProjectId] = useState<string | undefined>();
+  const [reevaluationProjectLabel, setReevaluationProjectLabel] = useState<string | undefined>();
 
   const { page, pageSize, handleTableChange, getPaginationConfig, resetPage } = useServerTablePagination({
     defaultPageSize: 20,
@@ -283,6 +284,7 @@ export default function PartnerEvaluationsTab() {
               disabled={!!partner.is_deleted}
               onClick={() => {
                 setReevaluationProjectId(undefined);
+                setReevaluationProjectLabel(undefined);
                 setEvaluationModalOpen(true);
               }}
             >
@@ -342,6 +344,9 @@ export default function PartnerEvaluationsTab() {
                 partnerId={partner.id}
                 onReevaluate={projectId => {
                   setReevaluationProjectId(projectId);
+                  setReevaluationProjectLabel(
+                    String(projectNameById[projectId] ?? '').trim() || undefined,
+                  );
                   setEvaluationModalOpen(true);
                 }}
               />
@@ -374,11 +379,18 @@ export default function PartnerEvaluationsTab() {
 
       <NewSupplierEvaluationModal
         open={evaluationModalOpen}
-        onClose={() => setEvaluationModalOpen(false)}
+        onClose={() => {
+          setEvaluationModalOpen(false);
+          setReevaluationProjectId(undefined);
+          setReevaluationProjectLabel(undefined);
+        }}
         partnerId={partner.id}
         initialProjectId={reevaluationProjectId}
+        initialProjectLabel={reevaluationProjectLabel}
         onSuccess={() => {
           refetch();
+          setReevaluationProjectId(undefined);
+          setReevaluationProjectLabel(undefined);
           void queryClient.invalidateQueries({
             queryKey: supplierEvaluationQueryKeys.partnerKpi(partner.id),
           });
