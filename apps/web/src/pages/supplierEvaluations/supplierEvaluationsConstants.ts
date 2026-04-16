@@ -72,6 +72,18 @@ export function evaluationYearFilterToApi(yearFilterValue: string): number | und
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+/** Несколько выбранных годов → строка для query `evaluated_year` (через запятую). */
+export function evaluationYearsToApiParam(years: string[]): string | undefined {
+  if (!years.length) return undefined;
+  const nums = years.map(y => Number(y)).filter(n => Number.isFinite(n) && n >= 1990 && n <= 2100);
+  return nums.length ? Array.from(new Set(nums)).sort((a, b) => a - b).join(',') : undefined;
+}
+
+/** Опции годов для множественного выбора (без пункта «все»). */
+export const EVALUATION_YEAR_MULTI_OPTIONS = EVALUATION_YEAR_OPTIONS.filter(
+  o => o.value !== EVALUATION_YEAR_FILTER_ALL,
+);
+
 export function supplierEvaluationEvaluatedAtRangePresets(): { label: string; value: [Dayjs, Dayjs] }[] {
   const currentYear = dayjs().year();
   const presets: { label: string; value: [Dayjs, Dayjs] }[] = [

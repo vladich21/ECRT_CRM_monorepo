@@ -10,13 +10,12 @@ import { partnerQueryKeys } from '../../api/partners/partnerQueryKeys';
 import { useProjectsPreview } from '../../api/projects/projectApiHooks';
 import {
   useDeleteSupplierEvaluation,
+  useSupplierEvaluationRegistryCreators,
   useSupplierEvaluationTabCounts,
   useSupplierEvaluationsList,
 } from '../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { useUsers } from '../../api/users/userApiHooks';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { formatSrmUserName } from '../../helpers/formatSrmUserName';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
 import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
@@ -39,7 +38,7 @@ import registryStyles from './SupplierEvaluationsRegistryPage.module.scss';
 import {
   EVALUATION_UI_TABS,
   evaluationRegistrySortToRequestParams,
-  evaluationYearFilterToApi,
+  evaluationYearsToApiParam,
 } from './supplierEvaluationsConstants';
 
 const { Text } = Typography;
@@ -47,12 +46,18 @@ const { Text } = Typography;
 const SEARCH_DEBOUNCE_MS = 350;
 const SEARCH_FETCH_LIMIT = 2000;
 
-function countActiveRegistryFilters(f: EvaluationsRegistryAppliedFilters): number {
-  let n = 0;
-  if (f.evaluatedYear !== EMPTY_EVALUATIONS_REGISTRY_FILTERS.evaluatedYear) n += 1;
-  if (f.category !== 'all') n += 1;
-  if (f.createdByUserId) n += 1;
-  return n;
+/** Состояние навигации на карточку контрагента: кнопка «назад» ведёт в реестр оценок. */
+const PARTNER_LINK_STATE_FROM_SUPPLIER_EVAL_REGISTRY = {
+  returnToAfterPartner: '/supplier-evaluations',
+} as const;
+
+function countActiveRegistryFilters(filters: EvaluationsRegistryAppliedFilters): number {
+  let activeCount = 0;
+  if (filters.evaluatedYears.length > 0) activeCount += 1;
+  if (filters.category !== 'all') activeCount += 1;
+  if (filters.createdByUserIds.length > 0) activeCount += 1;
+  if (filters.projectIds.length > 0) activeCount += 1;
+  return activeCount;
 }
 
 export default function SupplierEvaluationsRegistryPage() {
@@ -75,8 +80,8 @@ export default function SupplierEvaluationsRegistryPage() {
   });
 
   useEffect(() => {
-    const id = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(id);
+    const debounceTimeoutId = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(debounceTimeoutId);
   }, [searchInput]);
 
   const isSearchMode = Boolean(debouncedSearch);
@@ -103,21 +108,34 @@ export default function SupplierEvaluationsRegistryPage() {
     [partners],
   );
 
-  const { data: usersResponse } = useUsers(2, true);
+  const { data: registryCreators = [], isPending: isRegistryCreatorsPending } =
+    useSupplierEvaluationRegistryCreators();
+  const projectOptions = useMemo(
+    () =>
+      projects.map(project => ({
+        value: project.id,
+        label: String(project.name || project.code || project.id).trim() || project.id,
+      })),
+    [projects],
+  );
   const buyerOptions = useMemo(
     () =>
-      (usersResponse?.data ?? []).map(userRow => ({
-        value: userRow.id,
-        label: formatSrmUserName(userRow),
-      })),
-    [usersResponse?.data],
+      registryCreators
+        .map(creator => ({ value: creator.id, label: creator.name }))
+        .sort((left, right) => left.label.localeCompare(right.label, 'ru')),
+    [registryCreators],
   );
 
   const tabCountRequestParams = useMemo(
     () => ({
-      evaluated_year: evaluationYearFilterToApi(appliedListFilters.evaluatedYear),
+      evaluated_year: evaluationYearsToApiParam(appliedListFilters.evaluatedYears),
       category: appliedListFilters.category === 'all' ? undefined : appliedListFilters.category,
-      created_by: appliedListFilters.createdByUserId,
+      created_by:
+        appliedListFilters.createdByUserIds.length > 0
+          ? appliedListFilters.createdByUserIds.join(',')
+          : undefined,
+      project_id:
+        appliedListFilters.projectIds.length > 0 ? appliedListFilters.projectIds.join(',') : undefined,
     }),
     [appliedListFilters],
   );
@@ -131,9 +149,14 @@ export default function SupplierEvaluationsRegistryPage() {
     const base = {
       status: 'all' as const,
       ui_status: rowStatusTab === 'all' ? undefined : rowStatusTab,
-      evaluated_year: evaluationYearFilterToApi(appliedListFilters.evaluatedYear),
+      evaluated_year: evaluationYearsToApiParam(appliedListFilters.evaluatedYears),
       category: appliedListFilters.category === 'all' ? undefined : appliedListFilters.category,
-      created_by: appliedListFilters.createdByUserId,
+      created_by:
+        appliedListFilters.createdByUserIds.length > 0
+          ? appliedListFilters.createdByUserIds.join(',')
+          : undefined,
+      project_id:
+        appliedListFilters.projectIds.length > 0 ? appliedListFilters.projectIds.join(',') : undefined,
       ...evaluationRegistrySortToRequestParams(appliedListFilters.sortPreset),
     };
     if (isSearchMode) {
@@ -211,6 +234,7 @@ export default function SupplierEvaluationsRegistryPage() {
           <Link
             className={registryStyles.tableCellMultiline}
             to={`/partners/${row.partner_id}/evaluations`}
+            state={PARTNER_LINK_STATE_FROM_SUPPLIER_EVAL_REGISTRY}
           >
             {label}
           </Link>
@@ -391,7 +415,9 @@ export default function SupplierEvaluationsRegistryPage() {
         onClose={closeFiltersModal}
         onApply={applyFiltersFromModal}
         onReset={resetFiltersFromModal}
+        projectOptions={projectOptions}
         buyerOptions={buyerOptions}
+        buyerOptionsLoading={isRegistryCreatorsPending}
       />
 
       <div className={listStyles.tableCard} style={{ marginTop: 16 }}>
@@ -412,7 +438,11 @@ export default function SupplierEvaluationsRegistryPage() {
               <EvaluationExpandedContent
                 row={record}
                 partnerId={record.partner_id}
-                onReevaluate={() => navigate(`/partners/${record.partner_id}/evaluations`)}
+                onReevaluate={() =>
+                  navigate(`/partners/${record.partner_id}/evaluations`, {
+                    state: PARTNER_LINK_STATE_FROM_SUPPLIER_EVAL_REGISTRY,
+                  })
+                }
               />
             ),
             rowExpandable: () => true,

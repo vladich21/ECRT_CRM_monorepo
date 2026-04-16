@@ -10,25 +10,26 @@ import type { SupplierEvaluationsStatusFilter } from './supplierEvaluationApi';
 
 export const supplierEvaluationQueryKeys = {
   all: ['supplier-evaluations'] as const,
+  registryCreators: () => [...supplierEvaluationQueryKeys.all, 'registry-creators'] as const,
   criteria: ['supplier-evaluations', 'criteria'] as const,
   partnerContractProjects: (partnerId: string) =>
     ['supplier-evaluations', 'partner-contract-projects', partnerId] as const,
-  tabCounts: (p: {
+  tabCounts: (params: {
     partner_id?: string;
     project_id?: string;
     created_by?: string;
     category?: SupplierEvaluationCategory;
-    evaluated_year?: number;
+    evaluated_year?: string | number;
     evaluated_at_from?: string;
     evaluated_at_to?: string;
-  }) => ['supplier-evaluations', 'tab-counts', p] as const,
-  list: (p: {
+  }) => ['supplier-evaluations', 'tab-counts', params] as const,
+  list: (params: {
     partner_id?: string;
     project_id?: string;
     status?: SupplierEvaluationsStatusFilter;
     created_by?: string;
     category?: SupplierEvaluationCategory;
-    evaluated_year?: number;
+    evaluated_year?: string | number;
     evaluated_at_from?: string;
     evaluated_at_to?: string;
     ui_status?: SupplierEvaluationUiStatusParam;
@@ -36,7 +37,7 @@ export const supplierEvaluationQueryKeys = {
     sort_dir?: SupplierEvaluationSortDir;
     limit: number;
     offset: number;
-  }) => ['supplier-evaluations', 'list', p] as const,
+  }) => ['supplier-evaluations', 'list', params] as const,
   one: (id: string) => ['supplier-evaluations', id] as const,
   block: (partnerId: string, projectId: string) =>
     ['supplier-evaluations', 'block', partnerId, projectId] as const,

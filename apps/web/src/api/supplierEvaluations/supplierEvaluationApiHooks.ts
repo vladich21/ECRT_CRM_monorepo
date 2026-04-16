@@ -30,6 +30,14 @@ export function useSupplierEvaluationCriteria() {
   });
 }
 
+export function useSupplierEvaluationRegistryCreators() {
+  return useQuery({
+    queryKey: supplierEvaluationQueryKeys.registryCreators(),
+    queryFn: () => supplierEvaluationApi.getRegistryCreators(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function usePartnerContractProjectsForEvaluation(partnerId: string, enabled: boolean) {
   return useQuery({
     queryKey: supplierEvaluationQueryKeys.partnerContractProjects(partnerId),
@@ -45,7 +53,7 @@ export function useSupplierEvaluationTabCounts(
     project_id?: string;
     created_by?: string;
     category?: SupplierEvaluationCategory;
-    evaluated_year?: number;
+    evaluated_year?: string | number;
     evaluated_at_from?: string;
     evaluated_at_to?: string;
   },
@@ -66,7 +74,7 @@ export function useSupplierEvaluationsList(
     status?: SupplierEvaluationsStatusFilter;
     created_by?: string;
     category?: SupplierEvaluationCategory;
-    evaluated_year?: number;
+    evaluated_year?: string | number;
     evaluated_at_from?: string;
     evaluated_at_to?: string;
     ui_status?: SupplierEvaluationUiStatusParam;

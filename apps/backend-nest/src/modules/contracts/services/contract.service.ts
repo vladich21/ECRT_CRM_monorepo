@@ -13,7 +13,6 @@ export type ContractListTab = 'all' | 'active' | 'draft' | 'inactive';
 export interface ContractQueryFilters {
   search?: string;
   listTab?: ContractListTab;
-  /** Мягкое удаление: по умолчанию только не удалённые. */
   deletedScope?: DeletedScope;
   categoryId?: string;
   stateId?: string;
@@ -39,7 +38,6 @@ export type ContractsListResult =
     }
   | { data: unknown[]; total: number };
 
-/** TTL кэша списка договоров для справочников */
 const CONTRACTS_LIST_CACHE_TTL_MS = 10 * 60 * 1000; // 10 мин
 
 interface CachedList {
@@ -51,7 +49,6 @@ interface CachedList {
 @Injectable()
 export class ContractsService {
   private readonly logger = new Logger(ContractsService.name);
-  /** In-memory кэш первой страницы списка (без partner_id) для использования в справочниках */
   private listCache: Map<string, CachedList> = new Map();
 
   constructor(
@@ -59,10 +56,6 @@ export class ContractsService {
     private readonly partnersService: PartnersService,
   ) {}
 
-  /**
-   * После любой записи договора: смена состояния / is_active / партнёра / мягкое удаление —
-   * пересчитать автоматический статус затронутых контрагентов (см. PartnersService).
-   */
   private async refreshPartnerDerivedStatusForPartnerIds(
     rawIds: Array<string | null | undefined>,
   ): Promise<void> {
@@ -316,7 +309,6 @@ export class ContractsService {
     pagination?: PaginationParams,
     options?: {
       forReference?: boolean;
-      /** Для справочников: включать неактивные (закрытые) договоры, не только is_active. */
       forReferenceIncludeInactive?: boolean;
       filters?: ContractQueryFilters;
     },

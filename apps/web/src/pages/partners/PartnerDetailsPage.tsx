@@ -12,6 +12,11 @@ import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { usePartnerDetailsData } from './details/hooks/usePartnerDetailsData';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
+
+function isSafeInternalReturnPath(raw: string): boolean {
+  const p = raw.trim();
+  return p.startsWith('/') && !p.startsWith('//') && !p.includes('://');
+}
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
@@ -29,9 +34,15 @@ export default function PartnerDetailsPage() {
   const navState = location.state as {
     deletionScope?: DeletionScope;
     partnersListReturn?: PartnersListNavSnapshot;
+    returnToAfterPartner?: string;
   } | null;
   const listDeletionScope = navState?.deletionScope ?? 'active';
   const partnersListReturn = navState?.partnersListReturn;
+  const returnToAfterPartnerRaw = navState?.returnToAfterPartner?.trim();
+  const returnToAfterPartner =
+    returnToAfterPartnerRaw && isSafeInternalReturnPath(returnToAfterPartnerRaw)
+      ? returnToAfterPartnerRaw
+      : undefined;
 
   const {
     partner,
@@ -69,51 +80,69 @@ export default function PartnerDetailsPage() {
     redirectState: { listTab: 'all' as PartnerListTab },
   });
 
+  const tabNavigateOpts =
+    location.state != null && typeof location.state === 'object'
+      ? { state: location.state as Record<string, unknown> }
+      : undefined;
+
   const handleTabChange = (key: string) => {
     const basePath = `/partners/${partnerId}`;
     switch (key) {
       case 'main':
-        navigate(basePath);
+        navigate(basePath, tabNavigateOpts);
         break;
       case 'contacts':
-        navigate(`${basePath}/contacts`);
+        navigate(`${basePath}/contacts`, tabNavigateOpts);
         break;
       case 'contracts':
-        navigate(`${basePath}/contracts`);
+        navigate(`${basePath}/contracts`, tabNavigateOpts);
         break;
       case 'evaluations':
-        navigate(`${basePath}/evaluations`);
+        navigate(`${basePath}/evaluations`, tabNavigateOpts);
         break;
       case 'comments':
-        navigate(`${basePath}/comments`);
+        navigate(`${basePath}/comments`, tabNavigateOpts);
         break;
       case 'files':
-        navigate(`${basePath}/files`);
+        navigate(`${basePath}/files`, tabNavigateOpts);
         break;
       case 'verification':
-        navigate(`${basePath}/verification`);
+        navigate(`${basePath}/verification`, tabNavigateOpts);
         break;
       default:
-        navigate(basePath);
+        navigate(basePath, tabNavigateOpts);
     }
   };
 
   if (isLoading) return <Loader />;
   if (isError || !partner) return <NotFound errorMessage='Контрагент не найден' />;
 
+  const backLabel =
+    returnToAfterPartner === '/supplier-evaluations'
+      ? 'Реестр оценок поставщиков'
+      : returnToAfterPartner
+        ? 'Назад'
+        : 'Реестр контрагентов';
+
+  const handleBack = () => {
+    if (returnToAfterPartner) {
+      navigate(returnToAfterPartner);
+      return;
+    }
+    navigate(PARTNERS_REGISTRY_PATH, {
+      state: {
+        deletionScope: listDeletionScope,
+        ...(partnersListReturn ? { partnersListReturn } : {}),
+      },
+    });
+  };
+
   return (
     <DetailPageHeader
       title={partner.short_name || partner.name || 'Контрагент'}
       titleWeight='medium'
-      backLabel='Реестр контрагентов'
-      onBack={() =>
-        navigate(PARTNERS_REGISTRY_PATH, {
-          state: {
-            deletionScope: listDeletionScope,
-            ...(partnersListReturn ? { partnersListReturn } : {}),
-          },
-        })
-      }
+      backLabel={backLabel}
+      onBack={handleBack}
       statusBadge={
         partner.is_deleted
           ? { label: 'Удалён', variant: 'danger' }

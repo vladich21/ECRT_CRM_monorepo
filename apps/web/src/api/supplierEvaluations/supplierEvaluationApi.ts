@@ -18,16 +18,24 @@ import type {
 
 export type SupplierEvaluationsStatusFilter = 'active' | 'archived' | 'all';
 
+export type SupplierEvaluationRegistryCreator = { id: string; name: string };
+
 function compactParams(obj: Record<string, string | number | undefined>) {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== '')) as Record<
-    string,
-    string | number
-  >;
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined && value !== ''),
+  ) as Record<string, string | number>;
 }
 
 export const supplierEvaluationApi = {
   getCriteria: async (): Promise<SupplierEvaluationCriterion[]> => {
     const { data } = await apiClient.get<SupplierEvaluationCriterion[]>('/supplier-evaluations/criteria');
+    return Array.isArray(data) ? data : [];
+  },
+
+  getRegistryCreators: async (): Promise<SupplierEvaluationRegistryCreator[]> => {
+    const { data } = await apiClient.get<SupplierEvaluationRegistryCreator[]>(
+      '/supplier-evaluations/registry-creators',
+    );
     return Array.isArray(data) ? data : [];
   },
 
@@ -44,7 +52,7 @@ export const supplierEvaluationApi = {
     project_id?: string;
     created_by?: string;
     category?: SupplierEvaluationCategory;
-    evaluated_year?: number;
+    evaluated_year?: string | number;
     evaluated_at_from?: string;
     evaluated_at_to?: string;
   }): Promise<SupplierEvaluationTabCounts> => {
@@ -69,7 +77,7 @@ export const supplierEvaluationApi = {
       status?: SupplierEvaluationsStatusFilter;
       created_by?: string;
       category?: SupplierEvaluationCategory;
-      evaluated_year?: number;
+      evaluated_year?: string | number;
       evaluated_at_from?: string;
       evaluated_at_to?: string;
       ui_status?: SupplierEvaluationUiStatusParam;

@@ -47,10 +47,34 @@ function parseUiStatus(raw?: string): SupplierEvaluationUiStatusFilter | undefin
   return undefined;
 }
 
-function parseEvaluatedYear(raw?: string): number | undefined {
-  if (raw == null || raw === '') return undefined;
-  const year = Number(raw);
-  return Number.isFinite(year) && year >= 1990 && year <= 2100 ? year : undefined;
+function splitCsv(raw?: string): string[] {
+  if (raw == null) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const UUID_PARAM_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function parseProjectIds(raw?: string): string[] | undefined {
+  const ids = splitCsv(raw).filter((id) => UUID_PARAM_RE.test(id));
+  return ids.length ? ids : undefined;
+}
+
+function parseCreatedByIds(raw?: string): string[] | undefined {
+  const ids = splitCsv(raw).filter((id) => UUID_PARAM_RE.test(id));
+  return ids.length ? ids : undefined;
+}
+
+/** Один год или несколько через запятую: 2023,2024 */
+function parseEvaluatedYears(raw?: string): number[] | undefined {
+  if (raw == null || raw.trim() === '') return undefined;
+  const years = splitCsv(raw)
+    .map((s) => Number(s))
+    .filter((y) => Number.isFinite(y) && y >= 1990 && y <= 2100);
+  return years.length ? [...new Set(years)] : undefined;
 }
 
 function parseEvaluatedAtDate(raw?: string): string | undefined {
@@ -124,6 +148,11 @@ export class SupplierEvaluationsController {
     return row ? [row] : [];
   }
 
+  @Get('registry-creators')
+  registryCreators() {
+    return this.service.findDistinctCreatorsFromProjectEvaluations();
+  }
+
   @Get('counts-by-tab')
   countsByTab(
     @Query('partner_id') partnerId?: string,
@@ -138,10 +167,10 @@ export class SupplierEvaluationsController {
       categoryRaw && isSupplierEvaluationCategory(categoryRaw) ? categoryRaw : undefined;
     return this.service.findTabCounts({
       partnerId: partnerId?.trim() || undefined,
-      projectId: projectId?.trim() || undefined,
-      createdBy: createdBy?.trim() || undefined,
+      projectIds: parseProjectIds(projectId),
+      createdByIds: parseCreatedByIds(createdBy),
       category,
-      evaluatedYear: parseEvaluatedYear(evaluatedYearRaw),
+      evaluatedYears: parseEvaluatedYears(evaluatedYearRaw),
       evaluatedAtFrom: parseEvaluatedAtDate(evaluatedAtFromRaw),
       evaluatedAtTo: parseEvaluatedAtDate(evaluatedAtToRaw),
     });
@@ -169,11 +198,11 @@ export class SupplierEvaluationsController {
     const uiStatus = parseUiStatus(uiStatusRaw);
     return this.service.findAll(pagination, {
       partnerId: partnerId?.trim() || undefined,
-      projectId: projectId?.trim() || undefined,
+      projectIds: parseProjectIds(projectId),
       status: parseStatusFilter(statusRaw),
-      createdBy: createdBy?.trim() || undefined,
+      createdByIds: parseCreatedByIds(createdBy),
       category,
-      evaluatedYear: parseEvaluatedYear(evaluatedYearRaw),
+      evaluatedYears: parseEvaluatedYears(evaluatedYearRaw),
       evaluatedAtFrom: parseEvaluatedAtDate(evaluatedAtFromRaw),
       evaluatedAtTo: parseEvaluatedAtDate(evaluatedAtToRaw),
       uiStatus,

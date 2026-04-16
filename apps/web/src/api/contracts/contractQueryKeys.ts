@@ -15,7 +15,6 @@ export function invalidateContractQueries(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: contractQueryKeys.all, exact: false });
 }
 
-/** Как в useDeleteContract: списки с объектом фильтров, не деталь по id-строке */
 export function invalidateContractListQueriesAfterDelete(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     predicate: query =>

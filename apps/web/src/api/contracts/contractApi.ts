@@ -87,7 +87,7 @@ export const contractApi = {
       data: (body.data ?? []).map(normalizeContractFlags),
     };
   },
- 
+
   getContractsForReference: async (opts?: { includeInactive?: boolean }): Promise<ContractsListResponse> => {
     const response = await apiClient.get('/contracts', {
       params: compactParams({

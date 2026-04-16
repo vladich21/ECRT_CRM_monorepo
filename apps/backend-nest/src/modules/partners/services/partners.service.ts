@@ -92,6 +92,22 @@ export class PartnersService {
     return Number(rows[0]?.value ?? 0);
   }
 
+  private async syncDerivedPartnerStatusForPartnersMatching(where: SQL): Promise<void> {
+    const idRows = await this.db.db
+      .select({ id: partners.id })
+      .from(partners)
+      .where(where)
+      .orderBy(asc(partners.name));
+    const partnerIds = idRows.map((row) => String(row.id)).filter(Boolean);
+    const parallelBatchSize = 40;
+    for (let startIndex = 0; startIndex < partnerIds.length; startIndex += parallelBatchSize) {
+      const chunk = partnerIds.slice(startIndex, startIndex + parallelBatchSize);
+      await Promise.all(
+        chunk.map((partnerId) => this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false })),
+      );
+    }
+  }
+
   private async buildPartnerBaseParts(filters?: PartnerQueryFilters): Promise<SQL[] | null> {
     const parts: SQL[] = [];
     const raw = filters?.search?.trim();
@@ -177,6 +193,13 @@ export class PartnersService {
 
     const listWhere = this.whereWithDeletion(baseParts, tab, deletedScope);
 
+    const shouldSyncDerivedStatusBeforeList =
+      Boolean(filters?.statusIds?.length) && limit > 1;
+
+    if (shouldSyncDerivedStatusBeforeList) {
+      await this.syncDerivedPartnerStatusForPartnersMatching(listWhere);
+    }
+
     const [tabAll, tabReady, tabInProgress, tabKeySupplier, delActive, delDeleted, delAll, listTotal, rows] =
       await Promise.all([
         this.countPartners(this.whereWithDeletion(baseParts, 'all', 'all')),
@@ -198,26 +221,31 @@ export class PartnersService {
 
     const total = listTotal;
 
-    const ids = rows.map((row) => row.id).filter(Boolean) as string[];
+    const pagePartnerIds = rows.map((row) => row.id).filter(Boolean) as string[];
 
-    await Promise.all(ids.map((pid) => this.applyDerivedPartnerStatus(pid, { ignoreArchiveLock: false })));
-    let rowsForList = rows;
-    if (ids.length > 0) {
-      const freshList = await this.db.db.select().from(partners).where(inArray(partners.id, ids));
-      const byId = new Map(freshList.map((r) => [String(r.id), r]));
-      rowsForList = rows.map((r) => byId.get(String(r.id)) ?? r);
+    if (!shouldSyncDerivedStatusBeforeList && pagePartnerIds.length > 0) {
+      await Promise.all(
+        pagePartnerIds.map((partnerId) => this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false })),
+      );
     }
 
-    const [typeRows, compRows] = ids.length
+    let rowsForList = rows;
+    if (pagePartnerIds.length > 0) {
+      const freshList = await this.db.db.select().from(partners).where(inArray(partners.id, pagePartnerIds));
+      const freshByPartnerId = new Map(freshList.map((freshRow) => [String(freshRow.id), freshRow]));
+      rowsForList = rows.map((originalRow) => freshByPartnerId.get(String(originalRow.id)) ?? originalRow);
+    }
+
+    const [typeRows, compRows] = pagePartnerIds.length
       ? await Promise.all([
           this.db.db
             .select({ partnerId: relPartnersTypes.partnerId, typeId: relPartnersTypes.typeId })
             .from(relPartnersTypes)
-            .where(inArray(relPartnersTypes.partnerId, ids)),
+            .where(inArray(relPartnersTypes.partnerId, pagePartnerIds)),
           this.db.db
             .select({ partnerId: relPartnersCompetencies.partnerId, competenceId: relPartnersCompetencies.competenceId })
             .from(relPartnersCompetencies)
-            .where(inArray(relPartnersCompetencies.partnerId, ids)),
+            .where(inArray(relPartnersCompetencies.partnerId, pagePartnerIds)),
         ])
       : [[], []];
 

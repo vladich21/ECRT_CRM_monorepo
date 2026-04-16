@@ -1,5 +1,5 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, desc, eq, gte, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { PartnersService } from '../../partners/services/partners.service';
@@ -41,11 +41,11 @@ export type SupplierEvaluationListSortDir = 'asc' | 'desc';
 
 export interface SupplierEvaluationQueryFilters {
   partnerId?: string;
-  projectId?: string;
+  projectIds?: string[];
   status: SupplierEvaluationListStatusFilter;
-  createdBy?: string;
+  createdByIds?: string[];
   category?: SupplierEvaluationCategory;
-  evaluatedYear?: number;
+  evaluatedYears?: number[];
   evaluatedAtFrom?: string;
   evaluatedAtTo?: string;
   uiStatus?: SupplierEvaluationUiStatusFilter;
@@ -55,10 +55,10 @@ export interface SupplierEvaluationQueryFilters {
 
 export interface SupplierEvaluationTabCountFilters {
   partnerId?: string;
-  projectId?: string;
-  createdBy?: string;
+  projectIds?: string[];
+  createdByIds?: string[];
   category?: SupplierEvaluationCategory;
-  evaluatedYear?: number;
+  evaluatedYears?: number[];
   evaluatedAtFrom?: string;
   evaluatedAtTo?: string;
 }
@@ -272,13 +272,35 @@ export class SupplierEvaluationsService {
     };
   }
 
+  async findDistinctCreatorsFromProjectEvaluations(): Promise<Array<{ id: string; name: string }>> {
+    const rows = await this.db.db
+      .select({
+        id: users.id,
+        lastName: users.lastName,
+        firstName: users.firstName,
+        middleName: users.middleName,
+      })
+      .from(supplierEvaluations)
+      .innerJoin(users, eq(supplierEvaluations.createdBy, users.id))
+      .where(and(eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT), isNotNull(supplierEvaluations.createdBy)))
+      .groupBy(users.id, users.lastName, users.firstName, users.middleName)
+      .orderBy(asc(users.lastName), asc(users.firstName), asc(users.middleName));
+
+    return rows.map((creatorRow) => ({
+      id: String(creatorRow.id),
+      name:
+        [creatorRow.lastName, creatorRow.firstName, creatorRow.middleName].filter(Boolean).join(' ').trim() ||
+        String(creatorRow.id),
+    }));
+  }
+
   async findTabCounts(filters: SupplierEvaluationTabCountFilters): Promise<SupplierEvaluationTabCounts> {
     const base: Omit<SupplierEvaluationQueryFilters, 'uiStatus'> = {
       partnerId: filters.partnerId,
-      projectId: filters.projectId,
-      createdBy: filters.createdBy,
+      projectIds: filters.projectIds,
+      createdByIds: filters.createdByIds,
       category: filters.category,
-      evaluatedYear: filters.evaluatedYear,
+      evaluatedYears: filters.evaluatedYears,
       evaluatedAtFrom: filters.evaluatedAtFrom,
       evaluatedAtTo: filters.evaluatedAtTo,
       status: 'all',
@@ -688,11 +710,11 @@ export class SupplierEvaluationsService {
     if (filters.partnerId) {
       parts.push(eq(supplierEvaluations.partnerId, filters.partnerId));
     }
-    if (filters.projectId) {
-      parts.push(eq(supplierEvaluations.projectId, filters.projectId));
+    if (filters.projectIds?.length) {
+      parts.push(inArray(supplierEvaluations.projectId, filters.projectIds));
     }
-    if (filters.createdBy) {
-      parts.push(eq(supplierEvaluations.createdBy, filters.createdBy));
+    if (filters.createdByIds?.length) {
+      parts.push(inArray(supplierEvaluations.createdBy, filters.createdByIds));
     }
     if (filters.category) {
       parts.push(eq(supplierEvaluations.category, filters.category));
@@ -703,10 +725,24 @@ export class SupplierEvaluationsService {
       const to = filters.evaluatedAtTo?.trim();
       if (from) parts.push(gte(supplierEvaluations.evaluatedAt, from));
       if (to) parts.push(lte(supplierEvaluations.evaluatedAt, to));
-    } else if (filters.evaluatedYear != null && Number.isFinite(filters.evaluatedYear)) {
-      const evaluatedYear = filters.evaluatedYear;
-      parts.push(gte(supplierEvaluations.evaluatedAt, `${evaluatedYear}-01-01`));
-      parts.push(lte(supplierEvaluations.evaluatedAt, `${evaluatedYear}-12-31`));
+    } else if (filters.evaluatedYears?.length) {
+      const years = filters.evaluatedYears.filter((y) => Number.isFinite(y));
+      if (years.length === 1) {
+        const y = years[0]!;
+        parts.push(gte(supplierEvaluations.evaluatedAt, `${y}-01-01`));
+        parts.push(lte(supplierEvaluations.evaluatedAt, `${y}-12-31`));
+      } else if (years.length > 1) {
+        parts.push(
+          or(
+            ...years.map((y) =>
+              and(
+                gte(supplierEvaluations.evaluatedAt, `${y}-01-01`),
+                lte(supplierEvaluations.evaluatedAt, `${y}-12-31`),
+              )!,
+            ),
+          )!,
+        );
+      }
     }
 
     const ui = filters.uiStatus ?? 'all';

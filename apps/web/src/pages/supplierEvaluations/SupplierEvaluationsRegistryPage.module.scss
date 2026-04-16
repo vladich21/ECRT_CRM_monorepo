@@ -12,6 +12,45 @@
   @include lp.filtersModalGrid;
 }
 
+/** Реестр оценок */
+.evaluationsFiltersModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+/**
+ * Период + категория + сортировка — одна строка, ширина по содержимому (не на всю модалку).
+ */
+.evaluationsFiltersModalCompactRow {
+  display: inline-grid;
+  grid-template-columns: minmax(168px, 220px) minmax(148px, 200px) minmax(200px, 300px);
+  gap: 16px 20px;
+  align-items: start;
+  max-width: 100%;
+
+  @media (max-width: 640px) {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}
+
+/** Проект / закупщик — нужна полная ширина */
+.evaluationsFiltersModalFieldFull {
+  width: 100%;
+  align-self: stretch;
+}
+
+.evaluationsFiltersModalHint {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: -2px 0 6px;
+}
+
 .filtersModalField {
   @include lp.filtersModalField;
 }
