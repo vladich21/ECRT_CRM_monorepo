@@ -149,8 +149,12 @@ export class SupplierEvaluationsController {
   }
 
   @Get('registry-creators')
-  registryCreators() {
-    return this.service.findDistinctCreatorsFromProjectEvaluations();
+  registryCreators(@Query('partner_id') partnerId?: string) {
+    const trimmed = partnerId?.trim();
+    if (trimmed && !UUID_PARAM_RE.test(trimmed)) {
+      throw new BadRequestException('Некорректный partner_id');
+    }
+    return this.service.findDistinctCreatorsFromProjectEvaluations(trimmed || undefined);
   }
 
   @Get('counts-by-tab')

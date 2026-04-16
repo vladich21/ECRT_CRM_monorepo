@@ -30,10 +30,10 @@ export function useSupplierEvaluationCriteria() {
   });
 }
 
-export function useSupplierEvaluationRegistryCreators() {
+export function useSupplierEvaluationRegistryCreators(partnerId?: string) {
   return useQuery({
-    queryKey: supplierEvaluationQueryKeys.registryCreators(),
-    queryFn: () => supplierEvaluationApi.getRegistryCreators(),
+    queryKey: supplierEvaluationQueryKeys.registryCreators(partnerId),
+    queryFn: () => supplierEvaluationApi.getRegistryCreators(partnerId),
     staleTime: 5 * 60 * 1000,
   });
 }

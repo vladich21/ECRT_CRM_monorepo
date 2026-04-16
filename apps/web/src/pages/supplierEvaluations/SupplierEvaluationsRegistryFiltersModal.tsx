@@ -29,6 +29,15 @@ export const EMPTY_EVALUATIONS_REGISTRY_FILTERS: EvaluationsRegistryAppliedFilte
   sortPreset: 'evaluated_at_desc',
 };
 
+export function countActiveRegistryFilters(filters: EvaluationsRegistryAppliedFilters): number {
+  let activeCount = 0;
+  if (filters.evaluatedYears.length > 0) activeCount += 1;
+  if (filters.category !== 'all') activeCount += 1;
+  if (filters.createdByUserIds.length > 0) activeCount += 1;
+  if (filters.projectIds.length > 0) activeCount += 1;
+  return activeCount;
+}
+
 type BuyerOption = { value: string; label: string };
 
 type Props = {

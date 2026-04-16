@@ -16,6 +16,7 @@ import type { PartnerSupplierEvalKpi } from '../../../utils/supplierEvaluationPa
 import type { InitialSupplierEvaluation } from '../../../types/supplierEvaluation';
 import { PartnerNextEvalDateTags } from '../evaluations/partnerEvalKpiDisplay';
 import { scoreColor } from '../evaluations/supplierEvaluationUi';
+import { getPartnerListDisplayName } from '../utils/partnersListDisplayUtils';
 import styles from './SupplierCard.module.scss';
 
 interface SupplierCardProps {
@@ -74,6 +75,8 @@ export default function SupplierCard({
   const reevalOverdue = evaluationKpi?.nextReevaluationOverdue ?? false;
   const isStatusBlocked = statusName === 'Заблокирован';
 
+  const displayName = getPartnerListDisplayName(partner);
+
   const dangerStripe = blockedCount > 0 || reevalOverdue || isStatusBlocked;
 
   const progressPercent = avgScore == null ? 0 : Math.min(100, Math.round((avgScore / 5) * 100));
@@ -86,7 +89,7 @@ export default function SupplierCard({
     >
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
-          <span className={styles.name}>{partner.name?.trim() ? partner.name : '—'}</span>
+          <span className={styles.name}>{displayName}</span>
         </div>
         <div className={styles.metaRow}>
           <span className={`${styles.mutedTag} ${statusBadgeClass(statusName)}`}>{statusName}</span>

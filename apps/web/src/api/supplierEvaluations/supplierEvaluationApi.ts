@@ -32,9 +32,10 @@ export const supplierEvaluationApi = {
     return Array.isArray(data) ? data : [];
   },
 
-  getRegistryCreators: async (): Promise<SupplierEvaluationRegistryCreator[]> => {
+  getRegistryCreators: async (partnerId?: string): Promise<SupplierEvaluationRegistryCreator[]> => {
     const { data } = await apiClient.get<SupplierEvaluationRegistryCreator[]>(
       '/supplier-evaluations/registry-creators',
+      { params: partnerId?.trim() ? { partner_id: partnerId.trim() } : undefined },
     );
     return Array.isArray(data) ? data : [];
   },

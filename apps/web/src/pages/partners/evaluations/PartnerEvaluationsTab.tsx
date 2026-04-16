@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Dayjs } from 'dayjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Modal, Table, Tag, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
@@ -11,6 +10,7 @@ import { invalidatePartnerQueries } from '../../../api/partners/partnerQueryKeys
 import {
   usePartnerSupplierEvalKpi,
   useDeleteSupplierEvaluation,
+  useSupplierEvaluationRegistryCreators,
   useSupplierEvaluationTabCounts,
   useSupplierEvaluationsList,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
@@ -18,30 +18,25 @@ import {
   invalidateSupplierEvaluationQueries,
   supplierEvaluationQueryKeys,
 } from '../../../api/supplierEvaluations/supplierEvaluationQueryKeys';
-import { useUsers } from '../../../api/users/userApiHooks';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
-import { formatSrmUserName } from '../../../helpers/formatSrmUserName';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import { mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner } from '../../../types/partner';
-import type {
-  SupplierEvaluationCategory,
-  SupplierEvaluationListItem,
-  SupplierEvaluationUiStatusParam,
-} from '../../../types/supplierEvaluation';
+import type { SupplierEvaluationListItem, SupplierEvaluationUiStatusParam } from '../../../types/supplierEvaluation';
 import {
   EVALUATION_UI_TABS,
-  supplierEvaluationEvaluatedAtRangePresets,
+  evaluationRegistrySortToRequestParams,
+  evaluationYearsToApiParam,
 } from '../../supplierEvaluations/supplierEvaluationsConstants';
 import listStyles from '../../supplierEvaluations/EvaluationsListShared.module.scss';
-import EvaluationExpandedContent from './EvaluationExpandedContent';
 import {
-  PartnerEvaluationsFiltersModal,
-  EMPTY_PARTNER_EVALUATIONS_LIST_FILTERS,
-  countActivePartnerEvaluationsFilters,
-  type PartnerEvaluationsListFilters,
-} from './PartnerEvaluationsFiltersModal';
+  EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+  SupplierEvaluationsRegistryFiltersModal,
+  countActiveRegistryFilters,
+  type EvaluationsRegistryAppliedFilters,
+} from '../../supplierEvaluations/SupplierEvaluationsRegistryFiltersModal';
+import EvaluationExpandedContent from './EvaluationExpandedContent';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
 import NewInitialSupplierEvaluationModal from './NewInitialSupplierEvaluationModal';
 import {
@@ -60,51 +55,63 @@ export default function PartnerEvaluationsTab() {
   const deleteMut = useDeleteSupplierEvaluation();
   const partner = useOutletContext<Partner>();
   const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>('current');
-  const [evaluatedAtRange, setEvaluatedAtRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | SupplierEvaluationCategory>('all');
-  const [createdByUserId, setCreatedByUserId] = useState<string | undefined>(undefined);
+  const [appliedListFilters, setAppliedListFilters] = useState<EvaluationsRegistryAppliedFilters>(
+    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+  );
+  const [draftListFilters, setDraftListFilters] = useState<EvaluationsRegistryAppliedFilters>(
+    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+  );
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
   const [initialEvaluationModalOpen, setInitialEvaluationModalOpen] = useState(false);
   const [reevaluationProjectId, setReevaluationProjectId] = useState<string | undefined>();
-  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
-  const [filtersDraft, setFiltersDraft] = useState<PartnerEvaluationsListFilters>(
-    EMPTY_PARTNER_EVALUATIONS_LIST_FILTERS,
-  );
 
   const { page, pageSize, handleTableChange, getPaginationConfig, resetPage } = useServerTablePagination({
     defaultPageSize: 20,
   });
+
+  useEffect(() => {
+    setAppliedListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
+    setDraftListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
+  }, [partner.id]);
 
   const { data: projects = [] } = useProjectsPreview();
   const projectNameById = useMemo(
     () => Object.fromEntries(projects.map(project => [project.id, project.name || project.code || project.id])),
     [projects],
   );
-
-  const { data: usersResponse } = useUsers(2, true);
-  const buyerOptions = useMemo(
+  const projectOptions = useMemo(
     () =>
-      (usersResponse?.data ?? []).map(user => ({
-        value: user.id,
-        label: formatSrmUserName(user),
+      projects.map(project => ({
+        value: project.id,
+        label: String(project.name || project.code || project.id).trim() || project.id,
       })),
-    [usersResponse?.data],
+    [projects],
   );
 
-  const evaluatedAtFromIso = evaluatedAtRange?.[0]?.format('YYYY-MM-DD');
-  const evaluatedAtToIso = evaluatedAtRange?.[1]?.format('YYYY-MM-DD');
-
-  const evaluatedAtRangePresets = useMemo(() => supplierEvaluationEvaluatedAtRangePresets(), []);
+  const { data: registryCreators = [], isPending: isRegistryCreatorsPending } =
+    useSupplierEvaluationRegistryCreators(partner.id);
+  const buyerOptions = useMemo(
+    () =>
+      registryCreators
+        .map(creator => ({ value: creator.id, label: creator.name }))
+        .sort((left, right) => left.label.localeCompare(right.label, 'ru')),
+    [registryCreators],
+  );
 
   const tabCountRequestParams = useMemo(
     () => ({
       partner_id: partner.id,
-      evaluated_at_from: evaluatedAtFromIso,
-      evaluated_at_to: evaluatedAtToIso,
-      category: categoryFilter === 'all' ? undefined : categoryFilter,
-      created_by: createdByUserId,
+      evaluated_year: evaluationYearsToApiParam(appliedListFilters.evaluatedYears),
+      category: appliedListFilters.category === 'all' ? undefined : appliedListFilters.category,
+      created_by:
+        appliedListFilters.createdByUserIds.length > 0
+          ? appliedListFilters.createdByUserIds.join(',')
+          : undefined,
+      project_id:
+        appliedListFilters.projectIds.length > 0 ? appliedListFilters.projectIds.join(',') : undefined,
     }),
-    [partner.id, evaluatedAtFromIso, evaluatedAtToIso, categoryFilter, createdByUserId],
+    [partner.id, appliedListFilters],
   );
 
   const { data: tabCountsRaw, isLoading: tabCountsLoading } = useSupplierEvaluationTabCounts(
@@ -117,23 +124,19 @@ export default function PartnerEvaluationsTab() {
       partner_id: partner.id,
       status: 'all' as const,
       ui_status: rowStatusTab === 'all' ? undefined : rowStatusTab,
-      evaluated_at_from: evaluatedAtFromIso,
-      evaluated_at_to: evaluatedAtToIso,
-      category: categoryFilter === 'all' ? undefined : categoryFilter,
-      created_by: createdByUserId,
+      evaluated_year: evaluationYearsToApiParam(appliedListFilters.evaluatedYears),
+      category: appliedListFilters.category === 'all' ? undefined : appliedListFilters.category,
+      created_by:
+        appliedListFilters.createdByUserIds.length > 0
+          ? appliedListFilters.createdByUserIds.join(',')
+          : undefined,
+      project_id:
+        appliedListFilters.projectIds.length > 0 ? appliedListFilters.projectIds.join(',') : undefined,
+      ...evaluationRegistrySortToRequestParams(appliedListFilters.sortPreset),
       limit: pageSize,
       offset: (page - 1) * pageSize,
     }),
-    [
-      partner.id,
-      rowStatusTab,
-      evaluatedAtFromIso,
-      evaluatedAtToIso,
-      categoryFilter,
-      createdByUserId,
-      page,
-      pageSize,
-    ],
+    [partner.id, rowStatusTab, appliedListFilters, page, pageSize],
   );
 
   const { data: listDataRaw, isLoading, refetch } = useSupplierEvaluationsList(listParams, Boolean(partner.id));
@@ -142,19 +145,11 @@ export default function PartnerEvaluationsTab() {
   const data = listDataRaw;
   const tabCounts = tabCountsRaw;
 
-  const activeFiltersCount = useMemo(
-    () =>
-      countActivePartnerEvaluationsFilters({
-        evaluatedAtRange,
-        category: categoryFilter,
-        createdByUserId,
-      }),
-    [evaluatedAtRange, categoryFilter, createdByUserId],
-  );
+  const activeFiltersCount = useMemo(() => countActiveRegistryFilters(appliedListFilters), [appliedListFilters]);
 
   useEffect(() => {
     resetPage();
-  }, [partner.id, rowStatusTab, evaluatedAtFromIso, evaluatedAtToIso, categoryFilter, createdByUserId, resetPage]);
+  }, [partner.id, rowStatusTab, appliedListFilters, resetPage]);
 
   const columns: ColumnsType<SupplierEvaluationListItem> = [
     Table.EXPAND_COLUMN,
@@ -273,15 +268,11 @@ export default function PartnerEvaluationsTab() {
               icon={<FilterOutlined />}
               className={activeFiltersCount > 0 ? listStyles.filtersBtnActive : undefined}
               onClick={() => {
-                setFiltersDraft({
-                  evaluatedAtRange,
-                  category: categoryFilter,
-                  createdByUserId,
-                });
+                setDraftListFilters(appliedListFilters);
                 setFiltersModalOpen(true);
               }}
             >
-              Фильтр
+              Фильтры
               {activeFiltersCount > 0 && (
                 <span className={listStyles.filtersBadge}>{activeFiltersCount}</span>
               )}
@@ -360,20 +351,25 @@ export default function PartnerEvaluationsTab() {
         />
       </div>
 
-      <PartnerEvaluationsFiltersModal
+      <SupplierEvaluationsRegistryFiltersModal
         open={filtersModalOpen}
-        draft={filtersDraft}
-        onUpdateDraft={patch => setFiltersDraft(prev => ({ ...prev, ...patch }))}
+        draft={draftListFilters}
+        onUpdateDraft={patch => setDraftListFilters(prev => ({ ...prev, ...patch }))}
         onClose={() => setFiltersModalOpen(false)}
         onApply={() => {
-          setEvaluatedAtRange(filtersDraft.evaluatedAtRange);
-          setCategoryFilter(filtersDraft.category);
-          setCreatedByUserId(filtersDraft.createdByUserId);
+          setAppliedListFilters(draftListFilters);
           setFiltersModalOpen(false);
+          resetPage();
         }}
-        onResetDraft={() => setFiltersDraft(EMPTY_PARTNER_EVALUATIONS_LIST_FILTERS)}
+        onReset={() => {
+          setDraftListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
+          setAppliedListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
+          setFiltersModalOpen(false);
+          resetPage();
+        }}
+        projectOptions={projectOptions}
         buyerOptions={buyerOptions}
-        rangePresets={evaluatedAtRangePresets}
+        buyerOptionsLoading={isRegistryCreatorsPending}
       />
 
       <NewSupplierEvaluationModal

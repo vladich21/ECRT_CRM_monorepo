@@ -272,7 +272,9 @@ export class SupplierEvaluationsService {
     };
   }
 
-  async findDistinctCreatorsFromProjectEvaluations(): Promise<Array<{ id: string; name: string }>> {
+  /** Без partnerId — все авторы проектных оценок; с partnerId — только по оценкам этого контрагента. */
+  async findDistinctCreatorsFromProjectEvaluations(partnerId?: string): Promise<Array<{ id: string; name: string }>> {
+    const partnerIdTrimmed = partnerId?.trim();
     const rows = await this.db.db
       .select({
         id: users.id,
@@ -282,7 +284,13 @@ export class SupplierEvaluationsService {
       })
       .from(supplierEvaluations)
       .innerJoin(users, eq(supplierEvaluations.createdBy, users.id))
-      .where(and(eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT), isNotNull(supplierEvaluations.createdBy)))
+      .where(
+        and(
+          eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT),
+          isNotNull(supplierEvaluations.createdBy),
+          ...(partnerIdTrimmed ? [eq(supplierEvaluations.partnerId, partnerIdTrimmed)] : []),
+        )!,
+      )
       .groupBy(users.id, users.lastName, users.firstName, users.middleName)
       .orderBy(asc(users.lastName), asc(users.firstName), asc(users.middleName));
 

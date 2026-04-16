@@ -10,7 +10,8 @@ import type { SupplierEvaluationsStatusFilter } from './supplierEvaluationApi';
 
 export const supplierEvaluationQueryKeys = {
   all: ['supplier-evaluations'] as const,
-  registryCreators: () => [...supplierEvaluationQueryKeys.all, 'registry-creators'] as const,
+  registryCreators: (partnerId?: string) =>
+    [...supplierEvaluationQueryKeys.all, 'registry-creators', partnerId ?? 'global'] as const,
   criteria: ['supplier-evaluations', 'criteria'] as const,
   partnerContractProjects: (partnerId: string) =>
     ['supplier-evaluations', 'partner-contract-projects', partnerId] as const,

@@ -32,6 +32,7 @@ import listStyles from './EvaluationsListShared.module.scss';
 import {
   EMPTY_EVALUATIONS_REGISTRY_FILTERS,
   SupplierEvaluationsRegistryFiltersModal,
+  countActiveRegistryFilters,
   type EvaluationsRegistryAppliedFilters,
 } from './SupplierEvaluationsRegistryFiltersModal';
 import registryStyles from './SupplierEvaluationsRegistryPage.module.scss';
@@ -46,19 +47,9 @@ const { Text } = Typography;
 const SEARCH_DEBOUNCE_MS = 350;
 const SEARCH_FETCH_LIMIT = 2000;
 
-/** Состояние навигации на карточку контрагента: кнопка «назад» ведёт в реестр оценок. */
 const PARTNER_LINK_STATE_FROM_SUPPLIER_EVAL_REGISTRY = {
   returnToAfterPartner: '/supplier-evaluations',
 } as const;
-
-function countActiveRegistryFilters(filters: EvaluationsRegistryAppliedFilters): number {
-  let activeCount = 0;
-  if (filters.evaluatedYears.length > 0) activeCount += 1;
-  if (filters.category !== 'all') activeCount += 1;
-  if (filters.createdByUserIds.length > 0) activeCount += 1;
-  if (filters.projectIds.length > 0) activeCount += 1;
-  return activeCount;
-}
 
 export default function SupplierEvaluationsRegistryPage() {
   const navigate = useNavigate();
@@ -204,9 +195,13 @@ export default function SupplierEvaluationsRegistryPage() {
     const searchLowercase = debouncedSearch.toLowerCase();
     if (!searchLowercase) return rows;
     return rows.filter(row => {
-      const partnerLabel = String(partnerNameById[row.partner_id] ?? '').toLowerCase();
+      const refName = String(partnerNameById[row.partner_id] ?? '').trim();
+      const rowName = String(row.partner_name ?? '').trim();
+      const partnerMatches = [rowName, refName, row.partner_id]
+        .filter(Boolean)
+        .some(chunk => chunk.toLowerCase().includes(searchLowercase));
       const projectLabel = String(projectNameById[row.project_id] ?? '').toLowerCase();
-      return partnerLabel.includes(searchLowercase) || projectLabel.includes(searchLowercase);
+      return partnerMatches || projectLabel.includes(searchLowercase);
     });
   }, [data?.data, debouncedSearch, partnerNameById, projectNameById]);
 
