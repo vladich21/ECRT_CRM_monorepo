@@ -41,6 +41,7 @@ import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
 import NewInitialSupplierEvaluationModal from './NewInitialSupplierEvaluationModal';
 import {
   CategoryTag,
+  formatEvaluationScoreDisplay,
   formatReevaluationCell,
   getRowUiStatus,
   scoreColor,
@@ -193,7 +194,7 @@ export default function PartnerEvaluationsTab() {
       align: 'right',
       render: (_, row) => (
         <Text strong style={{ color: scoreColor(row.weighted_score) }}>
-          {Number(row.weighted_score).toFixed(2)}
+          {formatEvaluationScoreDisplay(Number(row.weighted_score))}
         </Text>
       ),
     },

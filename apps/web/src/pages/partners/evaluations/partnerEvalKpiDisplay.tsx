@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import {
   calendarDaysUntil,
   daysRemainingSuffix,
+  formatEvaluationScoreDisplay,
   isNextReevaluationInSoonWindow,
   scoreColor,
 } from './supplierEvaluationUi';
@@ -45,7 +46,7 @@ export function PartnerHeaderAvgScoreTag({
 
   return (
     <Tag bordered={Boolean(forDarkHeader)} className={styles.avgTag} style={{ color, borderColor, background }}>
-      {avgScore.toFixed(2)}
+      {formatEvaluationScoreDisplay(avgScore)}
     </Tag>
   );
 }

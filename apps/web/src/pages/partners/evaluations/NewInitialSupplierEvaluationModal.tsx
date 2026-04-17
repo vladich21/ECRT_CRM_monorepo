@@ -12,7 +12,9 @@ import {
   CategoryTag,
   SCORE_STEPS,
   categoryFromWeightedScore,
+  formatEvaluationScoreDisplay,
   lineWeightedScore,
+  weightPercent,
 } from './supplierEvaluationUi';
 import styles from './NewSupplierEvaluationModal.module.scss';
 
@@ -65,11 +67,10 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
 
   const weighted = useMemo(() => {
     if (!includedCriteria.length || !Number.isFinite(sumWeights) || sumWeights <= 0) return 0;
-    const raw = includedCriteria.reduce((acc, criterion) => {
+    return includedCriteria.reduce((acc, criterion) => {
       const score = scores[criterion.id] ?? 4;
       return acc + score * (Number(criterion.weight) / sumWeights);
     }, 0);
-    return Math.round(raw * 100) / 100;
   }, [includedCriteria, scores, sumWeights]);
 
   const previewCategory = categoryFromWeightedScore(weighted);
@@ -175,7 +176,9 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
                       <div className={styles.colGrow}>
                         <div className={styles.criterionTitle}>{criterion.name}</div>
                         <Text type='secondary' className={styles.criterionMeta}>
-                          {isExcluded ? 'Не оцениваем' : `Вес ${normalizedWeight.toFixed(1)}%`}
+                          {isExcluded
+                            ? 'Не оцениваем'
+                            : `Вес ${weightPercent(normalizedWeight / 100)}`}
                         </Text>
                       </div>
                       <Space size={4} wrap>
@@ -195,7 +198,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
                         {isExcluded ? '—' : score}
                       </Text>
                       <Text strong className={styles.weightedAccent}>
-                        {isExcluded ? '—' : weightedContribution.toFixed(3)}
+                        {isExcluded ? '—' : formatEvaluationScoreDisplay(weightedContribution)}
                       </Text>
                       <div className={styles.colNa}>
                         <Checkbox
@@ -218,7 +221,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
           <Space align='center'>
             <CategoryTag category={previewCategory} weightedScore={weighted} />
             <Text strong className={styles.summaryScore}>
-              {includedCriteria.length ? weighted.toFixed(2) : '—'}
+              {includedCriteria.length ? formatEvaluationScoreDisplay(weighted) : '—'}
             </Text>
           </Space>
         </div>

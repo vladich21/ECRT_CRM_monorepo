@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { CalendarOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 
-import { scoreColor } from '../evaluations/supplierEvaluationUi';
+import { formatEvaluationScoreDisplay, scoreColor } from '../evaluations/supplierEvaluationUi';
 import ComplianceCards, { type ComplianceItem } from './ComplianceCards';
 import styles from './KpiRow.module.scss';
 
@@ -31,7 +31,8 @@ export default function KpiRow({
     {
       key: 'avgScore',
       icon: <SafetyCertificateOutlined />,
-      value: supplierEvalAvgScore == null ? '—' : supplierEvalAvgScore.toFixed(2),
+      value:
+        supplierEvalAvgScore == null ? '—' : formatEvaluationScoreDisplay(supplierEvalAvgScore),
       label: avgScoreLabel,
     },
     {

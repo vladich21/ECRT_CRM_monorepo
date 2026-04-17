@@ -20,11 +20,15 @@ import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
 import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
-import type { SupplierEvaluationListItem, SupplierEvaluationUiStatusParam } from '../../types/supplierEvaluation';
+import type {
+  SupplierEvaluationListItem,
+  SupplierEvaluationUiStatusParam,
+} from '../../types/supplierEvaluation';
 import EvaluationExpandedContent from '../partners/evaluations/EvaluationExpandedContent';
 import NewSupplierEvaluationModal from '../partners/evaluations/NewSupplierEvaluationModal';
 import {
   CategoryTag,
+  formatEvaluationScoreDisplay,
   formatReevaluationCell,
   getRowUiStatus,
   scoreColor,
@@ -48,6 +52,8 @@ import {
   SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
   SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_FETCH_LIMIT,
   filterSupplierEvaluationRegistryRowsBySearch,
+  loadSupplierEvaluationsRegistryPersistedUi,
+  saveSupplierEvaluationsRegistryPersistedUi,
 } from './supplierEvaluationsRegistry.model';
 
 const { Text } = Typography;
@@ -58,12 +64,15 @@ export default function SupplierEvaluationsRegistryPage() {
   const deleteMut = useDeleteSupplierEvaluation();
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>('current');
+  const persistedUi = useMemo(() => loadSupplierEvaluationsRegistryPersistedUi(), []);
+  const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>(
+    () => persistedUi?.rowStatusTab ?? 'current',
+  );
   const [appliedListFilters, setAppliedListFilters] = useState<EvaluationsRegistryAppliedFilters>(
-    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+    () => persistedUi?.appliedListFilters ?? EMPTY_EVALUATIONS_REGISTRY_FILTERS,
   );
   const [draftListFilters, setDraftListFilters] = useState<EvaluationsRegistryAppliedFilters>(
-    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+    () => persistedUi?.appliedListFilters ?? EMPTY_EVALUATIONS_REGISTRY_FILTERS,
   );
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [reevaluationModalOpen, setReevaluationModalOpen] = useState(false);
@@ -198,6 +207,10 @@ export default function SupplierEvaluationsRegistryPage() {
     resetPage();
   }, [rowStatusTab, appliedListFilters, debouncedSearch, resetPage]);
 
+  useEffect(() => {
+    saveSupplierEvaluationsRegistryPersistedUi({ appliedListFilters, rowStatusTab });
+  }, [appliedListFilters, rowStatusTab]);
+
   const filteredRows = useMemo(
     () =>
       filterSupplierEvaluationRegistryRowsBySearch(
@@ -286,7 +299,7 @@ export default function SupplierEvaluationsRegistryPage() {
       onHeaderCell: () => ({ style: { textAlign: 'right' } }),
       render: (_, row) => (
         <Text strong style={{ color: scoreColor(row.weighted_score) }}>
-          {Number(row.weighted_score).toFixed(2)}
+          {formatEvaluationScoreDisplay(Number(row.weighted_score))}
         </Text>
       ),
     },
@@ -441,7 +454,7 @@ export default function SupplierEvaluationsRegistryPage() {
                   setReevaluationPartnerId(record.partner_id);
                   setReevaluationProjectId(projectId);
                   setReevaluationProjectLabel(
-                    String(projectNameById[record.project_id] ?? '').trim() || undefined,
+                    String(projectNameById[projectId] ?? '').trim() || undefined,
                   );
                   setReevaluationModalOpen(true);
                 }}

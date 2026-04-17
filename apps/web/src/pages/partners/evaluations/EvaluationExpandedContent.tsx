@@ -16,6 +16,7 @@ import {
   calendarDaysUntil,
   formatCriterionScoreLabel,
   getRowUiStatus,
+  formatEvaluationScoreDisplay,
   lineWeightedScore,
   scoreColor,
   weightPercent,
@@ -103,7 +104,7 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
       align: 'right',
       render: (_value, scoreDetail) => (
         <Text strong className={styles.weightedValue}>
-          {lineWeightedScore(scoreDetail).toFixed(3)}
+          {formatEvaluationScoreDisplay(lineWeightedScore(scoreDetail))}
         </Text>
       ),
     },
@@ -156,9 +157,9 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
                     <Text
                       strong
                       className={styles.totalScore}
-                      style={{ color: scoreColor(detail.weighted_score) }}
+                      style={{ color: scoreColor(Number(detail.weighted_score)) }}
                     >
-                      {Number(detail.weighted_score).toFixed(2)}
+                      {formatEvaluationScoreDisplay(Number(detail.weighted_score))}
                     </Text>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>

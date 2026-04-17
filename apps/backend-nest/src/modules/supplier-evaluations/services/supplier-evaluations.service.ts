@@ -272,7 +272,6 @@ export class SupplierEvaluationsService {
     };
   }
 
-  /** Без partnerId — все авторы проектных оценок; с partnerId — только по оценкам этого контрагента. */
   async findDistinctCreatorsFromProjectEvaluations(partnerId?: string): Promise<Array<{ id: string; name: string }>> {
     const partnerIdTrimmed = partnerId?.trim();
     const rows = await this.db.db
@@ -392,7 +391,7 @@ export class SupplierEvaluationsService {
         criterion_weight: Number(scoreRow.criterion_weight),
         sort_order: scoreRow.sort_order,
         weighted_line:
-          Math.round(Number(scoreRow.score) * Number(scoreRow.criterion_weight) * 1000) / 1000,
+          Math.round(Number(scoreRow.score) * Number(scoreRow.criterion_weight) * 100) / 100,
       })),
     };
   }

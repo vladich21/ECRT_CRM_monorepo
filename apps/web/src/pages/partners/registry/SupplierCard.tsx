@@ -15,7 +15,7 @@ import type { Partner } from '../../../types/partner';
 import type { PartnerSupplierEvalKpi } from '../../../utils/supplierEvaluationPartnerKpi';
 import type { InitialSupplierEvaluation } from '../../../types/supplierEvaluation';
 import { PartnerNextEvalDateTags } from '../evaluations/partnerEvalKpiDisplay';
-import { scoreColor } from '../evaluations/supplierEvaluationUi';
+import { formatEvaluationScoreDisplay, scoreColor } from '../evaluations/supplierEvaluationUi';
 import { getPartnerListDisplayName } from '../utils/partnersListDisplayUtils';
 import styles from './SupplierCard.module.scss';
 
@@ -163,7 +163,7 @@ export default function SupplierCard({
                 ? '…'
                 : avgScore == null
                   ? '—'
-                  : avgScore.toFixed(2)}
+                  : formatEvaluationScoreDisplay(avgScore)}
             </span>
           </div>
           <Progress

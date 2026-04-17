@@ -39,20 +39,10 @@ export function categoryFromWeightedScore(weighted: number): SupplierEvaluationC
   return 'A';
 }
 
-export function computeWeightedPreview(
-  criteria: { id: string; weight: number }[],
-  scores: Record<string, number>,
-): number {
-  const raw = criteria.reduce(
-    (acc, criterion) => acc + (scores[criterion.id] ?? 0) * criterion.weight,
-    0,
-  );
-  return Math.round(raw * 100) / 100;
-}
-
 export type UiEvalRowStatus = 'blocked' | 'archived' | 'overdue' | 'soon' | 'active';
 
-export const REEVALUATION_SOON_WINDOW_DAYS = 20;
+/** Дней до плановой переоценки включительно: вкладка «Скоро переоценка» и бэкенд-фильтр `reeval_soon`. */
+export const REEVALUATION_SOON_WINDOW_DAYS = 30;
 
 export function calendarDaysUntil(isoDate: string): number {
   return dayjs(isoDate).startOf('day').diff(dayjs().startOf('day'), 'day');
@@ -118,11 +108,47 @@ export function ScoreDots({ value, dotsRowClassName }: { value: number; dotsRowC
 }
 
 export function weightPercent(weight: number): string {
-  return `${(weight * 100).toFixed(0)}%`;
+  if (!Number.isFinite(weight)) return '—';
+  return `${String(parseFloat((weight * 100).toFixed(2)))}%`;
 }
 
 export function weightedLineFromScoreAndWeight(score: number, weight: number): number {
-  return Math.round(score * weight * 1000) / 1000;
+  return Number(score) * Number(weight);
+}
+
+export function formatEvaluationScoreDisplay(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return value.toFixed(2);
+}
+
+export function formatWeightedLineCell(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return value.toFixed(2);
+}
+
+export function computeWeightedPreview(
+  criteria: { id: string; weight: number }[],
+  scores: Record<string, number>,
+  evaluationScoreLines?: SupplierEvaluationScoreDetail[] | null,
+): number {
+  let sum = 0;
+  for (const criterion of criteria) {
+    const line = evaluationScoreLines?.find(l => l.criterion_id === criterion.id);
+    const w = line?.criterion_weight != null ? line.criterion_weight : criterion.weight;
+    const s = Number(scores[criterion.id] ?? 0);
+    sum += weightedLineFromScoreAndWeight(s, w);
+  }
+  return sum;
+}
+
+/** Вес критерия на момент оценки (снимок) или актуальный из справочника. */
+export function resolveCriterionWeightAtEvaluation(
+  criterionId: string,
+  fallbackWeight: number,
+  evaluationScoreLines?: SupplierEvaluationScoreDetail[] | null,
+): number {
+  const line = evaluationScoreLines?.find(l => l.criterion_id === criterionId);
+  return line?.criterion_weight != null ? line.criterion_weight : fallbackWeight;
 }
 
 export function lineWeightedScore(row: SupplierEvaluationScoreDetail): number {
