@@ -13,7 +13,7 @@ import {
 import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
 import type { PartnerFilters } from '../PartnerFiltersModal';
 import { PARTNER_FILTER_TABS, type PartnerListTab } from '../PartnersListPage.types';
-import { buildPartnersApiFilters } from '../utils/buildPartnersApiFilters';
+import { buildPartnersApiFilters, partnerFiltersToTabCountKey } from '../utils/buildPartnersApiFilters';
 
 export function usePartnersListData(
   apiFilters: PartnerListParams,
@@ -26,7 +26,7 @@ export function usePartnersListData(
 
   const tabCountQueries = useQueries({
     queries: PARTNER_FILTER_TABS.map(({ key }) => ({
-      queryKey: partnerQueryKeys.tabCount(key, debouncedSearch.trim(), appliedFilters),
+      queryKey: partnerQueryKeys.tabCount(key, debouncedSearch.trim(), partnerFiltersToTabCountKey(appliedFilters)),
       queryFn: async () => {
         const filters = buildPartnersApiFilters(debouncedSearch, key, appliedFilters);
         const response = await partnerApi.getPartners(filters, 1, 0);

@@ -1,5 +1,5 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, ilike, inArray, isNull, ne, not, or, sql } from 'drizzle-orm';
 import { ConflictException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
@@ -22,6 +22,19 @@ import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 
 export type PartnerListTabScope = 'all' | 'ready' | 'in_progress' | 'key_supplier';
 
+export type PartnerListTriState = 'yes' | 'no' | 'all';
+
+export type PartnerListSortField =
+  | 'name'
+  | 'created_at'
+  | 'weighted_score'
+  | 'next_reevaluation_date'
+  | 'status_name';
+
+export type PartnerListSortOrder = 'asc' | 'desc';
+
+export type PartnerEvaluationCategoryFilterToken = 'A' | 'B' | 'C' | 'D' | 'none';
+
 export interface PartnerQueryFilters {
   search?: string;
   typeIds?: string[];
@@ -29,6 +42,17 @@ export interface PartnerQueryFilters {
   competenceIds?: string[];
   readiness?: PartnerListTabScope;
   deletedScope?: DeletedScope;
+  evaluationCategories?: PartnerEvaluationCategoryFilterToken[];
+  isKeySupplier?: PartnerListTriState;
+  isTargeted?: PartnerListTriState;
+  reevaluationOverdue?: PartnerListTriState;
+  hasActiveBlocks?: PartnerListTriState;
+  isApproved?: PartnerListTriState;
+  legalCheckPassed?: PartnerListTriState;
+  questionnaireFilled?: PartnerListTriState;
+  initialAssessmentDone?: PartnerListTriState;
+  sortBy?: PartnerListSortField;
+  sortOrder?: PartnerListSortOrder;
 }
 
 export interface PartnersListPayload {
@@ -87,16 +111,213 @@ export class PartnersService {
     return and(inner, dels[0])!;
   }
 
+  private seActiveProjectPredicates() {
+    return [
+      eq(supplierEvaluations.partnerId, partners.id),
+      eq(supplierEvaluations.status, 'active'),
+      eq(supplierEvaluations.scope, 'project'),
+    ] as const;
+  }
+
+  private partnerApprovedMatchSql(): SQL {
+    const blockedExists = exists(
+      this.db.db
+        .select({ one: sql`1` })
+        .from(supplierPartnerProjectBlocks)
+        .where(
+          and(
+            eq(supplierPartnerProjectBlocks.partnerId, partners.id),
+            eq(supplierPartnerProjectBlocks.isActive, true),
+          )!,
+        ),
+    );
+    const resourceCategory = exists(
+      this.db.db
+        .select({ one: sql`1` })
+        .from(refPartnerCategories)
+        .where(
+          and(eq(refPartnerCategories.id, partners.categoryId), ilike(refPartnerCategories.name, '%ресурс%'))!,
+        ),
+    );
+    const hasActiveInitialEval = exists(
+      this.db.db
+        .select({ one: sql`1` })
+        .from(supplierEvaluations)
+        .where(
+          and(
+            eq(supplierEvaluations.partnerId, partners.id),
+            eq(supplierEvaluations.scope, 'initial'),
+            eq(supplierEvaluations.status, 'active'),
+          )!,
+        ),
+    );
+    return and(
+      not(blockedExists),
+      or(
+        and(resourceCategory, eq(partners.legalCheckPassed, true))!,
+        and(
+          not(resourceCategory),
+          eq(partners.legalCheckPassed, true),
+          eq(partners.questionnaireFilled, true),
+          or(eq(partners.initialAssessmentDone, true), hasActiveInitialEval)!,
+        )!,
+      )!,
+    )!;
+  }
+
+  private appendRegistryExtendedFilters(parts: SQL[], filters?: PartnerQueryFilters): void {
+    if (!filters) return;
+    const tri = (v?: PartnerListTriState) => v ?? 'all';
+
+    if (tri(filters.isKeySupplier) === 'yes') parts.push(eq(partners.isKeySupplier, true));
+    if (tri(filters.isKeySupplier) === 'no') parts.push(eq(partners.isKeySupplier, false));
+    if (tri(filters.isTargeted) === 'yes') parts.push(eq(partners.isTargeted, true));
+    if (tri(filters.isTargeted) === 'no') parts.push(eq(partners.isTargeted, false));
+    if (tri(filters.legalCheckPassed) === 'yes') parts.push(eq(partners.legalCheckPassed, true));
+    if (tri(filters.legalCheckPassed) === 'no') parts.push(eq(partners.legalCheckPassed, false));
+    if (tri(filters.questionnaireFilled) === 'yes') parts.push(eq(partners.questionnaireFilled, true));
+    if (tri(filters.questionnaireFilled) === 'no') parts.push(eq(partners.questionnaireFilled, false));
+    if (tri(filters.initialAssessmentDone) === 'yes') parts.push(eq(partners.initialAssessmentDone, true));
+    if (tri(filters.initialAssessmentDone) === 'no') parts.push(eq(partners.initialAssessmentDone, false));
+
+    const cats = filters.evaluationCategories;
+    if (cats?.length) {
+      const letters = cats.filter((c): c is 'A' | 'B' | 'C' | 'D' =>
+        c === 'A' || c === 'B' || c === 'C' || c === 'D',
+      );
+      const wantNone = cats.includes('none');
+      const orParts: SQL[] = [];
+      if (letters.length) {
+        orParts.push(
+          exists(
+            this.db.db
+              .select({ one: sql`1` })
+              .from(supplierEvaluations)
+              .where(
+                and(...this.seActiveProjectPredicates(), inArray(supplierEvaluations.category, letters))!,
+              ),
+          ),
+        );
+      }
+      if (wantNone) {
+        orParts.push(
+          not(
+            exists(
+              this.db.db
+                .select({ one: sql`1` })
+                .from(supplierEvaluations)
+                .where(and(...this.seActiveProjectPredicates())!),
+            ),
+          ),
+        );
+      }
+      if (orParts.length === 1) parts.push(orParts[0]!);
+      else if (orParts.length > 1) parts.push(or(...orParts)!);
+    }
+
+    if (tri(filters.reevaluationOverdue) === 'yes') {
+      parts.push(
+        exists(
+          this.db.db
+            .select({ one: sql`1` })
+            .from(supplierEvaluations)
+            .where(
+              and(
+                ...this.seActiveProjectPredicates(),
+                sql`${supplierEvaluations.nextReevaluationDate} is not null`,
+                sql`${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE`,
+              )!,
+            ),
+        ),
+      );
+    }
+    if (tri(filters.reevaluationOverdue) === 'no') {
+      parts.push(
+        not(
+          exists(
+            this.db.db
+              .select({ one: sql`1` })
+              .from(supplierEvaluations)
+              .where(
+                and(
+                  ...this.seActiveProjectPredicates(),
+                  sql`${supplierEvaluations.nextReevaluationDate} is not null`,
+                  sql`${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE`,
+                )!,
+              ),
+          ),
+        ),
+      );
+    }
+
+    if (tri(filters.hasActiveBlocks) === 'yes') {
+      parts.push(
+        exists(
+          this.db.db
+            .select({ one: sql`1` })
+            .from(supplierPartnerProjectBlocks)
+            .where(
+              and(
+                eq(supplierPartnerProjectBlocks.partnerId, partners.id),
+                eq(supplierPartnerProjectBlocks.isActive, true),
+              )!,
+            ),
+        ),
+      );
+    }
+    if (tri(filters.hasActiveBlocks) === 'no') {
+      parts.push(
+        not(
+          exists(
+            this.db.db
+              .select({ one: sql`1` })
+              .from(supplierPartnerProjectBlocks)
+              .where(
+                and(
+                  eq(supplierPartnerProjectBlocks.partnerId, partners.id),
+                  eq(supplierPartnerProjectBlocks.isActive, true),
+                )!,
+              ),
+          ),
+        ),
+      );
+    }
+
+    const approvedTri = tri(filters.isApproved);
+    if (approvedTri === 'yes' || approvedTri === 'no') {
+      const approvedExpr = this.partnerApprovedMatchSql();
+      parts.push(approvedTri === 'yes' ? approvedExpr : not(approvedExpr));
+    }
+  }
+
+  private buildPartnerListOrderBy(sortBy?: PartnerListSortField, sortOrder?: PartnerListSortOrder): SQL[] {
+    const dirDesc = sortOrder === 'desc';
+    switch (sortBy) {
+      case 'created_at':
+        return [dirDesc ? desc(partners.createdAt) : asc(partners.createdAt)];
+      case 'weighted_score': {
+        const expr = sql`(select avg(cast(weighted_score as numeric)) from supplier_evaluations se where se.partner_id = ${partners.id} and se.status = 'active' and se.scope = 'project')`;
+        return [dirDesc ? sql`${expr} DESC NULLS LAST` : sql`${expr} ASC NULLS LAST`];
+      }
+      case 'next_reevaluation_date': {
+        const expr = sql`(select min(se.next_reevaluation_date) from supplier_evaluations se where se.partner_id = ${partners.id} and se.status = 'active' and se.scope = 'project')`;
+        return [dirDesc ? sql`${expr} DESC NULLS LAST` : sql`${expr} ASC NULLS LAST`];
+      }
+      case 'status_name': {
+        const expr = sql`(select s.name from ref_partner_statuses s where s.id = ${partners.statusId})`;
+        return [dirDesc ? sql`${expr} DESC NULLS LAST` : sql`${expr} ASC NULLS LAST`];
+      }
+      case 'name':
+      default:
+        return [dirDesc ? desc(partners.name) : asc(partners.name)];
+    }
+  }
+
   private async countPartners(where: SQL): Promise<number> {
     const rows = await this.db.db.select({ value: count() }).from(partners).where(where);
     return Number(rows[0]?.value ?? 0);
   }
 
-  /**
-   * Автопересчёт operational status (Активный / Потенциальный / Заблокирован по договорам и оценкам).
-   * По умолчанию выключен на период миграции данных. Включение: `PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=true`.
-   * Логика пересчёта см. `applyDerivedPartnerStatus` / `computeAutoStatusIdForPartnerRow` (ниже по файлу).
-   */
   private isOperationalStatusDeriveEnabled(): boolean {
     const raw = process.env.PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE?.trim().toLowerCase();
     return raw === 'true' || raw === '1' || raw === 'yes';
@@ -156,6 +377,7 @@ export class PartnersService {
       if (matchedIds.length === 0) return null;
       parts.push(inArray(partners.id, matchedIds));
     }
+    this.appendRegistryExtendedFilters(parts, filters);
     return parts;
   }
 
@@ -225,7 +447,7 @@ export class PartnersService {
           .select()
           .from(partners)
           .where(listWhere)
-          .orderBy(asc(partners.name))
+          .orderBy(...this.buildPartnerListOrderBy(filters?.sortBy, filters?.sortOrder))
           .limit(limit)
           .offset(offset),
       ]);

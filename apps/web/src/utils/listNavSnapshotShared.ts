@@ -7,7 +7,9 @@ export function listNavSnapshotFormatVersion(raw: unknown): number | undefined {
 }
 
 export function asListNavSnapshotV1Record(raw: unknown): Record<string, unknown> | null {
-  if (!raw || typeof raw !== 'object' || listNavSnapshotFormatVersion(raw) !== 1) return null;
+  if (!raw || typeof raw !== 'object') return null;
+  const v = listNavSnapshotFormatVersion(raw);
+  if (v !== 1 && v !== 2) return null;
   return raw as Record<string, unknown>;
 }
 

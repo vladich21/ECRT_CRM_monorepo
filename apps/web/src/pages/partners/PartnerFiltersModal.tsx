@@ -1,18 +1,55 @@
 import type { ReactNode } from 'react';
-import { Button, Modal, Select } from 'antd';
+import { Button, Col, Modal, Radio, Row, Select, Tooltip, Typography } from 'antd';
 
 import styles from './PartnersListPage.module.scss';
+
+const { Title } = Typography;
+
+export type PartnerTriState = 'all' | 'yes' | 'no';
+
+export type PartnerEvaluationCategoryFilterValue = 'A' | 'B' | 'C' | 'D' | 'none';
 
 export type PartnerFilters = {
   typeIds: string[];
   statusIds: string[];
   competenceIds: string[];
+  evaluationCategoryTokens: PartnerEvaluationCategoryFilterValue[];
+  isKeySupplier: PartnerTriState;
+  isTargeted: PartnerTriState;
+  reevaluationOverdue: PartnerTriState;
+  hasActiveBlocks: PartnerTriState;
+  isApproved: PartnerTriState;
+  legalCheckPassed: PartnerTriState;
+  questionnaireFilled: PartnerTriState;
+  initialAssessmentDone: PartnerTriState;
 };
+
 export const EMPTY_FILTERS: PartnerFilters = {
   typeIds: [],
   statusIds: [],
   competenceIds: [],
+  evaluationCategoryTokens: [],
+  isKeySupplier: 'all',
+  isTargeted: 'all',
+  reevaluationOverdue: 'all',
+  hasActiveBlocks: 'all',
+  isApproved: 'all',
+  legalCheckPassed: 'all',
+  questionnaireFilled: 'all',
+  initialAssessmentDone: 'all',
 };
+
+const BLOCKS_FILTER_HINT =
+  'Все — фильтр не применяется. Да — у контрагента есть хотя бы одна активная блокировка по какому-либо проекту (участие в закупках по этому проекту ограничено). Нет — активных блокировок нет.';
+
+const EVAL_CATEGORY_OPTIONS: { label: string; value: PartnerEvaluationCategoryFilterValue }[] = [
+  { label: 'A', value: 'A' },
+  { label: 'B', value: 'B' },
+  { label: 'C', value: 'C' },
+  { label: 'D', value: 'D' },
+  { label: 'Без оценки', value: 'none' },
+];
+
 type SelectOption = {
   label: string;
   value: string;
@@ -30,6 +67,7 @@ type Props = {
     competencies: SelectOption[];
   };
 };
+
 export function PartnerFiltersModal({
   open,
   draftFilters,
@@ -56,55 +94,190 @@ export function PartnerFiltersModal({
       open={open}
       onCancel={onClose}
       onOk={onApply}
-      width={640}
+      width={1024}
       destroyOnHidden
       footer={footer}
+      styles={{ body: { paddingTop: 6 } }}
     >
-      <div className={styles.filtersModalGrid}>
-        <FilterField label='Тип контрагента'>
-          <Select
-            mode='multiple'
-            className={styles.filtersModalControl}
-            placeholder='Все типы'
-            allowClear
-            options={selectOptions.types}
-            value={draftFilters.typeIds}
-            onChange={value => onUpdateDraftFilter({ typeIds: value })}
-          />
-        </FilterField>
+      <Title level={5} className={styles.filtersModalSectionTitle}>
+        Классификация
+      </Title>
+      <Row gutter={[12, 12]} className={styles.filtersModalCompactRow}>
+        <Col xs={24} sm={12} xl={6}>
+          <FilterField label='Тип контрагента'>
+            <Select
+              mode='multiple'
+              className={styles.filtersModalControlCompact}
+              placeholder='Все типы'
+              allowClear
+              maxTagCount='responsive'
+              options={selectOptions.types}
+              value={draftFilters.typeIds}
+              onChange={value => onUpdateDraftFilter({ typeIds: value })}
+            />
+          </FilterField>
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <FilterField label='Статус'>
+            <Select
+              mode='multiple'
+              className={styles.filtersModalControlCompact}
+              placeholder='Все статусы'
+              allowClear
+              maxTagCount='responsive'
+              options={selectOptions.statuses}
+              value={draftFilters.statusIds}
+              onChange={value => onUpdateDraftFilter({ statusIds: value })}
+            />
+          </FilterField>
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <FilterField label='Компетенции'>
+            <Select
+              mode='multiple'
+              className={styles.filtersModalControlCompact}
+              placeholder='Все компетенции'
+              allowClear
+              maxTagCount='responsive'
+              options={selectOptions.competencies}
+              value={draftFilters.competenceIds}
+              onChange={value => onUpdateDraftFilter({ competenceIds: value })}
+            />
+          </FilterField>
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
+          <FilterField label='Категория оценки'>
+            <Select
+              mode='multiple'
+              className={styles.filtersModalControlCompact}
+              placeholder='Все'
+              allowClear
+              maxTagCount='responsive'
+              options={EVAL_CATEGORY_OPTIONS}
+              value={draftFilters.evaluationCategoryTokens}
+              onChange={value =>
+                onUpdateDraftFilter({
+                  evaluationCategoryTokens: (value ?? []) as PartnerEvaluationCategoryFilterValue[],
+                })
+              }
+            />
+          </FilterField>
+        </Col>
+      </Row>
 
-        <FilterField label='Статус'>
-          <Select
-            mode='multiple'
-            className={styles.filtersModalControl}
-            placeholder='Все статусы'
-            allowClear
-            options={selectOptions.statuses}
-            value={draftFilters.statusIds}
-            onChange={value => onUpdateDraftFilter({ statusIds: value })}
-          />
-        </FilterField>
-
-        <FilterField label='Компетенции'>
-          <Select
-            mode='multiple'
-            className={styles.filtersModalControl}
-            placeholder='Все компетенции'
-            allowClear
-            options={selectOptions.competencies}
-            value={draftFilters.competenceIds}
-            onChange={value => onUpdateDraftFilter({ competenceIds: value })}
-          />
-        </FilterField>
-      </div>
+      <Title level={5} className={styles.filtersModalSectionTitle}>
+        Флаги, статус и допуск
+      </Title>
+      <Row gutter={[16, 16]} className={styles.filtersModalCompactRow}>
+        <Col xs={24} md={12} xl={6}>
+          <div className={styles.filtersModalStackCol}>
+            <TriRadioRow
+              label='Ключевой поставщик'
+              value={draftFilters.isKeySupplier}
+              onChange={v => onUpdateDraftFilter({ isKeySupplier: v })}
+            />
+            <TriRadioRow
+              label='Целевой поставщик'
+              value={draftFilters.isTargeted}
+              onChange={v => onUpdateDraftFilter({ isTargeted: v })}
+            />
+          </div>
+        </Col>
+        <Col xs={24} md={12} xl={6}>
+          <div className={styles.filtersModalStackCol}>
+            <TriRadioRow
+              label='Юридическая проверка'
+              value={draftFilters.legalCheckPassed}
+              onChange={v => onUpdateDraftFilter({ legalCheckPassed: v })}
+            />
+            <TriRadioRow
+              label='Анкета'
+              value={draftFilters.questionnaireFilled}
+              onChange={v => onUpdateDraftFilter({ questionnaireFilled: v })}
+            />
+          </div>
+        </Col>
+        <Col xs={24} md={12} xl={6}>
+          <div className={styles.filtersModalStackCol}>
+            <TriRadioRow
+              label='Первичная оценка'
+              value={draftFilters.initialAssessmentDone}
+              onChange={v => onUpdateDraftFilter({ initialAssessmentDone: v })}
+            />
+            <TriRadioRow
+              label='Переоценка просрочена'
+              value={draftFilters.reevaluationOverdue}
+              onChange={v => onUpdateDraftFilter({ reevaluationOverdue: v })}
+            />
+          </div>
+        </Col>
+        <Col xs={24} md={12} xl={6}>
+          <div className={styles.filtersModalStackCol}>
+            <TriRadioRow
+              label='Есть блокировки'
+              labelHint={BLOCKS_FILTER_HINT}
+              value={draftFilters.hasActiveBlocks}
+              onChange={v => onUpdateDraftFilter({ hasActiveBlocks: v })}
+            />
+            <TriRadioRow
+              label='Утверждён'
+              value={draftFilters.isApproved}
+              onChange={v => onUpdateDraftFilter({ isApproved: v })}
+            />
+          </div>
+        </Col>
+      </Row>
     </Modal>
   );
 }
-function FilterField({ label, children }: { label: string; children: ReactNode }) {
+
+function FilterField({
+  label,
+  labelHint,
+  children,
+}: {
+  label: string;
+  labelHint?: string;
+  children: ReactNode;
+}) {
+  const labelNode = labelHint ? (
+    <Tooltip title={labelHint} placement='topLeft'>
+      <span className={`${styles.filtersModalLabel} ${styles.filtersModalLabelHint}`}>{label}</span>
+    </Tooltip>
+  ) : (
+    <span className={styles.filtersModalLabel}>{label}</span>
+  );
   return (
     <div className={styles.filtersModalField}>
-      <span className={styles.filtersModalLabel}>{label}</span>
+      {labelNode}
       {children}
     </div>
+  );
+}
+
+function TriRadioRow({
+  label,
+  labelHint,
+  value,
+  onChange,
+}: {
+  label: string;
+  labelHint?: string;
+  value: PartnerTriState;
+  onChange: (v: PartnerTriState) => void;
+}) {
+  return (
+    <FilterField label={label} labelHint={labelHint}>
+      <Radio.Group
+        className={styles.filtersModalTriRadio}
+        optionType='button'
+        value={value}
+        onChange={e => onChange(e.target.value as PartnerTriState)}
+      >
+        <Radio.Button value='all'>Все</Radio.Button>
+        <Radio.Button value='yes'>Да</Radio.Button>
+        <Radio.Button value='no'>Нет</Radio.Button>
+      </Radio.Group>
+    </FilterField>
   );
 }

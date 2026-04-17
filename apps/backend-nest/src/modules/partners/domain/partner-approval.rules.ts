@@ -1,4 +1,3 @@
-// Утверждение по имени категории (ref_partner_categories.name) и флагу блокировки по оценке.
 export type PartnerCategoryKind = 'resource' | 'engineering' | 'default';
 
 export function inferPartnerCategoryKind(categoryName: string | null | undefined): PartnerCategoryKind {

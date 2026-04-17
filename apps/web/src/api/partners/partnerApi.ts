@@ -16,6 +16,15 @@ export interface PartnersListResponse {
   deletion_tab_counts: DeletionTabCounts;
 }
 
+export type PartnerListTriStateParam = 'yes' | 'no';
+
+export type PartnerListSortBy =
+  | 'name'
+  | 'created_at'
+  | 'weighted_score'
+  | 'next_reevaluation_date'
+  | 'status_name';
+
 export interface PartnerListParams {
   search?: string;
   typeIds?: string[];
@@ -23,10 +32,24 @@ export interface PartnerListParams {
   competenceIds?: string[];
   readiness?: 'all' | 'ready' | 'in_progress';
   deletedScope?: DeletionScope;
+  evaluationCategories?: ('A' | 'B' | 'C' | 'D' | 'none')[];
+  isKeySupplier?: PartnerListTriStateParam;
+  isTargeted?: PartnerListTriStateParam;
+  reevaluationOverdue?: PartnerListTriStateParam;
+  hasActiveBlocks?: PartnerListTriStateParam;
+  isApproved?: PartnerListTriStateParam;
+  legalCheckPassed?: PartnerListTriStateParam;
+  questionnaireFilled?: PartnerListTriStateParam;
+  initialAssessmentDone?: PartnerListTriStateParam;
+  sortBy?: PartnerListSortBy;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export const partnerApi = {
   getPartners: async (filters?: PartnerListParams, limit = 20, offset = 0): Promise<PartnersListResponse> => {
+    const evalCats = filters?.evaluationCategories?.length
+      ? filters.evaluationCategories.map(c => (c === 'none' ? 'none' : c)).join(',')
+      : undefined;
     const response = await apiClient.get('/partners', {
       params: {
         limit,
@@ -37,6 +60,17 @@ export const partnerApi = {
         status_ids: filters?.statusIds?.length ? filters.statusIds.join(',') : undefined,
         competence_ids: filters?.competenceIds?.length ? filters.competenceIds.join(',') : undefined,
         readiness: filters?.readiness && filters.readiness !== 'all' ? filters.readiness : undefined,
+        evaluation_categories: evalCats,
+        is_key_supplier: filters?.isKeySupplier,
+        is_targeted: filters?.isTargeted,
+        reevaluation_overdue: filters?.reevaluationOverdue,
+        has_active_blocks: filters?.hasActiveBlocks,
+        is_approved: filters?.isApproved,
+        legal_check_passed: filters?.legalCheckPassed,
+        questionnaire_filled: filters?.questionnaireFilled,
+        initial_assessment_done: filters?.initialAssessmentDone,
+        sort_by: filters?.sortBy,
+        sort_order: filters?.sortOrder,
       },
     });
     const responseBody = response.data as PartnersListResponse;

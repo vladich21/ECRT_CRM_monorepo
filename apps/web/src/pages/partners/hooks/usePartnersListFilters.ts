@@ -1,14 +1,27 @@
 import { useCallback, useState } from 'react';
 
+import type { PartnerListParams, PartnerListSortBy } from '../../../api/partners/partnerApi';
 import { EMPTY_FILTERS, type PartnerFilters } from '../PartnerFiltersModal';
 import type { PartnerListTab } from '../PartnersListPage.types';
 
+const DEFAULT_SORT_BY: PartnerListSortBy = 'name';
+const DEFAULT_SORT_ORDER: 'asc' | 'desc' = 'asc';
+
 function countActivePartnerFilters(filters: PartnerFilters): number {
-  return (
-    (filters.typeIds.length > 0 ? 1 : 0) +
-    (filters.statusIds.length > 0 ? 1 : 0) +
-    (filters.competenceIds.length > 0 ? 1 : 0)
-  );
+  let n = 0;
+  if (filters.typeIds.length > 0) n += 1;
+  if (filters.statusIds.length > 0) n += 1;
+  if (filters.competenceIds.length > 0) n += 1;
+  if (filters.evaluationCategoryTokens.length > 0) n += 1;
+  if (filters.isKeySupplier !== 'all') n += 1;
+  if (filters.isTargeted !== 'all') n += 1;
+  if (filters.reevaluationOverdue !== 'all') n += 1;
+  if (filters.hasActiveBlocks !== 'all') n += 1;
+  if (filters.isApproved !== 'all') n += 1;
+  if (filters.legalCheckPassed !== 'all') n += 1;
+  if (filters.questionnaireFilled !== 'all') n += 1;
+  if (filters.initialAssessmentDone !== 'all') n += 1;
+  return n;
 }
 
 export function usePartnersListFilters() {
@@ -17,6 +30,8 @@ export function usePartnersListFilters() {
   const [appliedFilters, setAppliedFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [draftFilters, setDraftFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<PartnerListSortBy>(DEFAULT_SORT_BY);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(DEFAULT_SORT_ORDER);
 
   const activeFiltersCount = countActivePartnerFilters(appliedFilters);
 
@@ -44,6 +59,23 @@ export function usePartnersListFilters() {
     setDraftFilters(prev => ({ ...prev, ...patch }));
   }, []);
 
+  const setSortField = useCallback((field: PartnerListSortBy) => {
+    setSortBy(field);
+    const defaultsDesc: Partial<Record<PartnerListSortBy, 'asc' | 'desc'>> = {
+      created_at: 'desc',
+    };
+    setSortOrder(defaultsDesc[field] ?? 'asc');
+  }, []);
+
+  const toggleSortOrder = useCallback(() => {
+    setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+  }, []);
+
+  const restoreListSorting = useCallback((next: Pick<PartnerListParams, 'sortBy' | 'sortOrder'>) => {
+    if (next.sortBy) setSortBy(next.sortBy);
+    if (next.sortOrder) setSortOrder(next.sortOrder);
+  }, []);
+
   return {
     searchQuery,
     setSearchQuery,
@@ -60,5 +92,10 @@ export function usePartnersListFilters() {
     resetFilters,
     updateDraftFilter,
     activeFiltersCount,
+    sortBy,
+    sortOrder,
+    setSortField,
+    toggleSortOrder,
+    restoreListSorting,
   };
 }
