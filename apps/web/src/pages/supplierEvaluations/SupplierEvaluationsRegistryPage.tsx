@@ -22,6 +22,7 @@ import { useNotification } from '../../customhooks/useNotification';
 import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
 import type {
   SupplierEvaluationListItem,
+  SupplierEvaluationTabCounts,
   SupplierEvaluationUiStatusParam,
 } from '../../types/supplierEvaluation';
 import EvaluationExpandedContent from '../partners/evaluations/EvaluationExpandedContent';
@@ -57,6 +58,32 @@ import {
 } from './supplierEvaluationsRegistry.model';
 
 const { Text } = Typography;
+
+function rowMatchesUiStatusTab(row: SupplierEvaluationListItem, tab: SupplierEvaluationUiStatusParam): boolean {
+  if (tab === 'all') return true;
+  const status = getRowUiStatus(row);
+  if (tab === 'current') return status === 'active';
+  if (tab === 'reeval_soon') return status === 'soon';
+  return status === tab;
+}
+
+function countRowsByUiStatusTabs(rows: SupplierEvaluationListItem[]): SupplierEvaluationTabCounts {
+  const counts: SupplierEvaluationTabCounts = {
+    all: rows.length,
+    current: 0,
+    archived: 0,
+    blocked: 0,
+    overdue: 0,
+    reeval_soon: 0,
+  };
+  for (const row of rows) {
+    const status = getRowUiStatus(row);
+    if (status === 'active') counts.current += 1;
+    else if (status === 'soon') counts.reeval_soon += 1;
+    else counts[status] += 1;
+  }
+  return counts;
+}
 
 export default function SupplierEvaluationsRegistryPage() {
   const queryClient = useQueryClient();
@@ -104,8 +131,8 @@ export default function SupplierEvaluationsRegistryPage() {
   );
 
   const { data: partners = [] } = useQuery({
-    queryKey: partnerQueryKeys.referenceList(),
-    queryFn: () => partnerApi.getPartnersForReference(),
+    queryKey: partnerQueryKeys.referenceList({ excludeArchived: true }),
+    queryFn: () => partnerApi.getPartnersForReference({ excludeArchived: true }),
     staleTime: 5 * 60 * 1000,
   });
   const partnerNameById = useMemo(
@@ -150,13 +177,12 @@ export default function SupplierEvaluationsRegistryPage() {
 
   const { data: tabCounts, isLoading: tabCountsLoading } = useSupplierEvaluationTabCounts(
     tabCountRequestParams,
-    true,
+    !isSearchMode,
   );
 
   const listParams = useMemo(() => {
     const base = {
       status: 'all' as const,
-      ui_status: rowStatusTab === 'all' ? undefined : rowStatusTab,
       evaluated_year: evaluationYearsToApiParam(appliedListFilters.evaluatedYears),
       category: appliedListFilters.category === 'all' ? undefined : appliedListFilters.category,
       created_by:
@@ -168,9 +194,19 @@ export default function SupplierEvaluationsRegistryPage() {
       ...evaluationRegistrySortToRequestParams(appliedListFilters.sortPreset),
     };
     if (isSearchMode) {
-      return { ...base, limit: SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_FETCH_LIMIT, offset: 0 };
+      return {
+        ...base,
+        ui_status: undefined,
+        limit: SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_FETCH_LIMIT,
+        offset: 0,
+      };
     }
-    return { ...base, limit: pageSize, offset: (page - 1) * pageSize };
+    return {
+      ...base,
+      ui_status: rowStatusTab === 'all' ? undefined : rowStatusTab,
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    };
   }, [rowStatusTab, appliedListFilters, isSearchMode, page, pageSize]);
 
   const { data, isLoading, refetch } = useSupplierEvaluationsList(listParams, true);
@@ -222,13 +258,22 @@ export default function SupplierEvaluationsRegistryPage() {
     [data?.data, debouncedSearch, partnerNameById, projectNameById],
   );
 
-  const displayRows = useMemo(() => {
-    if (!isSearchMode) return filteredRows;
-    const start = (page - 1) * pageSize;
-    return filteredRows.slice(start, start + pageSize);
-  }, [isSearchMode, filteredRows, page, pageSize]);
+  const rowsForCurrentTab = useMemo(
+    () => (isSearchMode ? filteredRows.filter(row => rowMatchesUiStatusTab(row, rowStatusTab)) : filteredRows),
+    [isSearchMode, filteredRows, rowStatusTab],
+  );
 
-  const total = isSearchMode ? filteredRows.length : (data?.total ?? 0);
+  const displayRows = useMemo(() => {
+    if (!isSearchMode) return rowsForCurrentTab;
+    const start = (page - 1) * pageSize;
+    return rowsForCurrentTab.slice(start, start + pageSize);
+  }, [isSearchMode, rowsForCurrentTab, page, pageSize]);
+
+  const total = isSearchMode ? rowsForCurrentTab.length : (data?.total ?? 0);
+  const displayTabCounts = useMemo(
+    () => (isSearchMode ? countRowsByUiStatusTabs(filteredRows) : tabCounts),
+    [isSearchMode, filteredRows, tabCounts],
+  );
 
   const columns: ColumnsType<SupplierEvaluationListItem> = [
     Table.EXPAND_COLUMN,
@@ -397,7 +442,7 @@ export default function SupplierEvaluationsRegistryPage() {
                   >
                     {tab.label}{' '}
                     <span className={listStyles.filterTabCount}>
-                      {tabCountsLoading ? '…' : (tabCounts?.[tab.key] ?? 0)}
+                      {tabCountsLoading && !isSearchMode ? '…' : (displayTabCounts?.[tab.key] ?? 0)}
                     </span>
                   </button>
                 ))}

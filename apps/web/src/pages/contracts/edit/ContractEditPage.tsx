@@ -26,6 +26,7 @@ import {
 import { applyVatDerivedAmounts } from '../create/contractCreateFormUtils';
 import styles from '../create/ContractCreatePage.module.scss';
 import { normalizeDraftDateFields } from '@/utils/normalizeDraftDateFields';
+import { readAxiosLikeError } from '@/utils/readAxiosLikeError';
 import tagStyles from '../list/ContractsListPage.module.scss';
 import detailsStyles from '../details/ContractDetails.module.scss';
 import {
@@ -163,8 +164,13 @@ export default function ContractEditPage() {
             navigate(`/contracts/${contractId}`, state != null ? { state } : undefined);
           }, 1000);
         },
-        onError: () => {
-          showNotification('error', 'Ошибка', 'Не удалось изменить договор');
+        onError: (error: unknown) => {
+          const parsed = readAxiosLikeError(error);
+          const message =
+            parsed.message?.trim() ||
+            (error instanceof Error ? error.message : '') ||
+            'Не удалось изменить договор';
+          showNotification('error', 'Ошибка', message);
         },
         onSettled: () => {
           isSubmittingRef.current = false;

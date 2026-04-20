@@ -79,6 +79,7 @@ export class PartnersController {
   @Get()
   findAll(
     @Query('preview') preview?: string,
+    @Query('preview_exclude_archived') previewExcludeArchivedRaw?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
     @Query('search') search?: string,
@@ -119,6 +120,7 @@ export class PartnersController {
       initialAssessmentDone: parseTriState(initialAssessmentDoneRaw),
       sortBy: parseSortBy(sortByRaw),
       sortOrder: parseSortOrder(sortOrderRaw),
+      previewExcludeArchived: previewExcludeArchivedRaw === '1',
     };
 
     return this.service.findAll(preview === '1', pagination, filters);

@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { PartnersService } from '../../partners/services/partners.service';
 import { contracts, patents, refContractStates } from '../../../database/schema';
@@ -169,6 +169,30 @@ export class ContractsService {
     if (!stateId) return false;
     const signedIds = await this.getSignedStateIds();
     return signedIds.includes(stateId);
+  }
+
+  private async getStateMeta(stateId: string | null): Promise<{ code: string; name: string } | null> {
+    if (!stateId) return null;
+    const rows = await this.db.db
+      .select({ code: refContractStates.code, name: refContractStates.name })
+      .from(refContractStates)
+      .where(eq(refContractStates.id, stateId))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return null;
+    return { code: String(row.code ?? ''), name: String(row.name ?? '') };
+  }
+
+  private isTerminalContractState(meta: { code: string; name: string } | null): boolean {
+    if (!meta) return false;
+    const code = meta.code.trim().toLowerCase();
+    const name = meta.name.trim().toLowerCase();
+    if (['closed', 'clozed', 'completed', 'terminated'].includes(code)) return true;
+    return (
+      name.includes('заверш') ||
+      name.includes('исполн') ||
+      name.includes('расторг')
+    );
   }
 
   private async rowHasDraftState(stateId: string | null): Promise<boolean> {
@@ -490,12 +514,26 @@ export class ContractsService {
     const hasExplicitIsActive =
       explicitIsActive !== undefined && explicitIsActive !== null && String(explicitIsActive) !== '';
 
+    const existingStateId = existingContract.stateId != null ? String(existingContract.stateId) : null;
+    const existingStateMeta = await this.getStateMeta(existingStateId);
+    const isExistingTerminal = this.isTerminalContractState(existingStateMeta);
+
+    let nextIsActive: boolean;
     if (hasNewStateIdInRequest) {
-      updatePayload.isActive = await this.resolveIsActiveFromStateId(String(stateIdSentInRequest));
+      nextIsActive = await this.resolveIsActiveFromStateId(String(stateIdSentInRequest));
+      updatePayload.isActive = nextIsActive;
     } else if (hasExplicitIsActive) {
-      updatePayload.isActive = explicitIsActive === true || explicitIsActive === 'true';
+      nextIsActive = explicitIsActive === true || explicitIsActive === 'true';
+      updatePayload.isActive = nextIsActive;
     } else {
-      updatePayload.isActive = await this.resolveIsActiveFromStateId(resolvedStateIdForActiveFlag);
+      nextIsActive = await this.resolveIsActiveFromStateId(resolvedStateIdForActiveFlag);
+      updatePayload.isActive = nextIsActive;
+    }
+
+    if (isExistingTerminal && nextIsActive) {
+      throw new ConflictException(
+        'Невозможно снова сделать действующим завершённый/расторгнутый договор. Создайте новый договор.',
+      );
     }
 
     await this.db.db.update(contracts).set(updatePayload).where(eq(contracts.id, id));

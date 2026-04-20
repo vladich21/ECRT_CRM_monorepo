@@ -7,6 +7,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Row, Select } from 'antd';
+import { useMemo } from 'react';
 
 import type { ProjectPreviewItem } from '@/api/projects/projectApi';
 import type { ContractFormMode, ContractFormRefs } from './contractForm.types';
@@ -23,12 +24,31 @@ type Props = {
 };
 
 export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectChange, requireFullValidation = false }: Props) {
+  const selectedPartnerId = Form.useWatch('partner_id');
 
   const handleProjectChange = (value: string | undefined) => {
     if (!onProjectChange) return;
     const project = refs.projects?.find(projectRow => projectRow.id === value) ?? null;
     onProjectChange(project);
   };
+
+  const partnerOptions = useMemo(() => {
+    const allPartners = refs.partners ?? [];
+    return allPartners
+      .filter(partner => {
+        const withExtras = partner as { name?: string; short_name?: string; inn?: string };
+        const displayName = String(withExtras.short_name ?? withExtras.name ?? '').trim();
+        return Boolean(displayName) || String(partner.id) === String(selectedPartnerId ?? '');
+      })
+      .map(partner => {
+        const withExtras = partner as { name?: string; short_name?: string; inn?: string };
+        const rawDisplayName = String(withExtras.short_name ?? withExtras.name ?? '').trim();
+        const displayLabel = rawDisplayName || 'Контрагент без названия';
+        const inn = String(withExtras.inn ?? '').trim();
+        const searchLabel = `${displayLabel} ${inn}`.trim().toLowerCase();
+        return { id: String(partner.id), label: displayLabel, searchLabel, inn };
+      });
+  }, [refs.partners, selectedPartnerId]);
 
   return (
     <>
@@ -94,9 +114,8 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
               optionFilterProp='label'
               optionLabelProp='label'
               filterOption={(input, option) =>
-                String(option?.label ?? '')
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
+                String((option as { searchLabel?: string } | undefined)?.searchLabel ?? option?.label ?? '')
+                  .includes(input.toLowerCase().trim())
               }
               suffixIcon={<TeamOutlined />}
               popupRender={menu => (
@@ -113,9 +132,10 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
                 </>
               )}
             >
-              {refs.partners?.map(partner => (
-                <Select.Option key={partner.id} value={partner.id} label={partner.name}>
-                  {partner.name}
+              {partnerOptions.map(partner => (
+                <Select.Option key={partner.id} value={partner.id} label={partner.label} searchLabel={partner.searchLabel}>
+                  {partner.label}
+                  {partner.inn ? <span style={{ color: '#8c8c8c' }}> · ИНН {partner.inn}</span> : null}
                 </Select.Option>
               ))}
             </Select>

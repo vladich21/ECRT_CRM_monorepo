@@ -1,6 +1,8 @@
 export interface Reference {
   id: string;
   name: string;
+  short_name?: string;
+  inn?: string;
 }
 export interface Department {
   id: string;

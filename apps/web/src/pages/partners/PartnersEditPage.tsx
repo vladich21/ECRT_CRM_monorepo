@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
-import { Button, Form } from 'antd';
+import { Button, Form, Modal } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
@@ -10,6 +10,7 @@ import { useNotification } from '../../customhooks/useNotification';
 import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
+import { readAxiosLikeError } from '../../utils/readAxiosLikeError';
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
@@ -44,6 +45,7 @@ export default function PartnerEditPage() {
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
   const isSubmittingRef = useRef(false);
   const isFormInitializedRef = useRef(false);
+  const [unarchiveReminderOpen, setUnarchiveReminderOpen] = useState(false);
 
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses && !isFormInitializedRef.current) {
@@ -74,6 +76,7 @@ export default function PartnerEditPage() {
       status => (status.name ?? '').trim() === 'Архив',
     );
     const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
+    const wasUnarchivedFromArchive = isArchived && values.manual_archive === false;
     const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived }));
     payload.type_ids = values.type_ids ?? [];
     payload.competence_ids = values.competence_ids ?? [];
@@ -82,10 +85,16 @@ export default function PartnerEditPage() {
       {
         onSuccess: () => {
           showNotification('success', 'Успех', 'Контрагент успешно изменён');
-          setTimeout(() => navigate(-1), 1000);
+          if (wasUnarchivedFromArchive) {
+            setUnarchiveReminderOpen(true);
+          } else {
+            setTimeout(() => navigate(-1), 1000);
+          }
         },
-        onError: (error: Error) => {
-          const message = error?.message || 'Не удалось изменить контрагента';
+        onError: (error: unknown) => {
+          const parsed = readAxiosLikeError(error);
+          const message =
+            parsed.message?.trim() || (error instanceof Error ? error.message : '') || 'Не удалось изменить контрагента';
           showNotification('error', 'Ошибка', message);
         },
         onSettled: () => {
@@ -176,6 +185,42 @@ export default function PartnerEditPage() {
           </div>
         </DetailPageHeader>
       ) : null}
+      <Modal
+        title='Восстановление из архива'
+        open={unarchiveReminderOpen}
+        closable={false}
+        maskClosable={false}
+        onCancel={() => {
+          setUnarchiveReminderOpen(false);
+          navigate(-1);
+        }}
+        footer={[
+          <Button
+            key='later'
+            onClick={() => {
+              setUnarchiveReminderOpen(false);
+              navigate(-1);
+            }}
+          >
+            Позже
+          </Button>,
+          <Button
+            key='eval'
+            type='primary'
+            onClick={() => {
+              setUnarchiveReminderOpen(false);
+              navigate(`/partners/${partnerId}/evaluations`, {
+                state: { openInitialSupplierEvaluation: true },
+              });
+            }}
+          >
+            Создать оценку
+          </Button>,
+        ]}
+      >
+        Контрагент восстановлен из архива. У него нет активных оценок поставщика — для включения в процесс
+        оценки необходимо создать первичную оценку.
+      </Modal>
     </AsyncBoundary>
   );
 }

@@ -1,6 +1,14 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { PartnersService } from '../../partners/services/partners.service';
 import {
@@ -80,10 +88,22 @@ export class SupplierEvaluationsService {
 
   constructor(
     private readonly db: DatabaseService,
+    @Inject(forwardRef(() => PartnersService))
     private readonly partnersService: PartnersService,
   ) {}
 
+  async archiveAllActiveByPartner(partnerId: string): Promise<void> {
+    const now = new Date();
+    await this.db.db
+      .update(supplierEvaluations)
+      .set({ status: 'archived', nextReevaluationDate: null, updatedAt: now })
+      .where(and(eq(supplierEvaluations.partnerId, partnerId), eq(supplierEvaluations.status, 'active'))!);
+  }
+
   async findContractProjectOptionsForPartner(partnerId: string) {
+    if (await this.partnersService.isPartnerInArchiveStatus(partnerId)) {
+      return [];
+    }
     const rows = await this.db.db
       .select({
         id: projects.id,
@@ -126,13 +146,14 @@ export class SupplierEvaluationsService {
           evaluatedAt: supplierEvaluations.evaluatedAt,
           weightedScore: supplierEvaluations.weightedScore,
           nextReevaluationDate: supplierEvaluations.nextReevaluationDate,
+          status: supplierEvaluations.status,
         })
         .from(supplierEvaluations)
         .where(
           and(
             eq(supplierEvaluations.partnerId, partnerId),
             eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT),
-            eq(supplierEvaluations.status, 'active'),
+            inArray(supplierEvaluations.status, ['active', 'archived']),
           )!,
         ),
     ]);
@@ -140,8 +161,11 @@ export class SupplierEvaluationsService {
     const blockedProjectCount = new Set(blockRows.map((row) => String(row.projectId))).size;
 
     type EvalPick = (typeof evalRows)[number];
+    const activeRows = evalRows.filter((row) => row.status === 'active');
+    const rowsForAverage = activeRows.length > 0 ? activeRows : evalRows;
+
     const byProject = new Map<string, EvalPick>();
-    for (const evaluationRow of evalRows) {
+    for (const evaluationRow of rowsForAverage) {
       const projectIdKey = String(evaluationRow.projectId);
       const prev = byProject.get(projectIdKey);
       const evAt = this.isoDateOnly(evaluationRow.evaluatedAt);
@@ -157,11 +181,13 @@ export class SupplierEvaluationsService {
     if (perProject.length > 0) {
       const sum = perProject.reduce((acc, row) => acc + Number(row.weightedScore), 0);
       avgScore = Math.round((sum / perProject.length) * 100) / 100;
-      const dates = perProject
-        .map((row) => (row.nextReevaluationDate ? this.isoDateOnly(row.nextReevaluationDate) : null))
-        .filter((dateIso): dateIso is string => Boolean(dateIso));
-      nextReevaluationDate =
-        dates.length === 0 ? null : dates.reduce((earlier, later) => (earlier <= later ? earlier : later));
+      if (activeRows.length > 0) {
+        const dates = perProject
+          .map((row) => (row.nextReevaluationDate ? this.isoDateOnly(row.nextReevaluationDate) : null))
+          .filter((dateIso): dateIso is string => Boolean(dateIso));
+        nextReevaluationDate =
+          dates.length === 0 ? null : dates.reduce((earlier, later) => (earlier <= later ? earlier : later));
+      }
     }
 
     const nextReevaluationOverdue =
@@ -399,6 +425,7 @@ export class SupplierEvaluationsService {
   async create(dto: CreateSupplierEvaluationDto, createdByUserId?: string) {
     this.validateEvaluatedAt(dto.evaluated_at);
 
+    await this.assertPartnerNotArchivedForNewEvaluation(dto.partner_id);
     await this.assertPartnerAndProjectExist(dto.partner_id, dto.project_id);
     await this.assertProjectLinkedViaPartnerContracts(dto.partner_id, dto.project_id);
 
@@ -535,17 +562,45 @@ export class SupplierEvaluationsService {
       .orderBy(desc(supplierEvaluations.evaluatedAt), desc(supplierEvaluations.createdAt))
       .limit(1);
     const row = rows[0];
-    if (!row) return null;
+    if (row) {
+      return {
+        id: String(row.id),
+        partner_id: String(row.partnerId),
+        weighted_score: this.roundScore(Number(row.weightedScore)),
+        category: row.category as SupplierEvaluationCategory,
+        evaluated_at: row.evaluatedAt ? String(row.evaluatedAt) : '',
+        next_reevaluation_date: row.nextReevaluationDate ? String(row.nextReevaluationDate) : null,
+        comment: row.comment ?? '',
+        created_at: row.createdAt ? row.createdAt.toISOString() : '',
+        updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
+      };
+    }
+
+    // Display fallback after archiving: keep last primary score visible, but reevaluation date remains hidden.
+    const archivedRows = await this.db.db
+      .select()
+      .from(supplierEvaluations)
+      .where(
+        and(
+          eq(supplierEvaluations.partnerId, partnerId),
+          eq(supplierEvaluations.scope, EVAL_SCOPE_INITIAL),
+          eq(supplierEvaluations.status, 'archived'),
+        )!,
+      )
+      .orderBy(desc(supplierEvaluations.evaluatedAt), desc(supplierEvaluations.createdAt))
+      .limit(1);
+    const archived = archivedRows[0];
+    if (!archived) return null;
     return {
-      id: String(row.id),
-      partner_id: String(row.partnerId),
-      weighted_score: this.roundScore(Number(row.weightedScore)),
-      category: row.category as SupplierEvaluationCategory,
-      evaluated_at: row.evaluatedAt ? String(row.evaluatedAt) : '',
-      next_reevaluation_date: row.nextReevaluationDate ? String(row.nextReevaluationDate) : null,
-      comment: row.comment ?? '',
-      created_at: row.createdAt ? row.createdAt.toISOString() : '',
-      updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
+      id: String(archived.id),
+      partner_id: String(archived.partnerId),
+      weighted_score: this.roundScore(Number(archived.weightedScore)),
+      category: archived.category as SupplierEvaluationCategory,
+      evaluated_at: archived.evaluatedAt ? String(archived.evaluatedAt) : '',
+      next_reevaluation_date: null,
+      comment: archived.comment ?? '',
+      created_at: archived.createdAt ? archived.createdAt.toISOString() : '',
+      updated_at: archived.updatedAt ? archived.updatedAt.toISOString() : null,
     };
   }
 
@@ -559,6 +614,8 @@ export class SupplierEvaluationsService {
     if (!partnerRow) {
       throw new BadRequestException('Контрагент не найден или удалён');
     }
+
+    await this.assertPartnerNotArchivedForNewEvaluation(dto.partner_id);
 
     const criteriaRows = await this.db.db
       .select()
@@ -804,6 +861,12 @@ export class SupplierEvaluationsService {
   }): string {
     const fullName = [parts.lastName, parts.firstName, parts.middleName].filter(Boolean).join(' ').trim();
     return fullName || '';
+  }
+
+  private async assertPartnerNotArchivedForNewEvaluation(partnerId: string): Promise<void> {
+    if (await this.partnersService.isPartnerInArchiveStatus(partnerId)) {
+      throw new ConflictException('Невозможно создать оценку: контрагент находится в архиве');
+    }
   }
 
   private async assertPartnerAndProjectExist(partnerId: string, projectId: string) {

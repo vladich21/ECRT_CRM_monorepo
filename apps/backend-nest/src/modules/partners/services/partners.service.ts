@@ -1,6 +1,13 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, desc, eq, exists, ilike, inArray, isNull, ne, not, or, sql } from 'drizzle-orm';
-import { ConflictException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  forwardRef,
+} from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
   partners,
@@ -19,6 +26,7 @@ import { computePartnerIsApproved, inferPartnerCategoryKind } from '../domain/pa
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
+import { SupplierEvaluationsService } from '../../supplier-evaluations/services/supplier-evaluations.service';
 
 export type PartnerListTabScope = 'all' | 'ready' | 'in_progress' | 'key_supplier';
 
@@ -53,6 +61,7 @@ export interface PartnerQueryFilters {
   initialAssessmentDone?: PartnerListTriState;
   sortBy?: PartnerListSortField;
   sortOrder?: PartnerListSortOrder;
+  previewExcludeArchived?: boolean;
 }
 
 export interface PartnersListPayload {
@@ -71,7 +80,11 @@ export interface PartnersListPayload {
 export class PartnersService {
   private readonly logger = new Logger(PartnersService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    @Inject(forwardRef(() => SupplierEvaluationsService))
+    private readonly supplierEvaluationsService: SupplierEvaluationsService,
+  ) {}
 
   private listTabSql(tab: PartnerListTabScope): SQL | undefined {
     switch (tab) {
@@ -319,8 +332,7 @@ export class PartnersService {
   }
 
   private isOperationalStatusDeriveEnabled(): boolean {
-    const raw = process.env.PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE?.trim().toLowerCase();
-    return raw === 'true' || raw === '1' || raw === 'yes';
+    return true;
   }
 
   private async syncDerivedPartnerStatusForPartnersMatching(where: SQL): Promise<void> {
@@ -388,18 +400,33 @@ export class PartnersService {
   ): Promise<PartnersListPayload> {
 
     if (preview) {
-      const { blockedId } = await this.resolvePartnerOperationalStatusIds();
+      const { blockedId, archiveId } = await this.resolvePartnerOperationalStatusIds();
+      const previewParts: SQL[] = [
+        eq(partners.isDeleted, false),
+        or(isNull(partners.statusId), ne(partners.statusId, blockedId))!,
+      ];
+      const rawSearch = filters?.search?.trim();
+      if (rawSearch) {
+        const safeSearch = rawSearch.replace(/[%_]/g, '').replace(/\s+/g, ' ').trim();
+        if (safeSearch.length > 0) {
+          const term = `%${safeSearch}%`;
+          previewParts.push(or(ilike(partners.name, term), ilike(partners.shortName, term), ilike(partners.inn, term))!);
+        }
+      }
+      if (filters?.previewExcludeArchived) {
+        previewParts.push(or(isNull(partners.statusId), ne(partners.statusId, archiveId))!);
+      }
       const rows = await this.db.db
-        .select({ id: partners.id, name: partners.name })
+        .select({ id: partners.id, name: partners.name, shortName: partners.shortName, inn: partners.inn })
         .from(partners)
-        .where(
-          and(
-            eq(partners.isDeleted, false),
-            or(isNull(partners.statusId), ne(partners.statusId, blockedId))!,
-          )!,
-        )
+        .where(and(...previewParts)!)
         .orderBy(asc(partners.name));
-      const data = rows.map((row) => ({ id: String(row.id), name: row.name ?? '' }));
+      const data = rows.map((row) => ({
+        id: String(row.id),
+        name: row.shortName ?? row.name ?? '',
+        short_name: row.shortName ?? '',
+        inn: row.inn ?? '',
+      }));
       const partnerCount = data.length;
       return {
         data,
@@ -606,7 +633,9 @@ export class PartnersService {
     if (!row) return null;
     const partnerId = String(row.id);
     await this.syncRelTables(partnerId, data);
-    if (manualArchive !== true && this.isOperationalStatusDeriveEnabled()) {
+    if (manualArchive === true) {
+      await this.supplierEvaluationsService.archiveAllActiveByPartner(partnerId);
+    } else if (this.isOperationalStatusDeriveEnabled()) {
       await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: true });
     }
     return this.findOne(partnerId);
@@ -658,6 +687,12 @@ export class PartnersService {
     await this.syncRelTables(id, data);
 
     if (manualArchive === true) {
+      const hasEffectiveContract = await this.partnerHasAtLeastOneEffectiveContract(id);
+      if (hasEffectiveContract) {
+        throw new ConflictException(
+          'Невозможно архивировать контрагента: есть действующий договор. Завершите или деактивируйте договор перед архивацией.',
+        );
+      }
       const { archiveId } = await this.resolvePartnerOperationalStatusIds();
       await this.db.db
         .update(partners)
@@ -667,10 +702,11 @@ export class PartnersService {
           ...(userId ? { updatedBy: userId } : {}),
         })
         .where(eq(partners.id, id));
+      await this.supplierEvaluationsService.archiveAllActiveByPartner(id);
+    } else if (manualArchive === false) {
+      await this.exitArchiveStatus(id, userId);
     } else if (this.isOperationalStatusDeriveEnabled()) {
-      if (manualArchive === false) {
-        await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: true });
-      } else if ((currentStatusName ?? '').trim() !== 'Архив') {
+      if ((currentStatusName ?? '').trim() !== 'Архив') {
         await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
       }
     }
@@ -708,10 +744,6 @@ export class PartnersService {
     return this.findOne(id);
   }
 
-  /**
-   * Вызывается из сервисов договоров и оценок. Пересчёт выполняется только если включён
-   * `PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE` (см. `isOperationalStatusDeriveEnabled`).
-   */
   async refreshPartnerDerivedStatus(partnerId: string): Promise<void> {
     await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false });
   }
@@ -858,6 +890,17 @@ export class PartnersService {
     return nameRows[0]?.name?.trim() ?? null;
   }
 
+  async isPartnerInArchiveStatus(partnerId: string): Promise<boolean> {
+    const rows = await this.db.db
+      .select({ statusId: partners.statusId })
+      .from(partners)
+      .where(and(eq(partners.id, partnerId), eq(partners.isDeleted, false)))
+      .limit(1);
+    if (!rows[0]) return false;
+    const name = await this.getPartnerStatusName(rows[0].statusId ? String(rows[0].statusId) : null);
+    return (name ?? '').trim() === 'Архив';
+  }
+
   private async resolvePartnerOperationalStatusIds(): Promise<{
     activeId: string;
     potentialId: string;
@@ -885,6 +928,24 @@ export class PartnersService {
       blockedId: need('Заблокирован'),
       archiveId: need('Архив'),
     };
+  }
+
+  /**
+   * Явный выход из статуса "Архив":
+   * - партнёр должен перестать быть архивным;
+   * - целевой статус вычисляем по тем же единым правилам, что и auto-derive.
+   */
+  private async exitArchiveStatus(partnerId: string, userId?: string): Promise<void> {
+    const ids = await this.resolvePartnerOperationalStatusIds();
+    const nextStatusId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids);
+    await this.db.db
+      .update(partners)
+      .set({
+        statusId: nextStatusId,
+        updatedAt: new Date(),
+        ...(userId ? { updatedBy: userId } : {}),
+      })
+      .where(eq(partners.id, partnerId));
   }
 
   /**
@@ -939,31 +1000,13 @@ export class PartnersService {
     return Math.round((sum / perProject.length) * 100) / 100;
   }
 
-  /**
-   * strict (по умолчанию): без действующего договора «Активный» в БД сменится на «Потенциальный».
-   * migration: если в БД уже «Активный», не понижать из‑за отсутствия договора.
-   * Альтернатива: `PARTNER_PRESERVE_ACTIVE_STATUS_WITHOUT_CONTRACT=true`.
-   */
-  private trustDbActiveStatusOverMissingContract(): boolean {
-    const mode = (process.env.PARTNER_OPERATIONAL_STATUS_MODE ?? 'strict').trim().toLowerCase();
-    if (mode === 'migration') return true;
-    return (
-      process.env.PARTNER_PRESERVE_ACTIVE_STATUS_WITHOUT_CONTRACT === 'true' ||
-      process.env.PARTNER_PRESERVE_ACTIVE_STATUS_WITHOUT_CONTRACT === '1'
-    );
-  }
-
   private async computeAutoStatusIdForPartnerRow(
     partnerId: string,
     ids: { activeId: string; potentialId: string; blockedId: string },
-    currentStatusId: string | null,
   ): Promise<string> {
     const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
     if (avg !== null && avg < 2) {
       return ids.blockedId;
-    }
-    if (this.trustDbActiveStatusOverMissingContract() && currentStatusId === ids.activeId) {
-      return ids.activeId;
     }
     const hasEffective = await this.partnerHasAtLeastOneEffectiveContract(partnerId);
     if (hasEffective) {
@@ -990,7 +1033,7 @@ export class PartnersService {
     }
 
     const curId = partnerRow.statusId ? String(partnerRow.statusId) : null;
-    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids, curId);
+    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids);
     if (curId !== nextId) {
       await this.db.db
         .update(partners)

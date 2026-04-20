@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Modal, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Modal, Table, Tag, Tooltip, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
-import { useOutletContext } from 'react-router-dom';
+import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 
+import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useProjectsPreview } from '../../../api/projects/projectApiHooks';
 import { invalidatePartnerQueries } from '../../../api/partners/partnerQueryKeys';
 import {
@@ -39,6 +40,7 @@ import {
 import EvaluationExpandedContent from './EvaluationExpandedContent';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
 import NewInitialSupplierEvaluationModal from './NewInitialSupplierEvaluationModal';
+import { ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP } from './supplierEvaluationPartnerArchiveUi';
 import {
   CategoryTag,
   formatEvaluationScoreDisplay,
@@ -52,9 +54,12 @@ const { Text } = Typography;
 
 export default function PartnerEvaluationsTab() {
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const deleteMut = useDeleteSupplierEvaluation();
   const partner = useOutletContext<Partner>();
+  const { data: references } = useReferenceData(['partnerStatuses']);
   const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>('current');
   const [appliedListFilters, setAppliedListFilters] = useState<EvaluationsRegistryAppliedFilters>(
     EMPTY_EVALUATIONS_REGISTRY_FILTERS,
@@ -65,6 +70,26 @@ export default function PartnerEvaluationsTab() {
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
   const [initialEvaluationModalOpen, setInitialEvaluationModalOpen] = useState(false);
+
+  const isPartnerArchived = useMemo(() => {
+    const name = references?.partnerStatuses?.find(s => String(s.id) === String(partner.status_id))?.name;
+    return (name ?? '').trim() === 'Архив';
+  }, [partner.status_id, references?.partnerStatuses]);
+
+  const { data: activeEvaluationsPage } = useSupplierEvaluationsList(
+    { partner_id: partner.id, status: 'active', limit: 1, offset: 0 },
+    Boolean(partner.id),
+  );
+  const hasActiveEvaluations = (activeEvaluationsPage?.total ?? 0) > 0;
+  const evaluationsCreationDisabled = Boolean(partner.is_deleted) || isPartnerArchived;
+
+  useEffect(() => {
+    const state = location.state as { openInitialSupplierEvaluation?: boolean } | null;
+    if (state?.openInitialSupplierEvaluation === true) {
+      setInitialEvaluationModalOpen(true);
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+    }
+  }, [location.pathname, location.search, location.state, navigate]);
   const [reevaluationProjectId, setReevaluationProjectId] = useState<string | undefined>();
   const [reevaluationProjectLabel, setReevaluationProjectLabel] = useState<string | undefined>();
 
@@ -262,6 +287,14 @@ export default function PartnerEvaluationsTab() {
   return (
     <div className={listStyles.wrap}>
       {contextHolder}
+      {!isPartnerArchived && !hasActiveEvaluations ? (
+        <Alert
+          type='info'
+          showIcon
+          message='У контрагента нет активных оценок поставщика.'
+          style={{ marginBottom: 16 }}
+        />
+      ) : null}
       <PageHeader
         title='Оценки по проектам'
         actions={
@@ -279,26 +312,46 @@ export default function PartnerEvaluationsTab() {
                 <span className={listStyles.filtersBadge}>{activeFiltersCount}</span>
               )}
             </Button>
-            <Button
-              type='primary'
-              icon={<PlusOutlined />}
-              disabled={!!partner.is_deleted}
-              onClick={() => {
-                setReevaluationProjectId(undefined);
-                setReevaluationProjectLabel(undefined);
-                setEvaluationModalOpen(true);
-              }}
-            >
-              Новая оценка
-            </Button>
-            {partnerKpi?.avgScore == null ? (
+            {evaluationsCreationDisabled && isPartnerArchived ? (
+              <Tooltip title={ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP}>
+                <span>
+                  <Button type='primary' icon={<PlusOutlined />} disabled>
+                    Новая оценка
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
               <Button
-                type='default'
-                disabled={!!partner.is_deleted}
-                onClick={() => setInitialEvaluationModalOpen(true)}
+                type='primary'
+                icon={<PlusOutlined />}
+                disabled={evaluationsCreationDisabled}
+                onClick={() => {
+                  setReevaluationProjectId(undefined);
+                  setReevaluationProjectLabel(undefined);
+                  setEvaluationModalOpen(true);
+                }}
               >
-                Первичная оценка
+                Новая оценка
               </Button>
+            )}
+            {partnerKpi?.avgScore == null ? (
+              evaluationsCreationDisabled && isPartnerArchived ? (
+                <Tooltip title={ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP}>
+                  <span>
+                    <Button type='default' disabled>
+                      Первичная оценка
+                    </Button>
+                  </span>
+                </Tooltip>
+              ) : (
+                <Button
+                  type='default'
+                  disabled={evaluationsCreationDisabled}
+                  onClick={() => setInitialEvaluationModalOpen(true)}
+                >
+                  Первичная оценка
+                </Button>
+              )
             ) : null}
           </>
         }

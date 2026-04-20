@@ -15,6 +15,7 @@ import type {
   SupplierEvaluationDetail,
   SupplierEvaluationScoreDetail,
 } from '../../../types/supplierEvaluation';
+import { readAxiosLikeError } from '../../../utils/readAxiosLikeError';
 import { shouldShowSupplierEvaluationModalNoProjectsWarning } from '../../supplierEvaluations/supplierEvaluationsRegistry.model';
 import {
   CategoryTag,
@@ -262,11 +263,12 @@ export default function NewSupplierEvaluationModal({
               resolve();
             },
             onError: (error: unknown) => {
-              const msg =
-                error && typeof error === 'object' && 'response' in error
-                  ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-                  : undefined;
-              if (msg) showNotification('error', 'Ошибка', String(msg));
+              const { httpStatus, message } = readAxiosLikeError(error);
+              const text = message ?? 'Не удалось сохранить оценку';
+              showNotification('error', 'Ошибка', text);
+              if (httpStatus === 409) {
+                onClose();
+              }
               reject(error);
             },
           },
@@ -279,7 +281,7 @@ export default function NewSupplierEvaluationModal({
       title={modalTitle}
       open={open}
       onCancel={onClose}
-      width={720}
+      width={900}
       style={{ top: 20 }}
       styles={{ body: { paddingTop: 8 } }}
       destroyOnHidden

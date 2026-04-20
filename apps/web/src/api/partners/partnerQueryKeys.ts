@@ -16,7 +16,8 @@ export const partnerQueryKeys = {
 
   contacts: (partnerId?: string) => [...partnerQueryKeys.all, partnerId?.toString() as string | undefined, 'contacts'] as const,
 
-  referenceList: () => [...partnerQueryKeys.all, 'reference'] as const,
+  referenceList: (opts?: { excludeArchived?: boolean }) =>
+    [...partnerQueryKeys.all, 'reference', opts?.excludeArchived ? 'exclude-archived' : 'all'] as const,
 } as const;
 
 export type PartnerTabCountFilters = {

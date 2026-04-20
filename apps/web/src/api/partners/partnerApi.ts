@@ -86,8 +86,13 @@ export const partnerApi = {
       deletion_tab_counts: responseBody.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS,
     };
   },
-  getPartnersForReference: async (): Promise<Partner[]> => {
-    const response = await apiClient.get('/partners', { params: { preview: 1 } });
+  getPartnersForReference: async (opts?: { excludeArchived?: boolean }): Promise<Partner[]> => {
+    const response = await apiClient.get('/partners', {
+      params: {
+        preview: 1,
+        preview_exclude_archived: opts?.excludeArchived ? 1 : undefined,
+      },
+    });
     return response.data.data ?? response.data;
   },
   getPartnerById: async (partnerId: string): Promise<Partner> => {

@@ -2,6 +2,10 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 
 import { isValidUuid } from '../../helpers/isValidUuid';
 import { Partner } from '../../types/partner';
+import {
+  invalidateSupplierEvaluationQueries,
+  supplierEvaluationQueryKeys,
+} from '../supplierEvaluations/supplierEvaluationQueryKeys';
 import { partnerApi, PartnerListParams, PartnersListResponse } from './partnerApi';
 import { invalidatePartnerQueries, partnerQueryKeys } from './partnerQueryKeys';
 
@@ -62,8 +66,15 @@ export const useUpdatePartner = (): UseMutationResult<
     }
   >({
     mutationFn: ({ id, data }) => partnerApi.editPartner(id, data),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       void invalidatePartnerQueries(queryClient);
+      void queryClient.invalidateQueries({
+        queryKey: supplierEvaluationQueryKeys.partnerKpi(vars.id),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: supplierEvaluationQueryKeys.partnerInitial(vars.id),
+      });
+      void invalidateSupplierEvaluationQueries(queryClient);
     },
   });
 };

@@ -80,6 +80,7 @@
 
 .colGrow {
   flex: 1;
+  flex-basis: 280px;
   min-width: 0;
 }
 
@@ -116,6 +117,9 @@
 
 .criterionTitle {
   font-weight: 500;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
 }
 
 .criterionMeta {

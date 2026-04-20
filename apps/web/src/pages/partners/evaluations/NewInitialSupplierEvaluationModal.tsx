@@ -7,6 +7,7 @@ import {
   useSupplierEvaluationCriteria,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
 import { useNotification } from '../../../customhooks/useNotification';
+import { readAxiosLikeError } from '../../../utils/readAxiosLikeError';
 import type { SupplierEvaluationCriterion } from '../../../types/supplierEvaluation';
 import {
   CategoryTag,
@@ -97,11 +98,12 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
             onClose();
           },
           onError: (error: unknown) => {
-            const msg =
-              error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-                : undefined;
-            showNotification('error', 'Ошибка', msg ? String(msg) : 'Не удалось сохранить оценку');
+            const { httpStatus, message } = readAxiosLikeError(error);
+            const text = message ?? 'Не удалось сохранить оценку';
+            showNotification('error', 'Ошибка', text);
+            if (httpStatus === 409) {
+              onClose();
+            }
           },
         },
       );
@@ -112,7 +114,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
       title='Первичная оценка контрагента'
       open={open}
       onCancel={onClose}
-      width={720}
+      width={900}
       style={{ top: 20 }}
       styles={{ body: { paddingTop: 8 } }}
       destroyOnHidden
