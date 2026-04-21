@@ -186,12 +186,10 @@ export function partnerDetailHeaderMetaItems(
     <span key='eval-next' className={headerStyles.metaText}>
       <CalendarOutlined />
       <span className={chipStyles.metaLabel}>Следующая оценка:</span>{' '}
-      {partnerEvalKpiLoading || (partnerEvalKpi?.avgScore == null && initialEvalLoading) ? (
+      {partnerEvalKpiLoading ? (
         '…'
       ) : partnerEvalKpi?.nextReevaluationIso ? (
         <PartnerNextEvalDateTags nextIso={partnerEvalKpi.nextReevaluationIso} forDarkHeader />
-      ) : initialEval?.next_reevaluation_date ? (
-        <PartnerNextEvalDateTags nextIso={initialEval.next_reevaluation_date} forDarkHeader />
       ) : (
         <Tag bordered className={chipStyles.metaPlaceholderTag}>
           —

@@ -28,7 +28,6 @@ export default function PatentGrantEditPage() {
     isError: isReferencesError,
   } = useReferenceData(['patents']);
   const { mutate, isPending: isUpdateLoading } = useUpdatePatentGrant();
-  /** До paint: иначе Select «РИД» может показать uuid, пока не смонтированы опции. */
   useLayoutEffect(() => {
     if (!patentGrant) return;
     const formData = {

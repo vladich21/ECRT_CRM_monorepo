@@ -154,6 +154,12 @@ export const supplierEvaluationApi = {
     return row ?? null;
   },
 
+  archiveSupplierEvaluation: async (id: string): Promise<SupplierEvaluationDetail | null> => {
+    const { data } = await apiClient.patch<SupplierEvaluationDetail[]>(`/supplier-evaluations/${id}/archive`);
+    const row = Array.isArray(data) ? data[0] : null;
+    return row ?? null;
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/supplier-evaluations/${id}`);
   },

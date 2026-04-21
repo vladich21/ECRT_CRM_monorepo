@@ -356,14 +356,15 @@ export class PartnersService {
     const parts: SQL[] = [];
     const raw = filters?.search?.trim();
     if (raw) {
-      const safe = raw.replace(/[%_]/g, '').replace(/\s+/g, ' ').trim();
-      if (safe.length > 0) {
-        const term = `%${safe}%`;
+      const normalized = raw.replace(/\s+/g, ' ').trim();
+      if (normalized.length > 0) {
+        const escaped = normalized.replace(/[\\%_]/g, '\\$&');
+        const term = `%${escaped}%`;
         parts.push(
           or(
-            ilike(partners.name, term),
-            ilike(partners.shortName, term),
-            ilike(partners.inn, term),
+            sql`${partners.name} ILIKE ${term} ESCAPE '\\'`,
+            sql`${partners.shortName} ILIKE ${term} ESCAPE '\\'`,
+            sql`${partners.inn} ILIKE ${term} ESCAPE '\\'`,
           )!,
         );
       }
@@ -407,10 +408,17 @@ export class PartnersService {
       ];
       const rawSearch = filters?.search?.trim();
       if (rawSearch) {
-        const safeSearch = rawSearch.replace(/[%_]/g, '').replace(/\s+/g, ' ').trim();
-        if (safeSearch.length > 0) {
-          const term = `%${safeSearch}%`;
-          previewParts.push(or(ilike(partners.name, term), ilike(partners.shortName, term), ilike(partners.inn, term))!);
+        const normalized = rawSearch.replace(/\s+/g, ' ').trim();
+        if (normalized.length > 0) {
+          const escaped = normalized.replace(/[\\%_]/g, '\\$&');
+          const term = `%${escaped}%`;
+          previewParts.push(
+            or(
+              sql`${partners.name} ILIKE ${term} ESCAPE '\\'`,
+              sql`${partners.shortName} ILIKE ${term} ESCAPE '\\'`,
+              sql`${partners.inn} ILIKE ${term} ESCAPE '\\'`,
+            )!,
+          );
         }
       }
       if (filters?.previewExcludeArchived) {
@@ -421,12 +429,16 @@ export class PartnersService {
         .from(partners)
         .where(and(...previewParts)!)
         .orderBy(asc(partners.name));
-      const data = rows.map((row) => ({
-        id: String(row.id),
-        name: row.shortName ?? row.name ?? '',
-        short_name: row.shortName ?? '',
-        inn: row.inn ?? '',
-      }));
+      const data = rows.map((row) => {
+        const shortName = (row.shortName ?? '').trim();
+        const fullName = (row.name ?? '').trim();
+        return {
+          id: String(row.id),
+          name: shortName || fullName || '',
+          short_name: shortName,
+          inn: row.inn ?? '',
+        };
+      });
       const partnerCount = data.length;
       return {
         data,
@@ -930,11 +942,6 @@ export class PartnersService {
     };
   }
 
-  /**
-   * Явный выход из статуса "Архив":
-   * - партнёр должен перестать быть архивным;
-   * - целевой статус вычисляем по тем же единым правилам, что и auto-derive.
-   */
   private async exitArchiveStatus(partnerId: string, userId?: string): Promise<void> {
     const ids = await this.resolvePartnerOperationalStatusIds();
     const nextStatusId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids);
@@ -948,9 +955,6 @@ export class PartnersService {
       .where(eq(partners.id, partnerId));
   }
 
-  /**
-   * Действующий договор: не удалён и `is_active = true` (подписан → на бэке выставляется is_active).
-   */
   private async partnerHasAtLeastOneEffectiveContract(partnerId: string): Promise<boolean> {
     const contractRows = await this.db.db
       .select({ id: contracts.id })
@@ -1042,15 +1046,6 @@ export class PartnersService {
     }
   }
 
-  /**
-   * Computes derived approval extras for a partner row.
-   *
-   * `hasInitialEvalRecord` is provided by the caller from a live query against the
-   * supplierEvaluations table — it represents the authoritative source of truth for
-   * whether the initial assessment has been conducted, superseding the cached
-   * `initialAssessmentDone` DB column (which is set on write but may lag behind on
-   * older rows created before this invariant was enforced).
-   */
   private partnerApprovalExtras(
     row: typeof partners.$inferSelect,
     categoryName: string | null,
@@ -1094,7 +1089,6 @@ export class PartnersService {
     return new Set(blockRows.map((b) => String(b.partnerId)));
   }
 
-  /** Returns the set of partner IDs that have an active initial evaluation record. */
   private async loadInitialEvalPartnerIds(partnerIds: string[]): Promise<Set<string>> {
     if (partnerIds.length === 0) return new Set();
     const rows = await this.db.db

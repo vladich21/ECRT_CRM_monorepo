@@ -9,7 +9,7 @@ import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useProjectsPreview } from '../../../api/projects/projectApiHooks';
 import { invalidatePartnerQueries } from '../../../api/partners/partnerQueryKeys';
 import {
-  usePartnerSupplierEvalKpi,
+  usePartnerInitialSupplierEval,
   useDeleteSupplierEvaluation,
   useSupplierEvaluationRegistryCreators,
   useSupplierEvaluationTabCounts,
@@ -24,7 +24,11 @@ import { useNotification } from '../../../customhooks/useNotification';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import { mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner } from '../../../types/partner';
-import type { SupplierEvaluationListItem, SupplierEvaluationUiStatusParam } from '../../../types/supplierEvaluation';
+import type {
+  InitialSupplierEvaluation,
+  SupplierEvaluationListItem,
+  SupplierEvaluationUiStatusParam,
+} from '../../../types/supplierEvaluation';
 import {
   EVALUATION_UI_TABS,
   evaluationRegistrySortToRequestParams,
@@ -167,10 +171,15 @@ export default function PartnerEvaluationsTab() {
   );
 
   const { data: listDataRaw, isLoading, refetch } = useSupplierEvaluationsList(listParams, Boolean(partner.id));
-  const { data: partnerKpi } = usePartnerSupplierEvalKpi(partner.id, Boolean(partner.id));
+  const { data: initialEvaluation } = usePartnerInitialSupplierEval(partner.id, Boolean(partner.id));
+  const hasActiveInitialEvaluation = initialEvaluation?.status === 'active';
+  const hasProjectEvaluations = hasActiveEvaluations;
+  const shouldShowInitialTable = Boolean(initialEvaluation);
+  const shouldRequireInitialForProjectFlow = !hasActiveInitialEvaluation && !hasProjectEvaluations;
 
   const data = listDataRaw;
   const tabCounts = tabCountsRaw;
+  const initialEvaluationData: InitialSupplierEvaluation[] = initialEvaluation ? [initialEvaluation] : [];
 
   const activeFiltersCount = useMemo(() => countActiveRegistryFilters(appliedListFilters), [appliedListFilters]);
 
@@ -284,9 +293,85 @@ export default function PartnerEvaluationsTab() {
     },
   ];
 
+  const initialColumns: ColumnsType<InitialSupplierEvaluation> = [
+    {
+      title: 'Дата оценки',
+      dataIndex: 'evaluated_at',
+      width: 120,
+      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '—'}</Text>,
+    },
+    {
+      title: 'Категория',
+      key: 'cat',
+      width: 140,
+      render: (_, row) => <CategoryTag category={row.category} weightedScore={row.weighted_score} />,
+    },
+    {
+      title: 'Балл',
+      key: 'score',
+      width: 120,
+      render: (_, row) => (
+        <Text strong style={{ color: scoreColor(row.weighted_score) }}>
+          {formatEvaluationScoreDisplay(Number(row.weighted_score))}
+        </Text>
+      ),
+    },
+    {
+      title: 'Статус',
+      key: 'status',
+      width: 360,
+      render: (_, row) => {
+        if (row.status !== 'active') {
+          return <Text type='secondary'>Архив</Text>;
+        }
+        return <Text type='secondary'>{hasProjectEvaluations ? 'Оценка по проектам' : 'Оценка по первичной оценке'}</Text>;
+      },
+    },
+  ];
+
   return (
     <div className={listStyles.wrap}>
       {contextHolder}
+      <div className={listStyles.tableCard} style={{ marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            margin: '12px',
+          }}
+        >
+          <Text strong>Первичная оценка</Text>
+          {!hasActiveInitialEvaluation ? (
+            evaluationsCreationDisabled && isPartnerArchived ? (
+              <Tooltip title={ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP}>
+                <span>
+                  <Button type='default' disabled>
+                    Первичная оценка
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <Button
+                type='default'
+                disabled={evaluationsCreationDisabled}
+                onClick={() => setInitialEvaluationModalOpen(true)}
+              >
+                Первичная оценка
+              </Button>
+            )
+          ) : null}
+        </div>
+        {shouldShowInitialTable ? (
+          <Table<InitialSupplierEvaluation>
+            rowKey='id'
+            columns={initialColumns}
+            dataSource={initialEvaluationData}
+            pagination={false}
+            size='small'
+          />
+        ) : null}
+      </div>
       {!isPartnerArchived && !hasActiveEvaluations ? (
         <Alert
           type='info'
@@ -312,8 +397,16 @@ export default function PartnerEvaluationsTab() {
                 <span className={listStyles.filtersBadge}>{activeFiltersCount}</span>
               )}
             </Button>
-            {evaluationsCreationDisabled && isPartnerArchived ? (
-              <Tooltip title={ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP}>
+            {evaluationsCreationDisabled || shouldRequireInitialForProjectFlow ? (
+              <Tooltip
+                title={
+                  isPartnerArchived
+                    ? ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP
+                    : shouldRequireInitialForProjectFlow
+                      ? 'Сначала запустите первичную оценку поставщика'
+                      : undefined
+                }
+              >
                 <span>
                   <Button type='primary' icon={<PlusOutlined />} disabled>
                     Новая оценка
@@ -324,7 +417,7 @@ export default function PartnerEvaluationsTab() {
               <Button
                 type='primary'
                 icon={<PlusOutlined />}
-                disabled={evaluationsCreationDisabled}
+                disabled={evaluationsCreationDisabled || shouldRequireInitialForProjectFlow}
                 onClick={() => {
                   setReevaluationProjectId(undefined);
                   setReevaluationProjectLabel(undefined);
@@ -334,25 +427,6 @@ export default function PartnerEvaluationsTab() {
                 Новая оценка
               </Button>
             )}
-            {partnerKpi?.avgScore == null ? (
-              evaluationsCreationDisabled && isPartnerArchived ? (
-                <Tooltip title={ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP}>
-                  <span>
-                    <Button type='default' disabled>
-                      Первичная оценка
-                    </Button>
-                  </span>
-                </Tooltip>
-              ) : (
-                <Button
-                  type='default'
-                  disabled={evaluationsCreationDisabled}
-                  onClick={() => setInitialEvaluationModalOpen(true)}
-                >
-                  Первичная оценка
-                </Button>
-              )
-            ) : null}
           </>
         }
         filters={
@@ -396,7 +470,16 @@ export default function PartnerEvaluationsTab() {
               <EvaluationExpandedContent
                 row={record}
                 partnerId={partner.id}
+                projectLabel={String(projectNameById[record.project_id] ?? '').trim() || record.project_id}
                 onReevaluate={projectId => {
+                  if (shouldRequireInitialForProjectFlow) {
+                    showNotification(
+                      'warning',
+                      'Сначала проведите первичную оценку',
+                      'До первичной оценки переоценка по проектам недоступна.',
+                    );
+                    return;
+                  }
                   setReevaluationProjectId(projectId);
                   setReevaluationProjectLabel(
                     String(projectNameById[projectId] ?? '').trim() || undefined,

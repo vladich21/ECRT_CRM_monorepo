@@ -57,9 +57,7 @@ export default function PartnerOverviewTab() {
         <KpiRow
           complianceItems={complianceItems}
           supplierEvalAvgScore={supplierEvalKpi?.avgScore ?? initialEval?.weighted_score ?? null}
-          nextEvaluationValue={formatNextReevaluationKpiValue(
-            supplierEvalKpi?.nextReevaluationIso ?? initialEval?.next_reevaluation_date ?? null,
-          )}
+          nextEvaluationValue={formatNextReevaluationKpiValue(supplierEvalKpi?.nextReevaluationIso ?? null)}
           avgScoreLabel={
             supplierEvalKpi?.avgScore != null
               ? 'Оценка по проектам'

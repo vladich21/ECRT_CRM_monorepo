@@ -1,15 +1,15 @@
 import type { ThHTMLAttributes } from 'react';
 import { CalendarOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
-import { Alert, Button, Modal, Table, Tooltip, Typography } from 'antd';
+import { Alert, Button, Modal, Table, Tooltip, Typography, notification } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
 import {
   useDeactivateSupplierEvaluationBlock,
+  useArchiveSupplierEvaluation,
   useSupplierEvaluationBlock,
   useSupplierEvaluationDetail,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
 import type { SupplierEvaluationListItem, SupplierEvaluationScoreDetail } from '../../../types/supplierEvaluation';
 import {
   ScoreDots,
@@ -28,16 +28,18 @@ const { Text } = Typography;
 type Props = {
   row: SupplierEvaluationListItem;
   partnerId: string;
+  projectLabel?: string;
   onReevaluate: (projectId: string) => void;
 };
 
-export default function EvaluationExpandedContent({ row, partnerId, onReevaluate }: Props) {
+export default function EvaluationExpandedContent({ row, partnerId, projectLabel, onReevaluate }: Props) {
   const { data: detail, isLoading } = useSupplierEvaluationDetail(row.id, true);
   const { data: block } = useSupplierEvaluationBlock(partnerId, row.project_id, row.status === 'active');
   const projectBlockActive = Boolean(block?.is_active);
   const deactivateMut = useDeactivateSupplierEvaluationBlock();
-  const { showNotification, contextHolder } = useNotification();
+  const archiveMut = useArchiveSupplierEvaluation();
   const rowPresentationState = getRowUiStatus(row);
+  const canArchiveEvaluation = row.status === 'active' && Boolean(row.project_id) && row.project_id !== 'null';
 
   const handleDeactivateBlock = () => {
     if (!block?.id) return;
@@ -50,11 +52,36 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
         new Promise<void>((resolve, reject) => {
           deactivateMut.mutate(block.id, {
             onSuccess: () => {
-              showNotification('success', 'Блокировка снята');
+              notification.success({ message: 'Блокировка снята' });
               resolve();
             },
             onError: () => {
-              showNotification('error', 'Не удалось снять блокировку');
+              notification.error({ message: 'Не удалось снять блокировку' });
+              reject();
+            },
+          });
+        }),
+    });
+  };
+
+  const handleArchiveEvaluation = () => {
+    const projectTitle = String(projectLabel ?? row.project_id ?? '').trim() || row.project_id;
+    Modal.confirm({
+      title: `Прекратить оценку по проекту ${projectTitle}?`,
+      content:
+        'Переоценка по этому проекту больше не будет требоваться. Для возобновления оценки создайте новую.',
+      okText: 'Архивировать',
+      cancelText: 'Отмена',
+      okButtonProps: { danger: true },
+      onOk: () =>
+        new Promise<void>((resolve, reject) => {
+          archiveMut.mutate(row.id, {
+            onSuccess: () => {
+              notification.success({ message: 'Оценка архивирована' });
+              resolve();
+            },
+            onError: () => {
+              notification.error({ message: 'Не удалось архивировать оценку' });
               reject();
             },
           });
@@ -117,7 +144,6 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
 
   return (
     <div className={styles.root}>
-      {contextHolder}
       {isLoading || !detail ? (
         <Text type='secondary'>Загрузка деталей…</Text>
       ) : (
@@ -249,6 +275,18 @@ export default function EvaluationExpandedContent({ row, partnerId, onReevaluate
                   </Button>
                 </span>
               </Tooltip>
+              {canArchiveEvaluation ? (
+                <span className={styles.inlineBlock}>
+                  <Button
+                    danger
+                    disabled={archiveMut.isPending}
+                    loading={archiveMut.isPending}
+                    onClick={handleArchiveEvaluation}
+                  >
+                    Архивировать
+                  </Button>
+                </span>
+              ) : null}
             </div>
           )}
         </>

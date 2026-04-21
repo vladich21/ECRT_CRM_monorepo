@@ -6,6 +6,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -240,5 +241,11 @@ export class SupplierEvaluationsController {
   async remove(@Param('id') id: string) {
     await this.service.deleteEvaluation(id);
     return [{ deleted: true }];
+  }
+
+  @Patch(':id/archive')
+  async archive(@Param('id') id: string) {
+    const row = await this.service.archiveEvaluation(id);
+    return [row];
   }
 }

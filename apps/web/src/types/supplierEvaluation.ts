@@ -78,6 +78,7 @@ export interface CreateSupplierEvaluationPayload {
 export interface InitialSupplierEvaluation {
   id: string;
   partner_id: string;
+  status: SupplierEvaluationStatus;
   weighted_score: number;
   category: SupplierEvaluationCategory;
   evaluated_at: string;

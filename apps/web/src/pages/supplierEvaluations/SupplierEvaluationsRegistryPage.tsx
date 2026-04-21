@@ -495,6 +495,7 @@ export default function SupplierEvaluationsRegistryPage() {
               <EvaluationExpandedContent
                 row={record}
                 partnerId={record.partner_id}
+                projectLabel={String(projectNameById[record.project_id] ?? '').trim() || record.project_id}
                 onReevaluate={projectId => {
                   setReevaluationPartnerId(record.partner_id);
                   setReevaluationProjectId(projectId);

@@ -241,6 +241,43 @@ export class SupplierEvaluationsService {
     await this.partnersService.refreshPartnerDerivedStatus(partnerId);
   }
 
+  async archiveEvaluation(evaluationId: string) {
+    const existingRows = await this.db.db
+      .select({
+        id: supplierEvaluations.id,
+        status: supplierEvaluations.status,
+        scope: supplierEvaluations.scope,
+      })
+      .from(supplierEvaluations)
+      .where(eq(supplierEvaluations.id, evaluationId))
+      .limit(1);
+    const existing = existingRows[0];
+    if (!existing) {
+      throw new NotFoundException(`Оценка ${evaluationId} не найдена`);
+    }
+    if (existing.status === 'archived') {
+      throw new BadRequestException('Оценка уже архивирована');
+    }
+    if (existing.scope !== EVAL_SCOPE_PROJECT) {
+      throw new BadRequestException('Ручная архивация доступна только для проектных оценок');
+    }
+
+    await this.db.db
+      .update(supplierEvaluations)
+      .set({
+        status: 'archived',
+        nextReevaluationDate: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(supplierEvaluations.id, evaluationId));
+
+    const archived = await this.findOne(evaluationId);
+    if (!archived) {
+      throw new NotFoundException(`Оценка ${evaluationId} не найдена`);
+    }
+    return archived;
+  }
+
   async findCriteriaCatalog() {
     const rows = await this.db.db
       .select()
@@ -566,6 +603,7 @@ export class SupplierEvaluationsService {
       return {
         id: String(row.id),
         partner_id: String(row.partnerId),
+        status: row.status,
         weighted_score: this.roundScore(Number(row.weightedScore)),
         category: row.category as SupplierEvaluationCategory,
         evaluated_at: row.evaluatedAt ? String(row.evaluatedAt) : '',
@@ -576,7 +614,6 @@ export class SupplierEvaluationsService {
       };
     }
 
-    // Display fallback after archiving: keep last primary score visible, but reevaluation date remains hidden.
     const archivedRows = await this.db.db
       .select()
       .from(supplierEvaluations)
@@ -594,6 +631,7 @@ export class SupplierEvaluationsService {
     return {
       id: String(archived.id),
       partner_id: String(archived.partnerId),
+      status: archived.status,
       weighted_score: this.roundScore(Number(archived.weightedScore)),
       category: archived.category as SupplierEvaluationCategory,
       evaluated_at: archived.evaluatedAt ? String(archived.evaluatedAt) : '',
@@ -716,6 +754,7 @@ export class SupplierEvaluationsService {
     return {
       id: String(inserted.id),
       partner_id: String(inserted.partnerId),
+      status: inserted.status,
       weighted_score: this.roundScore(Number(inserted.weightedScore)),
       category: inserted.category as SupplierEvaluationCategory,
       evaluated_at: inserted.evaluatedAt ? String(inserted.evaluatedAt) : '',

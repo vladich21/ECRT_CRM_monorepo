@@ -15,6 +15,7 @@ import {
   type SupplierEvaluationsStatusFilter,
 } from './supplierEvaluationApi';
 import { invalidateSupplierEvaluationQueries, supplierEvaluationQueryKeys } from './supplierEvaluationQueryKeys';
+import { invalidatePartnerQueries } from '../partners/partnerQueryKeys';
 
 export {
   getPartnerInitialEvalQueryKey,
@@ -180,6 +181,17 @@ export function useDeleteSupplierEvaluation() {
     mutationFn: (id: string) => supplierEvaluationApi.delete(id),
     onSuccess: () => {
       void invalidateSupplierEvaluationQueries(queryClient);
+    },
+  });
+}
+
+export function useArchiveSupplierEvaluation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => supplierEvaluationApi.archiveSupplierEvaluation(id),
+    onSuccess: () => {
+      void invalidateSupplierEvaluationQueries(queryClient);
+      void invalidatePartnerQueries(queryClient);
     },
   });
 }

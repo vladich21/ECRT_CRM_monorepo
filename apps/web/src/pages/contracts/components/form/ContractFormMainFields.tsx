@@ -24,8 +24,6 @@ type Props = {
 };
 
 export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectChange, requireFullValidation = false }: Props) {
-  const selectedPartnerId = Form.useWatch('partner_id');
-
   const handleProjectChange = (value: string | undefined) => {
     if (!onProjectChange) return;
     const project = refs.projects?.find(projectRow => projectRow.id === value) ?? null;
@@ -34,21 +32,16 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
 
   const partnerOptions = useMemo(() => {
     const allPartners = refs.partners ?? [];
-    return allPartners
-      .filter(partner => {
-        const withExtras = partner as { name?: string; short_name?: string; inn?: string };
-        const displayName = String(withExtras.short_name ?? withExtras.name ?? '').trim();
-        return Boolean(displayName) || String(partner.id) === String(selectedPartnerId ?? '');
-      })
-      .map(partner => {
-        const withExtras = partner as { name?: string; short_name?: string; inn?: string };
-        const rawDisplayName = String(withExtras.short_name ?? withExtras.name ?? '').trim();
-        const displayLabel = rawDisplayName || 'Контрагент без названия';
-        const inn = String(withExtras.inn ?? '').trim();
-        const searchLabel = `${displayLabel} ${inn}`.trim().toLowerCase();
-        return { id: String(partner.id), label: displayLabel, searchLabel, inn };
-      });
-  }, [refs.partners, selectedPartnerId]);
+    return allPartners.map(partner => {
+      const withExtras = partner as { name?: string; short_name?: string; shortName?: string; inn?: string };
+      const shortName = String(withExtras.short_name ?? withExtras.shortName ?? '').trim();
+      const fullName = String(withExtras.name ?? '').trim();
+      const displayLabel = shortName || fullName || 'Контрагент без имени';
+      const inn = String(withExtras.inn ?? '').trim();
+      const searchLabel = `${displayLabel} ${inn}`.trim().toLowerCase();
+      return { id: String(partner.id), label: displayLabel, searchLabel, inn };
+    });
+  }, [refs.partners]);
 
   return (
     <>
@@ -108,7 +101,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
                   root: { minWidth: 360, maxWidth: 'min(90vw, 960px)' },
                 },
               }}
-              placeholder='Выберите контрагента'
+              placeholder='Выберите контрагента или введите ИНН'
               allowClear
               showSearch
               optionFilterProp='label'

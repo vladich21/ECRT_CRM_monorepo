@@ -174,26 +174,26 @@ export default function SupplierCard({
             trailColor='#f0f0f0'
           />
         </div>
-        <div className={styles.contractsCount}>
-          <CalendarOutlined />
-          <div className={styles.nextEvalCol}>
-            <span className={styles.nextEvalLine}>
-              <span className={styles.nextEvalLabel}>Следующая оценка:</span>{' '}
-              {evaluationKpiLoading || (!hasProjectAvg && initialEvaluationLoading) ? (
-                '…'
-              ) : evaluationKpi?.nextReevaluationIso ? (
-                <PartnerNextEvalDateTags nextIso={evaluationKpi.nextReevaluationIso} layout='registry' />
-              ) : initialEvaluation?.next_reevaluation_date ? (
-                <PartnerNextEvalDateTags nextIso={initialEvaluation.next_reevaluation_date} layout='registry' />
-              ) : (
-                <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>—</span>
-              )}
-            </span>
-            {evaluationKpiDaysHint ? (
-              <div className={styles.evalKpiDaysHint}>{evaluationKpiDaysHint}</div>
-            ) : null}
+        {hasProjectAvg ? (
+          <div className={styles.contractsCount}>
+            <CalendarOutlined />
+            <div className={styles.nextEvalCol}>
+              <span className={styles.nextEvalLine}>
+                <span className={styles.nextEvalLabel}>Следующая оценка:</span>{' '}
+                {evaluationKpiLoading || (!hasProjectAvg && initialEvaluationLoading) ? (
+                  '…'
+                ) : evaluationKpi?.nextReevaluationIso ? (
+                  <PartnerNextEvalDateTags nextIso={evaluationKpi.nextReevaluationIso} layout='registry' />
+                ) : (
+                  <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>—</span>
+                )}
+              </span>
+              {evaluationKpiDaysHint ? (
+                <div className={styles.evalKpiDaysHint}>{evaluationKpiDaysHint}</div>
+              ) : null}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       <div className={styles.activityCol}>

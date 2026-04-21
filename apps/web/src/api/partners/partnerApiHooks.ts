@@ -44,6 +44,7 @@ export const useCreatePartner = (): UseMutationResult<Partner, Error, Partner> =
     mutationFn: (data: Partner) => partnerApi.addPartner(data),
     onSuccess: () => {
       void invalidatePartnerQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['reference-data'] });
     },
   });
 };
