@@ -21,7 +21,7 @@ prod:build:api:
     - docker
     - nextjs
   script:
-    - docker compose build api
+    - docker compose -p pmdb-prod -f docker-compose.yml build api
   only:
     - release/v1
 
@@ -51,7 +51,7 @@ prod:build:web:
   needs:
     - prod:build:web-assets
   script:
-    - docker compose build web
+    - docker compose -p pmdb-prod -f docker-compose.yml build web
   only:
     - release/v1
 
@@ -90,9 +90,9 @@ prod:deploy:
         echo "Проверь GitLab → CI/CD → Variables (имя, Environment, после снятия Protected — заново запусти deploy)."
         exit 1
       fi
-      docker compose down || true
-      docker compose up -d
-      docker image prune -f
+      docker compose -p pmdb-prod -f docker-compose.yml down || true
+      docker compose -p pmdb-prod -f docker-compose.yml up -d
+      docker image prune -f || true
   environment:
     name: production
     url: http://$DEPLOY_HOST:3001
@@ -111,7 +111,7 @@ stage:build:api:
     - docker
     - nextjs
   script:
-    - docker compose -f docker-compose.stage.yml build api
+    - docker compose -p pmdb-stage -f docker-compose.stage.yml build api
   only:
     - stage
 
@@ -141,7 +141,7 @@ stage:build:web:
   needs:
     - stage:build:web-assets
   script:
-    - docker compose -f docker-compose.stage.yml build web
+    - docker compose -p pmdb-stage -f docker-compose.stage.yml build web
   only:
     - stage
 
@@ -175,9 +175,9 @@ stage:deploy:
       export HR_USERS_SYNC_SECRET="${HR_USERS_SYNC_SECRET:-}"
       export HR_SYNC_INTERVAL_MINUTES=0
       export PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=true
-      docker compose -f docker-compose.stage.yml down || true
-      docker compose -f docker-compose.stage.yml up -d
-      docker image prune -f
+      docker compose -p pmdb-stage -f docker-compose.stage.yml down || true
+      docker compose -p pmdb-stage -f docker-compose.stage.yml up -d
+      docker image prune -f || true
   environment:
     name: staging
     url: http://$DEPLOY_HOST:3002
