@@ -1,0 +1,45 @@
+services:
+  web:
+    container_name: pmdb-web-stage
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        NGINX_CONF: nginx.stage.conf
+    ports:
+      - "${WEB_PORT:-3002}:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    container_name: pmdb-api-stage
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    expose:
+      - "9002"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - DATANEWTON_API_KEY=${DATANEWTON_API_KEY}
+      - NODE_ENV=production
+      - PORT=9002
+      - FRONTEND_URL=${FRONTEND_URL}
+      - UPLOAD_PATH=/app/apps/backend-nest/uploads
+      - FILE_UPLOAD_URL=${FILE_UPLOAD_URL}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-true}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      - EXTERNAL_HR_USERS_URL=${EXTERNAL_HR_USERS_URL:-}
+      - EXTERNAL_HR_API_TOKEN=${EXTERNAL_HR_API_TOKEN:-}
+      - EXTERNAL_HR_ASSET_BASE_URL=${EXTERNAL_HR_ASSET_BASE_URL:-}
+      - HR_USERS_SYNC_SECRET=${HR_USERS_SYNC_SECRET:-}
+      - HR_SYNC_INTERVAL_MINUTES=${HR_SYNC_INTERVAL_MINUTES:-0}
+      - PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=${PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE:-true}
+    volumes:
+      - /data/pmdb-stage/uploads:/app/apps/backend-nest/uploads
+    restart: unless-stopped

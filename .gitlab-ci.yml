@@ -7,6 +7,7 @@ variables:
   GIT_SSL_NO_VERIFY: "true"
   # Секреты берутся из GitLab CI/CD Variables:
   # DATABASE_URL, JWT_SECRET, SMTP_PASSWORD, DATANEWTON_API_KEY
+  # STAGE_DATABASE_URL, STAGE_JWT_SECRET (для стейджа)
 
 # =====================================================
 # PRODUCTION (branch release/v1, port 3001)
@@ -97,3 +98,88 @@ prod:deploy:
     url: http://$DEPLOY_HOST:3001
   only:
     - release/v1
+
+# =====================================================
+# STAGE (branch stage, port 3002)
+# =====================================================
+
+stage:build:api:
+  stage: build
+  image: docker:25.0.5-git
+  timeout: 20m
+  tags:
+    - docker
+    - nextjs
+  script:
+    - docker compose -f docker-compose.stage.yml build api
+  only:
+    - stage
+
+stage:build:web-assets:
+  stage: build
+  image: node:20-alpine
+  timeout: 20m
+  tags:
+    - docker
+    - nextjs
+  script:
+    - npm ci
+    - cd apps/web && npx vite build
+  artifacts:
+    paths:
+      - apps/web/dist/
+    expire_in: 1 hour
+  only:
+    - stage
+
+stage:build:web:
+  stage: build
+  image: docker:25.0.5-git
+  tags:
+    - docker
+    - nextjs
+  needs:
+    - stage:build:web-assets
+  script:
+    - docker compose -f docker-compose.stage.yml build web
+  only:
+    - stage
+
+stage:deploy:
+  stage: deploy
+  image: docker:25.0.5-git
+  tags:
+    - docker
+    - nextjs
+  needs:
+    - stage:build:api
+    - stage:build:web
+  script:
+    - |
+      set -e
+      export WEB_PORT=3002
+      export DATABASE_URL="${STAGE_DATABASE_URL}"
+      export JWT_SECRET="${STAGE_JWT_SECRET:-${JWT_SECRET}}"
+      export FRONTEND_URL="http://192.0.2.12:3002,http://localhost:3002"
+      export FILE_UPLOAD_URL="http://192.0.2.12:3002/api"
+      export SMTP_HOST="${SMTP_HOST}"
+      export SMTP_PORT="${SMTP_PORT}"
+      export SMTP_SECURE="${SMTP_SECURE}"
+      export SMTP_USER="${SMTP_USER}"
+      export SMTP_PASSWORD="${SMTP_PASSWORD}"
+      export SMTP_FROM="${SMTP_FROM}"
+      export DATANEWTON_API_KEY="${DATANEWTON_API_KEY}"
+      export EXTERNAL_HR_USERS_URL="${EXTERNAL_HR_USERS_URL:-}"
+      export EXTERNAL_HR_API_TOKEN="${EXTERNAL_HR_API_TOKEN:-}"
+      export EXTERNAL_HR_ASSET_BASE_URL="${EXTERNAL_HR_ASSET_BASE_URL:-}"
+      export HR_USERS_SYNC_SECRET="${HR_USERS_SYNC_SECRET:-}"
+      export HR_SYNC_INTERVAL_MINUTES=0
+      export PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=true
+      docker compose -f docker-compose.stage.yml down || true
+      docker compose -f docker-compose.stage.yml up -d
+      docker image prune -f
+  environment:
+    name: staging
+    url: http://$DEPLOY_HOST:3002
+  only:
+    - stage
