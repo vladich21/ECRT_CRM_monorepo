@@ -28,8 +28,8 @@ export function usePartnersListData(
     queries: PARTNER_FILTER_TABS.map(({ key }) => ({
       queryKey: partnerQueryKeys.tabCount(key, debouncedSearch.trim(), partnerFiltersToTabCountKey(appliedFilters)),
       queryFn: async () => {
-        const filters = buildPartnersApiFilters(debouncedSearch, key, appliedFilters);
-        const response = await partnerApi.getPartners(filters, 1, 0);
+        const tabFilters = buildPartnersApiFilters(debouncedSearch, key, appliedFilters);
+        const response = await partnerApi.getPartners(tabFilters, 1, 0);
         return response.total;
       },
       staleTime: 15 * 1000,
@@ -97,6 +97,10 @@ export function usePartnersListData(
       competencies: (references?.competencies ?? []).map(competence => ({
         label: competence.name,
         value: String(competence.id),
+      })),
+      partnerCategories: (references?.partnerCategories ?? []).map(category => ({
+        label: category.name,
+        value: String(category.id),
       })),
     }),
     [references],

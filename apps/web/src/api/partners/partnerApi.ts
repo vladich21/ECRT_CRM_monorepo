@@ -33,6 +33,8 @@ export interface PartnerListParams {
   readiness?: 'all' | 'ready' | 'in_progress';
   deletedScope?: DeletionScope;
   evaluationCategories?: ('A' | 'B' | 'C' | 'D' | 'none')[];
+  categoryIds?: string[];
+  evaluationRequired?: PartnerListTriStateParam;
   isKeySupplier?: PartnerListTriStateParam;
   isTargeted?: PartnerListTriStateParam;
   reevaluationOverdue?: PartnerListTriStateParam;
@@ -47,7 +49,7 @@ export interface PartnerListParams {
 
 export const partnerApi = {
   getPartners: async (filters?: PartnerListParams, limit = 20, offset = 0): Promise<PartnersListResponse> => {
-    const evalCats = filters?.evaluationCategories?.length
+    const evaluationCategoriesParam = filters?.evaluationCategories?.length
       ? filters.evaluationCategories.map(c => (c === 'none' ? 'none' : c)).join(',')
       : undefined;
     const response = await apiClient.get('/partners', {
@@ -60,7 +62,9 @@ export const partnerApi = {
         status_ids: filters?.statusIds?.length ? filters.statusIds.join(',') : undefined,
         competence_ids: filters?.competenceIds?.length ? filters.competenceIds.join(',') : undefined,
         readiness: filters?.readiness && filters.readiness !== 'all' ? filters.readiness : undefined,
-        evaluation_categories: evalCats,
+        evaluation_categories: evaluationCategoriesParam,
+        category_ids: filters?.categoryIds?.length ? filters.categoryIds.join(',') : undefined,
+        evaluation_required: filters?.evaluationRequired,
         is_key_supplier: filters?.isKeySupplier,
         is_targeted: filters?.isTargeted,
         reevaluation_overdue: filters?.reevaluationOverdue,
@@ -74,14 +78,14 @@ export const partnerApi = {
       },
     });
     const responseBody = response.data as PartnersListResponse;
-    const tc = responseBody.tab_counts;
+    const tabCounts = responseBody.tab_counts;
     return {
       ...responseBody,
       tab_counts: {
-        all: tc?.all ?? 0,
-        ready: tc?.ready ?? 0,
-        in_progress: tc?.in_progress ?? 0,
-        key_supplier: tc?.key_supplier ?? 0,
+        all: tabCounts?.all ?? 0,
+        ready: tabCounts?.ready ?? 0,
+        in_progress: tabCounts?.in_progress ?? 0,
+        key_supplier: tabCounts?.key_supplier ?? 0,
       },
       deletion_tab_counts: responseBody.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS,
     };

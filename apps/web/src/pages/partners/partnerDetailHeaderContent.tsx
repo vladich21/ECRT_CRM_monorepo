@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react';
 import {
+  AppstoreOutlined,
   AimOutlined,
   BankOutlined,
   CalendarOutlined,
   CheckCircleFilled,
   ClockCircleFilled,
+  ExclamationCircleOutlined,
   SafetyCertificateOutlined,
   StarFilled,
+  ToolOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import { Tag, Tooltip } from 'antd';
 
@@ -82,12 +86,34 @@ function isApprovedForBadges(partner: Partner, options?: PartnerDetailHeaderBadg
   });
 }
 
+function renderCategoryChip(categoryName: string | null | undefined): ReactNode | null {
+  const categoryKind = inferPartnerCategoryKind(categoryName);
+  if (categoryKind === 'engineering') {
+    return (
+      <div key='category-engineering' className={chipStyles.chipCategoryEngineering}>
+        <ToolOutlined className={chipStyles.chipIcon} />
+        Инжиниринговый
+      </div>
+    );
+  }
+  if (categoryKind === 'resource') {
+    return (
+      <div key='category-resource' className={chipStyles.chipCategoryResource}>
+        <AppstoreOutlined className={chipStyles.chipIcon} />
+        Ресурсный
+      </div>
+    );
+  }
+  return null;
+}
+
 export function partnerDetailHeaderBadges(
   partner: Partner,
   options?: PartnerDetailHeaderBadgeOptions,
 ): ReactNode[] {
   const approved = isApprovedForBadges(partner, options);
   const tooltipTitle = approvalTooltipTitle(approved, options?.categoryName);
+  const categoryChip = renderCategoryChip(options?.categoryName);
 
   const approvalChip = approved ? (
     <div className={chipStyles.chipApproved}>
@@ -101,11 +127,15 @@ export function partnerDetailHeaderBadges(
     </div>
   );
 
-  const badges: ReactNode[] = [
+  const badges: ReactNode[] = [];
+  if (categoryChip) {
+    badges.push(categoryChip);
+  }
+  badges.push(
     <Tooltip key='approved' title={tooltipTitle}>
       {approvalChip}
     </Tooltip>,
-  ];
+  );
 
   if (partner.is_key_supplier) {
     badges.push(
@@ -121,6 +151,24 @@ export function partnerDetailHeaderBadges(
       <div key='target' className={chipStyles.chipTarget}>
         <AimOutlined className={chipStyles.chipIcon} />
         Целевой
+      </div>,
+    );
+  }
+
+  if (partner.evaluation_required === 'missing') {
+    badges.push(
+      <div key='eval-required-missing' className={chipStyles.chipEvalRequiredMissing}>
+        <WarningOutlined className={chipStyles.chipIcon} />
+        Требуется оценка
+      </div>,
+    );
+  }
+
+  if (partner.evaluation_required === 'overdue') {
+    badges.push(
+      <div key='eval-required-overdue' className={chipStyles.chipEvalRequiredOverdue}>
+        <ExclamationCircleOutlined className={chipStyles.chipIcon} />
+        Требуется оценка · Просрочена
       </div>,
     );
   }

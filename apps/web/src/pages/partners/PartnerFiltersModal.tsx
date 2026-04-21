@@ -13,7 +13,9 @@ export type PartnerFilters = {
   typeIds: string[];
   statusIds: string[];
   competenceIds: string[];
+  categoryIds: string[];
   evaluationCategoryTokens: PartnerEvaluationCategoryFilterValue[];
+  evaluationRequired: PartnerTriState;
   isKeySupplier: PartnerTriState;
   isTargeted: PartnerTriState;
   reevaluationOverdue: PartnerTriState;
@@ -28,7 +30,9 @@ export const EMPTY_FILTERS: PartnerFilters = {
   typeIds: [],
   statusIds: [],
   competenceIds: [],
+  categoryIds: [],
   evaluationCategoryTokens: [],
+  evaluationRequired: 'all',
   isKeySupplier: 'all',
   isTargeted: 'all',
   reevaluationOverdue: 'all',
@@ -65,8 +69,11 @@ type Props = {
     types: SelectOption[];
     statuses: SelectOption[];
     competencies: SelectOption[];
+    partnerCategories: SelectOption[];
   };
 };
+
+const NULL_CATEGORY_OPTION = { label: 'Без категории', value: 'null' } as const;
 
 export function PartnerFiltersModal({
   open,
@@ -146,6 +153,20 @@ export function PartnerFiltersModal({
           </FilterField>
         </Col>
         <Col xs={24} sm={12} xl={6}>
+          <FilterField label='Категория контрагента'>
+            <Select
+              mode='multiple'
+              className={styles.filtersModalControlCompact}
+              placeholder='Все'
+              allowClear
+              maxTagCount='responsive'
+              options={[...selectOptions.partnerCategories, NULL_CATEGORY_OPTION]}
+              value={draftFilters.categoryIds}
+              onChange={value => onUpdateDraftFilter({ categoryIds: value })}
+            />
+          </FilterField>
+        </Col>
+        <Col xs={24} sm={12} xl={6}>
           <FilterField label='Категория оценки'>
             <Select
               mode='multiple'
@@ -172,14 +193,19 @@ export function PartnerFiltersModal({
         <Col xs={24} md={12} xl={6}>
           <div className={styles.filtersModalStackCol}>
             <TriRadioRow
+              label='Требуется оценка'
+              value={draftFilters.evaluationRequired}
+              onChange={nextValue => onUpdateDraftFilter({ evaluationRequired: nextValue })}
+            />
+            <TriRadioRow
               label='Ключевой поставщик'
               value={draftFilters.isKeySupplier}
-              onChange={v => onUpdateDraftFilter({ isKeySupplier: v })}
+              onChange={nextValue => onUpdateDraftFilter({ isKeySupplier: nextValue })}
             />
             <TriRadioRow
               label='Целевой поставщик'
               value={draftFilters.isTargeted}
-              onChange={v => onUpdateDraftFilter({ isTargeted: v })}
+              onChange={nextValue => onUpdateDraftFilter({ isTargeted: nextValue })}
             />
           </div>
         </Col>
@@ -188,12 +214,12 @@ export function PartnerFiltersModal({
             <TriRadioRow
               label='Юридическая проверка'
               value={draftFilters.legalCheckPassed}
-              onChange={v => onUpdateDraftFilter({ legalCheckPassed: v })}
+              onChange={nextValue => onUpdateDraftFilter({ legalCheckPassed: nextValue })}
             />
             <TriRadioRow
               label='Анкета'
               value={draftFilters.questionnaireFilled}
-              onChange={v => onUpdateDraftFilter({ questionnaireFilled: v })}
+              onChange={nextValue => onUpdateDraftFilter({ questionnaireFilled: nextValue })}
             />
           </div>
         </Col>
@@ -202,12 +228,12 @@ export function PartnerFiltersModal({
             <TriRadioRow
               label='Первичная оценка'
               value={draftFilters.initialAssessmentDone}
-              onChange={v => onUpdateDraftFilter({ initialAssessmentDone: v })}
+              onChange={nextValue => onUpdateDraftFilter({ initialAssessmentDone: nextValue })}
             />
             <TriRadioRow
               label='Переоценка просрочена'
               value={draftFilters.reevaluationOverdue}
-              onChange={v => onUpdateDraftFilter({ reevaluationOverdue: v })}
+              onChange={nextValue => onUpdateDraftFilter({ reevaluationOverdue: nextValue })}
             />
           </div>
         </Col>
@@ -217,12 +243,12 @@ export function PartnerFiltersModal({
               label='Есть блокировки'
               labelHint={BLOCKS_FILTER_HINT}
               value={draftFilters.hasActiveBlocks}
-              onChange={v => onUpdateDraftFilter({ hasActiveBlocks: v })}
+              onChange={nextValue => onUpdateDraftFilter({ hasActiveBlocks: nextValue })}
             />
             <TriRadioRow
               label='Утверждён'
               value={draftFilters.isApproved}
-              onChange={v => onUpdateDraftFilter({ isApproved: v })}
+              onChange={nextValue => onUpdateDraftFilter({ isApproved: nextValue })}
             />
           </div>
         </Col>
@@ -264,7 +290,7 @@ function TriRadioRow({
   label: string;
   labelHint?: string;
   value: PartnerTriState;
-  onChange: (v: PartnerTriState) => void;
+  onChange: (nextValue: PartnerTriState) => void;
 }) {
   return (
     <FilterField label={label} labelHint={labelHint}>

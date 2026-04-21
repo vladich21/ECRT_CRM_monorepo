@@ -94,6 +94,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
         },
         {
           onSuccess: () => {
+            showNotification('success', 'Успех', 'Первичная оценка сохранена');
             onSuccess?.();
             onClose();
           },

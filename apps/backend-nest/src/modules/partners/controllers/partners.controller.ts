@@ -56,17 +56,41 @@ function parseEvaluationCategories(raw?: string): PartnerEvaluationCategoryFilte
   if (!raw?.trim()) return undefined;
   const tokens = raw
     .split(',')
-    .map((s) => s.trim().toUpperCase())
+    .map((token) => token.trim().toUpperCase())
     .filter(Boolean);
   const allowed = new Set(['A', 'B', 'C', 'D', 'NONE']);
-  const out: PartnerEvaluationCategoryFilterToken[] = [];
-  for (const t of tokens) {
-    const key = t === 'NONE' ? 'none' : t;
-    if (!allowed.has(t)) continue;
-    const normalized = key === 'none' ? 'none' : (key as PartnerEvaluationCategoryFilterToken);
-    if (!out.includes(normalized)) out.push(normalized);
+  const result: PartnerEvaluationCategoryFilterToken[] = [];
+  for (const token of tokens) {
+    const normalizedToken = token === 'NONE' ? 'none' : token;
+    if (!allowed.has(token)) continue;
+    const normalized =
+      normalizedToken === 'none'
+        ? 'none'
+        : (normalizedToken as PartnerEvaluationCategoryFilterToken);
+    if (!result.includes(normalized)) result.push(normalized);
   }
-  return out.length ? out : undefined;
+  return result.length ? result : undefined;
+}
+
+function parseCategoryIds(raw?: string): { ids?: string[]; includeNull?: boolean } {
+  if (!raw?.trim()) return {};
+  const tokens = raw
+    .split(',')
+    .map((token) => token.trim())
+    .filter(Boolean);
+  const ids: string[] = [];
+  let includeNull = false;
+  for (const token of tokens) {
+    if (token.toLowerCase() === 'null') {
+      includeNull = true;
+      continue;
+    }
+    if (!ids.includes(token)) ids.push(token);
+  }
+  return {
+    ids: ids.length > 0 ? ids : undefined,
+    includeNull: includeNull || undefined,
+  };
 }
 
 @Controller('partners')
@@ -89,6 +113,8 @@ export class PartnersController {
     @Query('readiness') readiness?: string,
     @Query('deleted_scope') deletedScopeRaw?: string,
     @Query('evaluation_categories') evaluationCategoriesRaw?: string,
+    @Query('category_ids') categoryIdsRaw?: string,
+    @Query('evaluation_required') evaluationRequiredRaw?: string,
     @Query('is_key_supplier') isKeySupplierRaw?: string,
     @Query('is_targeted') isTargetedRaw?: string,
     @Query('reevaluation_overdue') reevaluationOverdueRaw?: string,
@@ -101,6 +127,7 @@ export class PartnersController {
     @Query('sort_order') sortOrderRaw?: string,
   ) {
     const pagination = parsePagination(limit, offset, 20, 100);
+    const parsedCategoryIds = parseCategoryIds(categoryIdsRaw);
 
     const filters = {
       search: search || undefined,
@@ -110,6 +137,9 @@ export class PartnersController {
       readiness: parseListTab(readiness),
       deletedScope: parseDeletedScope(deletedScopeRaw),
       evaluationCategories: parseEvaluationCategories(evaluationCategoriesRaw),
+      categoryIds: parsedCategoryIds.ids,
+      categoryIdsIncludeNull: parsedCategoryIds.includeNull,
+      evaluationRequired: parseTriState(evaluationRequiredRaw),
       isKeySupplier: parseTriState(isKeySupplierRaw),
       isTargeted: parseTriState(isTargetedRaw),
       reevaluationOverdue: parseTriState(reevaluationOverdueRaw),

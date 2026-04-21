@@ -170,6 +170,54 @@
   font-weight: 500;
 }
 
+.chipCategoryEngineering {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(114, 46, 209, 0.12);
+  color: #722ed1;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chipCategoryResource {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(22, 119, 255, 0.12);
+  color: #1677ff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chipEvalRequiredMissing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(250, 173, 20, 0.12);
+  color: #ad6800;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chipEvalRequiredOverdue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 77, 79, 0.12);
+  color: #cf1322;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .chipIcon {
   font-size: 12px;
 }

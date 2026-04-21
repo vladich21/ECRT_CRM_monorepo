@@ -2,7 +2,6 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import type { PartnerListParams, PartnerListTriStateParam } from './partnerApi';
 
-
 export const partnerQueryKeys = {
   all: ['partners'] as const,
 
@@ -14,7 +13,8 @@ export const partnerQueryKeys = {
   tabCount: (tabKey: string, searchTrimmed: string, appliedFilters: PartnerTabCountFilters) =>
     [...partnerQueryKeys.all, 'tab-count', tabKey, searchTrimmed, appliedFilters] as const,
 
-  contacts: (partnerId?: string) => [...partnerQueryKeys.all, partnerId?.toString() as string | undefined, 'contacts'] as const,
+  contacts: (partnerId?: string) =>
+    [...partnerQueryKeys.all, partnerId?.toString() as string | undefined, 'contacts'] as const,
 
   referenceList: (opts?: { excludeArchived?: boolean }) =>
     [...partnerQueryKeys.all, 'reference', opts?.excludeArchived ? 'exclude-archived' : 'all'] as const,
@@ -24,7 +24,9 @@ export type PartnerTabCountFilters = {
   typeIds: string[];
   statusIds: string[];
   competenceIds: string[];
+  categoryIds: string[];
   evaluationCategoryTokens: ('A' | 'B' | 'C' | 'D' | 'none')[];
+  evaluationRequired: 'all' | PartnerListTriStateParam;
   isKeySupplier: 'all' | PartnerListTriStateParam;
   isTargeted: 'all' | PartnerListTriStateParam;
   reevaluationOverdue: 'all' | PartnerListTriStateParam;

@@ -1,5 +1,7 @@
 import { Reference } from './referenceTypes';
 
+export type PartnerEvaluationRequired = 'none' | 'missing' | 'overdue';
+
 export interface Partner {
   id: string;
   short_name: string;
@@ -26,6 +28,7 @@ export interface Partner {
   is_approved: boolean;
   /** Активная блокировка по оценке (кат. D и т.п.); с сервера. */
   has_active_evaluation_block?: boolean;
+  evaluation_required?: PartnerEvaluationRequired;
   rating: number | null;
   next_audit_date: string | null;
   created_at: string;

@@ -25,30 +25,38 @@ function parseTriFromSnapshot(raw: unknown): PartnerFilters['isKeySupplier'] {
 function parseEvalCategories(raw: unknown): PartnerFilters['evaluationCategoryTokens'] {
   if (!Array.isArray(raw)) return [];
   const allowed = new Set(['A', 'B', 'C', 'D', 'none']);
-  return raw.filter((x): x is PartnerFilters['evaluationCategoryTokens'][number] => {
-    return typeof x === 'string' && allowed.has(x);
+  return raw.filter((token): token is PartnerFilters['evaluationCategoryTokens'][number] => {
+    return typeof token === 'string' && allowed.has(token);
   });
 }
 
 function normalizeAppliedFromSnapshot(raw: unknown): PartnerFilters {
   if (!raw || typeof raw !== 'object') return { ...EMPTY_FILTERS };
-  const s = raw as Record<string, unknown>;
+  const snapshot = raw as Record<string, unknown>;
   return {
     ...EMPTY_FILTERS,
-    typeIds: Array.isArray(s.typeIds) ? s.typeIds.filter((id): id is string => typeof id === 'string') : [],
-    statusIds: Array.isArray(s.statusIds) ? s.statusIds.filter((id): id is string => typeof id === 'string') : [],
-    competenceIds: Array.isArray(s.competenceIds)
-      ? s.competenceIds.filter((id): id is string => typeof id === 'string')
+    typeIds: Array.isArray(snapshot.typeIds)
+      ? snapshot.typeIds.filter((id): id is string => typeof id === 'string')
       : [],
-    evaluationCategoryTokens: parseEvalCategories(s.evaluationCategoryTokens),
-    isKeySupplier: parseTriFromSnapshot(s.isKeySupplier),
-    isTargeted: parseTriFromSnapshot(s.isTargeted),
-    reevaluationOverdue: parseTriFromSnapshot(s.reevaluationOverdue),
-    hasActiveBlocks: parseTriFromSnapshot(s.hasActiveBlocks),
-    isApproved: parseTriFromSnapshot(s.isApproved),
-    legalCheckPassed: parseTriFromSnapshot(s.legalCheckPassed),
-    questionnaireFilled: parseTriFromSnapshot(s.questionnaireFilled),
-    initialAssessmentDone: parseTriFromSnapshot(s.initialAssessmentDone),
+    statusIds: Array.isArray(snapshot.statusIds)
+      ? snapshot.statusIds.filter((id): id is string => typeof id === 'string')
+      : [],
+    competenceIds: Array.isArray(snapshot.competenceIds)
+      ? snapshot.competenceIds.filter((id): id is string => typeof id === 'string')
+      : [],
+    categoryIds: Array.isArray(snapshot.categoryIds)
+      ? snapshot.categoryIds.filter((id): id is string => typeof id === 'string')
+      : [],
+    evaluationCategoryTokens: parseEvalCategories(snapshot.evaluationCategoryTokens),
+    evaluationRequired: parseTriFromSnapshot(snapshot.evaluationRequired),
+    isKeySupplier: parseTriFromSnapshot(snapshot.isKeySupplier),
+    isTargeted: parseTriFromSnapshot(snapshot.isTargeted),
+    reevaluationOverdue: parseTriFromSnapshot(snapshot.reevaluationOverdue),
+    hasActiveBlocks: parseTriFromSnapshot(snapshot.hasActiveBlocks),
+    isApproved: parseTriFromSnapshot(snapshot.isApproved),
+    legalCheckPassed: parseTriFromSnapshot(snapshot.legalCheckPassed),
+    questionnaireFilled: parseTriFromSnapshot(snapshot.questionnaireFilled),
+    initialAssessmentDone: parseTriFromSnapshot(snapshot.initialAssessmentDone),
   };
 }
 

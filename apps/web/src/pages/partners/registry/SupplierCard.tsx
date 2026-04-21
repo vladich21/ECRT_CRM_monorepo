@@ -1,19 +1,24 @@
 import {
+  AppstoreOutlined,
   AimOutlined,
   BankOutlined,
   CalendarOutlined,
   CheckCircleFilled,
   ClockCircleFilled,
   EnvironmentOutlined,
+  ExclamationCircleOutlined,
   RightOutlined,
   SafetyCertificateOutlined,
   StarFilled,
+  ToolOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import { Progress } from 'antd';
 
 import type { Partner } from '../../../types/partner';
 import type { PartnerSupplierEvalKpi } from '../../../utils/supplierEvaluationPartnerKpi';
 import type { InitialSupplierEvaluation } from '../../../types/supplierEvaluation';
+import { inferPartnerCategoryKind } from '../../../utils/partnerApproval';
 import { PartnerNextEvalDateTags } from '../evaluations/partnerEvalKpiDisplay';
 import { formatEvaluationScoreDisplay, scoreColor } from '../evaluations/supplierEvaluationUi';
 import { getPartnerListDisplayName } from '../utils/partnersListDisplayUtils';
@@ -23,6 +28,7 @@ interface SupplierCardProps {
   partner: Partner;
   references?: {
     partnerStatuses?: Array<{ id: string; name: string }>;
+    partnerCategories?: Array<{ id: string; name: string }>;
     partnerTypes?: Array<{ id: string; name: string }>;
     competencies?: Array<{ id: string; name: string }>;
   };
@@ -45,11 +51,11 @@ function statusBadgeClass(statusName: string): string {
   return STATUS_BADGE_CLASS[statusName] ?? styles.tagFallback;
 }
 
-function projectsCountLabel(n: number): string {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return 'проект';
-  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'проекта';
+function projectsCountLabel(projectCount: number): string {
+  const lastDigit = projectCount % 10;
+  const lastTwoDigits = projectCount % 100;
+  if (lastDigit === 1 && lastTwoDigits !== 11) return 'проект';
+  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 10 || lastTwoDigits >= 20)) return 'проекта';
   return 'проектов';
 }
 
@@ -65,6 +71,8 @@ export default function SupplierCard({
 }: SupplierCardProps) {
   const statusName =
     references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
+  const categoryName =
+    references?.partnerCategories?.find(category => String(category.id) === String(partner.category_id))?.name ?? '';
   const typeNames = (partner.type_ids ?? [])
     .map(typeId => references?.partnerTypes?.find(partnerType => partnerType.id === typeId)?.name)
     .filter(Boolean);
@@ -74,6 +82,14 @@ export default function SupplierCard({
   const blockedCount = evaluationKpi?.blockedProjectCount ?? 0;
   const reevalOverdue = evaluationKpi?.nextReevaluationOverdue ?? false;
   const isStatusBlocked = statusName === 'Заблокирован';
+  const categoryKind = inferPartnerCategoryKind(categoryName || null);
+  const isEngineeringCategory = categoryKind === 'engineering';
+  const isResourceCategory = categoryKind === 'resource';
+  const evaluationRequired = partner.evaluation_required ?? 'none';
+  const showRequiredMissing = evaluationRequired === 'missing';
+  const showRequiredOverdue = evaluationRequired === 'overdue';
+  const showLegacyNotRated = evaluationRequired === 'none' && !evaluationKpiLoading && avgScore == null;
+  const showLegacyOverdue = evaluationRequired === 'none' && !evaluationKpiLoading && reevalOverdue && avgScore != null;
 
   const displayName = getPartnerListDisplayName(partner);
 
@@ -93,7 +109,19 @@ export default function SupplierCard({
         </div>
         <div className={styles.metaRow}>
           <span className={`${styles.mutedTag} ${statusBadgeClass(statusName)}`}>{statusName}</span>
-          {!evaluationKpiLoading && avgScore == null ? (
+          {isEngineeringCategory ? (
+            <span className={styles.chipCategoryEngineering}>
+              <ToolOutlined className={styles.chipIcon} />
+              Инжиниринговый
+            </span>
+          ) : null}
+          {isResourceCategory ? (
+            <span className={styles.chipCategoryResource}>
+              <AppstoreOutlined className={styles.chipIcon} />
+              Ресурсный
+            </span>
+          ) : null}
+          {showLegacyNotRated ? (
             <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>Не оценён</span>
           ) : null}
           {partner.is_approved ? (
@@ -119,7 +147,19 @@ export default function SupplierCard({
               Целевой
             </span>
           ) : null}
-          {!evaluationKpiLoading && reevalOverdue && avgScore != null ? (
+          {showRequiredMissing ? (
+            <span className={styles.chipEvalRequiredMissing}>
+              <WarningOutlined className={styles.chipIcon} />
+              Требуется оценка
+            </span>
+          ) : null}
+          {showRequiredOverdue ? (
+            <span className={styles.chipEvalRequiredOverdue}>
+              <ExclamationCircleOutlined className={styles.chipIcon} />
+              Требуется оценка · Просрочена
+            </span>
+          ) : null}
+          {showLegacyOverdue ? (
             <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>Просрочена</span>
           ) : null}
           {!evaluationKpiLoading && blockedCount > 0 ? (

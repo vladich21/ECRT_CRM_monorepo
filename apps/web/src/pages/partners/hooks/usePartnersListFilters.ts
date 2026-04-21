@@ -6,22 +6,27 @@ import type { PartnerListTab } from '../PartnersListPage.types';
 
 const DEFAULT_SORT_BY: PartnerListSortBy = 'name';
 const DEFAULT_SORT_ORDER: 'asc' | 'desc' = 'asc';
+const DEFAULT_SORT_ORDER_BY_FIELD: Partial<Record<PartnerListSortBy, 'asc' | 'desc'>> = {
+  created_at: 'desc',
+};
 
 function countActivePartnerFilters(filters: PartnerFilters): number {
-  let n = 0;
-  if (filters.typeIds.length > 0) n += 1;
-  if (filters.statusIds.length > 0) n += 1;
-  if (filters.competenceIds.length > 0) n += 1;
-  if (filters.evaluationCategoryTokens.length > 0) n += 1;
-  if (filters.isKeySupplier !== 'all') n += 1;
-  if (filters.isTargeted !== 'all') n += 1;
-  if (filters.reevaluationOverdue !== 'all') n += 1;
-  if (filters.hasActiveBlocks !== 'all') n += 1;
-  if (filters.isApproved !== 'all') n += 1;
-  if (filters.legalCheckPassed !== 'all') n += 1;
-  if (filters.questionnaireFilled !== 'all') n += 1;
-  if (filters.initialAssessmentDone !== 'all') n += 1;
-  return n;
+  let count = 0;
+  if (filters.typeIds.length > 0) count += 1;
+  if (filters.statusIds.length > 0) count += 1;
+  if (filters.competenceIds.length > 0) count += 1;
+  if (filters.categoryIds.length > 0) count += 1;
+  if (filters.evaluationCategoryTokens.length > 0) count += 1;
+  if (filters.evaluationRequired !== 'all') count += 1;
+  if (filters.isKeySupplier !== 'all') count += 1;
+  if (filters.isTargeted !== 'all') count += 1;
+  if (filters.reevaluationOverdue !== 'all') count += 1;
+  if (filters.hasActiveBlocks !== 'all') count += 1;
+  if (filters.isApproved !== 'all') count += 1;
+  if (filters.legalCheckPassed !== 'all') count += 1;
+  if (filters.questionnaireFilled !== 'all') count += 1;
+  if (filters.initialAssessmentDone !== 'all') count += 1;
+  return count;
 }
 
 export function usePartnersListFilters() {
@@ -61,10 +66,7 @@ export function usePartnersListFilters() {
 
   const setSortField = useCallback((field: PartnerListSortBy) => {
     setSortBy(field);
-    const defaultsDesc: Partial<Record<PartnerListSortBy, 'asc' | 'desc'>> = {
-      created_at: 'desc',
-    };
-    setSortOrder(defaultsDesc[field] ?? 'asc');
+    setSortOrder(DEFAULT_SORT_ORDER_BY_FIELD[field] ?? 'asc');
   }, []);
 
   const toggleSortOrder = useCallback(() => {

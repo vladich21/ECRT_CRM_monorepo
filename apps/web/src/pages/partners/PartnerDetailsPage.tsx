@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react';
 import { DeleteOutlined, EditOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -12,17 +13,17 @@ import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { usePartnerDetailsData } from './details/hooks/usePartnerDetailsData';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
-
-function isSafeInternalReturnPath(raw: string): boolean {
-  const p = raw.trim();
-  return p.startsWith('/') && !p.startsWith('//') && !p.includes('://');
-}
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
 } from './partnerDetailHeaderContent';
 import type { PartnerListTab } from './PartnersListPage.types';
 import type { PartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
+
+function isSafeInternalReturnPath(raw: string): boolean {
+  const trimmedPath = raw.trim();
+  return trimmedPath.startsWith('/') && !trimmedPath.startsWith('//') && !trimmedPath.includes('://');
+}
 
 export default function PartnerDetailsPage() {
   const { partnerId } = useParams();
@@ -87,32 +88,21 @@ export default function PartnerDetailsPage() {
 
   const handleTabChange = (key: string) => {
     const basePath = `/partners/${partnerId}`;
-    switch (key) {
-      case 'main':
-        navigate(basePath, tabNavigateOpts);
-        break;
-      case 'contacts':
-        navigate(`${basePath}/contacts`, tabNavigateOpts);
-        break;
-      case 'contracts':
-        navigate(`${basePath}/contracts`, tabNavigateOpts);
-        break;
-      case 'evaluations':
-        navigate(`${basePath}/evaluations`, tabNavigateOpts);
-        break;
-      case 'comments':
-        navigate(`${basePath}/comments`, tabNavigateOpts);
-        break;
-      case 'files':
-        navigate(`${basePath}/files`, tabNavigateOpts);
-        break;
-      case 'verification':
-        navigate(`${basePath}/verification`, tabNavigateOpts);
-        break;
-      default:
-        navigate(basePath, tabNavigateOpts);
-    }
+    const tabPathByKey: Record<string, string> = {
+      main: basePath,
+      contacts: `${basePath}/contacts`,
+      contracts: `${basePath}/contracts`,
+      evaluations: `${basePath}/evaluations`,
+      comments: `${basePath}/comments`,
+      files: `${basePath}/files`,
+      verification: `${basePath}/verification`,
+    };
+    navigate(tabPathByKey[key] ?? basePath, tabNavigateOpts);
   };
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, partnerId]);
 
   if (isLoading) return <Loader />;
   if (isError || !partner) return <NotFound errorMessage='Контрагент не найден' />;

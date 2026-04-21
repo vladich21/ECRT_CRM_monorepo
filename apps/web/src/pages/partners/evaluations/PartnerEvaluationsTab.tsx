@@ -76,11 +76,13 @@ export default function PartnerEvaluationsTab() {
   const [initialEvaluationModalOpen, setInitialEvaluationModalOpen] = useState(false);
 
   const isPartnerArchived = useMemo(() => {
-    const name = references?.partnerStatuses?.find(s => String(s.id) === String(partner.status_id))?.name;
-    return (name ?? '').trim() === 'Архив';
+    const statusName = references?.partnerStatuses?.find(
+      statusRef => String(statusRef.id) === String(partner.status_id),
+    )?.name;
+    return (statusName ?? '').trim() === 'Архив';
   }, [partner.status_id, references?.partnerStatuses]);
 
-  const { data: activeEvaluationsPage } = useSupplierEvaluationsList(
+  const { data: activeEvaluationsPage, isLoading: isActiveEvaluationsLoading } = useSupplierEvaluationsList(
     { partner_id: partner.id, status: 'active', limit: 1, offset: 0 },
     Boolean(partner.id),
   );
@@ -176,6 +178,33 @@ export default function PartnerEvaluationsTab() {
   const hasProjectEvaluations = hasActiveEvaluations;
   const shouldShowInitialTable = Boolean(initialEvaluation);
   const shouldRequireInitialForProjectFlow = !hasActiveInitialEvaluation && !hasProjectEvaluations;
+  const evaluationRequired = partner.evaluation_required ?? 'none';
+  const newEvaluationDisabledReason = isPartnerArchived
+    ? ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP
+    : shouldRequireInitialForProjectFlow
+      ? 'Сначала запустите первичную оценку поставщика'
+      : undefined;
+  const evaluationRequiredAlert = useMemo(() => {
+    if (evaluationRequired === 'missing') {
+      return {
+        type: 'warning' as const,
+        message: 'Контрагент подлежит обязательной оценке. Создайте проектную или первичную оценку.',
+      };
+    }
+    if (evaluationRequired === 'overdue') {
+      return {
+        type: 'error' as const,
+        message: 'У контрагента просрочена переоценка. Проведите переоценку по проекту или создайте новую оценку.',
+      };
+    }
+    if (!isPartnerArchived && !isActiveEvaluationsLoading && !hasActiveEvaluations) {
+      return {
+        type: 'info' as const,
+        message: 'У контрагента нет активных оценок поставщика.',
+      };
+    }
+    return null;
+  }, [evaluationRequired, hasActiveEvaluations, isActiveEvaluationsLoading, isPartnerArchived]);
 
   const data = listDataRaw;
   const tabCounts = tabCountsRaw;
@@ -372,11 +401,11 @@ export default function PartnerEvaluationsTab() {
           />
         ) : null}
       </div>
-      {!isPartnerArchived && !hasActiveEvaluations ? (
+      {evaluationRequiredAlert ? (
         <Alert
-          type='info'
+          type={evaluationRequiredAlert.type}
           showIcon
-          message='У контрагента нет активных оценок поставщика.'
+          message={evaluationRequiredAlert.message}
           style={{ marginBottom: 16 }}
         />
       ) : null}
@@ -398,15 +427,7 @@ export default function PartnerEvaluationsTab() {
               )}
             </Button>
             {evaluationsCreationDisabled || shouldRequireInitialForProjectFlow ? (
-              <Tooltip
-                title={
-                  isPartnerArchived
-                    ? ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP
-                    : shouldRequireInitialForProjectFlow
-                      ? 'Сначала запустите первичную оценку поставщика'
-                      : undefined
-                }
-              >
+              <Tooltip title={newEvaluationDisabledReason}>
                 <span>
                   <Button type='primary' icon={<PlusOutlined />} disabled>
                     Новая оценка

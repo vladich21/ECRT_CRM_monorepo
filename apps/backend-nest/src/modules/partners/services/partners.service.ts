@@ -42,6 +42,7 @@ export type PartnerListSortField =
 export type PartnerListSortOrder = 'asc' | 'desc';
 
 export type PartnerEvaluationCategoryFilterToken = 'A' | 'B' | 'C' | 'D' | 'none';
+export type PartnerEvaluationRequiredValue = 'none' | 'missing' | 'overdue';
 
 export interface PartnerQueryFilters {
   search?: string;
@@ -51,6 +52,9 @@ export interface PartnerQueryFilters {
   readiness?: PartnerListTabScope;
   deletedScope?: DeletedScope;
   evaluationCategories?: PartnerEvaluationCategoryFilterToken[];
+  categoryIds?: string[];
+  categoryIdsIncludeNull?: boolean;
+  evaluationRequired?: PartnerListTriState;
   isKeySupplier?: PartnerListTriState;
   isTargeted?: PartnerListTriState;
   reevaluationOverdue?: PartnerListTriState;
@@ -178,20 +182,81 @@ export class PartnersService {
     )!;
   }
 
+  private partnerEngineeringCategorySql(): SQL {
+    return exists(
+      this.db.db
+        .select({ one: sql`1` })
+        .from(refPartnerCategories)
+        .where(
+          and(
+            eq(refPartnerCategories.id, partners.categoryId),
+            ilike(refPartnerCategories.name, '%инжинир%'),
+          )!,
+        ),
+    );
+  }
+
+  private async requiredEvaluationAttentionSql(): Promise<SQL> {
+    const statusIds = await this.resolvePartnerOperationalStatusIds();
+    const isEngineering = this.partnerEngineeringCategorySql();
+    const approvedExpr = this.partnerApprovedMatchSql();
+    const shouldBeEvaluated = and(
+      isEngineering,
+      or(
+        eq(partners.statusId, statusIds.activeId),
+        and(eq(partners.statusId, statusIds.potentialId), approvedExpr)!,
+      )!,
+    )!;
+
+    const activeEvalExists = exists(
+      this.db.db
+        .select({ one: sql`1` })
+        .from(supplierEvaluations)
+        .where(and(eq(supplierEvaluations.partnerId, partners.id), eq(supplierEvaluations.status, 'active'))!),
+    );
+    const overdueEvalExists = exists(
+      this.db.db
+        .select({ one: sql`1` })
+        .from(supplierEvaluations)
+        .where(
+          and(
+            eq(supplierEvaluations.partnerId, partners.id),
+            eq(supplierEvaluations.status, 'active'),
+            sql`${supplierEvaluations.nextReevaluationDate} is not null`,
+            sql`${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE`,
+          )!,
+        ),
+    );
+
+    return and(shouldBeEvaluated, or(not(activeEvalExists), overdueEvalExists)!)!;
+  }
+
   private appendRegistryExtendedFilters(parts: SQL[], filters?: PartnerQueryFilters): void {
     if (!filters) return;
-    const tri = (v?: PartnerListTriState) => v ?? 'all';
+    const triStateValue = (value?: PartnerListTriState) => value ?? 'all';
 
-    if (tri(filters.isKeySupplier) === 'yes') parts.push(eq(partners.isKeySupplier, true));
-    if (tri(filters.isKeySupplier) === 'no') parts.push(eq(partners.isKeySupplier, false));
-    if (tri(filters.isTargeted) === 'yes') parts.push(eq(partners.isTargeted, true));
-    if (tri(filters.isTargeted) === 'no') parts.push(eq(partners.isTargeted, false));
-    if (tri(filters.legalCheckPassed) === 'yes') parts.push(eq(partners.legalCheckPassed, true));
-    if (tri(filters.legalCheckPassed) === 'no') parts.push(eq(partners.legalCheckPassed, false));
-    if (tri(filters.questionnaireFilled) === 'yes') parts.push(eq(partners.questionnaireFilled, true));
-    if (tri(filters.questionnaireFilled) === 'no') parts.push(eq(partners.questionnaireFilled, false));
-    if (tri(filters.initialAssessmentDone) === 'yes') parts.push(eq(partners.initialAssessmentDone, true));
-    if (tri(filters.initialAssessmentDone) === 'no') parts.push(eq(partners.initialAssessmentDone, false));
+    if (filters.categoryIds?.length || filters.categoryIdsIncludeNull) {
+      const categoryParts: SQL[] = [];
+      if (filters.categoryIds?.length) {
+        categoryParts.push(inArray(partners.categoryId, filters.categoryIds));
+      }
+      if (filters.categoryIdsIncludeNull) {
+        categoryParts.push(isNull(partners.categoryId));
+      }
+      if (categoryParts.length === 1) parts.push(categoryParts[0]!);
+      else if (categoryParts.length > 1) parts.push(or(...categoryParts)!);
+    }
+
+    if (triStateValue(filters.isKeySupplier) === 'yes') parts.push(eq(partners.isKeySupplier, true));
+    if (triStateValue(filters.isKeySupplier) === 'no') parts.push(eq(partners.isKeySupplier, false));
+    if (triStateValue(filters.isTargeted) === 'yes') parts.push(eq(partners.isTargeted, true));
+    if (triStateValue(filters.isTargeted) === 'no') parts.push(eq(partners.isTargeted, false));
+    if (triStateValue(filters.legalCheckPassed) === 'yes') parts.push(eq(partners.legalCheckPassed, true));
+    if (triStateValue(filters.legalCheckPassed) === 'no') parts.push(eq(partners.legalCheckPassed, false));
+    if (triStateValue(filters.questionnaireFilled) === 'yes') parts.push(eq(partners.questionnaireFilled, true));
+    if (triStateValue(filters.questionnaireFilled) === 'no') parts.push(eq(partners.questionnaireFilled, false));
+    if (triStateValue(filters.initialAssessmentDone) === 'yes') parts.push(eq(partners.initialAssessmentDone, true));
+    if (triStateValue(filters.initialAssessmentDone) === 'no') parts.push(eq(partners.initialAssessmentDone, false));
 
     const cats = filters.evaluationCategories;
     if (cats?.length) {
@@ -228,7 +293,7 @@ export class PartnersService {
       else if (orParts.length > 1) parts.push(or(...orParts)!);
     }
 
-    if (tri(filters.reevaluationOverdue) === 'yes') {
+    if (triStateValue(filters.reevaluationOverdue) === 'yes') {
       parts.push(
         exists(
           this.db.db
@@ -244,7 +309,7 @@ export class PartnersService {
         ),
       );
     }
-    if (tri(filters.reevaluationOverdue) === 'no') {
+    if (triStateValue(filters.reevaluationOverdue) === 'no') {
       parts.push(
         not(
           exists(
@@ -263,7 +328,7 @@ export class PartnersService {
       );
     }
 
-    if (tri(filters.hasActiveBlocks) === 'yes') {
+    if (triStateValue(filters.hasActiveBlocks) === 'yes') {
       parts.push(
         exists(
           this.db.db
@@ -278,7 +343,7 @@ export class PartnersService {
         ),
       );
     }
-    if (tri(filters.hasActiveBlocks) === 'no') {
+    if (triStateValue(filters.hasActiveBlocks) === 'no') {
       parts.push(
         not(
           exists(
@@ -296,7 +361,7 @@ export class PartnersService {
       );
     }
 
-    const approvedTri = tri(filters.isApproved);
+    const approvedTri = triStateValue(filters.isApproved);
     if (approvedTri === 'yes' || approvedTri === 'no') {
       const approvedExpr = this.partnerApprovedMatchSql();
       parts.push(approvedTri === 'yes' ? approvedExpr : not(approvedExpr));
@@ -391,6 +456,11 @@ export class PartnersService {
       parts.push(inArray(partners.id, matchedIds));
     }
     this.appendRegistryExtendedFilters(parts, filters);
+    const evaluationRequiredTri = filters?.evaluationRequired ?? 'all';
+    if (evaluationRequiredTri === 'yes' || evaluationRequiredTri === 'no') {
+      const requiredAttentionExpr = await this.requiredEvaluationAttentionSql();
+      parts.push(evaluationRequiredTri === 'yes' ? requiredAttentionExpr : not(requiredAttentionExpr));
+    }
     return parts;
   }
 
@@ -546,23 +616,36 @@ export class PartnersService {
     const partnerIds = rowsForList.map((row) => String(row.id));
     const categoryIds = [...new Set(rowsForList.map((row) => row.categoryId).filter(Boolean))] as string[];
 
-    const [categoryNameById, blockedPartnerIds, initialEvalPartnerIds] = await Promise.all([
-      this.loadCategoryNamesByIds(categoryIds),
-      this.loadBlockedPartnerIds(partnerIds),
-      this.loadInitialEvalPartnerIds(partnerIds),
-    ]);
+    const [categoryNameById, blockedPartnerIds, initialEvalPartnerIds, activeEvalFactsByPartnerId, statusIds] =
+      await Promise.all([
+        this.loadCategoryNamesByIds(categoryIds),
+        this.loadBlockedPartnerIds(partnerIds),
+        this.loadInitialEvalPartnerIds(partnerIds),
+        this.loadActiveEvaluationFactsByPartnerId(partnerIds),
+        this.resolvePartnerOperationalStatusIds(),
+      ]);
 
     const data = rowsForList.map((row) => {
-      const pid = String(row.id);
-      const catId = row.categoryId ? String(row.categoryId) : '';
-      const catName = catId ? categoryNameById.get(catId) ?? null : null;
-      const hasBlock = blockedPartnerIds.has(pid);
-      const hasInitialEval = initialEvalPartnerIds.has(pid);
-      const extras = this.partnerApprovalExtras(row, catName, hasBlock, hasInitialEval);
+      const partnerId = String(row.id);
+      const statusId = row.statusId ? String(row.statusId) : null;
+      const categoryId = row.categoryId ? String(row.categoryId) : '';
+      const categoryName = categoryId ? categoryNameById.get(categoryId) ?? null : null;
+      const hasBlock = blockedPartnerIds.has(partnerId);
+      const hasInitialEval = initialEvalPartnerIds.has(partnerId);
+      const extras = this.partnerApprovalExtras(row, categoryName, hasBlock, hasInitialEval);
+      const evalFacts = activeEvalFactsByPartnerId.get(partnerId) ?? { hasActive: false, hasOverdue: false };
+      const evaluationRequired = this.computeEvaluationRequiredForPartner({
+        statusId,
+        categoryName,
+        isApproved: extras.isApproved,
+        hasActiveEvaluation: evalFacts.hasActive,
+        hasOverdueEvaluation: evalFacts.hasOverdue,
+        statusIds,
+      });
       return {
-        ...this.toResponse(row, extras),
-        type_ids: typeMap.get(pid) ?? [],
-        competence_ids: compMap.get(pid) ?? [],
+        ...this.toResponse(row, { ...extras, evaluationRequired }),
+        type_ids: typeMap.get(partnerId) ?? [],
+        competence_ids: compMap.get(partnerId) ?? [],
       };
     });
 
@@ -606,25 +689,38 @@ export class PartnersService {
       rowForResponse = rowsFresh[0] ?? row;
     }
     const catId = rowForResponse.categoryId ? String(rowForResponse.categoryId) : '';
-    const [typeRows, compRows, categoryNameById, blockedPartnerIds, initialEvalIds] = await Promise.all([
-      this.db.db
-        .select({ typeId: relPartnersTypes.typeId })
-        .from(relPartnersTypes)
-        .where(eq(relPartnersTypes.partnerId, id)),
-      this.db.db
-        .select({ competenceId: relPartnersCompetencies.competenceId })
-        .from(relPartnersCompetencies)
-        .where(eq(relPartnersCompetencies.partnerId, id)),
-      catId ? this.loadCategoryNamesByIds([catId]) : Promise.resolve(new Map<string, string>()),
-      this.loadBlockedPartnerIds([pid]),
-      this.loadInitialEvalPartnerIds([pid]),
-    ]);
+    const [typeRows, compRows, categoryNameById, blockedPartnerIds, initialEvalIds, activeEvalFacts, statusIds] =
+      await Promise.all([
+        this.db.db
+          .select({ typeId: relPartnersTypes.typeId })
+          .from(relPartnersTypes)
+          .where(eq(relPartnersTypes.partnerId, id)),
+        this.db.db
+          .select({ competenceId: relPartnersCompetencies.competenceId })
+          .from(relPartnersCompetencies)
+          .where(eq(relPartnersCompetencies.partnerId, id)),
+        catId ? this.loadCategoryNamesByIds([catId]) : Promise.resolve(new Map<string, string>()),
+        this.loadBlockedPartnerIds([pid]),
+        this.loadInitialEvalPartnerIds([pid]),
+        this.loadActiveEvaluationFactsByPartnerId([pid]),
+        this.resolvePartnerOperationalStatusIds(),
+      ]);
     const catName = catId ? categoryNameById.get(catId) ?? null : null;
     const hasBlock = blockedPartnerIds.has(pid);
     const hasInitialEval = initialEvalIds.has(pid);
     const extras = this.partnerApprovalExtras(rowForResponse, catName, hasBlock, hasInitialEval);
+    const statusId = rowForResponse.statusId ? String(rowForResponse.statusId) : null;
+    const evalFacts = activeEvalFacts.get(pid) ?? { hasActive: false, hasOverdue: false };
+    const evaluationRequired = this.computeEvaluationRequiredForPartner({
+      statusId,
+      categoryName: catName,
+      isApproved: extras.isApproved,
+      hasActiveEvaluation: evalFacts.hasActive,
+      hasOverdueEvaluation: evalFacts.hasOverdue,
+      statusIds,
+    });
     return {
-      ...this.toResponse(rowForResponse, extras),
+      ...this.toResponse(rowForResponse, { ...extras, evaluationRequired }),
       type_ids: typeRows.map((typeRow) => String(typeRow.typeId)).filter(Boolean),
       competence_ids: compRows.map((compRow) => String(compRow.competenceId)).filter(Boolean),
     };
@@ -856,10 +952,17 @@ export class PartnersService {
   }
 
   private mapToDb(data: Record<string, unknown>) {
-    const toUuid = (v: unknown): string | null =>
-      v == null || v === '' ? null : typeof v === 'string' ? v : null;
-    const toBool = (v: unknown): boolean | undefined =>
-      v === true || v === 'true' ? true : v === false || v === 'false' ? false : undefined;
+    const toUuid = (value: unknown): string | null =>
+      value == null || value === '' ? null : typeof value === 'string' ? value : null;
+    const toBool = (value: unknown): boolean | undefined =>
+      value === true || value === 'true' ? true : value === false || value === 'false' ? false : undefined;
+
+    const isKeySupplier = toBool(data.is_key_supplier);
+    const isTargeted = toBool(data.is_targeted);
+    const legalCheckPassed = toBool(data.legal_check_passed);
+    const questionnaireFilled = toBool(data.questionnaire_filled);
+    const initialAssessmentDone = toBool(data.initial_assessment_done);
+
     return {
       name: data.name != null ? String(data.name) : null,
       shortName: data.short_name != null ? String(data.short_name) : null,
@@ -874,11 +977,11 @@ export class PartnersService {
       categoryId: toUuid(data.category_id),
       comment: data.comment != null ? String(data.comment) : null,
       partnerEconomicCategoryId: toUuid(data.partner_economic_category_id),
-      ...(toBool(data.is_key_supplier) !== undefined && { isKeySupplier: toBool(data.is_key_supplier) }),
-      ...(toBool(data.is_targeted) !== undefined && { isTargeted: toBool(data.is_targeted) }),
-      ...(toBool(data.legal_check_passed) !== undefined && { legalCheckPassed: toBool(data.legal_check_passed) }),
-      ...(toBool(data.questionnaire_filled) !== undefined && { questionnaireFilled: toBool(data.questionnaire_filled) }),
-      ...(toBool(data.initial_assessment_done) !== undefined && { initialAssessmentDone: toBool(data.initial_assessment_done) }),
+      ...(isKeySupplier !== undefined && { isKeySupplier }),
+      ...(isTargeted !== undefined && { isTargeted }),
+      ...(legalCheckPassed !== undefined && { legalCheckPassed }),
+      ...(questionnaireFilled !== undefined && { questionnaireFilled }),
+      ...(initialAssessmentDone !== undefined && { initialAssessmentDone }),
       ...(data.rating !== undefined && { rating: data.rating != null ? String(data.rating) : null }),
       ...(data.next_audit_date !== undefined && { nextAuditDate: data.next_audit_date != null ? String(data.next_audit_date) : null }),
     };
@@ -1069,8 +1172,8 @@ export class PartnersService {
       .select({ id: refPartnerCategories.id, name: refPartnerCategories.name })
       .from(refPartnerCategories)
       .where(inArray(refPartnerCategories.id, categoryIds));
-    for (const cr of catRows) {
-      map.set(String(cr.id), cr.name ?? '');
+    for (const categoryRow of catRows) {
+      map.set(String(categoryRow.id), categoryRow.name ?? '');
     }
     return map;
   }
@@ -1101,41 +1204,89 @@ export class PartnersService {
           eq(supplierEvaluations.status, 'active'),
         )!,
       );
-    return new Set(rows.map((r) => String(r.partnerId)));
+    return new Set(rows.map((row) => String(row.partnerId)));
+  }
+
+  private async loadActiveEvaluationFactsByPartnerId(
+    partnerIds: string[],
+  ): Promise<Map<string, { hasActive: boolean; hasOverdue: boolean }>> {
+    const map = new Map<string, { hasActive: boolean; hasOverdue: boolean }>();
+    if (partnerIds.length === 0) return map;
+    const rows = await this.db.db
+      .select({
+        partnerId: supplierEvaluations.partnerId,
+        hasActive: sql<boolean>`count(*) > 0`,
+        hasOverdue:
+          sql<boolean>`bool_or(${supplierEvaluations.nextReevaluationDate} is not null and ${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE)`,
+      })
+      .from(supplierEvaluations)
+      .where(and(inArray(supplierEvaluations.partnerId, partnerIds), eq(supplierEvaluations.status, 'active'))!)
+      .groupBy(supplierEvaluations.partnerId);
+    for (const row of rows) {
+      map.set(String(row.partnerId), {
+        hasActive: Boolean(row.hasActive),
+        hasOverdue: Boolean(row.hasOverdue),
+      });
+    }
+    return map;
+  }
+
+  private computeEvaluationRequiredForPartner(params: {
+    statusId: string | null;
+    categoryName: string | null;
+    isApproved: boolean;
+    hasActiveEvaluation: boolean;
+    hasOverdueEvaluation: boolean;
+    statusIds: { activeId: string; potentialId: string };
+  }): PartnerEvaluationRequiredValue {
+    const isEngineering = inferPartnerCategoryKind(params.categoryName) === 'engineering';
+    const isActiveEngineering = isEngineering && params.statusId === params.statusIds.activeId;
+    const isPotentialApprovedEngineering =
+      isEngineering && params.statusId === params.statusIds.potentialId && params.isApproved;
+    const isRequiredPartner = isActiveEngineering || isPotentialApprovedEngineering;
+    if (!isRequiredPartner) return 'none';
+    if (!params.hasActiveEvaluation) return 'missing';
+    if (params.hasOverdueEvaluation) return 'overdue';
+    return 'none';
   }
 
   private toResponse(
-    r: (typeof partners.$inferSelect),
-    extras: { isApproved: boolean; hasActiveEvaluationBlock: boolean },
+    row: (typeof partners.$inferSelect),
+    extras: {
+      isApproved: boolean;
+      hasActiveEvaluationBlock: boolean;
+      evaluationRequired: PartnerEvaluationRequiredValue;
+    },
   ) {
     return {
-      id: String(r.id),
-      name: r.name ?? '',
-      short_name: r.shortName ?? '',
-      inn: r.inn ?? '',
-      kpp: r.kpp ?? '',
-      ogrn: r.ogrn ?? '',
-      legal_address: r.legalAddress ?? '',
-      actual_address: r.actualAddress ?? '',
-      phone: r.phone ?? '',
-      email: r.email ?? '',
-      website: r.website ?? '',
-      status_id: r.statusId ? String(r.statusId) : '',
-      category_id: r.categoryId ? String(r.categoryId) : '',
-      comment: r.comment ?? '',
-      partner_economic_category_id: r.partnerEconomicCategoryId ? String(r.partnerEconomicCategoryId) : '',
-      is_key_supplier: r.isKeySupplier ?? false,
-      is_targeted: r.isTargeted ?? false,
-      legal_check_passed: r.legalCheckPassed ?? false,
-      questionnaire_filled: r.questionnaireFilled ?? false,
-      initial_assessment_done: r.initialAssessmentDone ?? false,
+      id: String(row.id),
+      name: row.name ?? '',
+      short_name: row.shortName ?? '',
+      inn: row.inn ?? '',
+      kpp: row.kpp ?? '',
+      ogrn: row.ogrn ?? '',
+      legal_address: row.legalAddress ?? '',
+      actual_address: row.actualAddress ?? '',
+      phone: row.phone ?? '',
+      email: row.email ?? '',
+      website: row.website ?? '',
+      status_id: row.statusId ? String(row.statusId) : '',
+      category_id: row.categoryId ? String(row.categoryId) : '',
+      comment: row.comment ?? '',
+      partner_economic_category_id: row.partnerEconomicCategoryId ? String(row.partnerEconomicCategoryId) : '',
+      is_key_supplier: row.isKeySupplier ?? false,
+      is_targeted: row.isTargeted ?? false,
+      legal_check_passed: row.legalCheckPassed ?? false,
+      questionnaire_filled: row.questionnaireFilled ?? false,
+      initial_assessment_done: row.initialAssessmentDone ?? false,
       is_approved: extras.isApproved,
       has_active_evaluation_block: extras.hasActiveEvaluationBlock,
-      rating: r.rating ? Number(r.rating) : null,
-      next_audit_date: r.nextAuditDate ?? null,
-      created_at: r.createdAt ? r.createdAt.toISOString() : '',
-      updated_at: r.updatedAt ? r.updatedAt.toISOString() : '',
-      is_deleted: r.isDeleted ?? false,
+      evaluation_required: extras.evaluationRequired,
+      rating: row.rating ? Number(row.rating) : null,
+      next_audit_date: row.nextAuditDate ?? null,
+      created_at: row.createdAt ? row.createdAt.toISOString() : '',
+      updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
+      is_deleted: row.isDeleted ?? false,
     };
   }
 }

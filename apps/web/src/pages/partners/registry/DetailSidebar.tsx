@@ -129,10 +129,13 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
   const econCategory = references?.partnerEconomicCategories?.find(
     economicCategory => economicCategory.id === partner.partner_economic_category_id,
   )?.name;
-  const categoryName =
-    references?.partnerCategories?.find(category => category.id === partner.category_id)?.name ?? '—';
+  const categoryDisplayName =
+    references?.partnerCategories?.find(category => String(category.id) === String(partner.category_id))?.name ??
+    'Не указана';
+  const categoryNameForRules = categoryDisplayName === 'Не указана' ? null : categoryDisplayName;
+  const categoryKind = inferPartnerCategoryKind(categoryNameForRules);
   const approvedByRules = computePartnerIsApproved({
-    kind: inferPartnerCategoryKind(categoryName),
+    kind: inferPartnerCategoryKind(categoryNameForRules),
     legalCheckPassed: partner.legal_check_passed,
     questionnaireFilled: partner.questionnaire_filled,
     initialAssessmentDone: partner.initial_assessment_done,
@@ -195,7 +198,17 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
         <div className={styles.classItems}>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Категория</span>
-            <span className={styles.classValue}>{categoryName}</span>
+            {categoryKind === 'engineering' ? (
+              <Tag bordered color='purple'>
+                {categoryDisplayName}
+              </Tag>
+            ) : categoryKind === 'resource' ? (
+              <Tag bordered color='blue'>
+                {categoryDisplayName}
+              </Tag>
+            ) : (
+              <span className={styles.classValue}>{categoryDisplayName}</span>
+            )}
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Статус</span>
