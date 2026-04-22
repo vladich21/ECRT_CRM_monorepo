@@ -6,7 +6,6 @@ export const formatFileSize = (bytes: number): string => {
   return `${(bytes / Math.pow(bytesBase, unitIndex)).toFixed(2)} ${sizes[unitIndex]}`;
 };
 
-/** Форматирует размер файла из строки/null в читаемый вид (русские единицы). */
 export const formatFileSizeStr = (size: string | null): string => {
   if (!size) return '—';
   const bytes = Number(size);

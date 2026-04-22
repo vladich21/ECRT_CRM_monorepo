@@ -1,5 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { FilterOutlined, PlusOutlined, SearchOutlined, SortAscendingOutlined } from '@ant-design/icons';
+import {
+  CloudSyncOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+} from '@ant-design/icons';
 import { Button, Input, Pagination, Select, Spin } from 'antd';
 import type { TablePaginationConfig } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,7 +16,9 @@ import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
+import { useNotification } from '../../customhooks/useNotification';
 import type { PartnerListSortBy } from '../../api/partners/partnerApi';
+import { usePartnerSyncNow, usePartnerSyncStatus } from '../../api/partners/partnerApiHooks';
 import type { Partner } from '../../types/partner';
 import { PartnerFiltersModal } from './PartnerFiltersModal';
 import styles from './PartnersListPage.module.scss';
@@ -22,6 +30,10 @@ import { buildPartnersApiFilters } from './utils/buildPartnersApiFilters';
 import { toPartnerListDisplayPartner } from './utils/partnersListDisplayUtils';
 import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 import { loadPartnersListPersistedUi, savePartnersListPersistedUi } from './utils/partnersListPersistedUi';
+import {
+  isPartnerCreateRestricted,
+  PARTNER_CREATE_RESTRICTED_MESSAGE,
+} from './utils/partnerCreateRestriction';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const PERSIST_UI_DEBOUNCE_MS = 400;
@@ -37,6 +49,9 @@ const SORT_OPTIONS: { value: PartnerListSortBy; label: string }[] = [
 export default function PartnersListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { contextHolder, showNotification } = useNotification();
+  const partnerSyncNowMutation = usePartnerSyncNow();
+  const { data: partnerSyncStatus } = usePartnerSyncStatus();
   const {
     searchQuery,
     setSearchQuery,
@@ -60,6 +75,7 @@ export default function PartnersListPage() {
     restoreListSorting,
   } = usePartnersListFilters();
   const [debouncedSearch, flushDebouncedSearch] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+  const isCreateRestricted = isPartnerCreateRestricted();
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
   const restoredFromNavigationRef = useRef(false);
@@ -201,6 +217,7 @@ export default function PartnersListPage() {
   const paginationConfig = getPaginationConfig(total);
   return (
     <div className={styles.wrap}>
+      {contextHolder}
       <div className={styles.backRow}>
         <BackButton path='/' />
       </div>
@@ -212,6 +229,42 @@ export default function PartnersListPage() {
         actions={
           <>
             <Button
+              icon={<CloudSyncOutlined />}
+              loading={partnerSyncNowMutation.isPending}
+              onClick={() => {
+                partnerSyncNowMutation.mutate(undefined, {
+                  onSuccess: res => {
+                    const summary =
+                      `Загружено из Тезиса: ${res.loadedFromThesis}. ` +
+                      `Создано: ${res.created}. Привязано: ${res.linked}. ` +
+                      `Уже синхронизировано: ${res.skippedByThesisId}.`;
+                    if (res.errors.length > 0) {
+                      showNotification(
+                        'warning',
+                        'Синхронизация контрагентов завершена с предупреждениями',
+                        `${summary} Ошибок: ${res.errors.length} (см. логи сервера).`,
+                      );
+                    } else {
+                      showNotification('success', 'Синхронизация контрагентов завершена', summary);
+                    }
+                  },
+                  onError: (error: unknown) => {
+                    const responseError = error as { response?: { data?: { message?: unknown } } };
+                    const messageRaw = responseError.response?.data?.message;
+                    const message =
+                      typeof messageRaw === 'string'
+                        ? messageRaw
+                        : error instanceof Error
+                          ? error.message
+                          : 'Не удалось выполнить синхронизацию';
+                    showNotification('error', 'Ошибка синхронизации контрагентов', message);
+                  },
+                });
+              }}
+            >
+              Синхронизировать из Тезиса
+            </Button>
+            <Button
               icon={<FilterOutlined />}
               onClick={openFiltersModal}
               className={activeFiltersCount > 0 ? styles.filtersBtnActive : undefined}
@@ -219,14 +272,18 @@ export default function PartnersListPage() {
               Фильтры
               {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
             </Button>
-            <Button
-              type='primary'
-              icon={<PlusOutlined />}
-              disabled={activeTab === 'deleted'}
-              onClick={() => navigate('/partners/create')}
-            >
-              Добавить контрагента
-            </Button>
+            {isCreateRestricted ? (
+              <span className={styles.createRestrictedHint}>{PARTNER_CREATE_RESTRICTED_MESSAGE}</span>
+            ) : (
+              <Button
+                type='primary'
+                icon={<PlusOutlined />}
+                disabled={activeTab === 'deleted'}
+                onClick={() => navigate('/partners/create')}
+              >
+                Добавить контрагента
+              </Button>
+            )}
           </>
         }
         filters={
@@ -281,6 +338,12 @@ export default function PartnersListPage() {
                   <span className={styles.resultCount}>
                     Показано: <strong>{partners.length}</strong> из <strong>{total}</strong>
                   </span>
+                  {partnerSyncStatus?.updated_at ? (
+                    <span className={styles.syncStatusHint}>
+                      Последняя синхронизация:{' '}
+                      {new Date(partnerSyncStatus.updated_at).toLocaleString('ru-RU')}
+                    </span>
+                  ) : null}
                 </div>
               </div>
             </div>

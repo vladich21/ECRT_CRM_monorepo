@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { SaveOutlined } from '@ant-design/icons';
-import { Button, Form } from 'antd';
+import { Alert, Button, Form } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../api/hooks/useReferences';
@@ -16,6 +16,10 @@ import { buildPartnerCreatePayload } from './create/utils/buildPartnerCreatePayl
 import { mapPartnerCreateApiErrorToForm } from './create/utils/mapPartnerCreateApiErrorToForm';
 import { navigateAfterPartnerCreateSuccess } from './create/utils/navigateAfterPartnerCreateSuccess';
 import type { PartnerCreateLocationState } from './create/utils/partnerCreateLocationState.types';
+import {
+  isPartnerCreateRestricted,
+  PARTNER_CREATE_RESTRICTED_MESSAGE,
+} from './utils/partnerCreateRestriction';
 import styles from './PartnerFormPage.module.scss';
 
 export default function PartnerCreatePage() {
@@ -39,6 +43,7 @@ export default function PartnerCreatePage() {
   const { mutate, isPending: isCreateLoading } = useCreatePartner();
   const { mutate: getPartnerDataByInn, isPending: isLoadingInn } = usePartnerByInn();
   const isSubmittingRef = useRef(false);
+  const createRestricted = isPartnerCreateRestricted();
   const handleCreate = async (values: PartnerFormSubmitValues) => {
     if (isSubmittingRef.current || !referenceBooks) return;
     isSubmittingRef.current = true;
@@ -99,14 +104,21 @@ export default function PartnerCreatePage() {
           navigate(-1);
         }}
         actions={
-          <>
-            <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
-              Очистить форму
-            </Button>
-            <Button type='primary' icon={<SaveOutlined />} loading={isCreateLoading} onClick={() => form.submit()}>
-              Создать контрагента
-            </Button>
-          </>
+          createRestricted ? undefined : (
+            <>
+              <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>
+                Очистить форму
+              </Button>
+              <Button
+                type='primary'
+                icon={<SaveOutlined />}
+                loading={isCreateLoading}
+                onClick={() => form.submit()}
+              >
+                Создать контрагента
+              </Button>
+            </>
+          )
         }
         tabs={[{ key: 'main', label: 'Создание' }]}
         activeTab='main'
@@ -114,29 +126,35 @@ export default function PartnerCreatePage() {
         contextHolder={contextHolder}
         stickyHeader
       >
-        <div className={styles.formCard}>
-          <Form
-            form={form}
-            layout='vertical'
-            size='middle'
-            initialValues={initialFormValues}
-            onFinish={handleCreate}
-            disabled={isCreateLoading}
-            onKeyPress={e => {
-              if (e.key === 'Enter') e.preventDefault();
-            }}
-            scrollToFirstError
-          >
-            <PartnerFormFields
+        {createRestricted ? (
+          <div className={styles.formCard}>
+            <Alert type='info' showIcon message={PARTNER_CREATE_RESTRICTED_MESSAGE} />
+          </div>
+        ) : (
+          <div className={styles.formCard}>
+            <Form
               form={form}
-              referenceBooks={referenceBooks as PartnerFormRefs}
+              layout='vertical'
+              size='middle'
+              initialValues={initialFormValues}
+              onFinish={handleCreate}
               disabled={isCreateLoading}
-              getFieldStatus={getFieldStatus}
-              onUploadByInn={handleUploadByInn}
-              isLoadingInn={isLoadingInn}
-            />
-          </Form>
-        </div>
+              onKeyPress={e => {
+                if (e.key === 'Enter') e.preventDefault();
+              }}
+              scrollToFirstError
+            >
+              <PartnerFormFields
+                form={form}
+                referenceBooks={referenceBooks as PartnerFormRefs}
+                disabled={isCreateLoading}
+                getFieldStatus={getFieldStatus}
+                onUploadByInn={handleUploadByInn}
+                isLoadingInn={isLoadingInn}
+              />
+            </Form>
+          </div>
+        )}
       </DetailPageHeader>
     </AsyncBoundary>
   );

@@ -12,7 +12,6 @@
   @include lp.filtersModalGrid;
 }
 
-/** Реестр оценок */
 .evaluationsFiltersModalForm {
   display: flex;
   flex-direction: column;
@@ -21,9 +20,6 @@
   align-items: flex-start;
 }
 
-/**
- * Период + категория + сортировка — одна строка, ширина по содержимому (не на всю модалку).
- */
 .evaluationsFiltersModalCompactRow {
   display: inline-grid;
   grid-template-columns: minmax(168px, 220px) minmax(148px, 200px) minmax(200px, 300px);
@@ -38,7 +34,6 @@
   }
 }
 
-/** Проект / закупщик — нужна полная ширина */
 .evaluationsFiltersModalFieldFull {
   width: 100%;
   align-self: stretch;

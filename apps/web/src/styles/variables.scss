@@ -1,4 +1,3 @@
-/* Как в main.css — единый стек для страниц и Ant Design */
 $font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
 $primary-color: #1677ff;
@@ -59,7 +58,6 @@ $header-activity-info-bg: rgba(22, 119, 255, 0.125);
 $header-activity-info-border: rgba(22, 119, 255, 0.314);
 $header-activity-info-text: #1677ff;
 
-// Полупрозрачный фон бейджа по базовому RGB (как success / danger в шапке)
 $semantic-status-tint-bg-alpha: 0.125;
 $semantic-status-tint-border-alpha: 0.314;
 

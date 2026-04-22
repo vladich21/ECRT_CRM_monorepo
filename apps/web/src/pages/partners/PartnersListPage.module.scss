@@ -69,9 +69,22 @@
   flex-shrink: 0;
 }
 
+.createRestrictedHint {
+  max-width: 560px;
+  color: #8c8c8c;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .searchInTabsRow { @include lp.searchInput; }
 .searchIcon      { @include lp.searchIcon; }
 .resultCount     { @include lp.resultCount; }
+
+.syncStatusHint {
+  color: rgba(5, 28, 61, 0.58);
+  font-size: 13px;
+  white-space: nowrap;
+}
 
 .typeSelect {
   width: 180px;

@@ -30,6 +30,7 @@ import { FilesModule } from './modules/files/files.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { SupplierEvaluationsModule } from './modules/supplier-evaluations/supplier-evaluations.module';
 import { HrSyncModule } from './modules/hr-sync/hr-sync.module';
+import { PartnerSyncModule } from './modules/partner-sync/partner-sync.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { HrSyncModule } from './modules/hr-sync/hr-sync.module';
     CommentsModule,
     SupplierEvaluationsModule,
     HrSyncModule,
+    PartnerSyncModule,
   ],
   controllers: [AppController],
   providers: [

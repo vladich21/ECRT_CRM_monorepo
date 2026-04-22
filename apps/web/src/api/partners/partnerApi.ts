@@ -1,5 +1,6 @@
 import { EMPTY_DELETION_TAB_COUNTS, type DeletionScope, type DeletionTabCounts } from '../../constants/deletionScope';
 import { Partner } from '../../types/partner';
+import { readAxiosLikeError } from '../../utils/readAxiosLikeError';
 import { apiClient } from '../clients';
 
 export type PartnersTabCounts = {
@@ -15,6 +16,25 @@ export interface PartnersListResponse {
   tab_counts: PartnersTabCounts;
   deletion_tab_counts: DeletionTabCounts;
 }
+
+export type PartnerSyncRunResult = {
+  startedAt: string;
+  finishedAt: string;
+  sourceFromTs: string;
+  savedLastSyncTs: string;
+  loadedFromThesis: number;
+  skippedByThesisId: number;
+  created: number;
+  linked: number;
+  errors: string[];
+};
+
+export type PartnerSyncStatusResponse = {
+  running: boolean;
+  last_sync_ts: string | null;
+  updated_at: string | null;
+  result: unknown;
+};
 
 export type PartnerListTriStateParam = 'yes' | 'no';
 
@@ -110,15 +130,25 @@ export const partnerApi = {
     return response.data;
   },
   addPartner: async (data: Partner): Promise<Partner> => {
-    const response = await apiClient.post('/partners', data);
-    if (Array.isArray(response.data)) {
-      if (response.data[0]?.error) throw new Error(response.data[0].error.msg);
-    } else if (response.data?.error) {
-      throw new Error(response.data.error.msg);
-    } else if (typeof response.data === 'string' && response.data.includes('error')) {
-      throw new Error(response.data);
+    try {
+      const response = await apiClient.post('/partners', data);
+      if (Array.isArray(response.data)) {
+        if (response.data[0]?.error) throw new Error(response.data[0].error.msg);
+      } else if (response.data?.error) {
+        throw new Error(response.data.error.msg);
+      } else if (typeof response.data === 'string' && response.data.includes('error')) {
+        throw new Error(response.data);
+      }
+      return Array.isArray(response.data) ? response.data[0] : response.data;
+    } catch (error: unknown) {
+      const { httpStatus, message } = readAxiosLikeError(error);
+      if (httpStatus === 403) {
+        throw new Error(
+          message ?? 'Создание контрагентов напрямую ограничено. Используйте Тезис.',
+        );
+      }
+      throw error instanceof Error ? error : new Error('Не удалось создать контрагента');
     }
-    return Array.isArray(response.data) ? response.data[0] : response.data;
   },
   editPartner: async (partnerId: string, data: Partial<Partner>): Promise<Partner> => {
     const response = await apiClient.put(`/partners/${partnerId}`, data);
@@ -132,5 +162,13 @@ export const partnerApi = {
   restorePartner: async (partnerId: string): Promise<Partner> => {
     const response = await apiClient.put(`/partners/${partnerId}/restore`);
     return response.data[0];
+  },
+  syncPartnersNow: async (): Promise<PartnerSyncRunResult> => {
+    const response = await apiClient.post('/partner-sync/sync');
+    return response.data;
+  },
+  getPartnerSyncStatus: async (): Promise<PartnerSyncStatusResponse> => {
+    const response = await apiClient.get('/partner-sync/status');
+    return response.data;
   },
 };

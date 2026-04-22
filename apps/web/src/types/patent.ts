@@ -31,13 +31,10 @@ export interface Patent {
   patent_grants_count?: number;
   patent_grants_preview?: PatentGrantListPreviewItem[];
 
-  /** Целевой РИД при статусе «Преобразование». */
   transformed_into_patent_id?: string;
-  /** Исходный РИД, если эта запись создана как продолжение преобразования. */
   transformed_from_patent_id?: string;
   transformation_notification_ic_zht?: string;
   transformation_notification_cir?: string;
-  /** Подпись для ссылки (из GET детали). */
   transformation_target_registration_number?: string;
   transformation_source_registration_number?: string;
 }
