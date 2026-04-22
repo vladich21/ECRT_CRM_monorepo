@@ -8,6 +8,7 @@ import {
   date,
   numeric,
   integer,
+  jsonb,
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
@@ -381,6 +382,7 @@ export const comments = pgTable('comments', {
 
 export const partners = pgTable('partners', {
   id: uuid('id').primaryKey().defaultRandom(),
+  thesisId: uuid('thesis_id'),
   name: varchar('name', { length: 255 }),
   shortName: varchar('short_name', { length: 255 }),
   inn: varchar('inn', { length: 12 }),
@@ -484,3 +486,10 @@ export const supplierPartnerProjectBlocks = pgTable(
     index('supplier_partner_project_blocks_project_idx').on(t.projectId),
   ],
 );
+
+export const syncMetadata = pgTable('sync_metadata', {
+  key: varchar('key', { length: 100 }).primaryKey(),
+  lastSyncTs: timestamp('last_sync_ts', { withTimezone: true }),
+  result: jsonb('result'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});

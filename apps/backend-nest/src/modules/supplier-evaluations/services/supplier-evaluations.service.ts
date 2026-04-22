@@ -9,6 +9,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../../database/database.service';
 import { PartnersService } from '../../partners/services/partners.service';
 import {
@@ -88,6 +89,7 @@ export class SupplierEvaluationsService {
 
   constructor(
     private readonly db: DatabaseService,
+    private readonly config: ConfigService,
     @Inject(forwardRef(() => PartnersService))
     private readonly partnersService: PartnersService,
   ) {}
@@ -103,6 +105,21 @@ export class SupplierEvaluationsService {
   async findContractProjectOptionsForPartner(partnerId: string) {
     if (await this.partnersService.isPartnerInArchiveStatus(partnerId)) {
       return [];
+    }
+    if (!this.isContractLinkRequired()) {
+      const rows = await this.db.db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          code: projects.code,
+        })
+        .from(projects)
+        .where(eq(projects.isDeleted, false))
+        .orderBy(asc(projects.name));
+      return rows.map((projectRow) => ({
+        id: String(projectRow.id),
+        label: (projectRow.name ?? projectRow.code ?? String(projectRow.id)).trim() || String(projectRow.id),
+      }));
     }
     const rows = await this.db.db
       .select({
@@ -464,7 +481,9 @@ export class SupplierEvaluationsService {
 
     await this.assertPartnerNotArchivedForNewEvaluation(dto.partner_id);
     await this.assertPartnerAndProjectExist(dto.partner_id, dto.project_id);
-    await this.assertProjectLinkedViaPartnerContracts(dto.partner_id, dto.project_id);
+    if (this.isContractLinkRequired()) {
+      await this.assertProjectLinkedViaPartnerContracts(dto.partner_id, dto.project_id);
+    }
 
     const criteriaRows = await this.db.db
       .select()
@@ -934,6 +953,13 @@ export class SupplierEvaluationsService {
         'Выберите проект из договоров с этим контрагентом. Проект не найден среди связей по договорам.',
       );
     }
+  }
+
+  private isContractLinkRequired(): boolean {
+    const raw = this.config.get<string>('SUPPLIER_EVAL_REQUIRE_CONTRACT_LINK');
+    if (!raw) return true;
+    const normalized = raw.trim().toLowerCase();
+    return !['0', 'false', 'off', 'no'].includes(normalized);
   }
 
   private validateEvaluatedAt(value: string) {

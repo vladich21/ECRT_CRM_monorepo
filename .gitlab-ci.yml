@@ -7,6 +7,7 @@ variables:
   GIT_SSL_NO_VERIFY: "true"
   # Секреты берутся из GitLab CI/CD Variables:
   # DATABASE_URL, JWT_SECRET, SMTP_PASSWORD, DATANEWTON_API_KEY
+  # THESIS_DB_URL, PARTNER_SYNC_INTERVAL_MINUTES, PARTNER_CREATE_RESTRICTED
   # STAGE_DATABASE_URL, STAGE_JWT_SECRET (для стейджа)
 
 # =====================================================
@@ -34,6 +35,7 @@ prod:build:web-assets:
     - nextjs
   script:
     - npm ci
+    - export VITE_PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-true}"
     - cd apps/web && npx vite build
   artifacts:
     paths:
@@ -86,7 +88,7 @@ prod:deploy:
       export HR_SYNC_INTERVAL_MINUTES="${HR_SYNC_INTERVAL_MINUTES:-15}"
       export THESIS_DB_URL="${THESIS_DB_URL:-}"
       export PARTNER_SYNC_INTERVAL_MINUTES="${PARTNER_SYNC_INTERVAL_MINUTES:-15}"
-      export PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-false}"
+      export PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-true}"
       # Если пусто — compose подставит пустую строку в контейнер → 503 на /partners/inn-lookup
       if [ -z "${DATANEWTON_API_KEY:-}" ]; then
         echo "ERROR: DATANEWTON_API_KEY пустая или не видна этой джобе."
@@ -127,6 +129,7 @@ stage:build:web-assets:
     - nextjs
   script:
     - npm ci
+    - export VITE_PARTNER_CREATE_RESTRICTED="${STAGE_PARTNER_CREATE_RESTRICTED:-true}"
     - cd apps/web && npx vite build
   artifacts:
     paths:
@@ -178,9 +181,9 @@ stage:deploy:
       export HR_USERS_SYNC_SECRET="${HR_USERS_SYNC_SECRET:-}"
       export HR_SYNC_INTERVAL_MINUTES=0
       export PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=true
-      export THESIS_DB_URL="${THESIS_DB_URL:-}"
-      export PARTNER_SYNC_INTERVAL_MINUTES=0
-      export PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-false}"
+      export THESIS_DB_URL="${STAGE_THESIS_DB_URL:-${THESIS_DB_URL:-}}"
+      export PARTNER_SYNC_INTERVAL_MINUTES="${STAGE_PARTNER_SYNC_INTERVAL_MINUTES:-15}"
+      export PARTNER_CREATE_RESTRICTED="${STAGE_PARTNER_CREATE_RESTRICTED:-true}"
       docker compose -p pmdb-stage -f docker-compose.stage.yml down || true
       docker compose -p pmdb-stage -f docker-compose.stage.yml up -d
       docker image prune -f || true

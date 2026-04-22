@@ -5,31 +5,14 @@ import {
 } from './SupplierEvaluationsRegistryFiltersModal';
 import { EVALUATION_REGISTRY_SORT_OPTIONS, EVALUATION_UI_TABS } from './supplierEvaluationsConstants';
 
-/**
- * Реестр оценок поставщиков (`/supplier-evaluations`) — единая точка для констант и чистой логики страницы.
- *
- * Поток данных (актуализировать при изменениях):
- * 1. Список строк — `GET /supplier-evaluations` (`useSupplierEvaluationsList`): проектные оценки, пагинация, фильтры модалки, вкладки ui_status.
- * 2. Счётчики вкладок — `GET /supplier-evaluations/counts-by-tab` с теми же фильтрами (без пагинации).
- * 3. Контрагенты для подписи в таблице и поиска — `GET /partners?preview=1` (`partnerApi.getPartnersForReference`): id + name; в поиске дополнительно используется `row.partner_name` из строки оценки.
- * 4. Названия проектов в таблице и в модалке переоценки — `useProjectsPreview` → `projectNameById`.
- * 5. Переоценка из реестра — `NewSupplierEvaluationModal` с `partner_id`, `initialProject_id` и `initialProjectLabel` из строки; список проектов — `GET .../partner-contract-projects`. Текущая активная оценка по проекту подтягивается через `GET /supplier-evaluations/:id` (деталь со scores) и подставляется в матрицу/дату/комментарий. Синтетическая опция проекта и предупреждение «нет проектов» — см. `shouldShowSupplierEvaluationModalNoProjectsWarning`.
- * 6. Закупщики в фильтре реестра — `GET .../registry-creators` без `partner_id`.
- * 7. Сохранение UI реестра — `loadSupplierEvaluationsRegistryPersistedUi` / `saveSupplierEvaluationsRegistryPersistedUi` (фильтры модалки + вкладка статусов в `localStorage`).
- */
-
-/** Дебаунс поля поиска «Контрагент или проект» на странице реестра. */
 export const SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS = 350;
 
-/** Сколько строк тянуть с API в режиме поиска (клиентская фильтрация по подстроке). */
 export const SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_FETCH_LIMIT = 2000;
 
-/** Состояние для `Link` на карточку партнёра: кнопка «назад» с деталей ведёт в реестр оценок. */
 export const SUPPLIER_EVALUATIONS_REGISTRY_PARTNER_LINK_STATE = {
   returnToAfterPartner: '/supplier-evaluations',
 } as const;
 
-/** Клиентский фильтр строк реестра по подстроке (контрагент / проект). */
 export function filterSupplierEvaluationRegistryRowsBySearch(
   rows: SupplierEvaluationListItem[],
   searchTrimmed: string,
@@ -49,10 +32,6 @@ export function filterSupplierEvaluationRegistryRowsBySearch(
   });
 }
 
-/**
- * Жёлтое «Нет проектов по договорам…» — только если после сборки опций в селекте «Проект» нечего выбрать.
- * Если из реестра подставлен проект (синтетическая опция), список не пустой — предупреждение не показываем.
- */
 export function shouldShowSupplierEvaluationModalNoProjectsWarning(
   projectsLoading: boolean,
   projectSelectOptionsLength: number,
@@ -98,7 +77,6 @@ function normalizePersistedFilters(raw: unknown): EvaluationsRegistryAppliedFilt
   return { evaluatedYears: years, category, createdByUserIds, projectIds, sortPreset };
 }
 
-/** Восстановление фильтров модалки и вкладки статусов после ухода со страницы реестра. */
 export function loadSupplierEvaluationsRegistryPersistedUi(): SupplierEvaluationsRegistryPersistedUi | null {
   try {
     const raw = localStorage.getItem(REGISTRY_UI_STORAGE_KEY);
@@ -124,6 +102,5 @@ export function saveSupplierEvaluationsRegistryPersistedUi(state: SupplierEvalua
   try {
     localStorage.setItem(REGISTRY_UI_STORAGE_KEY, JSON.stringify(state));
   } catch {
-    /* ignore quota / private mode */
   }
 }

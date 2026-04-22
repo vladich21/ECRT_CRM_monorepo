@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -11,6 +12,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   PartnersService,
   type PartnerEvaluationCategoryFilterToken,
@@ -98,6 +100,7 @@ export class PartnersController {
   constructor(
     private readonly service: PartnersService,
     private readonly innLookup: PartnerInnLookupService,
+    private readonly config: ConfigService,
   ) {}
 
   @Get()
@@ -175,6 +178,16 @@ export class PartnersController {
     @Body('body') body?: Record<string, unknown>,
     @Req() req?: Request & { user?: { user_id?: string } },
   ) {
+    const restrictedRaw = (this.config.get<string>('PARTNER_CREATE_RESTRICTED') ?? '').trim();
+    const isCreateRestricted =
+      restrictedRaw === '1' ||
+      restrictedRaw.toLowerCase() === 'true' ||
+      restrictedRaw.toLowerCase() === 'yes';
+    if (isCreateRestricted) {
+      throw new ForbiddenException(
+        'Создание контрагентов напрямую ограничено. Используйте Тезис.',
+      );
+    }
     const userId = req?.user?.user_id;
     const row = await this.service.create(body ?? {}, userId);
     return row ? [row] : [];

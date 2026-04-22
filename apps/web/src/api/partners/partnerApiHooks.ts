@@ -6,7 +6,13 @@ import {
   invalidateSupplierEvaluationQueries,
   supplierEvaluationQueryKeys,
 } from '../supplierEvaluations/supplierEvaluationQueryKeys';
-import { partnerApi, PartnerListParams, PartnersListResponse } from './partnerApi';
+import {
+  partnerApi,
+  PartnerListParams,
+  PartnersListResponse,
+  type PartnerSyncRunResult,
+  type PartnerSyncStatusResponse,
+} from './partnerApi';
 import { invalidatePartnerQueries, partnerQueryKeys } from './partnerQueryKeys';
 
 export function usePartners(
@@ -100,5 +106,19 @@ export const useRestorePartner = (): UseMutationResult<Partner, Error, string> =
       void invalidatePartnerQueries(queryClient);
       void queryClient.invalidateQueries({ queryKey: partnerQueryKeys.detail(id) });
     },
+  });
+};
+
+export const usePartnerSyncNow = (): UseMutationResult<PartnerSyncRunResult, Error, void> => {
+  return useMutation<PartnerSyncRunResult, Error, void>({
+    mutationFn: () => partnerApi.syncPartnersNow(),
+  });
+};
+
+export const usePartnerSyncStatus = (): UseQueryResult<PartnerSyncStatusResponse, Error> => {
+  return useQuery<PartnerSyncStatusResponse, Error>({
+    queryKey: [...partnerQueryKeys.all, 'partner-sync-status'],
+    queryFn: () => partnerApi.getPartnerSyncStatus(),
+    refetchInterval: 30 * 1000,
   });
 };

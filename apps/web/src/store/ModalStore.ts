@@ -4,7 +4,6 @@ import { devtools } from 'zustand/middleware';
 
 export type ModalType = 'fileForm' | 'positionForm' | 'contactForm' | 'confirm' | 'withDescription' | 'patentAreaForm';
 
-/** Внешний вид кнопок в `ConfirmModal` (поле `type` в сторе занято под выбор компонента модалки). */
 export type ConfirmModalAppearance = 'delete' | 'warning' | 'info' | 'success';
 
 export interface ModalState {
