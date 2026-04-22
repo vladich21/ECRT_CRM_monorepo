@@ -163,7 +163,7 @@ export default function NewSupplierEvaluationModal({
 
       setScores(scoresMapFromSeed(criteriaOrdered, lines));
       form.setFieldsValue({
-        evaluated_at: seedDetail.evaluated_at ? dayjs(seedDetail.evaluated_at) : dayjs(),
+        evaluated_at: dayjs(),
         comment: seedDetail.comment?.trim() ? seedDetail.comment : undefined,
       });
       return;
