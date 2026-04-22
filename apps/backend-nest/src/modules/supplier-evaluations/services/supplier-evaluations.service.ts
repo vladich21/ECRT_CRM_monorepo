@@ -957,7 +957,7 @@ export class SupplierEvaluationsService {
 
   private isContractLinkRequired(): boolean {
     const raw = this.config.get<string>('SUPPLIER_EVAL_REQUIRE_CONTRACT_LINK');
-    if (!raw) return true;
+    if (!raw) return false;
     const normalized = raw.trim().toLowerCase();
     return !['0', 'false', 'off', 'no'].includes(normalized);
   }
