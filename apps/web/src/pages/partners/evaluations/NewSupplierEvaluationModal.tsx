@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Col, DatePicker, Form, Input, Modal, Row, Select, Space, Typography } from 'antd';
+import { Alert, Button, Col, DatePicker, Form, Input, Modal, Row, Select, Space, Typography, notification } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import {
@@ -258,6 +258,10 @@ export default function NewSupplierEvaluationModal({
           },
           {
             onSuccess: () => {
+              const successMessage = hasActiveEvaluationForProject
+                ? 'Переоценка поставщика успешно сохранена'
+                : 'Оценка поставщика успешно сохранена';
+              notification.success({ message: 'Успех', description: successMessage });
               onSuccess?.();
               onClose();
               resolve();
