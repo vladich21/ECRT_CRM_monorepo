@@ -84,6 +84,9 @@ prod:deploy:
       export EXTERNAL_HR_ASSET_BASE_URL="${EXTERNAL_HR_ASSET_BASE_URL:-}"
       export HR_USERS_SYNC_SECRET="${HR_USERS_SYNC_SECRET:-}"
       export HR_SYNC_INTERVAL_MINUTES="${HR_SYNC_INTERVAL_MINUTES:-15}"
+      export THESIS_DB_URL="${THESIS_DB_URL:-}"
+      export PARTNER_SYNC_INTERVAL_MINUTES="${PARTNER_SYNC_INTERVAL_MINUTES:-15}"
+      export PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-false}"
       # Если пусто — compose подставит пустую строку в контейнер → 503 на /partners/inn-lookup
       if [ -z "${DATANEWTON_API_KEY:-}" ]; then
         echo "ERROR: DATANEWTON_API_KEY пустая или не видна этой джобе."
@@ -175,6 +178,9 @@ stage:deploy:
       export HR_USERS_SYNC_SECRET="${HR_USERS_SYNC_SECRET:-}"
       export HR_SYNC_INTERVAL_MINUTES=0
       export PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=true
+      export THESIS_DB_URL="${THESIS_DB_URL:-}"
+      export PARTNER_SYNC_INTERVAL_MINUTES=0
+      export PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-false}"
       docker compose -p pmdb-stage -f docker-compose.stage.yml down || true
       docker compose -p pmdb-stage -f docker-compose.stage.yml up -d
       docker image prune -f || true
