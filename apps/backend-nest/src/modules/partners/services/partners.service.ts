@@ -200,19 +200,28 @@ export class PartnersService {
     const statusIds = await this.resolvePartnerOperationalStatusIds();
     const isEngineering = this.partnerEngineeringCategorySql();
     const approvedExpr = this.partnerApprovedMatchSql();
+
+    // Только утверждённые инжиниринговые со статусом Активный или Потенциальный.
     const shouldBeEvaluated = and(
       isEngineering,
+      approvedExpr,
       or(
         eq(partners.statusId, statusIds.activeId),
-        and(eq(partners.statusId, statusIds.potentialId), approvedExpr)!,
+        eq(partners.statusId, statusIds.potentialId),
       )!,
     )!;
 
-    const activeEvalExists = exists(
+    const hasActiveInitialEval = exists(
       this.db.db
         .select({ one: sql`1` })
         .from(supplierEvaluations)
-        .where(and(eq(supplierEvaluations.partnerId, partners.id), eq(supplierEvaluations.status, 'active'))!),
+        .where(
+          and(
+            eq(supplierEvaluations.partnerId, partners.id),
+            eq(supplierEvaluations.scope, 'initial'),
+            eq(supplierEvaluations.status, 'active'),
+          )!,
+        ),
     );
     const overdueEvalExists = exists(
       this.db.db
@@ -228,7 +237,15 @@ export class PartnersService {
         ),
     );
 
-    return and(shouldBeEvaluated, or(not(activeEvalExists), overdueEvalExists)!)!;
+    // Missing: Активный + нет первичной оценки.
+    const isActiveMissing = and(
+      eq(partners.statusId, statusIds.activeId),
+      not(hasActiveInitialEval),
+    )!;
+    // Overdue: есть первичная оценка И переоценка просрочена (для Активных и Потенциальных).
+    const isOverdue = and(hasActiveInitialEval, overdueEvalExists)!;
+
+    return and(shouldBeEvaluated, or(isActiveMissing, isOverdue)!)!;
   }
 
   private appendRegistryExtendedFilters(parts: SQL[], filters?: PartnerQueryFilters): void {
@@ -633,13 +650,14 @@ export class PartnersService {
       const hasBlock = blockedPartnerIds.has(partnerId);
       const hasInitialEval = initialEvalPartnerIds.has(partnerId);
       const extras = this.partnerApprovalExtras(row, categoryName, hasBlock, hasInitialEval);
-      const evalFacts = activeEvalFactsByPartnerId.get(partnerId) ?? { hasActive: false, hasOverdue: false };
+      const evalFacts = activeEvalFactsByPartnerId.get(partnerId) ?? { hasActive: false, hasOverdue: false, hasInitial: false };
       const evaluationRequired = this.computeEvaluationRequiredForPartner({
         statusId,
         categoryName,
         isApproved: extras.isApproved,
         hasActiveEvaluation: evalFacts.hasActive,
         hasOverdueEvaluation: evalFacts.hasOverdue,
+        hasInitialEvaluation: evalFacts.hasInitial,
         statusIds,
       });
       return {
@@ -710,13 +728,14 @@ export class PartnersService {
     const hasInitialEval = initialEvalIds.has(pid);
     const extras = this.partnerApprovalExtras(rowForResponse, catName, hasBlock, hasInitialEval);
     const statusId = rowForResponse.statusId ? String(rowForResponse.statusId) : null;
-    const evalFacts = activeEvalFacts.get(pid) ?? { hasActive: false, hasOverdue: false };
+    const evalFacts = activeEvalFacts.get(pid) ?? { hasActive: false, hasOverdue: false, hasInitial: false };
     const evaluationRequired = this.computeEvaluationRequiredForPartner({
       statusId,
       categoryName: catName,
       isApproved: extras.isApproved,
       hasActiveEvaluation: evalFacts.hasActive,
       hasOverdueEvaluation: evalFacts.hasOverdue,
+      hasInitialEvaluation: evalFacts.hasInitial,
       statusIds,
     });
     return {
@@ -1225,8 +1244,8 @@ export class PartnersService {
 
   private async loadActiveEvaluationFactsByPartnerId(
     partnerIds: string[],
-  ): Promise<Map<string, { hasActive: boolean; hasOverdue: boolean }>> {
-    const map = new Map<string, { hasActive: boolean; hasOverdue: boolean }>();
+  ): Promise<Map<string, { hasActive: boolean; hasOverdue: boolean; hasInitial: boolean }>> {
+    const map = new Map<string, { hasActive: boolean; hasOverdue: boolean; hasInitial: boolean }>();
     if (partnerIds.length === 0) return map;
     const rows = await this.db.db
       .select({
@@ -1234,6 +1253,7 @@ export class PartnersService {
         hasActive: sql<boolean>`count(*) > 0`,
         hasOverdue:
           sql<boolean>`bool_or(${supplierEvaluations.nextReevaluationDate} is not null and ${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE)`,
+        hasInitial: sql<boolean>`bool_or(${supplierEvaluations.scope} = 'initial')`,
       })
       .from(supplierEvaluations)
       .where(and(inArray(supplierEvaluations.partnerId, partnerIds), eq(supplierEvaluations.status, 'active'))!)
@@ -1242,6 +1262,7 @@ export class PartnersService {
       map.set(String(row.partnerId), {
         hasActive: Boolean(row.hasActive),
         hasOverdue: Boolean(row.hasOverdue),
+        hasInitial: Boolean(row.hasInitial),
       });
     }
     return map;
@@ -1253,16 +1274,23 @@ export class PartnersService {
     isApproved: boolean;
     hasActiveEvaluation: boolean;
     hasOverdueEvaluation: boolean;
+    hasInitialEvaluation: boolean;
     statusIds: { activeId: string; potentialId: string };
   }): PartnerEvaluationRequiredValue {
     const isEngineering = inferPartnerCategoryKind(params.categoryName) === 'engineering';
-    const isActiveEngineering = isEngineering && params.statusId === params.statusIds.activeId;
-    const isPotentialApprovedEngineering =
-      isEngineering && params.statusId === params.statusIds.potentialId && params.isApproved;
-    const isRequiredPartner = isActiveEngineering || isPotentialApprovedEngineering;
-    if (!isRequiredPartner) return 'none';
-    if (!params.hasActiveEvaluation) return 'missing';
-    if (params.hasOverdueEvaluation) return 'overdue';
+    // Только утверждённые инжиниринговые (активные или потенциальные) подлежат обязательной оценке.
+    if (!isEngineering || !params.isApproved) return 'none';
+    const isActive = params.statusId === params.statusIds.activeId;
+    const isPotential = params.statusId === params.statusIds.potentialId;
+    if (!isActive && !isPotential) return 'none';
+
+    // Активный без первичной оценки → сигнализируем «требуется первичная оценка» (missing).
+    // Потенциальных без первичной оценки не тревожим — их утверждение и оценка по усмотрению.
+    if (isActive && !params.hasInitialEvaluation) return 'missing';
+
+    // Если первичная оценка есть и переоценка просрочена — сигнализируем «требуется переоценка».
+    if (params.hasInitialEvaluation && params.hasOverdueEvaluation) return 'overdue';
+
     return 'none';
   }
 
