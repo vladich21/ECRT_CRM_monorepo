@@ -1047,7 +1047,13 @@ export class PartnersService {
 
   private async exitArchiveStatus(partnerId: string, userId?: string): Promise<void> {
     const ids = await this.resolvePartnerOperationalStatusIds();
-    const nextStatusId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids);
+    const partnerRows = await this.db.db
+      .select({ statusId: partners.statusId })
+      .from(partners)
+      .where(eq(partners.id, partnerId))
+      .limit(1);
+    const currentStatusId = partnerRows[0]?.statusId ? String(partnerRows[0].statusId) : null;
+    const nextStatusId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids, currentStatusId);
     await this.db.db
       .update(partners)
       .set({
@@ -1110,14 +1116,24 @@ export class PartnersService {
   private async computeAutoStatusIdForPartnerRow(
     partnerId: string,
     ids: { activeId: string; potentialId: string; blockedId: string },
+    currentStatusId: string | null,
   ): Promise<string> {
     const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
     if (avg !== null && avg < 2) {
       return ids.blockedId;
     }
-    const hasEffective = await this.partnerHasAtLeastOneEffectiveContract(partnerId);
-    if (hasEffective) {
-      return ids.activeId;
+    // TODO: вернуть автопереключение Активный/Потенциальный по договорам после миграции договоров.
+    // На текущий момент работа с договорами не ведётся, и автопереключение приводило к постоянным
+    // сбоям статусов. Оставляем текущий статус Активный/Потенциальный без изменений.
+    // Разблокировка (был Заблокирован, оценка теперь >= 2) и разархивация — по умолчанию Потенциальный.
+    //
+    // const hasEffective = await this.partnerHasAtLeastOneEffectiveContract(partnerId);
+    // if (hasEffective) {
+    //   return ids.activeId;
+    // }
+    // return ids.potentialId;
+    if (currentStatusId === ids.activeId || currentStatusId === ids.potentialId) {
+      return currentStatusId;
     }
     return ids.potentialId;
   }
@@ -1140,7 +1156,7 @@ export class PartnersService {
     }
 
     const curId = partnerRow.statusId ? String(partnerRow.statusId) : null;
-    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids);
+    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids, curId);
     if (curId !== nextId) {
       await this.db.db
         .update(partners)
