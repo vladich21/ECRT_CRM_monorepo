@@ -1,8 +1,13 @@
 /** Значение `location.state.from`, если открыли документ из реестра `/patent-grants`. */
 export const PATENT_GRANT_NAV_FROM_REGISTRY = 'registry';
 
+/** Снимок списка реестра при уходе в карточку — восстанавливается по «Назад» (аналог `patentsListReturn`). */
+export const PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY = 'patentGrantsRegistryReturn';
+
 export type PatentGrantListNavState = {
   from?: string;
+  /** JSON-снимок из `buildPatentGrantsRegistryListSnapshot`, см. `parsePatentGrantsRegistryListSnapshot`. */
+  patentGrantsRegistryReturn?: unknown;
 };
 
 export function stateWithoutGrantNavFrom(state: unknown): Record<string, unknown> | undefined {
