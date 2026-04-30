@@ -58,6 +58,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps);
   const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses);
   const deptName = getNameById(patent.department_id, referenceBooks?.departments);
+  const responsibleName = getNameById(patent.responsible_for_patenting_id, referenceBooks.users);
   const projectName = getNameById(patent.project_id, referenceBooks?.projects);
   const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
   const incomeContract =
@@ -218,6 +219,12 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Отдел</span>
               <span className={deptName ? styles.infoValue : styles.infoValueMuted}>{deptName || '—'}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Ответственный за патентование</span>
+              <span className={responsibleName ? styles.infoValue : styles.infoValueMuted}>
+                {responsibleName || '—'}
+              </span>
             </div>
           </div>
         </div>

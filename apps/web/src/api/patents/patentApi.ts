@@ -13,6 +13,12 @@ export interface PatentsListResponse {
   tab_counts: PatentsTabCounts;
 }
 
+export type PatentListSortBy =
+  | 'registration_number'
+  | 'registration_date'
+  | 'registration_date_cir'
+  | 'created_at';
+
 export interface PatentListQuery {
   preview?: boolean;
   deletedScope?: 'active' | 'deleted' | 'all';
@@ -31,6 +37,8 @@ export interface PatentListQuery {
   contract_id?: string;
   /** Ключи регионов выдачи (patent_grants.office), через запятую */
   grant_regions?: string;
+  sort_by?: PatentListSortBy;
+  sort_order?: 'asc' | 'desc';
 }
 
 function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | number> {
@@ -50,6 +58,8 @@ function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | nu
   if (q.project_id) params.project_id = q.project_id;
   if (q.contract_id) params.contract_id = q.contract_id;
   if (q.grant_regions?.trim()) params.grant_regions = q.grant_regions.trim();
+  if (q.sort_by && !q.preview) params.sort_by = q.sort_by;
+  if (q.sort_order && !q.preview) params.sort_order = q.sort_order;
   return params;
 }
 

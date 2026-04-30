@@ -70,18 +70,19 @@ export default function PatentDetailsPage() {
   const handleEdit = () => navigate(`/patents/${patentId}/edit`);
   const handleTabChange = (key: string) => {
     const basePath = `/patents/${patentId}`;
+    const navOpts = { state: location.state };
     switch (key) {
       case 'files':
-        navigate(`${basePath}/files`);
+        navigate(`${basePath}/files`, navOpts);
         break;
       case 'comments':
-        navigate(`${basePath}/comments`);
+        navigate(`${basePath}/comments`, navOpts);
         break;
       case 'grants':
-        navigate(`${basePath}/grants`);
+        navigate(`${basePath}/grants`, navOpts);
         break;
       default:
-        navigate(basePath);
+        navigate(basePath, navOpts);
     }
   };
   const handleBack = () => {
@@ -121,6 +122,7 @@ export default function PatentDetailsPage() {
       subtitle={
         <div className={styles.detailHeaderSubtitle}>
           <UserOutlined style={{ fontSize: 14 }} />
+          <span className={styles.detailHeaderResponsibleLabel}>Ответственный за патентование:</span>
           <span>{responsibleName}</span>
         </div>
       }

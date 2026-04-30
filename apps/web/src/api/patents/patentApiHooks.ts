@@ -3,8 +3,8 @@ import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResul
 import { Patent } from '../../types/patent';
 import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
 import type { PatentsListServerFilters } from './patentListFilters.types';
+import { invalidatePatentQueries, patentQueryKeys } from './patentQueryKeys';
 
-/** Пустые фильтры для загрузки кандидатов в целевой РИД (преобразование). */
 export const patentsListServerFiltersEmpty: PatentsListServerFilters = {
   search: '',
   departmentId: null,
@@ -17,8 +17,9 @@ export const patentsListServerFiltersEmpty: PatentsListServerFilters = {
   projectId: null,
   contractId: null,
   grantRegionKeys: [],
+  sortBy: 'registration_number',
+  sortOrder: 'asc',
 };
-import { invalidatePatentQueries, patentQueryKeys } from './patentQueryKeys';
 
 export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
 
@@ -51,6 +52,8 @@ function buildListQuery(
     project_id: filters.projectId ?? undefined,
     contract_id: filters.contractId ?? undefined,
     grant_regions: grantRegionKeys.length > 0 ? grantRegionKeys.join(',') : undefined,
+    sort_by: filters.sortBy,
+    sort_order: filters.sortOrder,
   };
 }
 

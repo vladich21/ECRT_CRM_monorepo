@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import type { PatentListSortBy } from '@/api/patents/patentApi';
 import type { PatentsListServerFilters } from '@/api/patents/patentListFilters.types';
 
 import type { PatentAdvancedFilters } from '../types/PatentsListPage.types';
@@ -7,6 +8,8 @@ import type { PatentAdvancedFilters } from '../types/PatentsListPage.types';
 export function usePatentsListServerFilters(
   debouncedSearch: string,
   appliedFilters: PatentAdvancedFilters,
+  sortBy: PatentListSortBy,
+  sortOrder: 'asc' | 'desc',
 ): PatentsListServerFilters {
   return useMemo(
     () => ({
@@ -21,7 +24,9 @@ export function usePatentsListServerFilters(
       projectId: appliedFilters.projectId,
       contractId: appliedFilters.contractId,
       grantRegionKeys: appliedFilters.grantRegionKeys ?? [],
+      sortBy,
+      sortOrder,
     }),
-    [debouncedSearch, appliedFilters],
+    [debouncedSearch, appliedFilters, sortBy, sortOrder],
   );
 }

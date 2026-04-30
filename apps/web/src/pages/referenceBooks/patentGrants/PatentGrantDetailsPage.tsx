@@ -8,7 +8,7 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { patentGrantDetailHeaderBadgeVariant } from './constants/patentGrantStatusStyles';
-import { getPatentGrantListBackTarget } from './navigation/patentGrantListNavigation';
+import { getPatentGrantListBackTarget, stateWithoutGrantNavFrom } from './navigation/patentGrantListNavigation';
 import { useNotification } from '../../../customhooks/useNotification';
 
 export default function PatentGrantDetailsPage() {
@@ -16,6 +16,7 @@ export default function PatentGrantDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const backTarget = getPatentGrantListBackTarget(location.state);
+  const patentCardExtras = stateWithoutGrantNavFrom(location.state);
   const { contextHolder, showNotification } = useNotification();
   const { data: patentGrant, isLoading, isError } = usePatentGrantById(grantId!);
   const mutation = useDeletePatentGrant();
@@ -33,26 +34,32 @@ export default function PatentGrantDetailsPage() {
     successMessage: 'Охранный документ успешно удалён',
     errorMessage: 'Не удалось удалить охранный документ',
     redirectPath: backTarget.path,
+    redirectState: patentCardExtras,
     getMutationProps: () => grantId!,
     showNotification,
   });
 
+  const handleBack = () => {
+    navigate(backTarget.path, patentCardExtras ? { state: patentCardExtras } : {});
+  };
+
   const handleEdit = () => {
-    navigate(`/patent-grants/${grantId}/edit`);
+    navigate(`/patent-grants/${grantId}/edit`, { state: location.state });
   };
 
   const handleTabChange = (key: string) => {
     const basePath = `/patent-grants/${grantId}`;
+    const navOpts = { state: location.state };
 
     switch (key) {
       case 'main':
-        navigate(basePath);
+        navigate(basePath, navOpts);
         break;
       case 'files':
-        navigate(`${basePath}/files`);
+        navigate(`${basePath}/files`, navOpts);
         break;
       default:
-        navigate(basePath);
+        navigate(basePath, navOpts);
     }
   };
 
@@ -68,7 +75,7 @@ export default function PatentGrantDetailsPage() {
     <DetailPageHeader
       title={`Охранный документ ${patentGrant.grant_number}`}
       backLabel={backTarget.label}
-      onBack={() => navigate(backTarget.path)}
+      onBack={handleBack}
       statusBadge={
         patentGrant.status
           ? {
