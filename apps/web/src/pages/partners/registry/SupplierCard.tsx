@@ -88,8 +88,6 @@ export default function SupplierCard({
   const evaluationRequired = partner.evaluation_required ?? 'none';
   const showRequiredMissing = evaluationRequired === 'missing';
   const showRequiredOverdue = evaluationRequired === 'overdue';
-  const showLegacyNotRated = evaluationRequired === 'none' && !evaluationKpiLoading && avgScore == null;
-  const showLegacyOverdue = evaluationRequired === 'none' && !evaluationKpiLoading && reevalOverdue && avgScore != null;
 
   const displayName = getPartnerListDisplayName(partner);
 
@@ -121,9 +119,6 @@ export default function SupplierCard({
               Ресурсный
             </span>
           ) : null}
-          {showLegacyNotRated ? (
-            <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>Не оценён</span>
-          ) : null}
           {partner.is_approved ? (
             <span className={styles.chipApproved}>
               <CheckCircleFilled className={styles.chipIcon} />
@@ -150,17 +145,14 @@ export default function SupplierCard({
           {showRequiredMissing ? (
             <span className={styles.chipEvalRequiredMissing}>
               <WarningOutlined className={styles.chipIcon} />
-              Требуется оценка
+              Требуется первичная оценка
             </span>
           ) : null}
           {showRequiredOverdue ? (
             <span className={styles.chipEvalRequiredOverdue}>
               <ExclamationCircleOutlined className={styles.chipIcon} />
-              Требуется оценка · Просрочена
+              Требуется переоценка · Просрочена
             </span>
-          ) : null}
-          {showLegacyOverdue ? (
-            <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>Просрочена</span>
           ) : null}
           {!evaluationKpiLoading && blockedCount > 0 ? (
             <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>
