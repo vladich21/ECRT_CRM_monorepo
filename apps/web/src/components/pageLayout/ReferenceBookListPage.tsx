@@ -9,6 +9,7 @@ import styles from './ReferenceBookListPage.module.scss';
 interface ReferenceBookListPageProps {
   title: string;
   subtitle?: string;
+  showBackButton?: boolean;
   addButtonLabel?: string;
   onAdd?: () => void;
   children: ReactNode;
@@ -19,6 +20,7 @@ interface ReferenceBookListPageProps {
 export default function ReferenceBookListPage({
   title,
   subtitle,
+  showBackButton = true,
   addButtonLabel,
   onAdd,
   children,
@@ -42,7 +44,7 @@ export default function ReferenceBookListPage({
   return (
     <div className={styles.wrap}>
       {contextHolder}
-      <BackButton />
+      {showBackButton ? <BackButton /> : null}
       <PageHeader
         title={title}
         subtitle={subtitle}

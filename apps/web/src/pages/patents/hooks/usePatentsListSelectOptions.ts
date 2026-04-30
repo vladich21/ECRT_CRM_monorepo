@@ -25,13 +25,15 @@ export function usePatentsListSelectOptions(
       .map(contractId => {
         const contract = contractsById.get(contractId);
         if (contract) {
-          const contractNumber = contract.number?.trim();
-          const label = contractNumber || contract.name;
-          return { label, value: contractId };
+          const num = contract.number?.trim();
+          const cipher = contract.cipher?.trim();
+          const composed = [num, cipher].filter(Boolean).join(' / ');
+          const label = composed || contract.name?.trim() || '';
+          return { label: label || `Договор ${contractId.slice(0, 8)}…`, value: contractId };
         }
         return { label: `Договор ${contractId.slice(0, 8)}…`, value: contractId };
       })
-      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru', { numeric: true }));
 
     return {
       departments: (refs?.departments ?? []).map(department => ({

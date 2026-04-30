@@ -23,6 +23,12 @@ import {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+export type PatentListSortBy =
+  | 'registration_number'
+  | 'registration_date'
+  | 'registration_date_cir'
+  | 'created_at';
+
 export interface PatentFindAllParams {
   preview: boolean;
   deletedScope: DeletedScope;
@@ -38,6 +44,8 @@ export interface PatentFindAllParams {
   projectId?: string;
   contractId?: string;
   grantRegionKeys?: PatentGrantRegionKey[];
+  sortBy?: PatentListSortBy;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface PatentsListPayload {
@@ -370,6 +378,21 @@ export class PatentsService {
     return parts.length > 0 ? and(...parts)! : sql`true`;
   }
 
+  private patentListOrderBy(sortBy: PatentListSortBy, sortOrder: 'asc' | 'desc'): SQL[] {
+    const dir = sortOrder === 'desc' ? desc : asc;
+    switch (sortBy) {
+      case 'created_at':
+        return [dir(patents.createdAt), desc(patents.id)];
+      case 'registration_date':
+        return [dir(patents.registrationDate), desc(patents.id)];
+      case 'registration_date_cir':
+        return [dir(patents.registrationDateCir), desc(patents.id)];
+      case 'registration_number':
+      default:
+        return [dir(patents.registrationNumber), desc(patents.id)];
+    }
+  }
+
   private async countPatentsWhere(where: SQL): Promise<number> {
     const rows = await this.db.db.select({ value: count() }).from(patents).where(where);
     return Number(rows[0]?.value ?? 0);
@@ -391,8 +414,19 @@ export class PatentsService {
       projectId,
       contractId,
       grantRegionKeys,
+      sortBy: sortByRaw,
+      sortOrder: sortOrderRaw,
     } = params;
     const { limit = 50, offset = 0 } = pagination;
+
+    const sortBy: PatentListSortBy =
+      sortByRaw === 'created_at' ||
+      sortByRaw === 'registration_date' ||
+      sortByRaw === 'registration_date_cir' ||
+      sortByRaw === 'registration_number'
+        ? sortByRaw
+        : 'registration_number';
+    const sortOrder: 'asc' | 'desc' = sortOrderRaw === 'desc' ? 'desc' : 'asc';
 
     const baseParts = this.buildPatentFilterParts({
       search,
@@ -408,13 +442,14 @@ export class PatentsService {
       grantRegionKeys,
     });
     const listWhere = this.whereForListScope(baseParts, deletedScope);
+    const listOrderBy = preview ? [desc(patents.createdAt), desc(patents.id)] : this.patentListOrderBy(sortBy, sortOrder);
 
     if (preview) {
       const rows = await this.db.db
         .select({ id: patents.id, name: patents.name })
         .from(patents)
                .where(listWhere)
-        .orderBy(desc(patents.createdAt), desc(patents.id))
+        .orderBy(...listOrderBy)
         .limit(limit)
         .offset(offset);
       return rows.map((row) => ({
@@ -435,7 +470,7 @@ export class PatentsService {
         .select()
         .from(patents)
         .where(listWhere)
-        .orderBy(desc(patents.createdAt), desc(patents.id))
+        .orderBy(...listOrderBy)
         .limit(limit)
         .offset(offset),
     ]);

@@ -1,3 +1,4 @@
+import type { PatentListSortBy } from '@/api/patents/patentApi';
 import { isPatentGrantRegionKey } from '@/api/patents/patentGrantRegions';
 import {
   makeListReturnSnapshot,
@@ -16,7 +17,22 @@ function isPatentTab(candidate: unknown): candidate is PatentFilterTab {
   return typeof candidate === 'string' && (TABS as string[]).includes(candidate);
 }
 
-export type PatentsListNavSnapshot = ListReturnSnapshot<PatentFilterTab, PatentAdvancedFilters>;
+function isPatentListSortBy(candidate: unknown): candidate is PatentListSortBy {
+  return (
+    candidate === 'registration_number' ||
+    candidate === 'registration_date' ||
+    candidate === 'registration_date_cir' ||
+    candidate === 'created_at'
+  );
+}
+
+const DEFAULT_LIST_SORT_BY: PatentListSortBy = 'registration_number';
+const DEFAULT_LIST_SORT_ORDER: 'asc' | 'desc' = 'asc';
+
+export type PatentsListNavSnapshot = ListReturnSnapshot<PatentFilterTab, PatentAdvancedFilters> & {
+  sortBy: PatentListSortBy;
+  sortOrder: 'asc' | 'desc';
+};
 
 export function buildPatentsListNavSnapshot(
   searchQuery: string,
@@ -24,21 +40,27 @@ export function buildPatentsListNavSnapshot(
   applied: PatentAdvancedFilters,
   page: number,
   pageSize: number,
+  sortBy: PatentListSortBy,
+  sortOrder: 'asc' | 'desc',
 ): PatentsListNavSnapshot {
-  return makeListReturnSnapshot({
-    searchQuery,
-    activeTab,
-    applied: {
-      ...applied,
-      authorIds: [...applied.authorIds],
-      areaIds: [...applied.areaIds],
-      registrationYears: [...applied.registrationYears],
-      registrationCirYears: [...applied.registrationCirYears],
-      grantRegionKeys: [...applied.grantRegionKeys],
-    },
-    page,
-    pageSize,
-  });
+  return {
+    ...makeListReturnSnapshot({
+      searchQuery,
+      activeTab,
+      applied: {
+        ...applied,
+        authorIds: [...applied.authorIds],
+        areaIds: [...applied.areaIds],
+        registrationYears: [...applied.registrationYears],
+        registrationCirYears: [...applied.registrationCirYears],
+        grantRegionKeys: [...applied.grantRegionKeys],
+      },
+      page,
+      pageSize,
+    }),
+    sortBy,
+    sortOrder,
+  };
 }
 
 export function parsePatentsListNavSnapshot(raw: unknown): {
@@ -47,6 +69,8 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
   appliedFilters: PatentAdvancedFilters;
   page: number;
   pageSize: number;
+  sortBy: PatentListSortBy;
+  sortOrder: 'asc' | 'desc';
 } | null {
   const parsed = readListReturnSnapshot(raw, {
     defaultTab: 'all',
@@ -74,10 +98,16 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
   });
   if (!parsed) return null;
 
-  const rawActiveTab = raw && typeof raw === 'object' ? (raw as Record<string, unknown>).activeTab : undefined;
+  const rawRecord = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const sortBy = isPatentListSortBy(rawRecord.sortBy) ? rawRecord.sortBy : DEFAULT_LIST_SORT_BY;
+  const sortOrder = rawRecord.sortOrder === 'desc' ? 'desc' : DEFAULT_LIST_SORT_ORDER;
+
+  const rawActiveTab = rawRecord.activeTab;
   return {
     ...parsed,
     activeTab: rawActiveTab === 'active' ? 'all' : parsed.activeTab,
     appliedFilters: { ...DEFAULT_PATENT_FILTERS, ...parsed.appliedFilters },
+    sortBy,
+    sortOrder,
   };
 }

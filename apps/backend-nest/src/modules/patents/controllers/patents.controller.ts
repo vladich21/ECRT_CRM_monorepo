@@ -1,5 +1,9 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
-import { PatentsService, type PatentFindAllParams } from '../services/patents.service';
+import {
+  PatentsService,
+  type PatentFindAllParams,
+  type PatentListSortBy,
+} from '../services/patents.service';
 import { parsePatentGrantRegionKeys } from '../patent-grant-region-filter';
 import { parsePagination } from '../../../common/pagination';
 import { parseDeletedScope } from '../../../common/deleted-scope';
@@ -15,6 +19,24 @@ function parseRegistrationYears(raw?: string): number[] {
     .split(',')
     .map((s) => Number.parseInt(s.trim(), 10))
     .filter((y) => Number.isInteger(y) && y >= 1900 && y <= 2100);
+}
+
+function parsePatentListSortBy(raw?: string): PatentListSortBy | undefined {
+  if (
+    raw === 'created_at' ||
+    raw === 'registration_date' ||
+    raw === 'registration_date_cir' ||
+    raw === 'registration_number'
+  ) {
+    return raw;
+  }
+  return undefined;
+}
+
+function parsePatentListSortOrder(raw?: string): 'asc' | 'desc' | undefined {
+  const v = raw?.trim().toLowerCase();
+  if (v === 'asc' || v === 'desc') return v;
+  return undefined;
 }
 
 @Controller('patents')
@@ -45,10 +67,14 @@ export class PatentsController {
     @Query('grant_regions') grantRegionsRaw?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
+    @Query('sort_by') sortByRaw?: string,
+    @Query('sort_order') sortOrderRaw?: string,
   ) {
     const registrationYears = parseRegistrationYears(registrationYearsRaw);
     const registrationCirYears = parseRegistrationYears(registrationCirYearsRaw);
     const grantRegionKeys = parsePatentGrantRegionKeys(grantRegionsRaw);
+    const sortBy = parsePatentListSortBy(sortByRaw);
+    const sortOrder = parsePatentListSortOrder(sortOrderRaw);
     const params: PatentFindAllParams = {
       preview: preview === '1',
       deletedScope: parseDeletedScope(deletedScopeRaw),
@@ -64,6 +90,8 @@ export class PatentsController {
       projectId: projectId?.trim() || undefined,
       contractId: contractId?.trim() || undefined,
       grantRegionKeys: grantRegionKeys.length > 0 ? grantRegionKeys : undefined,
+      ...(sortBy ? { sortBy } : {}),
+      ...(sortOrder ? { sortOrder } : {}),
     };
     return this.service.findAll(params);
   }
@@ -84,10 +112,14 @@ export class PatentsController {
     @Query('grant_regions') grantRegionsRaw?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
+    @Query('sort_by') sortByRaw?: string,
+    @Query('sort_order') sortOrderRaw?: string,
   ) {
     const registrationYears = parseRegistrationYears(registrationYearsRaw);
     const registrationCirYears = parseRegistrationYears(registrationCirYearsRaw);
     const grantRegionKeys = parsePatentGrantRegionKeys(grantRegionsRaw);
+    const sortBy = parsePatentListSortBy(sortByRaw);
+    const sortOrder = parsePatentListSortOrder(sortOrderRaw);
     const params: PatentFindAllParams = {
       preview: preview === '1',
       deletedScope: 'deleted',
@@ -103,6 +135,8 @@ export class PatentsController {
       projectId: projectId?.trim() || undefined,
       contractId: contractId?.trim() || undefined,
       grantRegionKeys: grantRegionKeys.length > 0 ? grantRegionKeys : undefined,
+      ...(sortBy ? { sortBy } : {}),
+      ...(sortOrder ? { sortOrder } : {}),
     };
     return this.service.findAll(params);
   }

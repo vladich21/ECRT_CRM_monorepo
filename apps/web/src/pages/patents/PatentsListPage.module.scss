@@ -16,6 +16,13 @@
 .filterSection   { @include lp.filterSection; }
 .filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
 .filterTabsRight { @include lp.filterTabsRight; }
+.sortSelect {
+  min-width: 220px;
+  flex-shrink: 0;
+}
+.sortDirBtn {
+  flex-shrink: 0;
+}
 .searchInTabsRow { @include lp.searchInput; }
 .searchIcon      { @include lp.searchIcon; }
 .resultCount     { @include lp.resultCount; }

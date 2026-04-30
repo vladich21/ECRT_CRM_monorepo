@@ -1,5 +1,6 @@
 import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Pagination, Spin } from 'antd';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
@@ -23,7 +24,10 @@ import { PatentFiltersModal } from './components/filters/PatentFiltersModal';
 import { PatentsListFiltersBar } from './components/filters/PatentsListFiltersBar';
 import styles from './PatentsListPage.module.scss';
 import { buildPatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
+import { loadPatentsListPersistedUi, savePatentsListPersistedUi } from './utils/patentsListPersistedUi';
 import { patentListTabToDeletedScope } from './utils/patentListTabScope';
+
+const PERSIST_UI_DEBOUNCE_MS = 400;
 
 export default function PatentsListPage() {
   const navigate = useNavigate();
@@ -44,6 +48,11 @@ export default function PatentsListPage() {
     applyFilters,
     resetDraftFilters,
     activeFiltersCount,
+    sortBy,
+    sortOrder,
+    setSortField,
+    toggleSortOrder,
+    restoreListSorting,
   } = usePatentListFilters();
 
   const { debouncedSearch, alignDebouncedWithQuery } = usePatentsListSearchDebounce(searchQuery);
@@ -51,16 +60,57 @@ export default function PatentsListPage() {
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
+  const restoredFromNavigationRef = useRef(false);
+  const canPersistPatentsListUiRef = useRef(false);
+
   const { skipNextListResetRef } = usePatentsListRestoreFromDetail(
     location,
     navigate,
     { setSearchQuery, alignDebouncedWithQuery },
-    { setActiveTab, setAppliedFilters, setDraftFilters },
+    { setActiveTab, setAppliedFilters, setDraftFilters, restoreListSorting },
     { setPage, setPageSize },
+    { restoredFromNavigationRef },
   );
 
+  useLayoutEffect(() => {
+    if (restoredFromNavigationRef.current) {
+      restoredFromNavigationRef.current = false;
+    } else {
+      const persisted = loadPatentsListPersistedUi();
+      if (persisted) {
+        skipNextListResetRef.current = true;
+        setSearchQuery(persisted.searchQuery);
+        alignDebouncedWithQuery(persisted.searchQuery.trim());
+        setActiveTab(persisted.activeTab);
+        setAppliedFilters(persisted.appliedFilters);
+        setDraftFilters(persisted.appliedFilters);
+        setPage(persisted.page);
+        setPageSize(persisted.pageSize);
+        restoreListSorting({ sortBy: persisted.sortBy, sortOrder: persisted.sortOrder });
+      }
+    }
+    canPersistPatentsListUiRef.current = true;
+  }, []);
+
   const deletedScope = patentListTabToDeletedScope(activeTab);
-  const serverFilters = usePatentsListServerFilters(debouncedSearch, appliedFilters);
+  const serverFilters = usePatentsListServerFilters(debouncedSearch, appliedFilters, sortBy, sortOrder);
+
+  const appliedFiltersResetKey = useMemo(
+    () =>
+      JSON.stringify({
+        departmentId: appliedFilters.departmentId,
+        statusId: appliedFilters.statusId,
+        authorIds: [...(appliedFilters.authorIds ?? [])].sort(),
+        areaIds: [...(appliedFilters.areaIds ?? [])].sort(),
+        responsibleId: appliedFilters.responsibleId,
+        registrationYears: [...(appliedFilters.registrationYears ?? [])].sort((a, b) => a - b),
+        registrationCirYears: [...(appliedFilters.registrationCirYears ?? [])].sort((a, b) => a - b),
+        projectId: appliedFilters.projectId,
+        contractId: appliedFilters.contractId,
+        grantRegionKeys: [...(appliedFilters.grantRegionKeys ?? [])].sort(),
+      }),
+    [appliedFilters],
+  );
 
   const {
     data: listData,
@@ -75,23 +125,49 @@ export default function PatentsListPage() {
     data: referenceBooks,
     isError: isRefsError,
     isLoading: isRefsLoading,
-  } = useReferenceData([
-    'departments',
-    'users',
-    'contracts',
-    'projects',
-    'contractCategories',
-    'patentStatuses',
-    'patentIntellectProps',
-    'patentAreas',
-  ]);
+  } = useReferenceData(
+    [
+      'departments',
+      'users',
+      'contracts',
+      'projects',
+      'contractCategories',
+      'patentStatuses',
+      'patentIntellectProps',
+      'patentAreas',
+    ],
+    { contractsIncludeInactive: true },
+  );
 
   const refs = referenceBooks as ReferenceDataForPatents;
   const patents = listData?.data ?? [];
   const total = listData?.total ?? 0;
   const tabCounts = listData?.tab_counts ?? { all: 0, deleted: 0 };
 
-  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
+  useEffect(() => {
+    if (!canPersistPatentsListUiRef.current) return;
+    const timeoutId = window.setTimeout(() => {
+      savePatentsListPersistedUi({
+        searchQuery,
+        activeTab,
+        appliedFilters,
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+      });
+    }, PERSIST_UI_DEBOUNCE_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery, activeTab, appliedFilters, page, pageSize, sortBy, sortOrder]);
+
+  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [
+    debouncedSearch,
+    activeTab,
+    appliedFiltersResetKey,
+    sortBy,
+    sortOrder,
+    resetPage,
+  ]);
 
   usePatentsListPaginationClamp({
     total,
@@ -114,7 +190,15 @@ export default function PatentsListPage() {
       state: {
         from: 'patents-list',
         tab: activeTab,
-        patentsListReturn: buildPatentsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
+        patentsListReturn: buildPatentsListNavSnapshot(
+          searchQuery,
+          activeTab,
+          appliedFilters,
+          page,
+          pageSize,
+          sortBy,
+          sortOrder,
+        ),
       },
     });
 
@@ -170,6 +254,16 @@ export default function PatentsListPage() {
               onSearchChange={setSearchQuery}
               shownCount={patents.length}
               totalCount={total}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSortFieldChange={field => {
+                setSortField(field);
+                resetPage();
+              }}
+              onToggleSortOrder={() => {
+                toggleSortOrder();
+                resetPage();
+              }}
             />
           ) : undefined
         }

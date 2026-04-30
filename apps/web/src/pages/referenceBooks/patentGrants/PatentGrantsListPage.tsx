@@ -1,5 +1,5 @@
 import { Spin } from 'antd';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
@@ -11,12 +11,17 @@ import styles from './PatentGrantsListPage.module.scss';
 
 export default function PatentGrantsListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { patentId } = useParams();
   const { data: patentGrants = [], isLoading, isError } = usePatentGrants(patentId);
 
   const handleCardClick = (record: PatentGrant) => {
+    const parentState =
+      location.state && typeof location.state === 'object' && !Array.isArray(location.state)
+        ? (location.state as Record<string, unknown>)
+        : {};
     navigate(`/patent-grants/${record.id}`, {
-      state: { from: patentId },
+      state: { ...parentState, from: patentId },
     });
   };
 
@@ -27,6 +32,7 @@ export default function PatentGrantsListPage() {
   return (
     <ReferenceBookListPage
       title='Охранные документы'
+      showBackButton={false}
       addButtonLabel='Добавить'
       onAdd={() => navigate('/patent-grants/create', { state: { patentId } })}
     >

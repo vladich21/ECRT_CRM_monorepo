@@ -1,4 +1,5 @@
 import type { PatentGrantRegionKey } from './patentGrantRegions';
+import type { PatentListSortBy } from './patentApi';
 
 export type PatentsListServerFilters = {
   search: string;
@@ -12,4 +13,6 @@ export type PatentsListServerFilters = {
   projectId?: string | null;
   contractId?: string | null;
   grantRegionKeys: PatentGrantRegionKey[];
+  sortBy: PatentListSortBy;
+  sortOrder: 'asc' | 'desc';
 };
