@@ -1,7 +1,7 @@
 import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Pagination, Spin } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { usePatentGrantsRegistry } from '../../../api/patents/patentGrantsApiHooks';
 import type { PatentGrantRegistryListScope } from '../../../api/patents/patentGrantsApi';
@@ -9,18 +9,30 @@ import { BackButton } from '../../../components/backButton/BackButton';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
+import { useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import type { PatentGrant } from '../../../types/patent';
 import { usePatentsListPaginationClamp } from '../../patents/hooks/usePatentsListPaginationClamp';
 import { usePatentsListSearchDebounce } from '../../patents/hooks/usePatentsListSearchDebounce';
 import patentListStyles from '../../patents/PatentsListPage.module.scss';
-import { PATENT_GRANT_NAV_FROM_REGISTRY } from './navigation/patentGrantListNavigation';
+import {
+  PATENT_GRANT_NAV_FROM_REGISTRY,
+  PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY,
+} from './navigation/patentGrantListNavigation';
 import { PatentGrantListCard } from './components/PatentGrantListCard';
 import { PatentGrantsRegistryFiltersBar } from './components/PatentGrantsRegistryFiltersBar';
 import { PatentGrantsRegistryFiltersModal } from './components/PatentGrantsRegistryFiltersModal';
 import { usePatentGrantsRegistryFilters } from './hooks/usePatentGrantsRegistryFilters';
+import { usePatentGrantsRegistryRestoreFromDetail } from './hooks/usePatentGrantsRegistryRestoreFromDetail';
 import { usePatentGrantsRegistryServerFilters } from './hooks/usePatentGrantsRegistryServerFilters';
+import {
+  loadPatentGrantsRegistryPersistedUi,
+  savePatentGrantsRegistryPersistedUi,
+} from './utils/patentGrantsRegistryPersistedUi';
+import { buildPatentGrantsRegistryListSnapshot } from './utils/patentGrantsRegistryNavSnapshot';
 import styles from './PatentGrantsListPage.module.scss';
+
+const PERSIST_UI_DEBOUNCE_MS = 400;
 
 const EMPTY_TAB_COUNTS: Record<PatentGrantRegistryListScope, number> = {
   all: 0,
@@ -30,6 +42,7 @@ const EMPTY_TAB_COUNTS: Record<PatentGrantRegistryListScope, number> = {
 
 export default function PatentGrantsRegistryPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [grantScopeTab, setGrantScopeTab] = useState<PatentGrantRegistryListScope>('all');
 
   const {
@@ -39,6 +52,8 @@ export default function PatentGrantsRegistryPage() {
     openFiltersModal,
     closeFiltersModal,
     appliedFilters,
+    setAppliedFilters,
+    setDraftFilters,
     draftFilters,
     updateDraftFilter,
     applyFilters,
@@ -46,15 +61,75 @@ export default function PatentGrantsRegistryPage() {
     activeFiltersCount,
   } = usePatentGrantsRegistryFilters();
 
-  const { debouncedSearch } = usePatentsListSearchDebounce(searchQuery);
+  const { debouncedSearch, alignDebouncedWithQuery } = usePatentsListSearchDebounce(searchQuery);
 
-  const { page, pageSize, getPaginationConfig, handleTableChange, resetPage } = useServerTablePagination();
+  const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
+    useServerTablePagination();
+
+  const restoredFromNavigationRef = useRef(false);
+  const { skipNextListResetRef } = usePatentGrantsRegistryRestoreFromDetail(
+    location,
+    navigate,
+    { setSearchQuery, alignDebouncedWithQuery },
+    { setGrantScopeTab, setAppliedFilters, setDraftFilters },
+    { setPage, setPageSize },
+    { restoredFromNavigationRef },
+  );
+
+  const canPersistRegistryUiRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (restoredFromNavigationRef.current) {
+      restoredFromNavigationRef.current = false;
+    } else {
+      const persisted = loadPatentGrantsRegistryPersistedUi();
+      if (persisted) {
+        skipNextListResetRef.current = true;
+        setSearchQuery(persisted.searchQuery);
+        alignDebouncedWithQuery(persisted.searchQuery.trim());
+        setGrantScopeTab(persisted.grantScopeTab);
+        setAppliedFilters(persisted.appliedFilters);
+        setDraftFilters(persisted.appliedFilters);
+        setPage(persisted.page);
+        setPageSize(persisted.pageSize);
+      }
+    }
+    canPersistRegistryUiRef.current = true;
+  }, []);
 
   const serverFilters = usePatentGrantsRegistryServerFilters(debouncedSearch, appliedFilters);
 
+  const appliedFiltersResetKey = useMemo(
+    () =>
+      JSON.stringify({
+        grantStatuses: [...appliedFilters.grantStatuses].sort(),
+        grantRegionKeys: [...appliedFilters.grantRegionKeys].sort(),
+        grantIssueYears: [...appliedFilters.grantIssueYears].sort((a, b) => a - b),
+        grantRenewalYears: [...appliedFilters.grantRenewalYears].sort((a, b) => a - b),
+      }),
+    [appliedFilters],
+  );
+
+  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [
+    debouncedSearch,
+    grantScopeTab,
+    appliedFiltersResetKey,
+    resetPage,
+  ]);
+
   useEffect(() => {
-    resetPage();
-  }, [debouncedSearch, grantScopeTab, appliedFilters, resetPage]);
+    if (!canPersistRegistryUiRef.current) return;
+    const timeoutId = window.setTimeout(() => {
+      savePatentGrantsRegistryPersistedUi({
+        searchQuery,
+        grantScopeTab,
+        appliedFilters,
+        page,
+        pageSize,
+      });
+    }, PERSIST_UI_DEBOUNCE_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery, grantScopeTab, appliedFilters, page, pageSize]);
 
   const listQuery = useMemo(
     () => ({
@@ -81,7 +156,16 @@ export default function PatentGrantsRegistryPage() {
 
   const handleOpenGrant = (grant: PatentGrant) => {
     navigate(`/patent-grants/${grant.id}`, {
-      state: { from: PATENT_GRANT_NAV_FROM_REGISTRY },
+      state: {
+        from: PATENT_GRANT_NAV_FROM_REGISTRY,
+        [PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY]: buildPatentGrantsRegistryListSnapshot(
+          searchQuery,
+          grantScopeTab,
+          appliedFilters,
+          page,
+          pageSize,
+        ),
+      },
     });
   };
 
