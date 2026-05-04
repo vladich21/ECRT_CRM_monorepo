@@ -149,6 +149,92 @@ export const refGroups = pgTable('ref_groups', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
 });
 
+/**
+ * RBAC: роль. Назначается пользователю через relUsersRoles. Права роли
+ * описываются через relRoleSectionPermissions.
+ */
+export const roles = pgTable(
+  'roles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: varchar('code', { length: 100 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    isActive: boolean('is_active').notNull().default(true),
+    isSystem: boolean('is_system').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('roles_code_uidx').on(t.code),
+    index('roles_active_idx').on(t.isActive),
+  ],
+);
+
+/**
+ * RBAC: раздел системы. Имеет уникальный код (admin.users, partners.list).
+ * is_folder = true для группирующих узлов в UI-дереве (без прав).
+ */
+export const sections = pgTable(
+  'sections',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: varchar('code', { length: 100 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    parentId: uuid('parent_id'),
+    isFolder: boolean('is_folder').notNull().default(false),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('sections_code_uidx').on(t.code),
+    index('sections_parent_idx').on(t.parentId),
+  ],
+);
+
+/**
+ * RBAC: связка пользователь ↔ роль (M:N).
+ * Права суммируются через BOOL_OR при наличии нескольких ролей.
+ */
+export const relUsersRoles = pgTable(
+  'rel_users_roles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull(),
+    roleId: uuid('role_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('rel_users_roles_user_role_uidx').on(t.userId, t.roleId),
+    index('rel_users_roles_user_idx').on(t.userId),
+    index('rel_users_roles_role_idx').on(t.roleId),
+  ],
+);
+
+/**
+ * RBAC: права роли на раздел. Три булевых флага.
+ * Зависимости (валидируются на бэке): delete → edit → read.
+ */
+export const relRoleSectionPermissions = pgTable(
+  'rel_role_section_permissions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    roleId: uuid('role_id').notNull(),
+    sectionId: uuid('section_id').notNull(),
+    canRead: boolean('can_read').notNull().default(false),
+    canEdit: boolean('can_edit').notNull().default(false),
+    canDelete: boolean('can_delete').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('rel_rsp_role_section_uidx').on(t.roleId, t.sectionId),
+    index('rel_rsp_role_idx').on(t.roleId),
+    index('rel_rsp_section_idx').on(t.sectionId),
+  ],
+);
+
 export const refContractStates = pgTable('ref_contract_states', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 50 }).notNull(),

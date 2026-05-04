@@ -62,8 +62,17 @@ export class AuthController {
   }
 
   @Get('me')
-  getMe(@Req() req: Request & { user?: { user_id: string } }) {
-    return this.auth.getMe(req.user!.user_id);
+  async getMe(
+    @Req()
+    req: Request & {
+      user?: { user_id: string; sectionPermissions?: { sectionCode: string; canRead: boolean; canEdit: boolean; canDelete: boolean }[] };
+    },
+  ) {
+    const me = await this.auth.getMe(req.user!.user_id);
+    return {
+      ...me,
+      sectionPermissions: req.user!.sectionPermissions ?? [],
+    };
   }
 
   @Post('logout')

@@ -7,14 +7,23 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { PermissionsVersionService } from '../permissions/services/permissions-version.service';
+import type { SectionPermission } from '../../shared/permissions';
 
 const RENEW_THRESHOLD_SEC = 24 * 60 * 60; // обновить токен если осталось < 24 часов
+
+interface AuthRequestUser {
+  user_id: string;
+  sectionPermissions: SectionPermission[];
+  exp?: number;
+}
 
 @Injectable()
 export class JwtGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly authService: AuthService,
+    private readonly permissionsVersion: PermissionsVersionService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -24,20 +33,37 @@ export class JwtGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const req = ctx.switchToHttp().getRequest<Request & { user: unknown }>();
+    const req = ctx.switchToHttp().getRequest<Request & { user: AuthRequestUser }>();
     const res = ctx.switchToHttp().getResponse<Response>();
 
     const token = req.cookies?.['auth_token'];
     if (!token) throw new UnauthorizedException('Токен отсутствует');
 
-    let payload: { user_id: string; exp?: number };
+    let payload: {
+      user_id: string;
+      exp?: number;
+      sectionPermissions?: SectionPermission[];
+      pv?: number;
+    };
     try {
       payload = await this.authService.verifyJwt(token);
     } catch {
       throw new UnauthorizedException('Недействительный токен');
     }
 
-    req.user = payload;
+    let sectionPermissions = payload.sectionPermissions ?? [];
+
+    // Если pv в токене не совпадает с серверным — перевыпускаем токен
+    // с актуальным snapshot прав. Также покрывает старые токены без pv.
+    if (payload.pv !== this.permissionsVersion.get()) {
+      sectionPermissions = await this.authService.refreshTokenPermissions(payload.user_id, res);
+    }
+
+    req.user = {
+      user_id: payload.user_id,
+      sectionPermissions,
+      exp: payload.exp,
+    };
 
     if (payload.exp) {
       const secondsLeft = payload.exp - Math.floor(Date.now() / 1000);

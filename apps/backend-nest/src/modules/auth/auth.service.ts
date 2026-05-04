@@ -15,6 +15,9 @@ import { DatabaseService } from '../../database/database.service';
 import { authCodes } from '../../database/schema';
 import { UsersService } from '../users/services/users.service';
 import { MailService } from './mail.service';
+import { PermissionsService } from '../permissions/services/permissions.service';
+import { PermissionsVersionService } from '../permissions/services/permissions-version.service';
+import type { SectionPermission } from '../../shared/permissions';
 
 const ARGON2_OPTIONS: argon2.Options = {
   type: argon2.argon2id,
@@ -36,6 +39,8 @@ export class AuthService {
     private readonly db: DatabaseService,
     private readonly users: UsersService,
     private readonly mail: MailService,
+    private readonly permissions: PermissionsService,
+    private readonly permissionsVersion: PermissionsVersionService,
   ) {
     const secret = config.get<string>('JWT_SECRET') ?? '';
     this.jwtSecret = new TextEncoder().encode(secret);
@@ -126,13 +131,33 @@ export class AuthService {
     return { user };
   }
 
-  async verifyJwt(token: string): Promise<{ user_id: string; exp?: number }> {
+  async verifyJwt(token: string): Promise<{
+    user_id: string;
+    exp?: number;
+    sectionPermissions?: SectionPermission[];
+    pv?: number;
+  }> {
     const { payload } = await jwtVerify(token, this.jwtSecret);
-    return { user_id: payload['user_id'] as string, exp: payload.exp };
+    return {
+      user_id: payload['user_id'] as string,
+      exp: payload.exp,
+      sectionPermissions: payload['sectionPermissions'] as SectionPermission[] | undefined,
+      pv: payload['pv'] as number | undefined,
+    };
   }
 
   async renewToken(userId: string, res: Response): Promise<void> {
     await this.setAuthCookie(userId, res);
+  }
+
+  /**
+   * Перевыпуск токена с актуальными правами (при mismatch pv).
+   * Возвращает свежий snapshot для записи в request.user.
+   */
+  async refreshTokenPermissions(userId: string, res: Response): Promise<SectionPermission[]> {
+    const fresh = await this.permissions.getUserSectionPermissions(userId);
+    await this.setAuthCookie(userId, res, fresh);
+    return fresh;
   }
 
   private async finishLogin(userId: string, res: Response): Promise<void> {
@@ -140,19 +165,28 @@ export class AuthService {
     await this.setAuthCookie(userId, res);
   }
 
-  private async setAuthCookie(userId: string, res: Response): Promise<void> {
-    const token = await this.signJwt(userId);
+  private async setAuthCookie(
+    userId: string,
+    res: Response,
+    sectionPermissions?: SectionPermission[],
+  ): Promise<void> {
+    const perms = sectionPermissions ?? await this.permissions.getUserSectionPermissions(userId);
+    const token = await this.signJwt(userId, perms);
     res.cookie(JWT_COOKIE, token, {
       httpOnly: true,
-      secure: false,
+      secure: false, // TODO: включить когда продакшен переедет на HTTPS
       sameSite: 'lax',
       maxAge: JWT_TTL_SECONDS * 1000,
       path: '/',
     });
   }
 
-  private async signJwt(userId: string): Promise<string> {
-    return new SignJWT({ user_id: userId })
+  private async signJwt(userId: string, sectionPermissions: SectionPermission[]): Promise<string> {
+    return new SignJWT({
+      user_id: userId,
+      sectionPermissions,
+      pv: this.permissionsVersion.get(),
+    })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(`${JWT_TTL_SECONDS}s`)

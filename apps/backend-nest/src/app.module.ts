@@ -3,6 +3,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtGuard } from './modules/auth/jwt.guard';
+import { PermissionsGuard } from './modules/permissions/guards/permissions.guard';
 import { DatabaseModule } from './database/database.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppController } from './common/controllers/app.controller';
@@ -31,6 +32,8 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { SupplierEvaluationsModule } from './modules/supplier-evaluations/supplier-evaluations.module';
 import { HrSyncModule } from './modules/hr-sync/hr-sync.module';
 import { PartnerSyncModule } from './modules/partner-sync/partner-sync.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { AdminRbacModule } from './modules/admin-rbac/admin-rbac.module';
 
 @Module({
   imports: [
@@ -40,6 +43,8 @@ import { PartnerSyncModule } from './modules/partner-sync/partner-sync.module';
       // при совпадении ключей побеждает .env (см. merge в @nestjs/config loadEnvFile).
       envFilePath: ['.env', '.env.development'],
     }),
+    PermissionsModule,
+    AdminRbacModule,
     AuthModule,
     DatabaseModule,
     UsersModule,
@@ -77,6 +82,10 @@ import { PartnerSyncModule } from './modules/partner-sync/partner-sync.module';
     {
       provide: APP_GUARD,
       useClass: JwtGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
   ],
 })
