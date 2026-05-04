@@ -1,4 +1,5 @@
 import { User } from '../../types/user';
+import type { SectionPermission } from '../../shared/permissions';
 import { apiClient } from '../clients';
 
 interface CheckLoginResponse {
@@ -48,9 +49,12 @@ export const authApi = {
     return res.data;
   },
 
-  getMe: async (): Promise<{ user: User }> => {
-    const res = await apiClient.get<{ user: User }>('/auth/me');
-    return res.data;
+  getMe: async (): Promise<{ user: User; sectionPermissions: SectionPermission[] }> => {
+    const res = await apiClient.get<{ user: User; sectionPermissions?: SectionPermission[] }>('/auth/me');
+    return {
+      user: res.data.user,
+      sectionPermissions: res.data.sectionPermissions ?? [],
+    };
   },
 
   logout: async (): Promise<void> => {

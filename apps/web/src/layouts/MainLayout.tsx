@@ -1,4 +1,4 @@
-import { ReactNode, Suspense, useEffect } from 'react';
+import { ReactNode, Suspense, useEffect, useMemo } from 'react';
 import { Layout, Menu, theme } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -6,8 +6,9 @@ import { refreshSessionUser } from '../api/auth/refreshSessionUser';
 import ecrtLogoMin from '../assets/svg/ecrt-logo-min.svg';
 import { Loader } from '../components/loader/Loader';
 import ProfileButton from '../components/profileButton/ProfileButton';
+import { usePermissions } from '../hooks/usePermissions';
 import useAuthStore from '../store/AuthStore';
-import { menuItems } from './data';
+import { buildMenuItems } from './data';
 import styles from './styles.module.scss';
 
 const { Header, Content } = Layout;
@@ -21,6 +22,11 @@ function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate();
   const isAuth = useAuthStore(state => state.isAuth);
   const user = useAuthStore(state => state.user);
+  const { hasAnySectionPermission } = usePermissions();
+  const menuItems = useMemo(
+    () => buildMenuItems(sections => hasAnySectionPermission(sections, 'read')),
+    [hasAnySectionPermission],
+  );
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();

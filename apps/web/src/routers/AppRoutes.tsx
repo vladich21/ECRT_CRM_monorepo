@@ -2,7 +2,9 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 
 import { Loader } from '../components/loader/Loader';
+import { RequireSection } from '../components/canAccess/RequireSection';
 import MainLayout from '../layouts/MainLayout';
+import { SECTIONS, type SectionCode } from '../shared/permissions';
 
 import PrivateRoute from './PrivateRoute';
 
@@ -75,8 +77,13 @@ const ProjectDetailsPage = lazy(() => import('../pages/referenceBooks/projects/P
 const ProjectsListPage = lazy(() => import('../pages/referenceBooks/projects/ProjectsListPage'));
 const UserDetailsPage = lazy(() => import('../pages/referenceBooks/users/UserDetailsPage'));
 const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersListPage'));
+const RolesListPage = lazy(() => import('../pages/admin/roles/RolesListPage'));
 
 const Private = ({ children }: { children: React.ReactNode }) => <PrivateRoute>{children}</PrivateRoute>;
+
+const Guarded = ({ section, children }: { section: SectionCode; children: React.ReactNode }) => (
+  <RequireSection section={section} action="read">{children}</RequireSection>
+);
 
 const RedirectToUsersList = () => <Navigate to="/users" replace />;
 
@@ -111,52 +118,53 @@ export default function AppRoutes() {
         <Route path="home" element={<HomePage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="users">
-          <Route index element={<UsersListPage />} />
+          <Route index element={<Guarded section={SECTIONS.ADMIN_USERS}><UsersListPage /></Guarded>} />
           <Route path="create" element={<RedirectToUsersList />} />
           <Route path=":userId/edit" element={<RedirectUserEditToDetails />} />
-          <Route path=":userId" element={<UserDetailsPage />} />
+          <Route path=":userId" element={<Guarded section={SECTIONS.ADMIN_USERS}><UserDetailsPage /></Guarded>} />
         </Route>
 
         <Route path="departments">
-          <Route index element={<DepartmentsListPage />} />
+          <Route index element={<Guarded section={SECTIONS.REFERENCES_DEPARTMENTS}><DepartmentsListPage /></Guarded>} />
           <Route path="create" element={<Navigate to="/departments" replace />} />
           <Route path=":departmentId/edit" element={<Navigate to="/departments" replace />} />
           <Route path=":departmentId" element={<Navigate to="/departments" replace />} />
         </Route>
 
         <Route path="positions">
-          <Route index element={<PositionsListPage />} />
+          <Route index element={<Guarded section={SECTIONS.REFERENCES_POSITIONS}><PositionsListPage /></Guarded>} />
         </Route>
 
         <Route path="projects">
-          <Route index element={<ProjectsListPage />} />
-          <Route path="create" element={<ProjectCreatePage />} />
-          <Route path=":projectId/edit" element={<ProjectEditPage />} />
-          <Route path=":projectId" element={<ProjectDetailsPage />} />
+          <Route index element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectsListPage /></Guarded>} />
+          <Route path="create" element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectCreatePage /></Guarded>} />
+          <Route path=":projectId/edit" element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectEditPage /></Guarded>} />
+          <Route path=":projectId" element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectDetailsPage /></Guarded>} />
         </Route>
 
         <Route path="gantts">
-          <Route index element={<GanttsPage />} />
+          <Route index element={<Guarded section={SECTIONS.PROJECTS_GANTT}><GanttsPage /></Guarded>} />
         </Route>
 
         <Route path="competencies">
-          <Route index element={<PartnerCompetencesListPage />} />
-          <Route path="create" element={<PartnerCompetenceCreatePage />} />
-          <Route path=":competenceId/edit" element={<PartnerCompetenceEditPage />} />
+          <Route index element={<Guarded section={SECTIONS.REFERENCES_COMPETENCIES}><PartnerCompetencesListPage /></Guarded>} />
+          <Route path="create" element={<Guarded section={SECTIONS.REFERENCES_COMPETENCIES}><PartnerCompetenceCreatePage /></Guarded>} />
+          <Route path=":competenceId/edit" element={<Guarded section={SECTIONS.REFERENCES_COMPETENCIES}><PartnerCompetenceEditPage /></Guarded>} />
         </Route>
 
         <Route path="admin">
-          <Route path="partner-types" element={<PartnerTypesListPage />} />
-          <Route path="partner-statuses" element={<PartnerStatusesListPage />} />
-          <Route path="partner-economic-categories" element={<PartnerEconomicCategoriesListPage />} />
-          <Route path="contract-types" element={<ContractTypesListPage />} />
+          <Route path="roles" element={<Guarded section={SECTIONS.ADMIN_ROLES}><RolesListPage /></Guarded>} />
+          <Route path="partner-types" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_TYPES}><PartnerTypesListPage /></Guarded>} />
+          <Route path="partner-statuses" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_STATUSES}><PartnerStatusesListPage /></Guarded>} />
+          <Route path="partner-economic-categories" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_ECONOMIC}><PartnerEconomicCategoriesListPage /></Guarded>} />
+          <Route path="contract-types" element={<Guarded section={SECTIONS.REFERENCES_CONTRACT_TYPES}><ContractTypesListPage /></Guarded>} />
         </Route>
 
         <Route path="patents">
-          <Route index element={<PatentsListPage />} />
-          <Route path="create" element={<PatentCreatePage />} />
-          <Route path=":patentId/edit" element={<PatentEditPage />} />
-          <Route path=":patentId" element={<PatentDetailsPage />}>
+          <Route index element={<Guarded section={SECTIONS.PATENTS_LIST}><PatentsListPage /></Guarded>} />
+          <Route path="create" element={<Guarded section={SECTIONS.PATENTS_LIST}><PatentCreatePage /></Guarded>} />
+          <Route path=":patentId/edit" element={<Guarded section={SECTIONS.PATENTS_LIST}><PatentEditPage /></Guarded>} />
+          <Route path=":patentId" element={<Guarded section={SECTIONS.PATENTS_LIST}><PatentDetailsPage /></Guarded>}>
             <Route index element={<PatentMainInfoTab />} />
             <Route path="files" element={<EntityFilesTab entityType="patent" patentFileSections />} />
             <Route path="comments" element={<CommentsList entityType="patent" />} />
@@ -165,24 +173,24 @@ export default function AppRoutes() {
         </Route>
 
         <Route path="patent-areas">
-          <Route index element={<PatentAreasListPage />} />
+          <Route index element={<Guarded section={SECTIONS.REFERENCES_PATENT_AREAS}><PatentAreasListPage /></Guarded>} />
         </Route>
 
         <Route path="patent-grants">
-          <Route index element={<PatentGrantsRegistryPage />} />
-          <Route path="create" element={<PatentGrantCreatePage />} />
-          <Route path=":grantId/edit" element={<PatentGrantEditPage />} />
-          <Route path=":grantId" element={<PatentGrantDetailsPage />}>
+          <Route index element={<Guarded section={SECTIONS.PATENTS_GRANTS}><PatentGrantsRegistryPage /></Guarded>} />
+          <Route path="create" element={<Guarded section={SECTIONS.PATENTS_GRANTS}><PatentGrantCreatePage /></Guarded>} />
+          <Route path=":grantId/edit" element={<Guarded section={SECTIONS.PATENTS_GRANTS}><PatentGrantEditPage /></Guarded>} />
+          <Route path=":grantId" element={<Guarded section={SECTIONS.PATENTS_GRANTS}><PatentGrantDetailsPage /></Guarded>}>
             <Route index element={<PatentGrantMainInfoTab />} />
             <Route path="files" element={<EntityFilesTab entityType="grant" />} />
           </Route>
         </Route>
 
         <Route path="partners">
-          <Route index element={<PartnersListPage />} />
-          <Route path="create" element={<PartnerCreatePage />} />
-          <Route path=":partnerId/edit" element={<PartnerEditPage />} />
-          <Route path=":partnerId" element={<PartnerDetailsPage />}>
+          <Route index element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnersListPage /></Guarded>} />
+          <Route path="create" element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnerCreatePage /></Guarded>} />
+          <Route path=":partnerId/edit" element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnerEditPage /></Guarded>} />
+          <Route path=":partnerId" element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnerDetailsPage /></Guarded>}>
             <Route index element={<PartnerMainInfoTab />} />
 
             <Route path="contacts" element={<PartnerContactsListPage />} />
@@ -194,13 +202,13 @@ export default function AppRoutes() {
           </Route>
         </Route>
 
-        <Route path="supplier-evaluations" element={<SupplierEvaluationsRegistryPage />} />
+        <Route path="supplier-evaluations" element={<Guarded section={SECTIONS.PARTNERS_EVALUATIONS}><SupplierEvaluationsRegistryPage /></Guarded>} />
 
         <Route path="contracts">
-          <Route index element={<ContractsListPage />} />
-          <Route path="create" element={<ContractCreatePage />} />
-          <Route path=":contractId/edit" element={<ContractEditPage />} />
-          <Route path=":contractId" element={<ContractDetailsPage />}>
+          <Route index element={<Guarded section={SECTIONS.CONTRACTS_LIST}><ContractsListPage /></Guarded>} />
+          <Route path="create" element={<Guarded section={SECTIONS.CONTRACTS_LIST}><ContractCreatePage /></Guarded>} />
+          <Route path=":contractId/edit" element={<Guarded section={SECTIONS.CONTRACTS_LIST}><ContractEditPage /></Guarded>} />
+          <Route path=":contractId" element={<Guarded section={SECTIONS.CONTRACTS_LIST}><ContractDetailsPage /></Guarded>}>
             <Route index element={<ContractMainInfoTab />} />
             <Route path="additional-agreements" element={<ContractAdditionalAgreementsTab />} />
             <Route path="files" element={<EntityFilesTab entityType="contract" />} />
