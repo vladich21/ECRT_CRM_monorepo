@@ -1,8 +1,12 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { and, eq, isNull, sql } from 'drizzle-orm';
-import { DatabaseService } from '../../database/database.service';
-import { departments, positions, users } from '../../database/schema';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { DatabaseService } from "../../database/database.service";
+import { departments, positions, users } from "../../database/schema";
 
 const MAX_NAME_LEN = 50;
 const MAX_PHONE_LEN = 20;
@@ -13,12 +17,17 @@ const MAX_DEPT_POS_NAME = 255;
 function hrRecordUuid(raw: string | undefined): string | null {
   if (!raw?.trim()) return null;
   const uuidLowerCase = raw.trim().toLowerCase();
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(uuidLowerCase)) return null;
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      uuidLowerCase,
+    )
+  )
+    return null;
   return uuidLowerCase;
 }
 
 function clip(value: string | null | undefined, max: number): string | null {
-  if (value == null || value === '') return null;
+  if (value == null || value === "") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
   return trimmed.length <= max ? trimmed : trimmed.slice(0, max);
@@ -64,7 +73,9 @@ export class HrSyncService {
     private readonly config: ConfigService,
   ) {}
 
-  async runSyncWithLock(): Promise<{ skipped: true } | { skipped: false; result: HrSyncRunResult }> {
+  async runSyncWithLock(): Promise<
+    { skipped: true } | { skipped: false; result: HrSyncRunResult }
+  > {
     if (this.syncInProgress) {
       return { skipped: true };
     }
@@ -98,14 +109,16 @@ export class HrSyncService {
       const departmentName = row.department?.name?.trim();
       if (departmentExternalUuid && departmentName) {
         const displayName =
-          clip(departmentName, MAX_DEPT_POS_NAME) ?? departmentName.slice(0, MAX_DEPT_POS_NAME);
+          clip(departmentName, MAX_DEPT_POS_NAME) ??
+          departmentName.slice(0, MAX_DEPT_POS_NAME);
         hrDepts.set(departmentExternalUuid, displayName);
       }
       const positionExternalUuid = hrRecordUuid(row.position?.id);
       const positionName = row.position?.name?.trim();
       if (positionExternalUuid && positionName) {
         const displayName =
-          clip(positionName, MAX_DEPT_POS_NAME) ?? positionName.slice(0, MAX_DEPT_POS_NAME);
+          clip(positionName, MAX_DEPT_POS_NAME) ??
+          positionName.slice(0, MAX_DEPT_POS_NAME);
         hrPos.set(positionExternalUuid, displayName);
       }
     }
@@ -143,7 +156,11 @@ export class HrSyncService {
       if (byName?.id) {
         await db
           .update(departments)
-          .set({ externalHrId: externalHrUuid, name: displayName, updatedAt: new Date() })
+          .set({
+            externalHrId: externalHrUuid,
+            name: displayName,
+            updatedAt: new Date(),
+          })
           .where(eq(departments.id, byName.id));
         deptUpdated += 1;
         continue;
@@ -191,7 +208,11 @@ export class HrSyncService {
       if (byName?.id) {
         await db
           .update(positions)
-          .set({ externalHrId: externalHrUuid, name: displayName, updatedAt: new Date() })
+          .set({
+            externalHrId: externalHrUuid,
+            name: displayName,
+            updatedAt: new Date(),
+          })
           .where(eq(positions.id, byName.id));
         posUpdated += 1;
         continue;
@@ -216,19 +237,19 @@ export class HrSyncService {
   }
 
   async syncUsersFromHrApi(): Promise<HrSyncRunResult> {
-    const url = this.config.get<string>('EXTERNAL_HR_USERS_URL')?.trim();
-    const token = this.config.get<string>('EXTERNAL_HR_API_TOKEN')?.trim();
+    const url = this.config.get<string>("EXTERNAL_HR_USERS_URL")?.trim();
+    const token = this.config.get<string>("EXTERNAL_HR_API_TOKEN")?.trim();
     if (!url || !token) {
       throw new ServiceUnavailableException(
-        'Синхронизация не настроена: задайте EXTERNAL_HR_USERS_URL и EXTERNAL_HR_API_TOKEN',
+        "Синхронизация не настроена: задайте EXTERNAL_HR_USERS_URL и EXTERNAL_HR_API_TOKEN",
       );
     }
 
     const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
+      const text = await res.text().catch(() => "");
       throw new Error(`HR API ответ ${res.status}: ${text.slice(0, 500)}`);
     }
 
@@ -240,20 +261,27 @@ export class HrSyncService {
 
     const db = this.db.db;
 
-    const { departments: deptStats, positions: posStats } = await this.syncDepartmentsAndPositionsFromHr(list);
+    const { departments: deptStats, positions: posStats } =
+      await this.syncDepartmentsAndPositionsFromHr(list);
 
-    const deptRows = await db.select({ id: departments.id, name: departments.name }).from(departments);
+    const deptRows = await db
+      .select({ id: departments.id, name: departments.name })
+      .from(departments);
     const deptByNormName = new Map<string, string>();
     for (const departmentRow of deptRows) {
       const normalizedNameKey = departmentRow.name?.trim().toLowerCase();
-      if (normalizedNameKey) deptByNormName.set(normalizedNameKey, String(departmentRow.id));
+      if (normalizedNameKey)
+        deptByNormName.set(normalizedNameKey, String(departmentRow.id));
     }
 
-    const posRows = await db.select({ id: positions.id, name: positions.name }).from(positions);
+    const posRows = await db
+      .select({ id: positions.id, name: positions.name })
+      .from(positions);
     const posByNormName = new Map<string, string>();
     for (const positionRow of posRows) {
       const normalizedNameKey = positionRow.name?.trim().toLowerCase();
-      if (normalizedNameKey) posByNormName.set(normalizedNameKey, String(positionRow.id));
+      if (normalizedNameKey)
+        posByNormName.set(normalizedNameKey, String(positionRow.id));
     }
 
     const resolveDeptId = (name: string | null | undefined): string | null => {
@@ -277,20 +305,49 @@ export class HrSyncService {
         const resolvedDepartmentId = resolveDeptId(row.department?.name);
         const resolvedPositionId = resolvePosId(row.position?.name);
         if (!resolvedDepartmentId && row.department?.name) {
-          errors.push(`Отдел не найден по имени «${row.department.name}» (${emailRaw})`);
+          errors.push(
+            `Отдел не найден по имени «${row.department.name}» (${emailRaw})`,
+          );
         }
         if (!resolvedPositionId && row.position?.name) {
-          errors.push(`Должность не найдена по имени «${row.position.name}» (${emailRaw})`);
+          errors.push(
+            `Должность не найдена по имени «${row.position.name}» (${emailRaw})`,
+          );
         }
+
+        // const patch = {
+        //   externalUserId: row.id,
+        //   personnelNumber: clip(row.tabel, MAX_PERSONNEL_LEN),
+        //   hiredAt: row.hired_at || null,
+        //   quitDate: row.quit_date || null,
+        //   internalPhone: clip(row.personal?.internal_phone ?? null, MAX_PHONE_LEN),
+        //   avatarUrl: row.personal?.avatar_url?.trim() || null,
+        //   email: emailRaw.length > MAX_EMAIL_LEN ? emailRaw.slice(0, MAX_EMAIL_LEN) : emailRaw,
+        //   lastName: clip(row.personal?.last_name ?? null, MAX_NAME_LEN),
+        //   firstName: clip(row.personal?.first_name ?? null, MAX_NAME_LEN),
+        //   middleName: clip(row.personal?.middle_name ?? null, MAX_NAME_LEN),
+        //   phone: clip(row.personal?.phone ?? null, MAX_PHONE_LEN),
+        //   isActive: row.is_active !== false,
+        //   departmentId: resolvedDepartmentId,
+        //   positionId: resolvedPositionId,
+        //   supervisorId: null as string | null,
+        //   updatedAt: new Date(),
+        // };
 
         const patch = {
           externalUserId: row.id,
           personnelNumber: clip(row.tabel, MAX_PERSONNEL_LEN),
           hiredAt: row.hired_at || null,
           quitDate: row.quit_date || null,
-          internalPhone: clip(row.personal?.internal_phone ?? null, MAX_PHONE_LEN),
+          internalPhone: clip(
+            row.personal?.internal_phone ?? null,
+            MAX_PHONE_LEN,
+          ),
           avatarUrl: row.personal?.avatar_url?.trim() || null,
-          email: emailRaw.length > MAX_EMAIL_LEN ? emailRaw.slice(0, MAX_EMAIL_LEN) : emailRaw,
+          email:
+            emailRaw.length > MAX_EMAIL_LEN
+              ? emailRaw.slice(0, MAX_EMAIL_LEN)
+              : emailRaw,
           lastName: clip(row.personal?.last_name ?? null, MAX_NAME_LEN),
           firstName: clip(row.personal?.first_name ?? null, MAX_NAME_LEN),
           middleName: clip(row.personal?.middle_name ?? null, MAX_NAME_LEN),
@@ -300,6 +357,11 @@ export class HrSyncService {
           positionId: resolvedPositionId,
           supervisorId: null as string | null,
           updatedAt: new Date(),
+          // ДОБАВЬТЕ ЭТИ ПОЛЯ:
+          passwordHash: null,
+          mustChangePassword: false,
+          twoFactorEnabled: false,
+          lastLoginAt: null,
         };
 
         const [existing] = await db
@@ -340,10 +402,17 @@ export class HrSyncService {
           .from(users)
           .where(sql`lower(${users.email}) = ${supEmail}`)
           .limit(1);
-        if (employeeRow?.id && supervisorRow?.id && String(employeeRow.id) !== String(supervisorRow.id)) {
+        if (
+          employeeRow?.id &&
+          supervisorRow?.id &&
+          String(employeeRow.id) !== String(supervisorRow.id)
+        ) {
           await db
             .update(users)
-            .set({ supervisorId: String(supervisorRow.id), updatedAt: new Date() })
+            .set({
+              supervisorId: String(supervisorRow.id),
+              updatedAt: new Date(),
+            })
             .where(eq(users.id, employeeRow.id));
         }
       } catch (error: unknown) {
@@ -353,7 +422,9 @@ export class HrSyncService {
       }
     }
 
-    this.logger.log(`HR sync: создано ${created}, обновлено ${updated}, ошибок ${errors.length}`);
+    this.logger.log(
+      `HR sync: создано ${created}, обновлено ${updated}, ошибок ${errors.length}`,
+    );
     return {
       created,
       updated,
