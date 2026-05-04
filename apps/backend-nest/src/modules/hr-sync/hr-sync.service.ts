@@ -315,25 +315,11 @@ export class HrSyncService {
           );
         }
 
-        // const patch = {
-        //   externalUserId: row.id,
-        //   personnelNumber: clip(row.tabel, MAX_PERSONNEL_LEN),
-        //   hiredAt: row.hired_at || null,
-        //   quitDate: row.quit_date || null,
-        //   internalPhone: clip(row.personal?.internal_phone ?? null, MAX_PHONE_LEN),
-        //   avatarUrl: row.personal?.avatar_url?.trim() || null,
-        //   email: emailRaw.length > MAX_EMAIL_LEN ? emailRaw.slice(0, MAX_EMAIL_LEN) : emailRaw,
-        //   lastName: clip(row.personal?.last_name ?? null, MAX_NAME_LEN),
-        //   firstName: clip(row.personal?.first_name ?? null, MAX_NAME_LEN),
-        //   middleName: clip(row.personal?.middle_name ?? null, MAX_NAME_LEN),
-        //   phone: clip(row.personal?.phone ?? null, MAX_PHONE_LEN),
-        //   isActive: row.is_active !== false,
-        //   departmentId: resolvedDepartmentId,
-        //   positionId: resolvedPositionId,
-        //   supervisorId: null as string | null,
-        //   updatedAt: new Date(),
-        // };
-
+        // patch — поля, приходящие из HR-системы. Используется и для UPDATE,
+        // и для INSERT. КРИТИЧНО: тут НЕТ passwordHash / mustChangePassword /
+        // twoFactorEnabled / lastLoginAt — это локальные поля PMDB, HR ими
+        // не управляет. При UPDATE их трогать нельзя (затрутся пароли всех
+        // пользователей). При INSERT — БД проставит дефолты из schema.ts.
         const patch = {
           externalUserId: row.id,
           personnelNumber: clip(row.tabel, MAX_PERSONNEL_LEN),
@@ -357,11 +343,6 @@ export class HrSyncService {
           positionId: resolvedPositionId,
           supervisorId: null as string | null,
           updatedAt: new Date(),
-          // ДОБАВЬТЕ ЭТИ ПОЛЯ:
-          passwordHash: null,
-          mustChangePassword: false,
-          twoFactorEnabled: false,
-          lastLoginAt: null,
         };
 
         const [existing] = await db
