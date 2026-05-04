@@ -77,6 +77,7 @@ const ProjectDetailsPage = lazy(() => import('../pages/referenceBooks/projects/P
 const ProjectsListPage = lazy(() => import('../pages/referenceBooks/projects/ProjectsListPage'));
 const UserDetailsPage = lazy(() => import('../pages/referenceBooks/users/UserDetailsPage'));
 const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersListPage'));
+const RolesListPage = lazy(() => import('../pages/admin/roles/RolesListPage'));
 
 const Private = ({ children }: { children: React.ReactNode }) => <PrivateRoute>{children}</PrivateRoute>;
 
@@ -152,6 +153,7 @@ export default function AppRoutes() {
         </Route>
 
         <Route path="admin">
+          <Route path="roles" element={<Guarded section={SECTIONS.ADMIN_ROLES}><RolesListPage /></Guarded>} />
           <Route path="partner-types" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_TYPES}><PartnerTypesListPage /></Guarded>} />
           <Route path="partner-statuses" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_STATUSES}><PartnerStatusesListPage /></Guarded>} />
           <Route path="partner-economic-categories" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_ECONOMIC}><PartnerEconomicCategoriesListPage /></Guarded>} />

@@ -1,5 +1,6 @@
-import { UserOutlined } from '@ant-design/icons';
-import { Avatar } from 'antd';
+import { useState } from 'react';
+import { SettingOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useUserById } from '../../../api/users/userApiHooks';
@@ -10,6 +11,9 @@ import pi from '../../../components/pageLayout/profileInfoCards.module.scss';
 import { UserProfileBody } from '../../../components/userProfile/UserProfileBody';
 import { userHeaderRoleChips } from '../../../components/userProfile/userHeaderRoleChips';
 import { useNotification } from '../../../customhooks/useNotification';
+import { usePermissions } from '../../../hooks/usePermissions';
+import { SECTIONS } from '../../../shared/permissions';
+import { UserRolesModal } from '../../admin/roles/UserRolesModal';
 import type { User } from '../../../types/user';
 
 function headerSubtitle(user: User): string | undefined {
@@ -23,6 +27,9 @@ export default function UserDetailsPage() {
   const navigate = useNavigate();
   const { contextHolder } = useNotification();
   const { data: user, isLoading, isError } = useUserById(userId!);
+  const { canEdit } = usePermissions();
+  const canEditRoles = canEdit(SECTIONS.ADMIN_USERS);
+  const [rolesModalOpen, setRolesModalOpen] = useState(false);
 
   if (isLoading) return <Loader />;
   if (isError || !user) return <NotFound errorMessage='Пользователь не найден' />;
@@ -33,6 +40,16 @@ export default function UserDetailsPage() {
     <DetailPageHeader
       title={fullName || 'Пользователь'}
       subtitle={headerSubtitle(user)}
+      actions={
+        canEditRoles ? (
+          <Button
+            icon={<SettingOutlined />}
+            onClick={() => setRolesModalOpen(true)}
+          >
+            Роли
+          </Button>
+        ) : undefined
+      }
       lead={
         <Avatar
           key='user-avatar'
@@ -59,6 +76,12 @@ export default function UserDetailsPage() {
       contextHolder={contextHolder}
     >
       <UserProfileBody user={user} shellClassName={pi.shellInDetail} />
+      <UserRolesModal
+        open={rolesModalOpen}
+        userId={user.id}
+        userLabel={fullName}
+        onClose={() => setRolesModalOpen(false)}
+      />
     </DetailPageHeader>
   );
 }
