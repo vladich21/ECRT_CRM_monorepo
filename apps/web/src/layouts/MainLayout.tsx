@@ -4,6 +4,10 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { refreshSessionUser } from '../api/auth/refreshSessionUser';
 import ecrtLogoMin from '../assets/svg/ecrt-logo-min.svg';
+import {
+  ImpersonationBanner,
+  IMPERSONATION_BANNER_HEIGHT,
+} from '../components/impersonationBanner/ImpersonationBanner';
 import { Loader } from '../components/loader/Loader';
 import ProfileButton from '../components/profileButton/ProfileButton';
 import { usePermissions } from '../hooks/usePermissions';
@@ -22,6 +26,7 @@ function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate();
   const isAuth = useAuthStore(state => state.isAuth);
   const user = useAuthStore(state => state.user);
+  const impersonation = useAuthStore(state => state.impersonation);
   const { hasAnySectionPermission } = usePermissions();
   const menuItems = useMemo(
     () => buildMenuItems(sections => hasAnySectionPermission(sections, 'read')),
@@ -41,8 +46,11 @@ function MainLayout({ children }: MainLayoutProps) {
     return [path === '' ? '/' : path];
   };
 
+  const bannerOffset = impersonation ? IMPERSONATION_BANNER_HEIGHT : 0;
+
   return (
-    <Layout className={styles.layout}>
+    <Layout className={styles.layout} style={{ paddingTop: bannerOffset }}>
+      <ImpersonationBanner />
       <Header className={styles.header}>
         <div className={styles.logo}>
           <button type='button' className={styles.logoButton} onClick={() => navigate('/home')} aria-label='Перейти на главную'>

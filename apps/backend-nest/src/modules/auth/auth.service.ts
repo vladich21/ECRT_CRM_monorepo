@@ -27,6 +27,7 @@ const ARGON2_OPTIONS: argon2.Options = {
 };
 
 const JWT_COOKIE = 'auth_token';
+const ADMIN_BACKUP_COOKIE = 'admin_token';
 const JWT_TTL_SECONDS = 3 * 24 * 60 * 60;
 
 @Injectable()
@@ -122,6 +123,7 @@ export class AuthService {
 
   logout(res: Response) {
     res.clearCookie(JWT_COOKIE, { path: '/' });
+    res.clearCookie(ADMIN_BACKUP_COOKIE, { path: '/' });
     return { success: true };
   }
 
@@ -136,6 +138,7 @@ export class AuthService {
     exp?: number;
     sectionPermissions?: SectionPermission[];
     pv?: number;
+    impersonatedBy?: string;
   }> {
     const { payload } = await jwtVerify(token, this.jwtSecret);
     return {
@@ -143,35 +146,60 @@ export class AuthService {
       exp: payload.exp,
       sectionPermissions: payload['sectionPermissions'] as SectionPermission[] | undefined,
       pv: payload['pv'] as number | undefined,
+      impersonatedBy: payload['impersonatedBy'] as string | undefined,
     };
   }
 
-  async renewToken(userId: string, res: Response): Promise<void> {
-    await this.setAuthCookie(userId, res);
+  async renewToken(userId: string, res: Response, impersonatedBy?: string): Promise<void> {
+    await this.setAuthCookie(userId, res, undefined, impersonatedBy);
   }
 
   /**
    * Перевыпуск токена с актуальными правами (при mismatch pv).
+   * Сохраняет impersonatedBy если он был в исходном токене.
    * Возвращает свежий snapshot для записи в request.user.
    */
-  async refreshTokenPermissions(userId: string, res: Response): Promise<SectionPermission[]> {
+  async refreshTokenPermissions(
+    userId: string,
+    res: Response,
+    impersonatedBy?: string,
+  ): Promise<SectionPermission[]> {
     const fresh = await this.permissions.getUserSectionPermissions(userId);
-    await this.setAuthCookie(userId, res, fresh);
+    await this.setAuthCookie(userId, res, fresh, impersonatedBy);
     return fresh;
   }
 
   private async finishLogin(userId: string, res: Response): Promise<void> {
     await this.users.updateLastLogin(userId);
+    // На всякий случай очищаем backup-cookie от прошлой имперсонации
+    res.clearCookie(ADMIN_BACKUP_COOKIE, { path: '/' });
     await this.setAuthCookie(userId, res);
   }
 
+  /**
+   * Используется ImpersonationService для подписания токенов с custom claims.
+   */
+  async signJwtForUser(
+    userId: string,
+    sectionPermissions: SectionPermission[],
+    impersonatedBy?: string,
+  ): Promise<string> {
+    return this.signJwt(userId, sectionPermissions, impersonatedBy);
+  }
+
+  /**
+   * Установка основной auth-cookie. impersonatedBy переносится в подписанный
+   * токен — присутствует там тогда и только тогда, когда сессия в режиме
+   * имперсонации.
+   */
   private async setAuthCookie(
     userId: string,
     res: Response,
     sectionPermissions?: SectionPermission[],
+    impersonatedBy?: string,
   ): Promise<void> {
     const perms = sectionPermissions ?? await this.permissions.getUserSectionPermissions(userId);
-    const token = await this.signJwt(userId, perms);
+    const token = await this.signJwt(userId, perms, impersonatedBy);
     res.cookie(JWT_COOKIE, token, {
       httpOnly: true,
       secure: false, // TODO: включить когда продакшен переедет на HTTPS
@@ -181,12 +209,18 @@ export class AuthService {
     });
   }
 
-  private async signJwt(userId: string, sectionPermissions: SectionPermission[]): Promise<string> {
-    return new SignJWT({
+  private async signJwt(
+    userId: string,
+    sectionPermissions: SectionPermission[],
+    impersonatedBy?: string,
+  ): Promise<string> {
+    const claims: Record<string, unknown> = {
       user_id: userId,
       sectionPermissions,
       pv: this.permissionsVersion.get(),
-    })
+    };
+    if (impersonatedBy) claims.impersonatedBy = impersonatedBy;
+    return new SignJWT(claims)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(`${JWT_TTL_SECONDS}s`)

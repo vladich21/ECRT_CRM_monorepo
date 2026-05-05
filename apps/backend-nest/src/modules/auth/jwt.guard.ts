@@ -16,6 +16,7 @@ interface AuthRequestUser {
   user_id: string;
   sectionPermissions: SectionPermission[];
   exp?: number;
+  impersonatedBy?: string;
 }
 
 @Injectable()
@@ -44,6 +45,7 @@ export class JwtGuard implements CanActivate {
       exp?: number;
       sectionPermissions?: SectionPermission[];
       pv?: number;
+      impersonatedBy?: string;
     };
     try {
       payload = await this.authService.verifyJwt(token);
@@ -55,20 +57,26 @@ export class JwtGuard implements CanActivate {
 
     // Если pv в токене не совпадает с серверным — перевыпускаем токен
     // с актуальным snapshot прав. Также покрывает старые токены без pv.
+    // impersonatedBy сохраняем, чтобы не сломать активную сессию имперсонации.
     if (payload.pv !== this.permissionsVersion.get()) {
-      sectionPermissions = await this.authService.refreshTokenPermissions(payload.user_id, res);
+      sectionPermissions = await this.authService.refreshTokenPermissions(
+        payload.user_id,
+        res,
+        payload.impersonatedBy,
+      );
     }
 
     req.user = {
       user_id: payload.user_id,
       sectionPermissions,
       exp: payload.exp,
+      impersonatedBy: payload.impersonatedBy,
     };
 
     if (payload.exp) {
       const secondsLeft = payload.exp - Math.floor(Date.now() / 1000);
       if (secondsLeft < RENEW_THRESHOLD_SEC) {
-        await this.authService.renewToken(payload.user_id, res);
+        await this.authService.renewToken(payload.user_id, res, payload.impersonatedBy);
       }
     }
 

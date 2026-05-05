@@ -34,6 +34,7 @@ import { HrSyncModule } from './modules/hr-sync/hr-sync.module';
 import { PartnerSyncModule } from './modules/partner-sync/partner-sync.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { AdminRbacModule } from './modules/admin-rbac/admin-rbac.module';
+import { ImpersonationModule } from './modules/impersonation/impersonation.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { AdminRbacModule } from './modules/admin-rbac/admin-rbac.module';
     }),
     PermissionsModule,
     AdminRbacModule,
+    ImpersonationModule,
     AuthModule,
     DatabaseModule,
     UsersModule,

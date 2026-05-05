@@ -1,5 +1,11 @@
 import type { MouseEvent } from 'react';
-import { MailOutlined, RightOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  MailOutlined,
+  RightOutlined,
+  SettingOutlined,
+  UserOutlined,
+  UserSwitchOutlined,
+} from '@ant-design/icons';
 import { Avatar, Button, Tag, Tooltip } from 'antd';
 
 import { getActiveInactiveSurface, mutedTagStyle } from '../../../../constants/statusBadgeSurfaces';
@@ -11,14 +17,20 @@ interface UserCardProps {
   onClick: (user: User) => void;
   /** Когда передан — отрисовывает кнопку «Роли», вызывая обработчик при клике (без перехода на карточку). */
   onAssignRoles?: (user: User) => void;
+  /** Когда передан — отрисовывает кнопку «Войти как» для имперсонации. */
+  onImpersonate?: (user: User) => void;
 }
 function getFio(user: User): string {
   return [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ').trim() || '—';
 }
-export default function UserCard({ user, onClick, onAssignRoles }: UserCardProps) {
+export default function UserCard({ user, onClick, onAssignRoles, onImpersonate }: UserCardProps) {
   const handleRolesClick = (e: MouseEvent) => {
     e.stopPropagation();
     onAssignRoles?.(user);
+  };
+  const handleImpersonateClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    onImpersonate?.(user);
   };
   const statusLabel = user.is_active ? 'Активный' : 'Неактивный';
   const statusSurface = getActiveInactiveSurface(user.is_active);
@@ -69,6 +81,18 @@ export default function UserCard({ user, onClick, onAssignRoles }: UserCardProps
       )}
 
       <div className={styles.activityCol}>
+        {onImpersonate && (
+          <Tooltip title='Войти в систему как этот пользователь'>
+            <Button
+              size='small'
+              icon={<UserSwitchOutlined />}
+              onClick={handleImpersonateClick}
+              style={{ marginRight: 8 }}
+            >
+              Войти как
+            </Button>
+          </Tooltip>
+        )}
         {onAssignRoles && (
           <Tooltip title='Назначить роли'>
             <Button

@@ -11,6 +11,7 @@ export const SECTIONS = {
   ADMIN_USERS: 'admin.users',
   ADMIN_ROLES: 'admin.roles',
   ADMIN_SECTIONS: 'admin.sections',
+  ADMIN_IMPERSONATE: 'admin.impersonate',
 
   // Справочники
   REFERENCES_DEPARTMENTS: 'references.departments',

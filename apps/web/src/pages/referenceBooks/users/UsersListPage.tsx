@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CloudSyncOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input, Pagination, Spin } from 'antd';
+import { Button, Input, Modal, Pagination, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { useHrSyncNow } from '../../../api/hr/useHrSyncNow';
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { useUsers } from '../../../api/users/userApiHooks';
+import { impersonationApi } from '../../../api/impersonation/impersonationApi';
+import { refreshSessionUser } from '../../../api/auth/refreshSessionUser';
 import { BackButton } from '../../../components/backButton/BackButton';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
+import useAuthStore from '../../../store/AuthStore';
 import { User } from '../../../types/user';
 import { useFilteredUsers } from './hooks/useFilteredUsers';
 import UserCard from './registry/UserCard';
@@ -134,7 +137,46 @@ export default function UsersListPage() {
   const handleCardClick = (user: User) => navigate(`/users/${user.id}`);
   const { canEdit } = usePermissions();
   const canAssignRoles = canEdit(SECTIONS.ADMIN_USERS);
+  const canImpersonate = canEdit(SECTIONS.ADMIN_IMPERSONATE);
+  const currentUserId = useAuthStore(state => state.user?.id);
+  const isImpersonating = useAuthStore(state => !!state.impersonation);
   const [rolesUser, setRolesUser] = useState<User | null>(null);
+
+  const handleImpersonate = useCallback(
+    (target: User) => {
+      const fullName =
+        [target.last_name, target.first_name, target.middle_name].filter(Boolean).join(' ').trim() ||
+        target.email ||
+        target.id;
+      Modal.confirm({
+        title: 'Войти как пользователь?',
+        content: (
+          <div>
+            <p>
+              Сейчас вы войдёте в систему как <strong>{fullName}</strong> и будете видеть систему его глазами.
+            </p>
+            <p>В шапке появится баннер «Вернуться в свою сессию». Все действия будут выполняться от имени этого пользователя.</p>
+          </div>
+        ),
+        okText: 'Войти',
+        cancelText: 'Отмена',
+        okButtonProps: { type: 'primary' },
+        onOk: async () => {
+          try {
+            await impersonationApi.start(target.id);
+            await refreshSessionUser();
+            window.location.href = '/home';
+          } catch (e) {
+            const message =
+              (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+              'Не удалось войти под пользователем';
+            showNotification('error', 'Ошибка', message);
+          }
+        },
+      });
+    },
+    [showNotification],
+  );
   const handlePageChange = (newPage: number, newPageSize?: number) => {
     if (newPageSize != null && newPageSize !== pageSize) {
       setPageSize(newPageSize);
@@ -251,14 +293,22 @@ export default function UsersListPage() {
         <div className={styles.empty}>Пользователи не найдены</div>
       ) : (
         <div className={styles.cardList}>
-          {paginatedUsers.map(user => (
-            <UserCard
-              key={user.id}
-              user={user}
-              onClick={handleCardClick}
-              onAssignRoles={canAssignRoles ? setRolesUser : undefined}
-            />
-          ))}
+          {paginatedUsers.map(user => {
+            const showImpersonate =
+              canImpersonate &&
+              !isImpersonating &&
+              user.is_active &&
+              user.id !== currentUserId;
+            return (
+              <UserCard
+                key={user.id}
+                user={user}
+                onClick={handleCardClick}
+                onAssignRoles={canAssignRoles ? setRolesUser : undefined}
+                onImpersonate={showImpersonate ? handleImpersonate : undefined}
+              />
+            );
+          })}
         </div>
       )}
 
