@@ -50,6 +50,10 @@ function LoginPage() {
   };
   const handleSubmit = async (values: FormValues) => {
     set({ loading: true, error: '' });
+    // На финальных шагах (после success → navigate) loading НЕ сбрасываем,
+    // иначе кнопка успеет стать активной за 1с до перехода и пользователь
+    // успеет нажать повторно — backend получит пачку дубликатов set-password.
+    let keepLoading = false;
     try {
       switch (state.step) {
         case 'login': {
@@ -65,7 +69,10 @@ function LoginPage() {
           const data = await authApi.verifyPassword(state.email, values.password!);
           if (data.awaiting2FA) set({ step: '2fa-code', maskedEmail: data.email ?? '' });
           else if (data.mustChangePassword) set({ step: 'set-password' });
-          else finish(data.user);
+          else {
+            finish(data.user);
+            keepLoading = true;
+          }
           break;
         }
         case 'temp-code':
@@ -75,11 +82,13 @@ function LoginPage() {
         case '2fa-code': {
           const data = await authApi.verify2fa(state.email, values.code!);
           finish(data.user);
+          keepLoading = true;
           break;
         }
         case 'set-password': {
           const data = await authApi.setPassword(state.email, values.password!, values.confirmPassword!);
           finish(data.user);
+          keepLoading = true;
           break;
         }
       }
@@ -93,7 +102,7 @@ function LoginPage() {
       };
       set({ error: axiosError.response?.data?.message ?? 'Ошибка подключения к серверу' });
     } finally {
-      set({ loading: false });
+      if (!keepLoading) set({ loading: false });
     }
   };
   const canResendCode = state.step === 'temp-code' || state.step === '2fa-code';
