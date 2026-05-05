@@ -53,16 +53,20 @@ export default function UserCard({ user, onClick, onAssignRoles }: UserCardProps
           {user.department?.name && user.position?.name && <span className={styles.metaDot}>•</span>}
           {user.position?.name && <span>{user.position.name}</span>}
         </div>
-        {roleNames.length > 0 && (
+      </div>
+
+      {roleNames.length > 0 && (
+        <div className={styles.rolesBlock}>
+          <span className={styles.rolesTitle}>Роли</span>
           <div className={styles.tagsRow}>
             {roleNames.map((name, i) => (
-              <span key={i} className={styles.tag}>
+              <span key={i} className={styles.roleChip}>
                 {name}
               </span>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className={styles.activityCol}>
         {onAssignRoles && (
