@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -21,6 +22,8 @@ interface AuthRequestUser {
 
 @Injectable()
 export class JwtGuard implements CanActivate {
+  private readonly logger = new Logger(JwtGuard.name);
+
   constructor(
     private readonly reflector: Reflector,
     private readonly authService: AuthService,
@@ -49,7 +52,15 @@ export class JwtGuard implements CanActivate {
     };
     try {
       payload = await this.authService.verifyJwt(token);
-    } catch {
+    } catch (err) {
+      const reason =
+        (err as { code?: string; name?: string; message?: string })?.code ??
+        (err as { name?: string })?.name ??
+        'unknown';
+      const tokenLen = typeof token === 'string' ? token.length : 0;
+      this.logger.warn(
+        `JWT verify failed: ${reason} (path=${req.path}, ua=${(req.headers['user-agent'] ?? '').toString().slice(0, 40)}, tokenLen=${tokenLen})`,
+      );
       throw new UnauthorizedException('Недействительный токен');
     }
 
