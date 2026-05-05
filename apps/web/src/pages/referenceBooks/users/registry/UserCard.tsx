@@ -1,5 +1,6 @@
-import { MailOutlined, RightOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Tag } from 'antd';
+import type { MouseEvent } from 'react';
+import { MailOutlined, RightOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button, Tag, Tooltip } from 'antd';
 
 import { getActiveInactiveSurface, mutedTagStyle } from '../../../../constants/statusBadgeSurfaces';
 import type { User } from '../../../../types/user';
@@ -8,11 +9,17 @@ import styles from './UserCard.module.scss';
 interface UserCardProps {
   user: User;
   onClick: (user: User) => void;
+  /** Когда передан — отрисовывает кнопку «Роли», вызывая обработчик при клике (без перехода на карточку). */
+  onAssignRoles?: (user: User) => void;
 }
 function getFio(user: User): string {
   return [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ').trim() || '—';
 }
-export default function UserCard({ user, onClick }: UserCardProps) {
+export default function UserCard({ user, onClick, onAssignRoles }: UserCardProps) {
+  const handleRolesClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    onAssignRoles?.(user);
+  };
   const statusLabel = user.is_active ? 'Активный' : 'Неактивный';
   const statusSurface = getActiveInactiveSurface(user.is_active);
   const roleNames = user.roles?.map(role => role.role_name || role.id).filter(Boolean) ?? [];
@@ -58,6 +65,18 @@ export default function UserCard({ user, onClick }: UserCardProps) {
       </div>
 
       <div className={styles.activityCol}>
+        {onAssignRoles && (
+          <Tooltip title='Назначить роли'>
+            <Button
+              size='small'
+              icon={<SettingOutlined />}
+              onClick={handleRolesClick}
+              style={{ marginRight: 8 }}
+            >
+              Роли
+            </Button>
+          </Tooltip>
+        )}
         <RightOutlined className={styles.arrow} />
       </div>
     </div>

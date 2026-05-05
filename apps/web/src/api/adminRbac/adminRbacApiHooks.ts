@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { adminRbacApi, type CreateRolePayload, type RolePermissionFlags, type UpdateRolePayload } from './adminRbacApi';
 import { adminRbacQueryKeys } from './adminRbacQueryKeys';
+import { userQueryKeys } from '../users/userQueryKeys';
 
 export function useAdminRolesList() {
   return useQuery({
@@ -85,6 +86,9 @@ export function useAssignUserRoles() {
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: adminRbacQueryKeys.userRoles(vars.userId) });
       queryClient.invalidateQueries({ queryKey: adminRbacQueryKeys.rolesList() });
+      // Список и карточка пользователя содержат role_name'ы — после смены
+      // ролей нужно обновить отображение
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
     },
   });
 }

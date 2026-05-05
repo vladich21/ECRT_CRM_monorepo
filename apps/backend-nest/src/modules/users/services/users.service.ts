@@ -1,10 +1,10 @@
-import { asc, count, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import * as argon2 from 'argon2';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../../database/database.service';
-import { users, departments, positions, refGroups, relUsersGroups } from '../../../database/schema';
+import { users, departments, positions, roles, relUsersRoles } from '../../../database/schema';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { UserPreviewDto } from '../dto/user-preview.dto';
 import { DepartmentRefDto } from '../dto/department-ref.dto';
@@ -94,20 +94,20 @@ export class UsersService {
       userIds.length > 0
         ? await this.db.db
             .select({
-              userId: relUsersGroups.userId,
-              groupId: refGroups.id,
-              groupName: refGroups.name,
+              userId: relUsersRoles.userId,
+              roleId: roles.id,
+              roleName: roles.name,
             })
-            .from(relUsersGroups)
-            .innerJoin(refGroups, eq(relUsersGroups.groupId, refGroups.id))
-            .where(inArray(relUsersGroups.userId, userIds))
+            .from(relUsersRoles)
+            .innerJoin(roles, eq(relUsersRoles.roleId, roles.id))
+            .where(and(inArray(relUsersRoles.userId, userIds), eq(roles.isActive, true)))
         : [];
 
     const rolesByUser = new Map<string, RoleRefDto[]>();
     for (const roleRow of roleRows) {
       const userId = String(roleRow.userId);
       const list = rolesByUser.get(userId) ?? [];
-      list.push({ id: String(roleRow.groupId), role_name: roleRow.groupName ?? '' });
+      list.push({ id: String(roleRow.roleId), role_name: roleRow.roleName ?? '' });
       rolesByUser.set(userId, list);
     }
 
@@ -151,10 +151,10 @@ export class UsersService {
     try {
       await this.db.db.update(users).set(updateObj).where(eq(users.id, id));
       if (data.role_ids !== undefined && Array.isArray(data.role_ids)) {
-        await this.db.db.delete(relUsersGroups).where(eq(relUsersGroups.userId, id));
+        await this.db.db.delete(relUsersRoles).where(eq(relUsersRoles.userId, id));
         const roleIds = data.role_ids.filter((x): x is string => typeof x === 'string');
         if (roleIds.length) {
-          await this.db.db.insert(relUsersGroups).values(roleIds.map((groupId) => ({ userId: id, groupId })));
+          await this.db.db.insert(relUsersRoles).values(roleIds.map((roleId) => ({ userId: id, roleId })));
         }
       }
     } catch (error) {
@@ -185,7 +185,7 @@ export class UsersService {
       if (Array.isArray(data.role_ids)) {
         const roleIds = data.role_ids.filter((x): x is string => typeof x === 'string');
         if (roleIds.length > 0) {
-          await this.db.db.insert(relUsersGroups).values(roleIds.map((groupId) => ({ userId, groupId })));
+          await this.db.db.insert(relUsersRoles).values(roleIds.map((roleId) => ({ userId, roleId })));
         }
       }
 
@@ -321,14 +321,14 @@ export class UsersService {
     if (!firstRow) return null;
 
     const roleRows = await this.db.db
-      .select({ groupId: refGroups.id, groupName: refGroups.name })
-      .from(relUsersGroups)
-      .innerJoin(refGroups, eq(relUsersGroups.groupId, refGroups.id))
-      .where(eq(relUsersGroups.userId, id));
+      .select({ roleId: roles.id, roleName: roles.name })
+      .from(relUsersRoles)
+      .innerJoin(roles, eq(relUsersRoles.roleId, roles.id))
+      .where(and(eq(relUsersRoles.userId, id), eq(roles.isActive, true)));
 
-    const roles: RoleRefDto[] = roleRows.map((roleGroup) => ({
-      id: String(roleGroup.groupId),
-      role_name: roleGroup.groupName ?? '',
+    const userRoles: RoleRefDto[] = roleRows.map((row) => ({
+      id: String(row.roleId),
+      role_name: row.roleName ?? '',
     }));
 
     return this.toResponse(firstRow.user, {
@@ -338,7 +338,7 @@ export class UsersService {
       position: firstRow.positionId
         ? { id: String(firstRow.positionId), name: firstRow.positionName ?? '' }
         : { id: '', name: '' },
-      roles,
+      roles: userRoles,
       supervisor: this.supervisorRefFromRow(firstRow.supervisor),
     });
   }

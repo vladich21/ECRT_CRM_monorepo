@@ -15,6 +15,9 @@ import { useFilteredUsers } from './hooks/useFilteredUsers';
 import UserCard from './registry/UserCard';
 import { EMPTY_USER_FILTERS, UserFiltersModal, type UserFilters } from './UserFiltersModal';
 import styles from './UsersListPage.module.scss';
+import { usePermissions } from '../../../hooks/usePermissions';
+import { SECTIONS } from '../../../shared/permissions';
+import { UserRolesModal } from '../../admin/roles/UserRolesModal';
 
 const DEFAULT_PAGE_SIZE = 20;
 type FilterTab = 'all' | 'active' | 'inactive';
@@ -129,6 +132,9 @@ export default function UsersListPage() {
     resetToFirstPage();
   };
   const handleCardClick = (user: User) => navigate(`/users/${user.id}`);
+  const { canEdit } = usePermissions();
+  const canAssignRoles = canEdit(SECTIONS.ADMIN_USERS);
+  const [rolesUser, setRolesUser] = useState<User | null>(null);
   const handlePageChange = (newPage: number, newPageSize?: number) => {
     if (newPageSize != null && newPageSize !== pageSize) {
       setPageSize(newPageSize);
@@ -246,10 +252,22 @@ export default function UsersListPage() {
       ) : (
         <div className={styles.cardList}>
           {paginatedUsers.map(user => (
-            <UserCard key={user.id} user={user} onClick={handleCardClick} />
+            <UserCard
+              key={user.id}
+              user={user}
+              onClick={handleCardClick}
+              onAssignRoles={canAssignRoles ? setRolesUser : undefined}
+            />
           ))}
         </div>
       )}
+
+      <UserRolesModal
+        open={!!rolesUser}
+        userId={rolesUser?.id ?? null}
+        userLabel={rolesUser ? [rolesUser.last_name, rolesUser.first_name].filter(Boolean).join(' ') : undefined}
+        onClose={() => setRolesUser(null)}
+      />
 
       {showPagination && (
         <div className={styles.pagination}>
