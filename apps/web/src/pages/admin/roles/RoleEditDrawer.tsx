@@ -107,6 +107,14 @@ export function RoleEditDrawer({ open, role, onClose, onSubmit, isSubmitting }: 
 
       <Form form={form} layout='vertical' onFinish={handleFinish}>
         <Form.Item
+          label='Название'
+          name='name'
+          rules={[{ required: true, message: 'Название обязательно' }]}
+        >
+          <Input placeholder='Закупщик' onChange={handleNameChange} />
+        </Form.Item>
+
+        <Form.Item
           label='Код'
           name='code'
           rules={[
@@ -127,14 +135,6 @@ export function RoleEditDrawer({ open, role, onClose, onSubmit, isSubmitting }: 
             placeholder='например: procurement_manager'
             onChange={handleCodeChange}
           />
-        </Form.Item>
-
-        <Form.Item
-          label='Название'
-          name='name'
-          rules={[{ required: true, message: 'Название обязательно' }]}
-        >
-          <Input placeholder='Закупщик' onChange={handleNameChange} />
         </Form.Item>
 
         <Form.Item label='Описание' name='description'>
