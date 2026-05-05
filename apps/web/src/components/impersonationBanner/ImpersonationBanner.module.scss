@@ -1,0 +1,28 @@
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: #fff7e6;
+  color: #874d00;
+  border-bottom: 1px solid #ffd591;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stopButton {
+  flex-shrink: 0;
+}

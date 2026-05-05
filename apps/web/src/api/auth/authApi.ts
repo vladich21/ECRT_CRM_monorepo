@@ -1,5 +1,6 @@
 import { User } from '../../types/user';
 import type { SectionPermission } from '../../shared/permissions';
+import type { ImpersonationContext } from '../../store/AuthStore';
 import { apiClient } from '../clients';
 
 interface CheckLoginResponse {
@@ -49,11 +50,20 @@ export const authApi = {
     return res.data;
   },
 
-  getMe: async (): Promise<{ user: User; sectionPermissions: SectionPermission[] }> => {
-    const res = await apiClient.get<{ user: User; sectionPermissions?: SectionPermission[] }>('/auth/me');
+  getMe: async (): Promise<{
+    user: User;
+    sectionPermissions: SectionPermission[];
+    impersonation: ImpersonationContext | null;
+  }> => {
+    const res = await apiClient.get<{
+      user: User;
+      sectionPermissions?: SectionPermission[];
+      impersonation?: ImpersonationContext | null;
+    }>('/auth/me');
     return {
       user: res.data.user,
       sectionPermissions: res.data.sectionPermissions ?? [],
+      impersonation: res.data.impersonation ?? null,
     };
   },
 

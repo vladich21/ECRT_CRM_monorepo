@@ -79,6 +79,34 @@
   border: 1px solid #e8e8e8;
 }
 
+.rolesBlock {
+  flex: 0 0 auto;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 1px solid #f0f0f0;
+}
+
+.rolesTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8c8c8c;
+}
+
+.roleChip {
+  font-size: 12px;
+  line-height: 1.35;
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 4px;
+  padding: 2px 8px;
+  border: 1px solid #c7d2fe;
+  white-space: nowrap;
+}
+
 .activityCol {
   flex: 0 0 40px;
   display: flex;

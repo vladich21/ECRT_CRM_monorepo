@@ -8,12 +8,14 @@ import { VerifyPasswordDto } from './dto/verify-password.dto';
 import { VerifyCodeDto } from './dto/verify-code.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
+import { ImpersonationService } from '../impersonation/services/impersonation.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly rateLimit: RateLimitGuard,
+    private readonly impersonation: ImpersonationService,
   ) {}
 
   @Public()
@@ -65,13 +67,19 @@ export class AuthController {
   async getMe(
     @Req()
     req: Request & {
-      user?: { user_id: string; sectionPermissions?: { sectionCode: string; canRead: boolean; canEdit: boolean; canDelete: boolean }[] };
+      user?: {
+        user_id: string;
+        sectionPermissions?: { sectionCode: string; canRead: boolean; canEdit: boolean; canDelete: boolean }[];
+        impersonatedBy?: string;
+      };
     },
   ) {
     const me = await this.auth.getMe(req.user!.user_id);
+    const impersonation = await this.impersonation.getContext(req.user?.impersonatedBy);
     return {
       ...me,
       sectionPermissions: req.user!.sectionPermissions ?? [],
+      impersonation,
     };
   }
 
