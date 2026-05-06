@@ -30,15 +30,22 @@ import styles from './EntityFilesTab.module.scss';
 import {
   PATENT_FILE_SECTIONS,
   patentSectionForFile,
-  type PatentFileSectionKey,
 } from './patentFileSections';
 
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
 
+export type EntityFileSectionDef = {
+  key: string;
+  title: string;
+  hint: string;
+};
+
 interface EntityFilesTabProps {
   entityType: string;
   patentFileSections?: boolean;
+  /** Категории документов; ключ = document_section на сервере (как у патентов). */
+  documentSections?: readonly EntityFileSectionDef[];
 }
 
 function getFileIcon(filename: string): React.ReactNode {
@@ -56,11 +63,16 @@ function formatFileDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
-function filesForPatentSection(files: MyFile[], sectionKey: PatentFileSectionKey): MyFile[] {
-  return files.filter(f => patentSectionForFile(f.document_section) === sectionKey);
+function resolveGenericSectionKey(
+  document_section: string | null | undefined,
+  allowedKeys: readonly string[],
+): string {
+  const raw = (document_section ?? '').trim();
+  if (allowedKeys.includes(raw)) return raw;
+  return allowedKeys[0]!;
 }
 
-export function EntityFilesTab({ entityType, patentFileSections }: EntityFilesTabProps) {
+export function EntityFilesTab({ entityType, patentFileSections, documentSections }: EntityFilesTabProps) {
   const params = useParams();
   const navigate = useNavigate();
   const entityId = params[`${entityType}Id`] as string;
@@ -71,6 +83,19 @@ export function EntityFilesTab({ entityType, patentFileSections }: EntityFilesTa
   const { data: files = [], isLoading } = useFilesByEntity(entityType, entityId);
   const { data: referenceBooks } = useReferenceData(['users']);
   const deleteFileMutation = useDeleteFile();
+
+  const sections: readonly EntityFileSectionDef[] | null = documentSections?.length
+    ? documentSections
+    : patentFileSections
+      ? PATENT_FILE_SECTIONS
+      : null;
+
+  const sectionKeyForFile = (document_section: string | null | undefined): string => {
+    if (!sections?.length) return 'default';
+    if (patentFileSections) return patentSectionForFile(document_section);
+    const keys = sections.map(s => s.key);
+    return resolveGenericSectionKey(document_section, keys);
+  };
 
   const handleDelete = (e: React.MouseEvent, fileId: string) => {
     e.stopPropagation();
@@ -90,13 +115,13 @@ export function EntityFilesTab({ entityType, patentFileSections }: EntityFilesTa
   };
 
   const handleUpload =
-    (documentSection?: PatentFileSectionKey) => async (options: UploadRequestOption) => {
+    (sectionKey?: string) => async (options: UploadRequestOption) => {
       const { file, onSuccess, onError } = options;
       const uploadFile = file as File;
       const sizeStr = String(uploadFile.size);
       const scopeFiles =
-        patentFileSections && documentSection
-          ? filesForPatentSection(files, documentSection)
+        sections && sectionKey
+          ? files.filter(f => sectionKeyForFile(f.document_section) === sectionKey)
           : files;
       if (scopeFiles.some(f => f.name === uploadFile.name && String(f.size) === sizeStr)) {
         showNotification('warning', 'Внимание', 'Файл с таким именем и размером уже загружен в этом разделе');
@@ -109,8 +134,8 @@ export function EntityFilesTab({ entityType, patentFileSections }: EntityFilesTa
         formData.append('file1', uploadFile);
         formData.append('entityType', entityType);
         formData.append('entityId', entityId);
-        if (patentFileSections && documentSection) {
-          formData.append('documentSection', documentSection);
+        if (sections && sectionKey) {
+          formData.append('documentSection', sectionKey);
         }
         await fileApi.uploadFiles(formData);
         await queryClient.invalidateQueries({ queryKey: fileQueryKeys.byEntity(entityType, entityId) });
@@ -186,18 +211,19 @@ export function EntityFilesTab({ entityType, patentFileSections }: EntityFilesTa
     </Card>
   );
 
-  if (patentFileSections) {
+  if (sections) {
     return (
       <div className={styles.pageWrap}>
         {contextHolder}
         <Spin spinning={isLoading || uploading}>
           <div className={styles.sectionsStack}>
-            {PATENT_FILE_SECTIONS.map(section => {
-              const sectionFiles = filesForPatentSection(files, section.key);
+            {sections.map(section => {
+              const sectionFiles = files.filter(f => sectionKeyForFile(f.document_section) === section.key);
               const sectionHasFiles = sectionFiles.length > 0;
+              const headingId = `entity-files-${entityType}-${section.key}`;
               return (
-                <section key={section.key} className={styles.sectionBlock} aria-labelledby={`patent-files-${section.key}`}>
-                  <Title level={5} id={`patent-files-${section.key}`} className={styles.sectionTitle}>
+                <section key={section.key} className={styles.sectionBlock} aria-labelledby={headingId}>
+                  <Title level={5} id={headingId} className={styles.sectionTitle}>
                     {section.title}
                   </Title>
                   <Text type='secondary' className={styles.sectionHint}>

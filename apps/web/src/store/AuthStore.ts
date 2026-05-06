@@ -12,6 +12,8 @@ export interface ImpersonationContext {
 }
 
 interface IAuthStore {
+  /** true после чтения persist из storage — до этого PrivateRoute не редиректит на /auth */
+  hasHydrated: boolean;
   user: User | null;
   isAuth: boolean;
   sectionPermissions: SectionPermission[];
@@ -29,6 +31,7 @@ interface IAuthStore {
 export const useAuthStore = create<IAuthStore>()(
   persist(
     set => ({
+      hasHydrated: false,
       user: null,
       isAuth: false,
       sectionPermissions: [],
@@ -54,6 +57,10 @@ export const useAuthStore = create<IAuthStore>()(
       // Также не персистим impersonation: контекст приходит из /auth/me, актуален
       // только пока валиден токен.
       partialize: (state) => ({ user: state.user, isAuth: state.isAuth }),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) console.warn('auth-storage rehydrate failed', error);
+        useAuthStore.setState({ hasHydrated: true });
+      },
     },
   ),
 );
