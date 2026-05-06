@@ -5,6 +5,7 @@ import { Button, Form } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useContractById } from '@/api/contracts/contractApiHooks';
+import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { patentsListServerFiltersEmpty, usePatentById, usePatentsList, useUpdatePatent } from '@/api/patents/patentApiHooks';
 import { Loader } from '@/components/loader/Loader';
@@ -18,6 +19,10 @@ import { patentUpdateFormMapper } from '@/helpers/mappers/patentUpdateFormMapper
 import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
 import listCardStyles from '@/pages/patents/PatentsListPage.module.scss';
 import { formatPatentRegistryCardHeading } from '@/pages/patents/utils/patentRegistryCardUtils';
+import {
+  earliestPatentRequestsDeadlineFromFiles,
+  formatPatentStatusDisplayName,
+} from '@/pages/patents/utils/patentStatusDisplay';
 import {
   PatentFormIdentityFields,
   PatentFormOrgFields,
@@ -54,6 +59,11 @@ export default function PatentEditPage() {
     { contractsIncludeInactive: true },
   );
   const { mutate, isPending: isUpdateLoading } = useUpdatePatent();
+  const { data: patentFiles } = useFilesByEntity('patent', patentId ?? '');
+  const requestsEarliestDeadline = useMemo(
+    () => earliestPatentRequestsDeadlineFromFiles(patentFiles),
+    [patentFiles],
+  );
   const { data: patentsPickList, isLoading: isPatentsPickListLoading } = usePatentsList(
     'all',
     1,
@@ -159,7 +169,7 @@ export default function PatentEditPage() {
   const headerStatusBadge = patent.is_deleted
     ? { label: 'Удалён' as const, variant: 'danger' as const }
     : {
-        label: statusName || 'Статус не выбран',
+        label: formatPatentStatusDisplayName(statusName, requestsEarliestDeadline) || 'Статус не выбран',
         variant: detailHeaderVariantForPatentRidStatus(statusName),
       };
 
@@ -227,7 +237,11 @@ export default function PatentEditPage() {
           scrollToFirstError
         >
           <div className={styles.formSectionsStack}>
-            <PatentFormIdentityFields refs={refs} areasField='multi' />
+            <PatentFormIdentityFields
+              refs={refs}
+              areasField='multi'
+              requestsEarliestDeadline={requestsEarliestDeadline}
+            />
             <PatentFormTransformationFields
               refs={refs}
               targetPatentOptions={transformationTargetOptions}

@@ -15,6 +15,113 @@
   }
 }
 
+/* Патент: Запросы + Заявка + Согласие + Уведомление — одна сетка, запросы слева */
+.sectionsStackPatent4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.requestsSection {
+  min-width: 0;
+  padding: 14px 14px 16px;
+  border: 1px solid rgba(0, 47, 85, 0.14);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f6f9fc 0%, #fff 56px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.requestStatusBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(250, 173, 20, 0.12);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+.requestStatusBannerOverdue {
+  background: rgba(255, 77, 79, 0.12);
+  border: 1px solid rgba(255, 77, 79, 0.35);
+
+  .requestStatusIcon {
+    color: #ff4d4f;
+  }
+}
+
+.requestStatusIcon {
+  color: #d48806;
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+.requestStatusText {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 !important;
+}
+
+.requestUploadBar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fafafa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.requestDeadlineField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.requestDeadlineLabel {
+  display: block;
+  font-size: 14px;
+  line-height: 22px;
+  color: rgba(0, 0, 0, 0.88);
+  margin: 0;
+}
+
+.requestDeadlinePicker {
+  width: 100%;
+  min-width: 0;
+}
+
+.requestsFileTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.requestTag {
+  margin: 0 !important;
+}
+
+.requestTagWarning {
+  background: rgba(250, 173, 20, 0.125) !important;
+  border: 1px solid rgba(250, 173, 20, 0.314) !important;
+  color: #d48806 !important;
+}
+
+.requestTagError {
+  background: rgba(255, 77, 79, 0.125) !important;
+  border: 1px solid rgba(255, 77, 79, 0.314) !important;
+  color: #ff4d4f !important;
+}
+
 .sectionBlock {
   display: flex;
   flex-direction: column;

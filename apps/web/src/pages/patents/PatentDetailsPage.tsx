@@ -1,5 +1,6 @@
 import { DeleteOutlined, EditOutlined, UndoOutlined, UserOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
+import { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
@@ -15,6 +16,10 @@ import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
 import { formatPatentRegistryCardHeading } from '@/pages/patents/utils/patentRegistryCardUtils';
+import {
+  earliestPatentRequestsDeadlineFromFiles,
+  formatPatentStatusDisplayName,
+} from '@/pages/patents/utils/patentStatusDisplay';
 import listCardStyles from '@/pages/patents/PatentsListPage.module.scss';
 import styles from './PatentDetails.module.scss';
 import type { ActionType } from './types/PatentsListPage.types';
@@ -93,6 +98,12 @@ export default function PatentDetailsPage() {
       },
     });
   };
+
+  const earliestRequestDeadline = useMemo(
+    () => earliestPatentRequestsDeadlineFromFiles(patentFiles),
+    [patentFiles],
+  );
+
   if (isLoading) return <Loader />;
   if (isError || !patent) return <NotFound errorMessage='Патент не найден' />;
   const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
@@ -104,7 +115,7 @@ export default function PatentDetailsPage() {
   const headerStatusBadge = patent.is_deleted
     ? { label: 'Удалён' as const, variant: 'danger' as const }
     : {
-        label: statusName || 'Статус не указан',
+        label: formatPatentStatusDisplayName(statusName, earliestRequestDeadline) || 'Статус не указан',
         variant: detailHeaderVariantForPatentRidStatus(statusName),
       };
   const title = formatPatentRegistryCardHeading(patent);

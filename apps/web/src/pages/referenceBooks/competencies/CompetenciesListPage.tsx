@@ -6,7 +6,7 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
+import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useNotification } from '../../../customhooks/useNotification';
 import { COMPETENCE_TAG_BG, COMPETENCE_TAG_BORDER, COMPETENCE_TAG_TEXT } from '../../../constants/competenceDisplay';
 import { PartnerCompetence } from '../../../types/partner';
@@ -17,12 +17,13 @@ export default function PartnerCompetencesListPage() {
   const { contextHolder, showNotification } = useNotification();
   const deleteCompetenceIdRef = useRef('');
   const deletePartnerCompetenceMutation = useDeletePartnerCompetence();
+  const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const onEdit = (record: PartnerCompetence) => {
     navigate(`/competencies/${record.id}/edit`, {});
   };
   const onDelete = ({ id }: { id: string }) => {
     deleteCompetenceIdRef.current = id;
-    openAntdDeleteConfirm({
+    openDeleteConfirm({
       mutation: deletePartnerCompetenceMutation,
       getVariables: () => deleteCompetenceIdRef.current,
       showNotification,

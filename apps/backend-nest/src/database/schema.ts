@@ -436,6 +436,10 @@ export const files = pgTable(
     type: varchar('type', { length: 255 }).notNull(),
     size: integer('size'),
     uploadedById: uuid('uploadedby_id'),
+    /** Для раздела «Запросы» у патентов: нужен ли ответ контрагенту/в ведомство */
+    responseRequired: boolean('response_required').notNull().default(false),
+    /** Крайний срок ответа (дата по Москве хранится как timestamptz начала дня UTC) */
+    responseDeadline: timestamp('response_deadline', { withTimezone: true }),
     uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }),

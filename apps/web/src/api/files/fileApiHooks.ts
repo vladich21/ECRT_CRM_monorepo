@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { isValidUuid } from '../../helpers/isValidUuid';
 import type { MyFile } from '../../types/files';
+import { patentQueryKeys } from '../patents/patentQueryKeys';
 import { fileApi } from './fileApi';
 import { fileQueryKeys } from './fileQueryKeys';
 
@@ -64,6 +65,30 @@ export const useDeleteFile = () => {
       void queryClient.invalidateQueries({
         queryKey: fileQueryKeys.byEntity(variables.entityType, variables.entityId),
       });
+      if (variables.entityType === 'patent') {
+        void queryClient.invalidateQueries({ queryKey: patentQueryKeys.all });
+      }
+    },
+  });
+};
+
+export const usePatchFileMeta = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: {
+      entityType: string;
+      entityId: string;
+      fileId: string;
+      body: { responseRequired?: boolean; responseDeadline?: string | null };
+    }) => fileApi.patchFileMeta(vars.entityType, vars.entityId, vars.fileId, vars.body),
+    onSuccess: (updated, variables) => {
+      queryClient.setQueryData<MyFile[]>(
+        fileQueryKeys.byEntity(variables.entityType, variables.entityId),
+        prev => (prev ? prev.map(f => (f.id === updated.id ? { ...f, ...updated } : f)) : prev),
+      );
+      if (variables.entityType === 'patent') {
+        void queryClient.invalidateQueries({ queryKey: patentQueryKeys.all });
+      }
     },
   });
 };

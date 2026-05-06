@@ -6,9 +6,11 @@ import {
   SwapOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
+import { useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 
 import { useContractById } from '@/api/contracts/contractApiHooks';
+import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
@@ -16,6 +18,10 @@ import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { Patent } from '@/types/patent';
+import {
+  earliestPatentRequestsDeadlineFromFiles,
+  formatPatentStatusDisplayName,
+} from '@/pages/patents/utils/patentStatusDisplay';
 import styles from './PatentMainInfoTab.module.scss';
 
 function formatDate(dateString: string) {
@@ -30,6 +36,11 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 export default function PatentMainInfo({ patent }: { patent: Patent }) {
+  const { data: patentFiles } = useFilesByEntity('patent', patent.id);
+  const requestsEarliestDeadline = useMemo(
+    () => earliestPatentRequestsDeadlineFromFiles(patentFiles),
+    [patentFiles],
+  );
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
@@ -61,6 +72,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const responsibleName = getNameById(patent.responsible_for_patenting_id, referenceBooks.users);
   const projectName = getNameById(patent.project_id, referenceBooks?.projects);
   const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
+  const statusDisplay = formatPatentStatusDisplayName(statusName, requestsEarliestDeadline);
   const incomeContract =
     referenceBooks.contracts?.find(row => row.id === patent.contract_id) ??
     (incomeContractFetched?.id === patent.contract_id ? incomeContractFetched : undefined);
@@ -214,7 +226,9 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Статус</span>
-              <span className={statusName ? styles.infoValue : styles.infoValueMuted}>{statusName || '—'}</span>
+              <span className={statusDisplay ? styles.infoValue : styles.infoValueMuted}>
+                {statusDisplay || '—'}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Отдел</span>

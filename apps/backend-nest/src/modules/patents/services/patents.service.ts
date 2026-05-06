@@ -4,6 +4,7 @@ import { BadRequestException, ConflictException, Injectable, Logger } from '@nes
 import { DatabaseService } from '../../../database/database.service';
 import {
   contracts,
+  files,
   patents,
   projects,
   refPatentStatuses,
@@ -209,6 +210,48 @@ export class PatentsService {
     }
 
     return previewByPatentId;
+  }
+
+  private async getPatentRequestSummariesByPatentIds(patentIds: string[]): Promise<
+    Record<
+      string,
+      {
+        requests_earliest_deadline: string | null;
+        requests_has_response_required: boolean;
+      }
+    >
+  > {
+    if (patentIds.length === 0) return {};
+    const rows = await this.db.db
+      .select({
+        patentId: files.tableId,
+        earliest: sql<string | null>`min(${files.responseDeadline})`,
+        anyRequired: sql<boolean>`bool_or(coalesce(${files.responseRequired}, false))`,
+      })
+      .from(files)
+      .where(
+        and(
+          eq(files.entityType, 'patent'),
+          eq(files.documentSection, 'requests'),
+          inArray(files.tableId, patentIds),
+        )!,
+      )
+      .groupBy(files.tableId);
+
+    const out: Record<
+      string,
+      { requests_earliest_deadline: string | null; requests_has_response_required: boolean }
+    > = {};
+    for (const r of rows) {
+      if (!r.patentId) continue;
+      const pid = String(r.patentId);
+      const earliestRaw = r.earliest;
+      out[pid] = {
+        requests_earliest_deadline: earliestRaw ? new Date(earliestRaw).toISOString() : null,
+        requests_has_response_required: Boolean(r.anyRequired),
+      };
+    }
+    return out;
   }
 
   private async getAuthorIdsMap(patentIds: string[]): Promise<Record<string, string[]>> {
@@ -479,10 +522,11 @@ export class PatentsService {
       deletedScope === 'active' ? tabActive : deletedScope === 'deleted' ? tabDeleted : tabAll;
 
     const patentIds = rows.map((row) => String(row.id));
-    const [areaIdsMap, authorIdsMap, grantsPreviewByPatentId] = await Promise.all([
+    const [areaIdsMap, authorIdsMap, grantsPreviewByPatentId, requestSummaries] = await Promise.all([
       this.getAreaIdsMap(patentIds),
       this.getAuthorIdsMap(patentIds),
       this.getPatentGrantsPreviewByPatentIds(patentIds),
+      this.getPatentRequestSummariesByPatentIds(patentIds),
     ]);
     const data = rows.map((patentRow) => {
       const patentId = String(patentRow.id);
@@ -492,14 +536,26 @@ export class PatentsService {
         authorIdsMap[patentId] ?? [],
       );
       const grantListPreview = grantsPreviewByPatentId[patentId];
-      if (!grantListPreview) {
-        return basePayload;
+      const reqSum = requestSummaries[patentId];
+      const withGrants =
+        grantListPreview != null
+          ? {
+              ...basePayload,
+              patent_grants_count: grantListPreview.count,
+              patent_grants_preview: grantListPreview.preview,
+            }
+          : basePayload;
+      if (
+        reqSum != null &&
+        (reqSum.requests_earliest_deadline != null || reqSum.requests_has_response_required)
+      ) {
+        return {
+          ...withGrants,
+          requests_earliest_deadline: reqSum.requests_earliest_deadline,
+          requests_has_response_required: reqSum.requests_has_response_required,
+        };
       }
-      return {
-        ...basePayload,
-        patent_grants_count: grantListPreview.count,
-        patent_grants_preview: grantListPreview.preview,
-      };
+      return withGrants;
     });
 
     return {

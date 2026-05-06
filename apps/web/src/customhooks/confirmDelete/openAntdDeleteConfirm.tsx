@@ -1,4 +1,6 @@
-import { Modal } from 'antd';
+import { App } from 'antd';
+import type { ModalFuncProps } from 'antd/es/modal/interface';
+import { useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
@@ -8,12 +10,10 @@ import type { DeleteMutationFeedbackConfig } from './deleteMutationFeedback.type
 import { runDeleteMutationWithFeedbackAsync } from './runDeleteMutationWithFeedback';
 
 export type OpenAntdDeleteConfirmConfig<TData, TError, TVariables> = {
-  /** По умолчанию совпадает с прежней глобальной ConfirmModal */
   title?: ReactNode;
   content?: ReactNode;
   okText?: string;
   cancelText?: string;
-  /** Для деструктивных действий (по умолчанию true) */
   danger?: boolean;
   mutation: UseMutationResult<TData, TError, TVariables>;
   getVariables: () => TVariables | null | undefined;
@@ -29,14 +29,16 @@ export type OpenAntdDeleteConfirmConfig<TData, TError, TVariables> = {
   missingVariablesMessage?: string;
 };
 
-/**
- * Удаление/подтверждение через Ant Design `Modal.confirm` вместо глобального ModalStore.
- * Удобно для списков и контекстных меню: не дублирует разметку корневой модалки.
- */
-export function openAntdDeleteConfirm<TData, TError, TVariables>(
+function isMissingDeleteVariables<T>(v: T | null | undefined): boolean {
+  if (v == null) return true;
+  if (typeof v === 'string' && v === '') return true;
+  return false;
+}
+
+export function getAntdDeleteConfirmModalProps<TData, TError, TVariables>(
   config: OpenAntdDeleteConfirmConfig<TData, TError, TVariables>,
-): void {
-  Modal.confirm({
+): ModalFuncProps {
+  return {
     title: config.title ?? 'Вы уверены?',
     content: config.content,
     okText: config.okText ?? 'Удалить',
@@ -61,11 +63,27 @@ export function openAntdDeleteConfirm<TData, TError, TVariables>(
       };
       return runDeleteMutationWithFeedbackAsync(config.mutation, variables as TVariables, feedback);
     },
-  });
+  };
 }
 
-function isMissingDeleteVariables<T>(v: T | null | undefined): boolean {
-  if (v == null) return true;
-  if (typeof v === 'string' && v === '') return true;
-  return false;
+/** Если нужен вызов вне React: передать `modal.confirm` из `App.useApp()`. */
+export function openAntdDeleteConfirm<TData, TError, TVariables>(
+  confirm: (props: ModalFuncProps) => void,
+  config: OpenAntdDeleteConfirmConfig<TData, TError, TVariables>,
+): void {
+  confirm(getAntdDeleteConfirmModalProps(config));
+}
+
+/**
+ * Предпочтительный способ: компонент должен быть внутри дерева с корневым `<App>` из antd (см. `main.jsx`).
+ */
+export function useOpenAntdDeleteConfirm() {
+  const { modal } = App.useApp();
+
+  return useCallback(
+    <TData, TError, TVariables>(config: OpenAntdDeleteConfirmConfig<TData, TError, TVariables>) => {
+      modal.confirm(getAntdDeleteConfirmModalProps(config));
+    },
+    [modal],
+  );
 }

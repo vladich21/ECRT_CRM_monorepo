@@ -2,6 +2,7 @@ import { CalendarOutlined, CopyrightOutlined, DeleteOutlined, EditOutlined } fro
 import { Button, Space } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { useDeletePatentGrant, usePatentGrantById } from '../../../api/patents/patentGrantsApiHooks';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
@@ -19,7 +20,11 @@ export default function PatentGrantDetailsPage() {
   const patentCardExtras = stateWithoutGrantNavFrom(location.state);
   const { contextHolder, showNotification } = useNotification();
   const { data: patentGrant, isLoading, isError } = usePatentGrantById(grantId!);
+  const { data: grantFiles, isLoading: isGrantFilesLoading } = useFilesByEntity('grant', grantId!);
   const mutation = useDeletePatentGrant();
+
+  const filesTabLabel =
+    isGrantFilesLoading && grantFiles === undefined ? 'Файлы' : `Файлы (${grantFiles?.length ?? 0})`;
 
   const getActiveTabFromPath = () => {
     const path = location.pathname;
@@ -108,7 +113,7 @@ export default function PatentGrantDetailsPage() {
       }
       tabs={[
         { key: 'main', label: 'Основное' },
-        { key: 'files', label: 'Файлы' },
+        { key: 'files', label: filesTabLabel },
       ]}
       activeTab={activeTab}
       onTabChange={handleTabChange}

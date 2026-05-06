@@ -11,7 +11,7 @@ import {
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
+import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getEntityById } from '../../../helpers/getEntityById';
@@ -26,6 +26,7 @@ const PatentAreasListPage: React.FC = () => {
   const deleteIdRef = useRef('');
   const editIdRef = useRef('');
   const deleteAreaMutation = useDeletePatentArea();
+  const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const editAreaMutation = useUpdatePatentArea();
   const addAreaMutation = useCreatePatentArea();
   const { handleOpenModal: openEditModal } = useMutateByModal<PatentArea, Error>({
@@ -54,7 +55,7 @@ const PatentAreasListPage: React.FC = () => {
   });
   const onDelete = ({ id }: { id: string }) => {
     deleteIdRef.current = id;
-    openAntdDeleteConfirm({
+    openDeleteConfirm({
       mutation: deleteAreaMutation,
       getVariables: () => deleteIdRef.current,
       showNotification,

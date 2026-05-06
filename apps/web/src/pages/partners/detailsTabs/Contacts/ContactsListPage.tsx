@@ -8,7 +8,7 @@ import {
   usePartnerContacts,
   useUpdatePartnerContact,
 } from '../../../../api/partners/partnerContactApiHooks';
-import { openAntdDeleteConfirm } from '../../../../customhooks/confirmDelete';
+import { useOpenAntdDeleteConfirm } from '../../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../../customhooks/useNotification';
 import { getEntityById } from '../../../../helpers/getEntityById';
@@ -25,6 +25,7 @@ const PartnerContactsListPage: React.FC = () => {
   const deleteIdRef = useRef('');
   const editIdRef = useRef('');
   const deleteContactMutation = useDeletePartnerContact();
+  const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const editContactMutation = useUpdatePartnerContact();
   const addContactMutation = useCreatePartnerContact();
   const { handleOpenModal: openEditModal } = useMutateByModal<PartnerContact>({
@@ -59,7 +60,7 @@ const PartnerContactsListPage: React.FC = () => {
   });
   const onDelete = (contact: PartnerContact) => {
     deleteIdRef.current = contact.id;
-    openAntdDeleteConfirm({
+    openDeleteConfirm({
       mutation: deleteContactMutation,
       getVariables: () => ({ partnerId: partnerId!, contactId: deleteIdRef.current }),
       showNotification,

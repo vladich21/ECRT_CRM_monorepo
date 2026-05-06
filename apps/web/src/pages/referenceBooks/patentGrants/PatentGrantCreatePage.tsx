@@ -132,7 +132,7 @@ export default function PatentGrantCreatePage() {
         centered
         width={480}
         onCancel={handleCancelReminder}
-        destroyOnClose
+        destroyOnHidden
         footer={[
           <Button key='cancel' onClick={handleCancelReminder}>
             Отмена

@@ -31,6 +31,11 @@ export interface Patent {
   patent_grants_count?: number;
   patent_grants_preview?: PatentGrantListPreviewItem[];
 
+  /** Ближайший срок среди файлов раздела «Запросы» (ISO); только если есть дедлайны */
+  requests_earliest_deadline?: string | null;
+  /** Есть ли среди файлов «Запросы» отмеченное «требуется ответ» */
+  requests_has_response_required?: boolean;
+
   transformed_into_patent_id?: string;
   transformed_from_patent_id?: string;
   transformation_notification_ic_zht?: string;

@@ -35,11 +35,17 @@ function patentRidWorkflowKindHeuristic(lower: string): PatentRidWorkflowKind {
   if (lower.includes('преобразование')) {
     return 'transformation';
   }
+  if (lower.includes('получен') && lower.includes('запрос')) {
+    return 'review_query';
+  }
   if (lower.includes('запрос') && lower.includes('рассмотрен')) {
     return 'review_query';
   }
   if (lower.includes('решение') && lower.includes('выдаче')) {
     return 'decision';
+  }
+  if (lower.includes('охранн') && lower.includes('документ')) {
+    return 'issued';
   }
   if (lower.includes('выдан') && lower.includes('патент')) {
     return 'issued';
@@ -70,6 +76,7 @@ export function patentRidWorkflowKind(statusName: string | undefined): PatentRid
     case 'Заявка подана / на рассмотрении в ведомстве':
     case 'Заявка подана или на рассмотрении в ведомстве':
       return 'office_review';
+    case 'Получен запрос':
     case 'На рассмотрении, запрос':
       return 'review_query';
     case 'Отказ в выдаче':
@@ -78,6 +85,7 @@ export function patentRidWorkflowKind(statusName: string | undefined): PatentRid
       return 'transformation';
     case 'Решение о выдаче':
       return 'decision';
+    case 'Получен охранный документ':
     case 'Выдан патент':
       return 'issued';
     default:

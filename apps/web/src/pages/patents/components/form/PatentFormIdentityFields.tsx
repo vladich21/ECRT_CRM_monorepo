@@ -4,6 +4,7 @@ import { Alert, Col, Divider, Form, Input, Row, Select } from 'antd';
 import { SelectWithQuickAdd } from '@/components/selectWithQuickAdd/SelectWithQuickAdd';
 import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
 import { getNameById } from '@/helpers/getNameById';
+import { formatPatentStatusDisplayName } from '@/pages/patents/utils/patentStatusDisplay';
 import type { Reference } from '@/types/referenceTypes';
 
 import type { PatentFormRefs } from './patentForm.types';
@@ -16,11 +17,11 @@ const REFUSAL_TO_TRANSFORMATION_HINT =
   'При необходимости оформите преобразование в другой РИД: смените статус на „Преобразование" и укажите целевой РИД и номера уведомлений ИЦ ЖТ и ЦИР.';
 
 type Props =
-  | { refs: PatentFormRefs; areasField: 'quickAdd'; onOpenAreaModal: () => void }
-  | { refs: PatentFormRefs; areasField: 'multi' };
+  | { refs: PatentFormRefs; areasField: 'quickAdd'; onOpenAreaModal: () => void; requestsEarliestDeadline?: Date | null }
+  | { refs: PatentFormRefs; areasField: 'multi'; requestsEarliestDeadline?: Date | null };
 
 export function PatentFormIdentityFields(props: Props) {
-  const { refs, areasField } = props;
+  const { refs, areasField, requestsEarliestDeadline } = props;
   const onOpenAreaModal = props.areasField === 'quickAdd' ? props.onOpenAreaModal : undefined;
   const statusId = Form.useWatch('status_id');
   const statusName = getNameById(statusId, refs.patentStatuses);
@@ -93,7 +94,7 @@ export function PatentFormIdentityFields(props: Props) {
             >
               {refs.patentStatuses?.map(status => (
                 <Select.Option key={status.id} value={status.id}>
-                  {status.name}
+                  {formatPatentStatusDisplayName(status.name, requestsEarliestDeadline)}
                 </Select.Option>
               ))}
             </Select>
