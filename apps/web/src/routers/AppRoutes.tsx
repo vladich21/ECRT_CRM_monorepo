@@ -74,6 +74,8 @@ const ProfilePage = lazy(() => import('../pages/profile/Profile'));
 const DepartmentsListPage = lazy(() => import('../pages/referenceBooks/departaments/DepartmentsListPage'));
 const PositionsListPage = lazy(() => import('../pages/referenceBooks/positions/PositionsListPage'));
 const ProjectDetailsPage = lazy(() => import('../pages/referenceBooks/projects/ProjectDetailsPage'));
+const ProjectDetailsMainTab = lazy(() => import('../pages/referenceBooks/projects/tabs/ProjectDetailsMainTab'));
+const ProjectDocumentsTab = lazy(() => import('../pages/referenceBooks/projects/tabs/ProjectDocumentsTab'));
 const ProjectsListPage = lazy(() => import('../pages/referenceBooks/projects/ProjectsListPage'));
 const UserDetailsPage = lazy(() => import('../pages/referenceBooks/users/UserDetailsPage'));
 const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersListPage'));
@@ -139,7 +141,10 @@ export default function AppRoutes() {
           <Route index element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectsListPage /></Guarded>} />
           <Route path="create" element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectCreatePage /></Guarded>} />
           <Route path=":projectId/edit" element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectEditPage /></Guarded>} />
-          <Route path=":projectId" element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectDetailsPage /></Guarded>} />
+          <Route path=":projectId" element={<Guarded section={SECTIONS.PROJECTS_LIST}><ProjectDetailsPage /></Guarded>}>
+            <Route index element={<ProjectDetailsMainTab />} />
+            <Route path="project-documents" element={<ProjectDocumentsTab />} />
+          </Route>
         </Route>
 
         <Route path="gantts">

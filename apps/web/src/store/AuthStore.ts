@@ -11,7 +11,12 @@ export interface ImpersonationContext {
   adminEmail: string;
 }
 
+/** Колбэк rehydrate вызывается до завершения `export const useAuthStore = create(...)` — нельзя дергать useAuthStore здесь. */
+let markAuthHydrated = () => {};
+
 interface IAuthStore {
+  /** true после чтения persist из storage — до этого PrivateRoute не редиректит на /auth */
+  hasHydrated: boolean;
   user: User | null;
   isAuth: boolean;
   sectionPermissions: SectionPermission[];
@@ -28,32 +33,40 @@ interface IAuthStore {
 
 export const useAuthStore = create<IAuthStore>()(
   persist(
-    set => ({
-      user: null,
-      isAuth: false,
-      sectionPermissions: [],
-      impersonation: null,
+    set => {
+      markAuthHydrated = () => set({ hasHydrated: true });
+      return {
+        hasHydrated: false,
+        user: null,
+        isAuth: false,
+        sectionPermissions: [],
+        impersonation: null,
 
-      login: (
-        user: User,
-        sectionPermissions: SectionPermission[] = [],
-        impersonation: ImpersonationContext | null = null,
-      ) => set({ user, isAuth: true, sectionPermissions, impersonation }),
+        login: (
+          user: User,
+          sectionPermissions: SectionPermission[] = [],
+          impersonation: ImpersonationContext | null = null,
+        ) => set({ user, isAuth: true, sectionPermissions, impersonation }),
 
-      setSectionPermissions: (sectionPermissions: SectionPermission[]) =>
-        set({ sectionPermissions }),
+        setSectionPermissions: (sectionPermissions: SectionPermission[]) =>
+          set({ sectionPermissions }),
 
-      setImpersonation: (impersonation: ImpersonationContext | null) =>
-        set({ impersonation }),
+        setImpersonation: (impersonation: ImpersonationContext | null) =>
+          set({ impersonation }),
 
-      logout: () => set({ user: null, isAuth: false, sectionPermissions: [], impersonation: null }),
-    }),
+        logout: () => set({ user: null, isAuth: false, sectionPermissions: [], impersonation: null }),
+      };
+    },
     {
       name: 'auth-storage',
       // Не персистим snapshot прав — он живёт в JWT и подгружается через /auth/me.
       // Также не персистим impersonation: контекст приходит из /auth/me, актуален
       // только пока валиден токен.
       partialize: (state) => ({ user: state.user, isAuth: state.isAuth }),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) console.warn('auth-storage rehydrate failed', error);
+        markAuthHydrated();
+      },
     },
   ),
 );

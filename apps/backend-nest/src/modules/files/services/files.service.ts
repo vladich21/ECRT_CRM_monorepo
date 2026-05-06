@@ -9,11 +9,16 @@ import { getFileBaseUrl, getUploadPath } from '../files-config';
 import type { FileResponseDto, UploadItemDto } from '../dto';
 
 const PATENT_FILE_SECTIONS = new Set(['application', 'consent', 'notification']);
+const PROJECT_DOCUMENT_SECTION_KEYS = new Set(['pm_plan', 'milestones', 'risk_matrix']);
 
 function normalizeDocumentSection(entityType: string, raw?: string | null): string {
   if (entityType === 'patent') {
     if (raw && PATENT_FILE_SECTIONS.has(raw)) return raw;
     return 'application';
+  }
+  if (entityType === 'project') {
+    if (raw && PROJECT_DOCUMENT_SECTION_KEYS.has(raw)) return raw;
+    return 'pm_plan';
   }
   return 'default';
 }

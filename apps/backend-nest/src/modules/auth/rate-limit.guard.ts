@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 
+/** Общий счётчик на IP для POST login, verify-2fa и resend-code (каждый запрос увеличивает счётчик). */
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 минут
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // очистка каждые 5 минут
@@ -39,8 +40,9 @@ export class RateLimitGuard implements CanActivate {
     if (attempt.count >= MAX_ATTEMPTS) {
       const retryAfterMs = WINDOW_MS - (now - attempt.firstAttemptAt);
       const retryAfterSec = Math.ceil(retryAfterMs / 1000);
+      const text = `Слишком много попыток. Повторите через ${retryAfterSec} сек.`;
       throw new HttpException(
-        { error: `Слишком много попыток. Повторите через ${retryAfterSec} сек.`, retryAfter: retryAfterSec },
+        { message: text, error: text, retryAfter: retryAfterSec },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
