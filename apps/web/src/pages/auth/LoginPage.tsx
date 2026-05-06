@@ -3,6 +3,7 @@ import { Alert, Button, Form, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { authApi } from '../../api/auth/authApi';
+import { getApiErrorMessage } from '../../customhooks/confirmDelete/getApiErrorMessage';
 import ecrtLogoMain from '../../assets/svg/ecrt-logo-main.svg';
 import { authLoadingScreenStore } from '../../store/authLoadingScreenStore';
 import { useAuthStore } from '../../store/AuthStore';
@@ -93,14 +94,11 @@ function LoginPage() {
         }
       }
     } catch (err: unknown) {
-      const axiosError = err as {
-        response?: {
-          data?: {
-            message?: string;
-          };
-        };
-      };
-      set({ error: axiosError.response?.data?.message ?? 'Ошибка подключения к серверу' });
+      const fromBody = getApiErrorMessage(err);
+      const hasResponse =
+        err && typeof err === 'object' && 'response' in err && (err as { response?: unknown }).response != null;
+      const fallback = hasResponse ? 'Не удалось выполнить запрос. Попробуйте ещё раз.' : 'Ошибка подключения к серверу';
+      set({ error: fromBody ?? fallback });
     } finally {
       if (!keepLoading) set({ loading: false });
     }
@@ -109,20 +107,15 @@ function LoginPage() {
   const isCodeStep = state.step === 'temp-code' || state.step === '2fa-code';
   const handleResendCode = async () => {
     if (!canResendCode || !state.email || resendingCode) return;
+    const resendStep = state.step;
+    if (resendStep !== 'temp-code' && resendStep !== '2fa-code') return;
     setResendingCode(true);
     try {
-      const data = await authApi.resendCode(state.email, state.step);
+      const data = await authApi.resendCode(state.email, resendStep);
       set({ maskedEmail: data.email ?? state.maskedEmail, error: '' });
       message.success('Код отправлен повторно');
     } catch (err: unknown) {
-      const axiosError = err as {
-        response?: {
-          data?: {
-            message?: string;
-          };
-        };
-      };
-      set({ error: axiosError.response?.data?.message ?? 'Не удалось отправить код повторно' });
+      set({ error: getApiErrorMessage(err) ?? 'Не удалось отправить код повторно' });
     } finally {
       setResendingCode(false);
     }

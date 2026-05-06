@@ -39,8 +39,9 @@ export class RateLimitGuard implements CanActivate {
     if (attempt.count >= MAX_ATTEMPTS) {
       const retryAfterMs = WINDOW_MS - (now - attempt.firstAttemptAt);
       const retryAfterSec = Math.ceil(retryAfterMs / 1000);
+      const text = `Слишком много попыток. Повторите через ${retryAfterSec} сек.`;
       throw new HttpException(
-        { error: `Слишком много попыток. Повторите через ${retryAfterSec} сек.`, retryAfter: retryAfterSec },
+        { message: text, error: text, retryAfter: retryAfterSec },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
