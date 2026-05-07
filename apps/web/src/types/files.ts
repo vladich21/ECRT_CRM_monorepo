@@ -7,4 +7,6 @@ export interface MyFile {
   url: string;
   uploadedby_id: string | null;
   uploaded_at: string | null;
+  response_required?: boolean;
+  response_deadline?: string | null;
 }

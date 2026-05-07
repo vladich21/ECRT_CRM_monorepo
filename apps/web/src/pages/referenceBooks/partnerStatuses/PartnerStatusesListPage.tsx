@@ -10,7 +10,7 @@ import {
 import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
+import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getNameById } from '../../../helpers/getNameById';
@@ -23,6 +23,7 @@ const PartnerStatusesListPage: React.FC = () => {
   const deleteIdRef = useRef('');
   const editIdRef = useRef('');
   const deletePartnerStatusMutation = useDeletePartnerStatus();
+  const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const editPartnerStatusMutation = useUpdatePartnerStatus();
   const addPartnerStatusMutation = useCreatePartnerStatus();
   const { handleOpenModal: openEditModal } = useMutateByModal<PartnerStatus, Error>({
@@ -50,7 +51,7 @@ const PartnerStatusesListPage: React.FC = () => {
   });
   const onDelete = ({ id }: { id: string }) => {
     deleteIdRef.current = id;
-    openAntdDeleteConfirm({
+    openDeleteConfirm({
       mutation: deletePartnerStatusMutation,
       getVariables: () => deleteIdRef.current,
       showNotification,

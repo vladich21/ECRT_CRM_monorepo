@@ -1,15 +1,20 @@
 import { and, desc, eq } from 'drizzle-orm';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DatabaseService } from '../../../database/database.service';
 import { files } from '../../../database/schema';
 import { getFileBaseUrl, getUploadPath } from '../files-config';
-import type { FileResponseDto, UploadItemDto } from '../dto';
+import type { FileResponseDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
 
-const PATENT_FILE_SECTIONS = new Set(['application', 'consent', 'notification']);
+const PATENT_FILE_SECTIONS = new Set(['application', 'consent', 'notification', 'requests']);
 const PROJECT_DOCUMENT_SECTION_KEYS = new Set(['pm_plan', 'milestones', 'risk_matrix']);
+
+export type PatentRequestsUploadMeta = {
+  responseRequired: boolean;
+  responseDeadline: Date | null;
+};
 
 function normalizeDocumentSection(entityType: string, raw?: string | null): string {
   if (entityType === 'patent') {
@@ -36,10 +41,15 @@ export class FilesService {
     entityId: string,
     uploadedById?: string,
     documentSectionRaw?: string | null,
+    requestsMeta?: PatentRequestsUploadMeta | null,
   ): Promise<UploadItemDto[]> {
     if (!uploadedFiles?.length) return [];
 
     const documentSection = normalizeDocumentSection(entityType, documentSectionRaw);
+    const applyRequestsMeta =
+      entityType === 'patent' && documentSection === 'requests' && requestsMeta != null;
+    const responseRequired = applyRequestsMeta ? requestsMeta.responseRequired : false;
+    const responseDeadline = applyRequestsMeta ? requestsMeta.responseDeadline : null;
 
     const uploadPath = getUploadPath(this.config);
     const baseUrl = getFileBaseUrl(this.config);
@@ -61,6 +71,8 @@ export class FilesService {
         file.size,
         uploadedById,
         documentSection,
+        responseRequired,
+        responseDeadline,
       );
 
       const url = `${baseUrl}/${entityType}/${entityId}/${encodeURIComponent(file.originalname)}`;
@@ -83,6 +95,8 @@ export class FilesService {
     size: number,
     uploadedById: string | undefined,
     documentSection: string,
+    responseRequired: boolean,
+    responseDeadline: Date | null,
   ): Promise<void> {
     await this.db.db
       .insert(files)
@@ -94,6 +108,8 @@ export class FilesService {
         type: fileType,
         size,
         uploadedById: uploadedById || undefined,
+        responseRequired,
+        responseDeadline,
       })
       .onConflictDoUpdate({
         target: [files.entityType, files.tableId, files.documentSection, files.name],
@@ -101,9 +117,56 @@ export class FilesService {
           type: fileType,
           size,
           uploadedById: uploadedById || undefined,
+          responseRequired,
+          responseDeadline,
           updatedAt: new Date(),
         },
       });
+  }
+
+  async updateMeta(
+    entityType: string,
+    entityId: string,
+    fileId: string,
+    dto: UpdateFileMetaDto,
+  ): Promise<FileResponseDto | null> {
+    const existing = await this.findOne(entityType, entityId, fileId);
+    if (!existing) return null;
+    if (entityType !== 'patent' || existing.document_section !== 'requests') {
+      throw new BadRequestException(
+        'Параметры запроса можно задавать только для файлов в разделе «Запросы».',
+      );
+    }
+
+    const setPayload: {
+      updatedAt: Date;
+      responseRequired?: boolean;
+      responseDeadline?: Date | null;
+    } = { updatedAt: new Date() };
+
+    if (dto.responseRequired !== undefined) {
+      setPayload.responseRequired = dto.responseRequired;
+    }
+    if (dto.responseDeadline !== undefined) {
+      if (dto.responseDeadline === null || dto.responseDeadline === '') {
+        setPayload.responseDeadline = null;
+      } else {
+        const d = new Date(dto.responseDeadline);
+        if (Number.isNaN(d.getTime())) {
+          throw new BadRequestException('Некорректная дата срока ответа');
+        }
+        setPayload.responseDeadline = d;
+      }
+    }
+
+    await this.db.db
+      .update(files)
+      .set(setPayload)
+      .where(
+        and(eq(files.id, fileId), eq(files.entityType, entityType), eq(files.tableId, entityId)),
+      );
+
+    return this.findOne(entityType, entityId, fileId);
   }
 
   async findByEntity(entityType: string, entityId: string): Promise<FileResponseDto[]> {
@@ -222,6 +285,8 @@ export class FilesService {
       url,
       uploadedby_id: r.uploadedById ? String(r.uploadedById) : null,
       uploaded_at: r.uploadedAt ? r.uploadedAt.toISOString() : null,
+      response_required: Boolean(r.responseRequired),
+      response_deadline: r.responseDeadline ? r.responseDeadline.toISOString() : null,
     };
   }
 }

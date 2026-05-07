@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import type { ReferenceDataForPatents } from '../types/data';
 import type { PatentListFiltersSelectOptions } from '../types/PatentsListPage.types';
+import { formatPatentStatusDisplayName } from '../utils/patentStatusDisplay';
 
 const CALENDAR_YEAR_START = 2022;
 const CALENDAR_YEAR_END = 2050;
@@ -41,7 +42,7 @@ export function usePatentsListSelectOptions(
         value: department.id,
       })),
       statuses: (refs?.patentStatuses ?? []).map(status => ({
-        label: status.name,
+        label: formatPatentStatusDisplayName(status.name, null),
         value: status.id,
       })),
       users: (refs?.users ?? []).map(user => ({

@@ -11,6 +11,7 @@ import { getNameById } from '@/helpers/getNameById';
 import type { Patent } from '@/types/patent';
 import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
 import { formatPatentRegistryCardHeading } from '@/pages/patents/utils/patentRegistryCardUtils';
+import { formatPatentStatusDisplayName } from '@/pages/patents/utils/patentStatusDisplay';
 import { formatPatentGrantIssueDateRu } from '@/pages/referenceBooks/patentGrants/utils/patentGrantCardHelpers';
 import {
   patentGrantStatusTagInlineStyle,
@@ -54,6 +55,12 @@ export function PatentCard({ patent, refs, onClick }: Props) {
   const hiddenInPreview = Math.max(0, grantsPreview.length - visibleGrantsPreview.length);
   const collapsedGrantsTotal = hiddenInPreview + moreGrants;
 
+  const requestDeadlineIso = patent.requests_earliest_deadline;
+  const statusDisplayLabel = formatPatentStatusDisplayName(
+    statusName,
+    requestDeadlineIso ? new Date(requestDeadlineIso) : null,
+  );
+
   return (
     <div
       className={styles.card}
@@ -73,7 +80,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
             </Tag>
           ) : statusName ? (
             <Tag bordered={false} style={mutedTagStyle(ridSurface, { fontSize: 12 })}>
-              {statusName}
+              {statusDisplayLabel}
             </Tag>
           ) : (
             <Tag bordered={false} style={mutedTagStyle(ridSurface, { fontSize: 12 })}>

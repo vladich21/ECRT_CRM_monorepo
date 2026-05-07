@@ -20,4 +20,14 @@ export const fileApi = {
     const response = await apiClient.delete(`/${entityType}s/${entityId}/files/${fileId}`);
     return response.data;
   },
+
+  patchFileMeta: async (
+    entityType: string,
+    entityId: string,
+    fileId: string,
+    body: { responseRequired?: boolean; responseDeadline?: string | null },
+  ): Promise<MyFile> => {
+    const response = await apiClient.patch(`/${entityType}s/${entityId}/files/${fileId}`, body);
+    return response.data;
+  },
 };

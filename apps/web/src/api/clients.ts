@@ -19,9 +19,19 @@ export const fileClient = axios.create({
 
 export const loginClient = apiClient;
 
+/** Один сценарий выхода: очистить cookie на сервере, затем localStorage и полный переход на форму входа. */
+export function terminateSessionAndRedirect(): void {
+  void apiClient
+    .post('/auth/logout')
+    .catch(() => {})
+    .finally(() => {
+      localStorage.removeItem('auth-storage');
+      window.location.href = '/auth';
+    });
+}
+
 const handleUnauthorized = () => {
-  localStorage.removeItem('auth-storage');
-  window.location.href = '/auth';
+  terminateSessionAndRedirect();
 };
 
 apiClient.interceptors.request.use(config => {

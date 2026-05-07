@@ -7,7 +7,7 @@ import { useReferenceData } from '../../api/hooks/useReferences';
 import { BackButton } from '../../components/backButton/BackButton';
 import BasicTable from '../../components/basicTable/BasicTable';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
+import { useOpenAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../customhooks/useMutateByModal';
 import { useNotification } from '../../customhooks/useNotification';
 import { MyFile } from '../../types/files';
@@ -34,6 +34,7 @@ const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', 
   } = useReferenceData(['users']);
 
   const deleteFileMutation = useDeleteFile();
+  const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const addFilesMutation = useUploadFiles({ entityType: entityType, entityId: entityId! });
 
 
@@ -50,7 +51,7 @@ const FilesListPage: React.FC<FilesListPageProps> = ({ entityType = 'contract', 
 
   const onDelete = (record: MyFile) => {
     deleteFileIdRef.current = record.id;
-    openAntdDeleteConfirm({
+    openDeleteConfirm({
       mutation: deleteFileMutation,
       getVariables: () => ({
         entityType: entityType,

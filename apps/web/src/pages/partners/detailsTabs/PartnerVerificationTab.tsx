@@ -20,7 +20,7 @@ import { fileApi } from '../../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { fileQueryKeys } from '../../../api/files/fileQueryKeys';
 import { useUpdatePartner } from '../../../api/partners/partnerApiHooks';
-import { openAntdDeleteConfirm } from '../../../customhooks/confirmDelete/openAntdDeleteConfirm';
+import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useNotification } from '../../../customhooks/useNotification';
 import type { MyFile } from '../../../types/files';
 import type { Partner } from '../../../types/partner';
@@ -73,6 +73,7 @@ function VerificationSection({
   const [uploading, setUploading] = useState(false);
   const pendingDeleteId = useRef('');
   const deleteFileMutation = useDeleteFile();
+  const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const { data: files = [], isLoading } = useFilesByEntity(entityType, partnerId);
 
   const handleUpload = async (options: UploadRequestOption) => {
@@ -106,7 +107,7 @@ function VerificationSection({
   const handleDelete = (e: React.MouseEvent, fileId: string) => {
     e.stopPropagation();
     pendingDeleteId.current = fileId;
-    openAntdDeleteConfirm({
+    openDeleteConfirm({
       mutation: deleteFileMutation,
       getVariables: () => ({ entityType, entityId: partnerId, fileId: pendingDeleteId.current }),
       showNotification,

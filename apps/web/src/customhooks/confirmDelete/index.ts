@@ -5,5 +5,9 @@ export {
   runDeleteMutationWithFeedback,
   runDeleteMutationWithFeedbackAsync,
 } from './runDeleteMutationWithFeedback';
-export { openAntdDeleteConfirm } from './openAntdDeleteConfirm';
+export {
+  getAntdDeleteConfirmModalProps,
+  openAntdDeleteConfirm,
+  useOpenAntdDeleteConfirm,
+} from './openAntdDeleteConfirm';
 export type { OpenAntdDeleteConfirmConfig } from './openAntdDeleteConfirm';

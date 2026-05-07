@@ -83,6 +83,10 @@ export class AuthController {
     };
   }
 
+  /** Без JWT: только чистит cookie. Нужен для истёкшего токена и синхронизации с клиентом после 401. */
+  @Public()
+  /** Без валидного JWT: только снимает cookie. Нужно при истёкшем токене и синхронизации с клиентом после 401. */
+  @Public()
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
     return this.auth.logout(res);

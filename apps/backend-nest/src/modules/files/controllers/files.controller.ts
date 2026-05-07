@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Req,
   Res,
@@ -18,7 +20,7 @@ import * as path from 'path';
 import { ALLOWED_MIME_TYPES } from '../constants/file-formats';
 import { Public } from '../../auth/public.decorator';
 import { EntityParams } from '../decorators/entity-params.decorator';
-import type { EntityParamsDto } from '../dto';
+import type { EntityParamsDto, UpdateFileMetaDto } from '../dto';
 @Controller()
 export class FilesController {
   constructor(private readonly service: FilesService) {}
@@ -57,13 +59,35 @@ export class FilesController {
       throw new BadRequestException('entityType и entityId обязательны');
     }
     const documentSection = req.body?.documentSection as string | undefined;
+    const requestsMeta = this.parseRequestsUploadMeta(
+      req.body as Record<string, string | boolean | undefined>,
+    );
     return this.service.upload(
       files ?? [],
       entityType,
       entityId,
       req.user?.user_id,
       documentSection,
+      requestsMeta,
     );
+  }
+
+  private parseRequestsUploadMeta(
+    body: Record<string, string | boolean | undefined>,
+  ): import('../services/files.service').PatentRequestsUploadMeta | null {
+    if (body.documentSection !== 'requests') return null;
+    const reqRaw = body.responseRequired;
+    const responseRequired =
+      reqRaw === true || reqRaw === 'true' || reqRaw === '1';
+    const deadlineRaw = body.responseDeadline;
+    let responseDeadline: Date | null = null;
+    if (deadlineRaw != null && String(deadlineRaw).trim() !== '') {
+      const d = new Date(String(deadlineRaw));
+      if (!Number.isNaN(d.getTime())) {
+        responseDeadline = d;
+      }
+    }
+    return { responseRequired, responseDeadline };
   }
 
   @Get('files/:fileId')
@@ -93,6 +117,17 @@ export class FilesController {
     );
     if (!row) throw new NotFoundException(`Файл ${fileId} не найден`);
     return [row];
+  }
+
+  @Patch(':entityType/:entityId/files/:fileId')
+  async patchFileMeta(
+    @EntityParams() params: EntityParamsDto,
+    @Param('fileId') fileId: string,
+    @Body() dto: UpdateFileMetaDto,
+  ) {
+    const row = await this.service.updateMeta(params.entityType, params.entityId, fileId, dto);
+    if (!row) throw new NotFoundException(`Файл ${fileId} не найден`);
+    return row;
   }
 
   @Public()

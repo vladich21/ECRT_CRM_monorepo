@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
 import { commentQueryKeys } from '../../api/comments/commentQueryKeys';
-import { openAntdDeleteConfirm } from '../../customhooks/confirmDelete';
+import { useOpenAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { useNotification } from '../../customhooks/useNotification';
 import { useCommentHelpers } from '../../hooks/useCommentHelpers';
 import { Comment } from '../../types/comments';
@@ -55,6 +55,7 @@ const CommentComponent: React.FC<CommentProps> = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const deleteCommentMutation = useDeleteComment();
+  const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const [isHovered, setIsHovered] = useState(false);
   const { findParentComment, getUserName } = useCommentHelpers(allComments, usersBook);
   const parentComment = findParentComment(comment.parent_id);
@@ -67,7 +68,7 @@ const CommentComponent: React.FC<CommentProps> = ({
   };
 
   const openDeleteModal = () =>
-    openAntdDeleteConfirm({
+    openDeleteConfirm({
       mutation: deleteCommentMutation,
       getVariables: () => comment.id,
       showNotification,
