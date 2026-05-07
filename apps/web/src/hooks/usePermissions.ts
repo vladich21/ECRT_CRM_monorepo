@@ -35,10 +35,10 @@ interface UsePermissionsResult {
 /**
  * Хук-обёртка над useAuthStore для проверки прав.
  *
- * Источник правды — useAuthStore.sectionPermissions, который заполняется при
- * успешном логине и при `refreshSessionUser()` из /auth/me. JWT хранит этот
- * snapshot, бэкенд при mismatch версии выдаёт свежий — фронт получает его
- * прозрачно при следующем GET /auth/me.
+ * Источник правды — useAuthStore.sectionPermissions (после GET /auth/me).
+ * До заполнения стора приватная зона не рендерится (см. PrivateRoute). JWT
+ * хранит snapshot; бэкенд при mismatch pv перевыпускает cookie — актуальные
+ * права приходят при следующем вызове refreshSessionUser().
  */
 export function usePermissions(): UsePermissionsResult {
   const sectionPermissions = useAuthStore((state) => state.sectionPermissions);

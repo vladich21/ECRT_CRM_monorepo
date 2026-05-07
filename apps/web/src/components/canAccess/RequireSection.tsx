@@ -13,9 +13,7 @@ interface Props {
 }
 
 /**
- * Обёртка для маршрута: показывает страницу только при наличии прав.
- * Иначе — экран «Нет доступа» (без редиректа, чтобы пользователь видел
- * причину; если редирект нужен — обернуть с <Navigate />).
+ * Обёртка маршрута: доступ по snapshot прав из стора (после PrivateRoute уже синхронизирован с /auth/me).
  */
 export function RequireSection({ section, sections, action = 'read', children }: Props) {
   const { hasSectionPermission, hasAnySectionPermission } = usePermissions();

@@ -28,13 +28,13 @@ const STEP_PROGRESS: Record<LoginState['step'], number> = {
 
 function LoginPage() {
   const navigate = useNavigate();
-  const storeLogin = useAuthStore(s => s.login);
+  const setUserAfterCredentialLogin = useAuthStore(s => s.setUserAfterCredentialLogin);
   const [form] = Form.useForm<FormValues>();
   const [state, setState] = useState<LoginState>(INITIAL_LOGIN_STATE);
   const [resendingCode, setResendingCode] = useState(false);
   const set = (patch: Partial<LoginState>) => setState(prev => ({ ...prev, ...patch }));
   const finish = (user: User | undefined) => {
-    if (user) storeLogin(user);
+    if (user) setUserAfterCredentialLogin(user);
     authLoadingScreenStore.showThenNavigate(() => navigate('/home'), 1000, 1500);
   };
   const handleBack = () => {
