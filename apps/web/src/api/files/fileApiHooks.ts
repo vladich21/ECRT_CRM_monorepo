@@ -81,11 +81,10 @@ export const usePatchFileMeta = () => {
       fileId: string;
       body: { responseRequired?: boolean; responseDeadline?: string | null };
     }) => fileApi.patchFileMeta(vars.entityType, vars.entityId, vars.fileId, vars.body),
-    onSuccess: (updated, variables) => {
-      queryClient.setQueryData<MyFile[]>(
-        fileQueryKeys.byEntity(variables.entityType, variables.entityId),
-        prev => (prev ? prev.map(f => (f.id === updated.id ? { ...f, ...updated } : f)) : prev),
-      );
+    onSuccess: (_updated, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: fileQueryKeys.byEntity(variables.entityType, variables.entityId),
+      });
       if (variables.entityType === 'patent') {
         void queryClient.invalidateQueries({ queryKey: patentQueryKeys.all });
       }

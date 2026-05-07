@@ -7,8 +7,16 @@ import { DatabaseService } from '../../../database/database.service';
 import { files } from '../../../database/schema';
 import { getFileBaseUrl, getUploadPath } from '../files-config';
 import type { FileResponseDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
+import { syncPatentAutoStatus } from '../../patents/services/patent-auto-status';
 
-const PATENT_FILE_SECTIONS = new Set(['application', 'consent', 'notification', 'requests']);
+const PATENT_FILE_SECTIONS = new Set([
+  'application',
+  'consent',
+  'notification',
+  'requests',
+  'decision_positive',
+  'decision_negative',
+]);
 const PROJECT_DOCUMENT_SECTION_KEYS = new Set(['pm_plan', 'milestones', 'risk_matrix']);
 
 export type PatentRequestsUploadMeta = {
@@ -84,6 +92,9 @@ export class FilesService {
       });
     }
 
+    if (entityType === 'patent') {
+      await syncPatentAutoStatus(this.db, entityId);
+    }
     return result;
   }
 
@@ -166,6 +177,9 @@ export class FilesService {
         and(eq(files.id, fileId), eq(files.entityType, entityType), eq(files.tableId, entityId)),
       );
 
+    if (entityType === 'patent') {
+      await syncPatentAutoStatus(this.db, entityId);
+    }
     return this.findOne(entityType, entityId, fileId);
   }
 
@@ -228,6 +242,9 @@ export class FilesService {
           eq(files.id, fileId),
         ),
       );
+    if (entityType === 'patent') {
+      await syncPatentAutoStatus(this.db, entityId);
+    }
     return row;
   }
 

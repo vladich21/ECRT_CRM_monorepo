@@ -1,15 +1,29 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../../database/database.service';
 import { comments, files, users } from '../../../database/schema';
 
 @Injectable()
 export class CommentsService {
   private readonly logger = new Logger(CommentsService.name);
+  private readonly hrAssetBaseUrl: string;
 
   constructor(
     private readonly db: DatabaseService,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    this.hrAssetBaseUrl = (this.config.get<string>('EXTERNAL_HR_ASSET_BASE_URL') ?? '').replace(/\/$/, '');
+  }
+
+  private toAbsoluteAvatarUrl(relativeOrAbsolute: string | null | undefined): string {
+    if (!relativeOrAbsolute?.trim()) return '';
+    const trimmedPath = relativeOrAbsolute.trim();
+    if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) return trimmedPath;
+    const base = this.hrAssetBaseUrl || (this.config.get<string>('EXTERNAL_HR_ASSET_BASE_URL') ?? '').replace(/\/$/, '');
+    if (!base) return '';
+    return `${base}${trimmedPath.startsWith('/') ? '' : '/'}${trimmedPath}`;
+  }
 
   private toFileDto(file: (typeof files.$inferSelect)) {
     return {
@@ -28,6 +42,7 @@ export class CommentsService {
         createdByFio: users.lastName,
         createdByFirstName: users.firstName,
         createdByMiddleName: users.middleName,
+        createdByAvatar: users.avatarUrl,
       })
       .from(comments)
       .leftJoin(users, eq(comments.createdBy, users.id))
@@ -57,6 +72,7 @@ export class CommentsService {
         createdByFio: users.lastName,
         createdByFirstName: users.firstName,
         createdByMiddleName: users.middleName,
+        createdByAvatar: users.avatarUrl,
       })
       .from(comments)
       .leftJoin(users, eq(comments.createdBy, users.id))
@@ -131,7 +147,12 @@ export class CommentsService {
 
   private toResponse(
     comment: (typeof comments.$inferSelect),
-    userRow?: { createdByFio: string | null; createdByFirstName: string | null; createdByMiddleName: string | null },
+    userRow?: {
+      createdByFio: string | null;
+      createdByFirstName: string | null;
+      createdByMiddleName: string | null;
+      createdByAvatar?: string | null;
+    },
     filesByCommentId?: Map<string, (typeof files.$inferSelect)[]>,
     filesOverride?: Array<{ id: string; name: string; url: string; size: string }>,
   ) {
@@ -147,11 +168,12 @@ export class CommentsService {
       entity_type: comment.entityType ?? '',
       entity_id: comment.entityId ? String(comment.entityId) : '',
       message: comment.message ?? '',
-      html: comment.html ?? '',
+      html: comment.html ?? comment.message ?? '',
       mention_ids: [] as string[],
       files,
       created_by: comment.createdBy ? String(comment.createdBy) : '',
       created_by_fio: fio,
+      created_by_avatar: this.toAbsoluteAvatarUrl(userRow?.createdByAvatar),
       user_id: comment.userId ? String(comment.userId) : '',
       created_at: comment.createdAt ? comment.createdAt.toISOString() : '',
       updated_at: comment.updatedAt ? comment.updatedAt.toISOString() : '',

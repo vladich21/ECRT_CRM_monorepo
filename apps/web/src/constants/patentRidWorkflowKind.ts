@@ -76,7 +76,7 @@ export function patentRidWorkflowKind(statusName: string | undefined): PatentRid
     case 'Заявка подана / на рассмотрении в ведомстве':
     case 'Заявка подана или на рассмотрении в ведомстве':
       return 'office_review';
-    case 'Получен запрос':
+    case 'Получен запрос, срок ответа до ДД.ММ.ГГГГ':
     case 'На рассмотрении, запрос':
       return 'review_query';
     case 'Отказ в выдаче':

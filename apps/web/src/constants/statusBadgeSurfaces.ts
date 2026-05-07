@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 
 import { APP_COLOR_SUCCESS, APP_COLOR_SUCCESS_BG, APP_COLOR_SUCCESS_BORDER } from './appColors';
 import { patentRidWorkflowKind, type PatentRidWorkflowKind } from './patentRidWorkflowKind';
+import { isPatentRequestDeadlineOverdue } from './patentRequestDeadline';
 import type { PartnerRegistryStatus } from '../types/partnerRegistry';
 import type { SupplierEvaluationCategory } from '../types/supplierEvaluation';
 
@@ -122,8 +123,15 @@ const PATENT_RID_SURFACE_BY_KIND: Record<PatentRidWorkflowKind, StatusBadgeSurfa
   unknown: SURFACE_RID_DRAFT,
 };
 
-export function getPatentRidWorkflowSurface(statusName: string | undefined): StatusBadgeSurface {
-  return PATENT_RID_SURFACE_BY_KIND[patentRidWorkflowKind(statusName)];
+export function getPatentRidWorkflowSurface(
+  statusName: string | undefined,
+  requestsEarliestDeadline?: Date | null,
+): StatusBadgeSurface {
+  const kind = patentRidWorkflowKind(statusName);
+  if (kind === 'review_query' && isPatentRequestDeadlineOverdue(requestsEarliestDeadline ?? null)) {
+    return SURFACE_RID_REFUSAL;
+  }
+  return PATENT_RID_SURFACE_BY_KIND[kind];
 }
 
 export function getContractHeaderSurface(isDeleted: boolean, isActive: boolean): StatusBadgeSurface {

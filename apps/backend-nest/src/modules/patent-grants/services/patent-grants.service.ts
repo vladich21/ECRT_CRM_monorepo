@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../../../database/database.service';
 import { patentGrants, patents } from '../../../database/schema';
 import { mapPatentGrantToApiDto, type PatentGrantApiDto } from '../patent-grant.mapper';
+import { syncPatentAutoStatus } from '../../patents/services/patent-auto-status';
 import {
   PatentGrantsRegistryQueryBuilder,
   type PatentGrantsRegistryFindAllInput,
@@ -92,6 +93,7 @@ export class PatentGrantsService {
     if (!created) {
       throw new BadRequestException('Не удалось загрузить созданный охранный документ');
     }
+    await syncPatentAutoStatus(this.db, patentId);
     return created;
   }
 
@@ -133,7 +135,16 @@ export class PatentGrantsService {
   async remove(id: string): Promise<PatentGrantApiDto | null> {
     const row = await this.findOne(id);
     if (!row) return null;
+    const [grantRow] = await this.db.db
+      .select({ patentId: patentGrants.patentId })
+      .from(patentGrants)
+      .where(eq(patentGrants.id, id))
+      .limit(1);
     await this.db.db.delete(patentGrants).where(eq(patentGrants.id, id));
+    const patentId = grantRow?.patentId ? String(grantRow.patentId) : '';
+    if (patentId) {
+      await syncPatentAutoStatus(this.db, patentId);
+    }
     return row;
   }
 }

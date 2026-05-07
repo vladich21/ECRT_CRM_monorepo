@@ -5,6 +5,7 @@ import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
+import { useComments } from '@/api/comments/commentApiHooks';
 import { useDeletePatent, usePatentById, useRestorePatent } from '@/api/patents/patentApiHooks';
 import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
 import { Loader } from '@/components/loader/Loader';
@@ -45,6 +46,7 @@ export default function PatentDetailsPage() {
   const { contextHolder, showNotification } = useNotification();
   const { data: patent, isLoading, isError } = usePatentById(patentId!);
   const { data: patentFiles, isLoading: isPatentFilesLoading } = useFilesByEntity('patent', patentId!);
+  const { data: patentComments = [] } = useComments('patent', patentId);
   const { data: patentGrants = [] } = usePatentGrants(patentId!);
   const { data: referenceBooks } = useReferenceData([
     'patentStatuses',
@@ -116,7 +118,7 @@ export default function PatentDetailsPage() {
     ? { label: 'Удалён' as const, variant: 'danger' as const }
     : {
         label: formatPatentStatusDisplayName(statusName, earliestRequestDeadline) || 'Статус не указан',
-        variant: detailHeaderVariantForPatentRidStatus(statusName),
+        variant: detailHeaderVariantForPatentRidStatus(statusName, earliestRequestDeadline),
       };
   const title = formatPatentRegistryCardHeading(patent);
   const filesTabLabel =
@@ -176,7 +178,7 @@ export default function PatentDetailsPage() {
       tabs={[
         { key: 'main', label: 'Основная информация' },
         { key: 'files', label: filesTabLabel },
-        { key: 'comments', label: 'Комментарии' },
+        { key: 'comments', label: `Комментарии (${patentComments.length})` },
         { key: 'grants', label: `Охранные документы (${patentGrants.length})` },
       ]}
       activeTab={activeTab}

@@ -11,6 +11,7 @@ const PATENT_SORT_OPTIONS: { value: PatentListSortBy; label: string }[] = [
   { value: 'registration_date', label: 'По дате регистрации (ИЦ ЖТ)' },
   { value: 'registration_date_cir', label: 'По дате регистрации (ЦИР)' },
   { value: 'created_at', label: 'По дате создания карточки' },
+  { value: 'patent_status', label: 'По сроку ответа на запрос' },
 ];
 
 export type PatentsListTabCounts = Record<PatentFilterTab, number>;
@@ -68,11 +69,25 @@ export function PatentsListFiltersBar({
           <Button
             type='default'
             icon={<SortAscendingOutlined />}
-            title={sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}
+            title={
+              sortBy === 'patent_status'
+                ? sortOrder === 'asc'
+                  ? 'Сначала ближайшие сроки ответа'
+                  : 'Сначала поздние сроки ответа'
+                : sortOrder === 'asc'
+                  ? 'По возрастанию'
+                  : 'По убыванию'
+            }
             onClick={onToggleSortOrder}
             className={styles.sortDirBtn}
           >
-            {sortOrder === 'asc' ? 'A→Я' : 'Я→A'}
+            {sortBy === 'patent_status'
+              ? sortOrder === 'asc'
+                ? 'Срок ↑'
+                : 'Срок ↓'
+              : sortOrder === 'asc'
+                ? 'A→Я'
+                : 'Я→A'}
           </Button>
           <Input.Search
             className={styles.searchInTabsRow}

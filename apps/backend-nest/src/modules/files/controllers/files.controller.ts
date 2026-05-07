@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Body,
   Controller,
   Delete,
   Get,
@@ -14,16 +13,40 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { plainToInstance } from 'class-transformer';
+import { validateSync } from 'class-validator';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from '../services/files.service';
 import * as path from 'path';
 import { ALLOWED_MIME_TYPES } from '../constants/file-formats';
 import { Public } from '../../auth/public.decorator';
 import { EntityParams } from '../decorators/entity-params.decorator';
-import type { EntityParamsDto, UpdateFileMetaDto } from '../dto';
+import type { EntityParamsDto } from '../dto';
+import { UpdateFileMetaDto } from '../dto/update-file-meta.dto';
 @Controller()
 export class FilesController {
   constructor(private readonly service: FilesService) {}
+
+  /** Клиент (`apiClient`) шлёт `{ body: { ... } }`; поддерживаем и плоское тело для совместимости. */
+  private parseUpdateFileMetaFromRequest(reqBody: unknown): UpdateFileMetaDto {
+    const raw =
+      reqBody != null && typeof reqBody === 'object' && !Array.isArray(reqBody)
+        ? (reqBody as Record<string, unknown>)
+        : {};
+    const inner =
+      raw.body != null && typeof raw.body === 'object' && !Array.isArray(raw.body)
+        ? (raw.body as Record<string, unknown>)
+        : raw;
+    const dto = plainToInstance(UpdateFileMetaDto, inner);
+    const errors = validateSync(dto, { whitelist: true, forbidNonWhitelisted: false });
+    if (errors.length > 0) {
+      const messages = errors.flatMap(e => (e.constraints ? Object.values(e.constraints) : []));
+      throw new BadRequestException(
+        messages.length > 0 ? messages.join('; ') : 'Некорректное тело запроса',
+      );
+    }
+    return dto;
+  }
 
   @Post('upload')
   @UseInterceptors(
@@ -123,8 +146,9 @@ export class FilesController {
   async patchFileMeta(
     @EntityParams() params: EntityParamsDto,
     @Param('fileId') fileId: string,
-    @Body() dto: UpdateFileMetaDto,
+    @Req() req: Request,
   ) {
+    const dto = this.parseUpdateFileMetaFromRequest(req.body);
     const row = await this.service.updateMeta(params.entityType, params.entityId, fileId, dto);
     if (!row) throw new NotFoundException(`Файл ${fileId} не найден`);
     return row;

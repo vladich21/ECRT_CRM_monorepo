@@ -26,7 +26,8 @@ function parsePatentListSortBy(raw?: string): PatentListSortBy | undefined {
     raw === 'created_at' ||
     raw === 'registration_date' ||
     raw === 'registration_date_cir' ||
-    raw === 'registration_number'
+    raw === 'registration_number' ||
+    raw === 'patent_status'
   ) {
     return raw;
   }
@@ -157,6 +158,13 @@ export class PatentsController {
   @Post(':id/grants')
   async createGrant(@Param('id') id: string, @Body('body') body?: Record<string, unknown>) {
     const row = await this.service.createGrant(id, body ?? {});
+    if (!row) throw new NotFoundException(`Патент ${id} не найден`);
+    return [row];
+  }
+
+  @Post(':id/copy-from-refusal')
+  async createCopyFromRefusal(@Param('id') id: string) {
+    const row = await this.service.createCopyFromRefusal(id);
     if (!row) throw new NotFoundException(`Патент ${id} не найден`);
     return [row];
   }

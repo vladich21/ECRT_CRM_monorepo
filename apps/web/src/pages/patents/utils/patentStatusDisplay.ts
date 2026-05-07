@@ -11,9 +11,11 @@ export function earliestPatentRequestsDeadlineFromFiles(
   return new Date(Math.min(...withDl.map(f => new Date(f.response_deadline!).getTime())));
 }
 
+export { isPatentRequestDeadlineOverdue } from '@/constants/patentRequestDeadline';
+
 /**
  * Человекочитаемый статус РИД: подмена подписей при неизменном справочнике (`ref_patent_statuses.name`).
- * Для «запроса» — срок из файлов раздела «Запросы»; «Выдан патент» → «Получен охранный документ».
+ * Для статуса «запрос» — дата из файлов «Запросы»; без даты — плейсхолдер ДД.ММ.ГГГГ; «Выдан патент» → «Получен охранный документ».
  */
 export function formatPatentStatusDisplayName(
   statusNameFromRef: string | undefined,
@@ -29,5 +31,5 @@ export function formatPatentStatusDisplayName(
   if (requestsEarliestDeadline != null && !Number.isNaN(requestsEarliestDeadline.getTime())) {
     return `Получен запрос, срок ответа до ${requestsEarliestDeadline.toLocaleDateString('ru-RU')}`;
   }
-  return 'Получен запрос';
+  return 'Получен запрос, срок ответа до ДД.ММ.ГГГГ';
 }

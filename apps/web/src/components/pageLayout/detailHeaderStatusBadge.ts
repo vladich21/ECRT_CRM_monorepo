@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { PatentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
 import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
+import { isPatentRequestDeadlineOverdue } from '@/constants/patentRequestDeadline';
 
 import badgeStyles from './detailHeaderStatusBadge.module.scss';
 
@@ -117,6 +118,13 @@ export function detailHeaderVariantForPatentRecord(isDeleted: boolean): DetailHe
   return isDeleted ? 'danger' : 'success';
 }
 
-export function detailHeaderVariantForPatentRidStatus(statusName: string | undefined): DetailHeaderStatusBadgeVariant {
-  return PATENT_RID_HEADER_VARIANT_BY_KIND[patentRidWorkflowKind(statusName)];
+export function detailHeaderVariantForPatentRidStatus(
+  statusName: string | undefined,
+  requestsEarliestDeadline?: Date | null,
+): DetailHeaderStatusBadgeVariant {
+  const kind = patentRidWorkflowKind(statusName);
+  if (kind === 'review_query' && isPatentRequestDeadlineOverdue(requestsEarliestDeadline ?? null)) {
+    return 'danger';
+  }
+  return PATENT_RID_HEADER_VARIANT_BY_KIND[kind];
 }

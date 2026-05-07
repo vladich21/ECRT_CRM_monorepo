@@ -14,13 +14,13 @@ import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
-import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { Patent } from '@/types/patent';
 import {
   earliestPatentRequestsDeadlineFromFiles,
   formatPatentStatusDisplayName,
+  isPatentRequestDeadlineOverdue,
 } from '@/pages/patents/utils/patentStatusDisplay';
 import styles from './PatentMainInfoTab.module.scss';
 
@@ -73,6 +73,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const projectName = getNameById(patent.project_id, referenceBooks?.projects);
   const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
   const statusDisplay = formatPatentStatusDisplayName(statusName, requestsEarliestDeadline);
+  const statusOverdue = isPatentRequestDeadlineOverdue(requestsEarliestDeadline);
   const incomeContract =
     referenceBooks.contracts?.find(row => row.id === patent.contract_id) ??
     (incomeContractFetched?.id === patent.contract_id ? incomeContractFetched : undefined);
@@ -85,10 +86,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
 
   const showTransformationCard =
     Boolean(patent.transformed_into_patent_id) ||
-    Boolean(patent.transformed_from_patent_id) ||
-    Boolean(patent.transformation_notification_ic_zht?.trim()) ||
-    Boolean(patent.transformation_notification_cir?.trim()) ||
-    patentRidWorkflowKind(statusName) === 'transformation';
+    Boolean(patent.transformed_from_patent_id);
 
   return (
     <div className={styles.layout}>
@@ -226,7 +224,15 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Статус</span>
-              <span className={statusDisplay ? styles.infoValue : styles.infoValueMuted}>
+              <span
+                className={
+                  statusDisplay
+                    ? statusOverdue
+                      ? styles.infoValueOverdue
+                      : styles.infoValue
+                    : styles.infoValueMuted
+                }
+              >
                 {statusDisplay || '—'}
               </span>
             </div>
@@ -247,7 +253,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>
               <SwapOutlined style={{ marginRight: 6 }} />
-              Преобразование РИД
+              Связанные карточки РИД
             </h3>
             <div className={styles.infoRows}>
               {patent.transformed_into_patent_id ? (
@@ -264,7 +270,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               ) : null}
               {patent.transformed_from_patent_id ? (
                 <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Продолжение РИД</span>
+                  <span className={styles.infoLabel}>Создано из РИД</span>
                   <Link
                     to={`/patents/${patent.transformed_from_patent_id}`}
                     className={`${styles.infoValue} ${styles.contractRegistryLink}`}
@@ -272,18 +278,6 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                     {patent.transformation_source_registration_number?.trim() ||
                       patent.transformed_from_patent_id}
                   </Link>
-                </div>
-              ) : null}
-              {patent.transformation_notification_ic_zht?.trim() ? (
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Уведомление ИЦ ЖТ</span>
-                  <span className={styles.infoValue}>{patent.transformation_notification_ic_zht}</span>
-                </div>
-              ) : null}
-              {patent.transformation_notification_cir?.trim() ? (
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Уведомление ЦИР</span>
-                  <span className={styles.infoValue}>{patent.transformation_notification_cir}</span>
                 </div>
               ) : null}
             </div>

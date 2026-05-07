@@ -17,7 +17,8 @@ export type PatentListSortBy =
   | 'registration_number'
   | 'registration_date'
   | 'registration_date_cir'
-  | 'created_at';
+  | 'created_at'
+  | 'patent_status';
 
 export interface PatentListQuery {
   preview?: boolean;
@@ -84,6 +85,10 @@ export const patentApi = {
   },
   createPatent: async (patent: Omit<Patent, 'id' | 'created_at' | 'updated_at' | 'is_deleted'>): Promise<Patent> => {
     const response = await apiClient.post('/patents', patent);
+    return response.data[0];
+  },
+  createCopyFromRefusal: async (id: string): Promise<Patent> => {
+    const response = await apiClient.post(`/patents/${id}/copy-from-refusal`);
     return response.data[0];
   },
   updatePatent: async (id: string, patent: Partial<Patent>): Promise<Patent> => {
