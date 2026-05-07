@@ -1,10 +1,7 @@
 import { FileTextOutlined, GlobalOutlined } from '@ant-design/icons';
-import { Alert, Col, Divider, Form, Input, Row, Select } from 'antd';
+import { Col, Divider, Form, Input, Row, Select } from 'antd';
 
 import { SelectWithQuickAdd } from '@/components/selectWithQuickAdd/SelectWithQuickAdd';
-import { patentRidWorkflowKind } from '@/constants/patentRidWorkflowKind';
-import { getNameById } from '@/helpers/getNameById';
-import { formatPatentStatusDisplayName } from '@/pages/patents/utils/patentStatusDisplay';
 import type { Reference } from '@/types/referenceTypes';
 
 import type { PatentFormRefs } from './patentForm.types';
@@ -13,19 +10,13 @@ import styles from '../../PatentFormPage.module.scss';
 
 const { TextArea } = Input;
 
-const REFUSAL_TO_TRANSFORMATION_HINT =
-  'При необходимости оформите преобразование в другой РИД: смените статус на „Преобразование" и укажите целевой РИД и номера уведомлений ИЦ ЖТ и ЦИР.';
-
 type Props =
-  | { refs: PatentFormRefs; areasField: 'quickAdd'; onOpenAreaModal: () => void; requestsEarliestDeadline?: Date | null }
-  | { refs: PatentFormRefs; areasField: 'multi'; requestsEarliestDeadline?: Date | null };
+  | { refs: PatentFormRefs; areasField: 'quickAdd'; onOpenAreaModal: () => void }
+  | { refs: PatentFormRefs; areasField: 'multi' };
 
 export function PatentFormIdentityFields(props: Props) {
-  const { refs, areasField, requestsEarliestDeadline } = props;
+  const { refs, areasField } = props;
   const onOpenAreaModal = props.areasField === 'quickAdd' ? props.onOpenAreaModal : undefined;
-  const statusId = Form.useWatch('status_id');
-  const statusName = getNameById(statusId, refs.patentStatuses);
-  const showRefusalTransformationHint = patentRidWorkflowKind(statusName) === 'refusal';
 
   return (
     <div className={styles.sectionBox}>
@@ -76,32 +67,7 @@ export function PatentFormIdentityFields(props: Props) {
           </Form.Item>
         </Col>
 
-        <Col xs={24} md={8}>
-          <Form.Item
-            label='Статус'
-            name='status_id'
-            rules={[{ required: true, message: 'Выберите состояние' }]}
-          >
-            <Select
-              showSearch
-              optionFilterProp='children'
-              filterOption={(input, option) =>
-                String(option?.children ?? '')
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              placeholder='Выберите статус'
-            >
-              {refs.patentStatuses?.map(status => (
-                <Select.Option key={status.id} value={status.id}>
-                  {formatPatentStatusDisplayName(status.name, requestsEarliestDeadline)}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Col>
-
-        <Col xs={24} md={8}>
+        <Col xs={24} md={16}>
           <Form.Item label='Области применения' name='area_ids'>
             {areasField === 'quickAdd' && onOpenAreaModal ? (
               <SelectWithQuickAdd
@@ -135,13 +101,6 @@ export function PatentFormIdentityFields(props: Props) {
         </Col>
       </Row>
 
-      {showRefusalTransformationHint ? (
-        <Row gutter={16}>
-          <Col span={24}>
-            <Alert type='info' showIcon message={REFUSAL_TO_TRANSFORMATION_HINT} style={{ marginTop: 4 }} />
-          </Col>
-        </Row>
-      ) : null}
     </div>
   );
 }

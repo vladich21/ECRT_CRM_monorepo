@@ -431,7 +431,7 @@ export const files = pgTable(
     entityType: varchar('entitytype', { length: 255 }).notNull(),
     tableId: uuid('table_id'),
     name: varchar('name', { length: 255 }).notNull(),
-    /** Для патентов: application | consent | notification; для прочих сущностей: default */
+    /** Для патентов: application | consent | notification | requests | decision_positive | decision_negative */
     documentSection: varchar('document_section', { length: 32 }).notNull().default('default'),
     type: varchar('type', { length: 255 }).notNull(),
     size: integer('size'),

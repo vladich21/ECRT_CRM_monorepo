@@ -11,6 +11,7 @@ export interface Comment {
   files: Array<MyFile>;
   created_by: string;
   created_by_fio?: string;
+  created_by_avatar?: string;
   user_id: string;
   created_at: string;
   updated_at: string;

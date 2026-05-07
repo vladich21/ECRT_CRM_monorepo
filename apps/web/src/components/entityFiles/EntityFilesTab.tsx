@@ -15,14 +15,17 @@ import {
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  Badge,
   Button,
   Card,
   Checkbox,
   DatePicker,
   Form,
+  Input,
   Modal,
   Spin,
   Tag,
+  Tabs,
   Tooltip,
   Typography,
   Upload,
@@ -35,19 +38,38 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { fileApi } from '../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity, usePatchFileMeta } from '../../api/files/fileApiHooks';
 import { fileQueryKeys } from '../../api/files/fileQueryKeys';
+import { commentApi } from '../../api/comments/commentApi';
+import { commentQueryKeys } from '../../api/comments/commentQueryKeys';
+import { patentApi } from '../../api/patents/patentApi';
 import { patentQueryKeys } from '../../api/patents/patentQueryKeys';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useOpenAntdDeleteConfirm } from '../../customhooks/confirmDelete';
+import { getApiErrorMessage } from '../../customhooks/confirmDelete/getApiErrorMessage';
 import { useNotification } from '../../customhooks/useNotification';
 import { getNameById } from '../../helpers/getNameById';
+import { useCurrentSrmUserId } from '../../hooks/useCurrentSrmUserId';
 import type { MyFile } from '../../types/files';
 import { formatFileSizeStr } from '../../utils/formatFileSize';
 import { triggerFileDownload } from '../filePreview/FilePreviewModal';
 import styles from './EntityFilesTab.module.scss';
-import { PATENT_FILE_SECTIONS_IN_ORDER, patentSectionForFile } from './patentFileSections';
+import {
+  PATENT_FILE_APPLICATION_SECTIONS,
+  PATENT_FILE_COMMUNICATION_SECTIONS,
+  PATENT_FILE_SECTIONS_IN_ORDER,
+  patentSectionForFile,
+} from './patentFileSections';
 
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
+type PatentFilesTabKey = 'communication' | 'application';
+const DEFAULT_PATENT_FILES_TAB: PatentFilesTabKey = 'communication';
+
+function patentFilesTabBySection(sectionKey: string | undefined): PatentFilesTabKey {
+  if (!sectionKey) return DEFAULT_PATENT_FILES_TAB;
+  if (sectionKey === 'application' || sectionKey === 'consent' || sectionKey === 'notification')
+    return 'application';
+  return 'communication';
+}
 
 export type EntityFileSectionDef = {
   key: string;
@@ -87,6 +109,14 @@ function isPastDeadline(iso: string): boolean {
   return startOfLocalDay(new Date(iso)) < startOfLocalDay(new Date());
 }
 
+function shouldNotifyPatentAutoStatus(sectionKey: string | undefined): boolean {
+  return (
+    sectionKey === 'requests' ||
+    sectionKey === 'decision_positive' ||
+    sectionKey === 'decision_negative'
+  );
+}
+
 function resolveGenericSectionKey(
   document_section: string | null | undefined,
   allowedKeys: readonly string[],
@@ -104,6 +134,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
   const [uploading, setUploading] = useState(false);
   const pendingDeleteId = useRef<string>('');
   const { contextHolder, showNotification } = useNotification();
+  const currentSrmUserId = useCurrentSrmUserId();
   const { data: files = [], isLoading } = useFilesByEntity(entityType, entityId);
   const { data: referenceBooks } = useReferenceData(['users']);
   const deleteFileMutation = useDeleteFile();
@@ -120,6 +151,18 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
     responseRequired: boolean;
     responseDeadline: Dayjs | null;
   }>({ responseRequired: false, responseDeadline: null });
+  const [copyPromptOpen, setCopyPromptOpen] = useState(false);
+  const [copyPromptSubmitting, setCopyPromptSubmitting] = useState(false);
+  const [copyPromptStayCurrent, setCopyPromptStayCurrent] = useState(false);
+  const [copyPromptComment, setCopyPromptComment] = useState('');
+  const patentTabsStorageKey = `entity-files:${entityType}:${entityId}:patent-active-tab`;
+  const [activePatentTab, setActivePatentTab] = useState<PatentFilesTabKey>(() => {
+    if (typeof window === 'undefined') return DEFAULT_PATENT_FILES_TAB;
+    const savedTab = window.localStorage.getItem(patentTabsStorageKey);
+    return savedTab === 'application' || savedTab === 'communication'
+      ? savedTab
+      : DEFAULT_PATENT_FILES_TAB;
+  });
 
   const gridSections: readonly EntityFileSectionDef[] | null = documentSections?.length
     ? documentSections
@@ -133,6 +176,19 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
     const keys = gridSections.map(s => s.key);
     return resolveGenericSectionKey(document_section, keys);
   };
+
+  useEffect(() => {
+    if (!patentFileSections || typeof window === 'undefined') return;
+    window.localStorage.setItem(patentTabsStorageKey, activePatentTab);
+  }, [activePatentTab, patentFileSections, patentTabsStorageKey]);
+
+  useEffect(() => {
+    if (!patentFileSections || typeof window === 'undefined') return;
+    const savedTab = window.localStorage.getItem(patentTabsStorageKey);
+    setActivePatentTab(
+      savedTab === 'application' || savedTab === 'communication' ? savedTab : DEFAULT_PATENT_FILES_TAB,
+    );
+  }, [patentFileSections, patentTabsStorageKey]);
 
   useEffect(() => {
     if (!editModalOpen || !editingFile) return;
@@ -162,11 +218,18 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
         },
       });
       showNotification('success', 'Готово', 'Параметры запроса обновлены');
+      if (entityType === 'patent') {
+        showNotification('info', 'Статус обновлён', 'Статус РИД пересчитан автоматически');
+      }
       setEditModalOpen(false);
       setEditingFile(null);
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'errorFields' in e) return;
-      showNotification('error', 'Ошибка', 'Не удалось сохранить параметры');
+      showNotification(
+        'error',
+        'Ошибка',
+        getApiErrorMessage(e) ?? 'Не удалось сохранить параметры',
+      );
     }
   };
 
@@ -224,6 +287,19 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
         }
         onSuccess?.('ok');
         showNotification('success', 'Готово', 'Файл загружен');
+        if (entityType === 'patent' && shouldNotifyPatentAutoStatus(sectionKey)) {
+          showNotification(
+            'info',
+            'Статус обновлён',
+            'Статус РИД пересчитан автоматически по действиям в разделе «Файлы»',
+          );
+        }
+        if (entityType === 'patent' && sectionKey === 'decision_negative') {
+          openCopyPromptFromRefusal();
+        }
+        if (patentFileSections && sectionKey) {
+          setActivePatentTab(patentFilesTabBySection(sectionKey));
+        }
         if (sectionKey === 'requests') {
           setRequestMeta({ responseRequired: false, responseDeadline: null });
         }
@@ -237,6 +313,66 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
 
   const handleFileClick = (file: MyFile) => {
     triggerFileDownload(file.url, file.name);
+  };
+
+  const openCopyPromptFromRefusal = () => {
+    setCopyPromptStayCurrent(false);
+    setCopyPromptComment('');
+    setCopyPromptOpen(true);
+  };
+
+  const submitCopyFromRefusal = async () => {
+    try {
+      setCopyPromptSubmitting(true);
+      const created = await patentApi.createCopyFromRefusal(entityId);
+      const reason = copyPromptComment.trim();
+      if (reason) {
+        const createdBy = currentSrmUserId || undefined;
+        const sourcePatent = await patentApi.getPatentById(entityId);
+        const formatRidRef = (p: {
+          registration_number?: string;
+          registration_number_cir?: string;
+          name?: string;
+        }): string => {
+          const number = p.registration_number?.trim() || p.registration_number_cir?.trim() || '';
+          const base = number ? `№ ${number}` : 'без номера';
+          const name = p.name?.trim();
+          return name ? `${base} "${name}"` : base;
+        };
+        const sourceLabel = formatRidRef(sourcePatent);
+        const createdLabel = formatRidRef(created);
+        await Promise.all([
+          commentApi.addComment({
+            entity_type: 'patent',
+            entity_id: entityId,
+            message: `Создана копия РИД: из ${sourceLabel} -> ${createdLabel}. Причина: ${reason}`,
+            created_by: createdBy,
+            user_id: createdBy,
+          }),
+          commentApi.addComment({
+            entity_type: 'patent',
+            entity_id: created.id,
+            message: `Карточка ${createdLabel} создана как копия РИД ${sourceLabel}. Причина: ${reason}`,
+            created_by: createdBy,
+            user_id: createdBy,
+          }),
+        ]);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: commentQueryKeys.byEntity('patent', entityId) }),
+          queryClient.invalidateQueries({ queryKey: commentQueryKeys.byEntity('patent', created.id) }),
+        ]);
+      }
+      await queryClient.invalidateQueries({ queryKey: patentQueryKeys.all });
+      setCopyPromptOpen(false);
+      showNotification('success', 'Готово', 'Создана копия карточки РИД и проставлены связи');
+      if (!copyPromptStayCurrent) {
+        navigate(`/patents/${created.id}/edit`);
+      }
+    } catch {
+      showNotification('error', 'Ошибка', 'Не удалось создать копию карточки РИД');
+    } finally {
+      setCopyPromptSubmitting(false);
+    }
   };
 
   const hasFiles = files.length > 0;
@@ -264,21 +400,30 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
             <span className={styles.fileName}>{file.name}</span>
           </div>
 
-          {isRequests && (file.response_required || file.response_deadline) ? (
+          {isRequests ? (
             <div className={styles.requestsFileTags} onClick={e => e.stopPropagation()}>
-              {file.response_required ? (
-                <Tag bordered={false} className={`${styles.requestTag} ${styles.requestTagWarning}`}>
-                  Требуется ответ
-                </Tag>
-              ) : null}
-              {file.response_deadline ? (
-                <Tag
-                  bordered={false}
-                  className={`${styles.requestTag} ${isPastDeadline(file.response_deadline) ? styles.requestTagError : styles.requestTagWarning}`}
-                >
-                  Срок ответа по запросам: {formatFileDate(file.response_deadline)}
-                </Tag>
-              ) : null}
+              {file.response_required || file.response_deadline ? (
+                <>
+                  {file.response_required ? (
+                    <Tag bordered={false} className={`${styles.requestTag} ${styles.requestTagWarning}`}>
+                      Требуется ответ
+                    </Tag>
+                  ) : null}
+                  {file.response_deadline ? (
+                    <Tag
+                      bordered={false}
+                      className={`${styles.requestTag} ${isPastDeadline(file.response_deadline) ? styles.requestTagError : styles.requestTagWarning}`}
+                    >
+                      Срок ответа по запросам: {formatFileDate(file.response_deadline)}
+                    </Tag>
+                  ) : null}
+                </>
+              ) : (
+                <Text type='secondary' className={styles.requestParamsHint}>
+                  Параметры запроса не заданы — укажите через{' '}
+                  <EditOutlined style={{ marginInline: 2 }} />
+                </Text>
+              )}
             </div>
           ) : null}
 
@@ -328,137 +473,196 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
     );
   };
 
+  const renderSectionColumn = (section: EntityFileSectionDef) => {
+    const isRequests = section.key === 'requests';
+    const isNegativeDecision = section.key === 'decision_negative';
+    const sectionFiles = files.filter(f => sectionKeyForFile(f.document_section) === section.key);
+    const sectionHasFiles = sectionFiles.length > 0;
+    const headingId = `entity-files-${entityType}-${section.key}`;
+
+    const withDeadlines = isRequests ? sectionFiles.filter(f => f.response_deadline) : [];
+    const earliestMs =
+      isRequests && withDeadlines.length > 0
+        ? Math.min(...withDeadlines.map(f => new Date(f.response_deadline!).getTime()))
+        : null;
+    const showRequestsBanner =
+      isRequests &&
+      sectionFiles.length > 0 &&
+      (earliestMs != null || sectionFiles.some(f => f.response_required));
+    const bannerDeadlineOverdue =
+      earliestMs != null && isPastDeadline(new Date(earliestMs).toISOString());
+
+    return (
+      <section
+        key={section.key}
+        className={isRequests ? styles.requestsSection : styles.sectionBlock}
+        aria-labelledby={headingId}
+      >
+        <div className={styles.sectionTitleRow}>
+          <Title level={5} id={headingId} className={styles.sectionTitle}>
+            {section.title}
+          </Title>
+          {entityType === 'patent' && isNegativeDecision ? (
+            <Button
+              size='small'
+              onClick={openCopyPromptFromRefusal}
+              disabled={!sectionHasFiles || uploading}
+            >
+              Создать копию РИД
+            </Button>
+          ) : null}
+        </div>
+        <Text type='secondary' className={styles.sectionHint}>
+          {section.hint}
+        </Text>
+
+        {showRequestsBanner ? (
+          <div
+            className={`${styles.requestStatusBanner} ${bannerDeadlineOverdue ? styles.requestStatusBannerOverdue : ''}`}
+          >
+            <SendOutlined className={styles.requestStatusIcon} />
+            <Text className={styles.requestStatusText}>
+              {earliestMs != null ? (
+                <>
+                  Срок ответа по запросам:{' '}
+                  <strong>{new Date(earliestMs).toLocaleDateString('ru-RU')}</strong>
+                </>
+              ) : (
+                <>По запросам отмечено «требуется ответ» — при необходимости укажите срок</>
+              )}
+            </Text>
+          </div>
+        ) : null}
+
+        {isRequests ? (
+          <div className={styles.requestUploadBar}>
+            <Checkbox
+              checked={requestMeta.responseRequired}
+              onChange={e => setRequestMeta(m => ({ ...m, responseRequired: e.target.checked }))}
+            >
+              Требуется ответ
+            </Checkbox>
+            <div className={styles.requestDeadlineField}>
+              <span className={styles.requestDeadlineLabel}>Срок ответа</span>
+              <DatePicker
+                value={requestMeta.responseDeadline}
+                onChange={v => setRequestMeta(m => ({ ...m, responseDeadline: v ?? null }))}
+                format='DD.MM.YYYY'
+                placeholder='Не указано'
+                allowClear
+                className={styles.requestDeadlinePicker}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {!sectionHasFiles ? (
+          <Dragger
+            {...draggerBaseProps}
+            customRequest={handleUpload(section.key)}
+            className={styles.draggerEmpty}
+            disabled={uploading}
+          >
+            <div className={styles.emptyWrap}>
+              <InboxOutlined className={styles.draggerIcon} />
+              <Title level={5} style={{ margin: '8px 0 2px' }}>
+                Перетащите файлы в «{section.title}»
+              </Title>
+              <Text type='secondary'>или нажмите для выбора файлов с устройства</Text>
+            </div>
+          </Dragger>
+        ) : (
+          <Dragger
+            {...draggerBaseProps}
+            customRequest={handleUpload(section.key)}
+            className={styles.draggerCompact}
+            disabled={uploading}
+          >
+            <CloudUploadOutlined className={styles.draggerIconSmall} />
+            <Text type='secondary' style={{ fontSize: 14 }}>
+              Добавить в «{section.title}»: перетащите или{' '}
+              <Text style={{ color: '#002f55', fontWeight: 500 }}>выберите с устройства</Text>
+            </Text>
+          </Dragger>
+        )}
+        {sectionHasFiles && (
+          <>
+            <div className={styles.sectionHeader}>
+              <Text type='secondary' style={{ fontSize: 14 }}>
+                {sectionFiles.length}{' '}
+                {sectionFiles.length === 1 ? 'файл' : sectionFiles.length < 5 ? 'файла' : 'файлов'}
+              </Text>
+            </div>
+            <div className={styles.sectionFileGrid}>
+              {sectionFiles.map(f => renderFileCard(f, section.key))}
+            </div>
+          </>
+        )}
+      </section>
+    );
+  };
+
+  const getSectionFileCount = (sectionKey: string): number =>
+    files.filter(f => sectionKeyForFile(f.document_section) === sectionKey).length;
+
   if (gridSections) {
+    const communicationTabCount = patentFileSections
+      ? PATENT_FILE_COMMUNICATION_SECTIONS.reduce((sum, section) => sum + getSectionFileCount(section.key), 0)
+      : 0;
+    const applicationTabCount = patentFileSections
+      ? PATENT_FILE_APPLICATION_SECTIONS.reduce((sum, section) => sum + getSectionFileCount(section.key), 0)
+      : 0;
     return (
       <div className={styles.pageWrap}>
         {contextHolder}
         <Spin spinning={isLoading || uploading}>
           <>
-            <div
-              className={`${styles.sectionsStack} ${patentFileSections ? styles.sectionsStackPatent4 : ''}`}
-              style={
-                !patentFileSections && gridSections.length !== 3
-                  ? { gridTemplateColumns: `repeat(${gridSections.length}, minmax(0, 1fr))` }
-                  : undefined
-              }
-            >
-              {gridSections.map(section => {
-                const isRequests = section.key === 'requests';
-                const sectionFiles = files.filter(f => sectionKeyForFile(f.document_section) === section.key);
-                const sectionHasFiles = sectionFiles.length > 0;
-                const headingId = `entity-files-${entityType}-${section.key}`;
-
-                const withDeadlines = isRequests ? sectionFiles.filter(f => f.response_deadline) : [];
-                const earliestMs =
-                  isRequests && withDeadlines.length > 0
-                    ? Math.min(...withDeadlines.map(f => new Date(f.response_deadline!).getTime()))
-                    : null;
-                const showRequestsBanner =
-                  isRequests &&
-                  sectionFiles.length > 0 &&
-                  (earliestMs != null || sectionFiles.some(f => f.response_required));
-                const bannerDeadlineOverdue =
-                  earliestMs != null && isPastDeadline(new Date(earliestMs).toISOString());
-
-                return (
-                  <section
-                    key={section.key}
-                    className={isRequests ? styles.requestsSection : styles.sectionBlock}
-                    aria-labelledby={headingId}
-                  >
-                    <Title level={5} id={headingId} className={styles.sectionTitle}>
-                      {section.title}
-                    </Title>
-                    <Text type='secondary' className={styles.sectionHint}>
-                      {section.hint}
-                    </Text>
-
-                    {showRequestsBanner ? (
-                      <div
-                        className={`${styles.requestStatusBanner} ${bannerDeadlineOverdue ? styles.requestStatusBannerOverdue : ''}`}
-                      >
-                        <SendOutlined className={styles.requestStatusIcon} />
-                        <Text className={styles.requestStatusText}>
-                          {earliestMs != null ? (
-                            <>
-                              Срок ответа по запросам:{' '}
-                              <strong>{new Date(earliestMs).toLocaleDateString('ru-RU')}</strong>
-                            </>
-                          ) : (
-                            <>По запросам отмечено «требуется ответ» — при необходимости укажите срок</>
-                          )}
-                        </Text>
+            {patentFileSections ? (
+              <Tabs
+                className={styles.patentTabs}
+                activeKey={activePatentTab}
+                onChange={k => setActivePatentTab(k as PatentFilesTabKey)}
+                items={[
+                  {
+                    key: 'communication',
+                    label: (
+                      <span className={styles.patentTabLabel}>
+                        Запросы и решение <Badge count={communicationTabCount} />
+                      </span>
+                    ),
+                    children: (
+                      <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentCommunication}`}>
+                        {PATENT_FILE_COMMUNICATION_SECTIONS.map(renderSectionColumn)}
                       </div>
-                    ) : null}
-
-                    {isRequests ? (
-                      <div className={styles.requestUploadBar}>
-                        <Checkbox
-                          checked={requestMeta.responseRequired}
-                          onChange={e => setRequestMeta(m => ({ ...m, responseRequired: e.target.checked }))}
-                        >
-                          Требуется ответ
-                        </Checkbox>
-                        <div className={styles.requestDeadlineField}>
-                          <span className={styles.requestDeadlineLabel}>Срок ответа</span>
-                          <DatePicker
-                            value={requestMeta.responseDeadline}
-                            onChange={v => setRequestMeta(m => ({ ...m, responseDeadline: v ?? null }))}
-                            format='DD.MM.YYYY'
-                            placeholder='Не указано'
-                            allowClear
-                            className={styles.requestDeadlinePicker}
-                          />
-                        </div>
+                    ),
+                  },
+                  {
+                    key: 'application',
+                    label: (
+                      <span className={styles.patentTabLabel}>
+                        Документы заявки <Badge count={applicationTabCount} />
+                      </span>
+                    ),
+                    children: (
+                      <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentApplication}`}>
+                        {PATENT_FILE_APPLICATION_SECTIONS.map(renderSectionColumn)}
                       </div>
-                    ) : null}
-
-                    {!sectionHasFiles ? (
-                      <Dragger
-                        {...draggerBaseProps}
-                        customRequest={handleUpload(section.key)}
-                        className={styles.draggerEmpty}
-                        disabled={uploading}
-                      >
-                        <div className={styles.emptyWrap}>
-                          <InboxOutlined className={styles.draggerIcon} />
-                          <Title level={5} style={{ margin: '8px 0 2px' }}>
-                            Перетащите файлы в «{section.title}»
-                          </Title>
-                          <Text type='secondary'>или нажмите для выбора файлов с устройства</Text>
-                        </div>
-                      </Dragger>
-                    ) : (
-                      <Dragger
-                        {...draggerBaseProps}
-                        customRequest={handleUpload(section.key)}
-                        className={styles.draggerCompact}
-                        disabled={uploading}
-                      >
-                        <CloudUploadOutlined className={styles.draggerIconSmall} />
-                        <Text type='secondary' style={{ fontSize: 14 }}>
-                          Добавить в «{section.title}»: перетащите или{' '}
-                          <Text style={{ color: '#002f55', fontWeight: 500 }}>выберите с устройства</Text>
-                        </Text>
-                      </Dragger>
-                    )}
-                    {sectionHasFiles && (
-                      <>
-                        <div className={styles.sectionHeader}>
-                          <Text type='secondary' style={{ fontSize: 14 }}>
-                            {sectionFiles.length}{' '}
-                            {sectionFiles.length === 1 ? 'файл' : sectionFiles.length < 5 ? 'файла' : 'файлов'}
-                          </Text>
-                        </div>
-                        <div className={styles.sectionFileGrid}>
-                          {sectionFiles.map(f => renderFileCard(f, section.key))}
-                        </div>
-                      </>
-                    )}
-                  </section>
-                );
-              })}
-            </div>
+                    ),
+                  },
+                ]}
+              />
+            ) : (
+              <div
+                className={styles.sectionsStack}
+                style={
+                  gridSections.length !== 3
+                    ? { gridTemplateColumns: `repeat(${gridSections.length}, minmax(0, 1fr))` }
+                    : undefined
+                }
+              >
+                {gridSections.map(renderSectionColumn)}
+              </div>
+            )}
           </>
         </Spin>
 
@@ -480,6 +684,40 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
             </Form.Item>
             <Form.Item name='responseDeadline' label='Срок ответа'>
               <DatePicker format='DD.MM.YYYY' style={{ width: '100%' }} allowClear />
+            </Form.Item>
+          </Form>
+        </Modal>
+        <Modal
+          title='Создать копию карточки РИД?'
+          open={copyPromptOpen}
+          onCancel={() => {
+            if (!copyPromptSubmitting) setCopyPromptOpen(false);
+          }}
+          onOk={submitCopyFromRefusal}
+          okText='Создать копию'
+          cancelText='Позже'
+          confirmLoading={copyPromptSubmitting}
+          destroyOnHidden
+        >
+          <Text style={{ display: 'block', marginBottom: 10 }}>
+            Добавлено отрицательное решение. Можно создать новую карточку-копию и связать ее с текущей.
+          </Text>
+          <Checkbox
+            checked={copyPromptStayCurrent}
+            onChange={e => setCopyPromptStayCurrent(e.target.checked)}
+            style={{ marginBottom: 12 }}
+          >
+            Остаться в текущей карточке после создания
+          </Checkbox>
+          <Form layout='vertical'>
+            <Form.Item label='Комментарий к связи (почему создана копия)'>
+              <Input.TextArea
+                value={copyPromptComment}
+                onChange={e => setCopyPromptComment(e.target.value)}
+                placeholder='Например: отказ по формулировкам, подаем доработанную заявку'
+                autoSize={{ minRows: 2, maxRows: 5 }}
+                maxLength={500}
+              />
             </Form.Item>
           </Form>
         </Modal>

@@ -15,15 +15,38 @@
   }
 }
 
-/* Патент: Запросы + Заявка + Согласие + Уведомление — одна сетка, запросы слева */
-.sectionsStackPatent4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.patentTabs {
+  :global(.ant-tabs-nav) {
+    margin-bottom: 12px;
+  }
+
+  :global(.ant-tabs-tab) {
+    padding-inline: 12px;
+  }
+}
+
+.patentTabLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionsStackPatentCommunication {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   @media (max-width: 1400px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sectionsStackPatentApplication {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
 }
@@ -106,6 +129,11 @@
   gap: 6px;
 }
 
+.requestParamsHint {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .requestTag {
   margin: 0 !important;
 }
@@ -153,6 +181,13 @@
   font-size: 13px;
   line-height: 1.45;
   margin-top: -2px;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .draggerEmpty {

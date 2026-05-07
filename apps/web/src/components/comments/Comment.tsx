@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   DeleteOutlined,
   DownloadOutlined,
@@ -57,6 +57,18 @@ const CommentComponent: React.FC<CommentProps> = ({
   const deleteCommentMutation = useDeleteComment();
   const openDeleteConfirm = useOpenAntdDeleteConfirm();
   const [isHovered, setIsHovered] = useState(false);
+  const avatarCandidates = useMemo(() => {
+    if (!userAvatar?.trim()) return [] as string[];
+    const base = userAvatar.trim();
+    const variants = new Set<string>([base]);
+    if (base.includes('/api/avatars/')) variants.add(base.replace('/api/avatars/', '/avatars/'));
+    if (base.includes('/avatars/')) variants.add(base.replace('/avatars/', '/api/avatars/'));
+    return [...variants];
+  }, [userAvatar]);
+  const [avatarIdx, setAvatarIdx] = useState(0);
+  useEffect(() => {
+    setAvatarIdx(0);
+  }, [userAvatar]);
   const { findParentComment, getUserName } = useCommentHelpers(allComments, usersBook);
   const parentComment = findParentComment(comment.parent_id);
   const parentAuthorName = parentComment ? getUserName(parentComment) : null;
@@ -135,7 +147,19 @@ const CommentComponent: React.FC<CommentProps> = ({
     >
       <div className={`${styles.content} ${level > 1 ? styles.withBorder : ''}`}>
         <div className={styles.header}>
-          <Avatar src={userAvatar} icon={<UserOutlined />} size={36} className={styles.avatar} />
+          <Avatar
+            src={avatarCandidates[avatarIdx]}
+            icon={<UserOutlined />}
+            size={36}
+            className={styles.avatar}
+            onError={() => {
+              if (avatarIdx < avatarCandidates.length - 1) {
+                setAvatarIdx(prev => prev + 1);
+                return false;
+              }
+              return true;
+            }}
+          />
 
           <div className={styles.body}>
             <div className={styles.meta}>

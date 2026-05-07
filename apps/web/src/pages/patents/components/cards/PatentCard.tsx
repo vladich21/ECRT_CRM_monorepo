@@ -43,7 +43,13 @@ export function PatentCard({ patent, refs, onClick }: Props) {
   const statusName = getNameById(patent.status_id, refs?.patentStatuses) || '';
   const responsibleName = getNameById(patent.responsible_for_patenting_id, refs?.users ?? []) || '—';
   const deletedSurface = getPatentRecordSurface(true);
-  const ridSurface = getPatentRidWorkflowSurface(statusName);
+  const requestDeadlineDate = patent.requests_earliest_deadline
+    ? new Date(patent.requests_earliest_deadline)
+    : null;
+  const ridSurface = getPatentRidWorkflowSurface(
+    statusName,
+    requestDeadlineDate && !Number.isNaN(requestDeadlineDate.getTime()) ? requestDeadlineDate : null,
+  );
   const projectEntity = getEntityById(patent.project_id, refs?.projects ?? []);
   const projectLabel = formatProjectChipLabel(projectEntity);
   const heading = formatPatentRegistryCardHeading(patent);

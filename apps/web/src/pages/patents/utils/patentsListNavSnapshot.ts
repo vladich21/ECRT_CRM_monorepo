@@ -22,7 +22,8 @@ function isPatentListSortBy(candidate: unknown): candidate is PatentListSortBy {
     candidate === 'registration_number' ||
     candidate === 'registration_date' ||
     candidate === 'registration_date_cir' ||
-    candidate === 'created_at'
+    candidate === 'created_at' ||
+    candidate === 'patent_status'
   );
 }
 

@@ -17,6 +17,7 @@ const DEFAULT_SORT_ORDER_BY_FIELD: Record<PatentListSortBy, 'asc' | 'desc'> = {
   registration_date: 'asc',
   registration_date_cir: 'asc',
   created_at: 'desc',
+  patent_status: 'asc',
 };
 
 export function usePatentListFilters() {

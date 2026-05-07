@@ -7,7 +7,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useContractById } from '@/api/contracts/contractApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
-import { patentsListServerFiltersEmpty, usePatentById, usePatentsList, useUpdatePatent } from '@/api/patents/patentApiHooks';
+import { usePatentById, useUpdatePatent } from '@/api/patents/patentApiHooks';
+import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '@/components/pageLayout/DetailPageHeader';
@@ -27,7 +28,6 @@ import {
   PatentFormIdentityFields,
   PatentFormOrgFields,
   PatentFormRegistrationFields,
-  PatentFormTransformationFields,
   type PatentFormRefs,
 } from './components/form';
 import { buildPatentFormPayload } from './patentFormPayload';
@@ -60,27 +60,11 @@ export default function PatentEditPage() {
   );
   const { mutate, isPending: isUpdateLoading } = useUpdatePatent();
   const { data: patentFiles } = useFilesByEntity('patent', patentId ?? '');
+  const { data: patentGrants = [] } = usePatentGrants(patentId ?? '');
   const requestsEarliestDeadline = useMemo(
     () => earliestPatentRequestsDeadlineFromFiles(patentFiles),
     [patentFiles],
   );
-  const { data: patentsPickList, isLoading: isPatentsPickListLoading } = usePatentsList(
-    'all',
-    1,
-    500,
-    patentsListServerFiltersEmpty,
-  );
-
-  const transformationTargetOptions = useMemo(() => {
-    const rows = patentsPickList && 'data' in patentsPickList ? patentsPickList.data : [];
-    return rows
-      .filter(p => p.id !== patentId)
-      .map(p => ({
-        value: p.id,
-        label: `${p.registration_number?.trim() || '—'} — ${(p.name || '').slice(0, 80)}`,
-      }));
-  }, [patentsPickList, patentId]);
-
   /**
    * После cold start `useEffect` отрабатывает после paint — Ant Design Select иногда показывает value (uuid),
    * пока опции не «привязались». useLayoutEffect + key на Form синхронизируют значения до отрисовки.
@@ -91,15 +75,13 @@ export default function PatentEditPage() {
   }, [patent, referenceBooks, form]);
 
   const handleUpdate = (values: Record<string, unknown>) => {
-    const payload = buildPatentFormPayload(values, {
-      patentStatuses: referenceBooks?.patentStatuses,
-    }) as Partial<Patent>;
+    const payload = buildPatentFormPayload(values) as Partial<Patent>;
     mutate(
       { id: patentId!, data: payload },
       {
         onSuccess: () => {
           showNotification('success', 'Успех', 'Патент успешно изменён');
-          setTimeout(() => navigate(-1), 1000);
+          setTimeout(() => navigate(`/patents/${patentId}`), 1000);
         },
         onError: (e: unknown) => {
           const msg = axios.isAxiosError(e)
@@ -123,8 +105,9 @@ export default function PatentEditPage() {
 
   const watchName = Form.useWatch('name', form);
   const watchIntellectPropId = Form.useWatch('intellectprop_id', form);
-  const watchStatusId = Form.useWatch('status_id', form);
   const watchRegNumber = Form.useWatch('registration_number', form);
+  const watchRegNumberCir = Form.useWatch('registration_number_cir', form);
+  const watchApplicationNumber = Form.useWatch('application_number', form);
   const watchRegistrationDate = Form.useWatch('registration_date', form);
   const watchProjectId = Form.useWatch('project_id', form);
   const watchResponsibleId = Form.useWatch('responsible_for_patenting_id', form);
@@ -153,11 +136,30 @@ export default function PatentEditPage() {
   const headerName = (watchName ?? patent.name) || '';
   const headerRegNumber = (watchRegNumber ?? patent.registration_number) || '';
   const intellectpropId = formReferenceId(watchIntellectPropId, patent.intellectprop_id);
-  const patentStatusId = formReferenceId(watchStatusId, patent.status_id);
   const responsibleId = formReferenceId(watchResponsibleId, patent.responsible_for_patenting_id);
   const projectId = formReferenceId(watchProjectId, patent.project_id);
   const ipTypeName = getNameById(intellectpropId, referenceBooks.patentIntellectProps) || '';
-  const statusName = getNameById(patentStatusId, referenceBooks.patentStatuses) || '';
+  const hasDecisionNegative = (patentFiles ?? []).some(f => f.document_section === 'decision_negative');
+  const hasDecisionPositive = (patentFiles ?? []).some(f => f.document_section === 'decision_positive');
+  const hasRequestsRequired = (patentFiles ?? []).some(
+    f => f.document_section === 'requests' && Boolean(f.response_required),
+  );
+  const hasGrant = patentGrants.length > 0;
+  const currentRegNumberCir = String(watchRegNumberCir ?? patent.registration_number_cir ?? '').trim();
+  const currentApplicationNumber = String(watchApplicationNumber ?? patent.application_number ?? '').trim();
+  const autoStatusName = hasGrant
+    ? 'Получен охранный документ'
+    : hasDecisionNegative
+      ? 'Отказ в выдаче'
+      : hasDecisionPositive
+        ? 'Решение о выдаче'
+        : hasRequestsRequired
+          ? 'Получен запрос, срок ответа до ДД.ММ.ГГГГ'
+          : currentApplicationNumber
+            ? 'Заявка подана / на рассмотрении в ведомстве'
+            : currentRegNumberCir
+              ? 'Сдано в ЦИР'
+              : 'Подготовка документации';
   const responsibleName = getNameById(responsibleId, referenceBooks.users ?? []) || '—';
   const projectEntity = getEntityById(projectId, referenceBooks.projects ?? []);
   const projectChipLabel = formatProjectChipLabel(projectEntity);
@@ -169,8 +171,8 @@ export default function PatentEditPage() {
   const headerStatusBadge = patent.is_deleted
     ? { label: 'Удалён' as const, variant: 'danger' as const }
     : {
-        label: formatPatentStatusDisplayName(statusName, requestsEarliestDeadline) || 'Статус не выбран',
-        variant: detailHeaderVariantForPatentRidStatus(statusName),
+        label: formatPatentStatusDisplayName(autoStatusName, requestsEarliestDeadline) || 'Статус не выбран',
+        variant: detailHeaderVariantForPatentRidStatus(autoStatusName, requestsEarliestDeadline),
       };
 
   return (
@@ -240,12 +242,6 @@ export default function PatentEditPage() {
             <PatentFormIdentityFields
               refs={refs}
               areasField='multi'
-              requestsEarliestDeadline={requestsEarliestDeadline}
-            />
-            <PatentFormTransformationFields
-              refs={refs}
-              targetPatentOptions={transformationTargetOptions}
-              targetPatentOptionsLoading={isPatentsPickListLoading}
             />
             <div className={styles.twoColSections}>
               <PatentFormRegistrationFields />

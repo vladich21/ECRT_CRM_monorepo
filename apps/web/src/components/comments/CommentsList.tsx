@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/AuthStore';
 import { useModalStore } from '../../store/ModalStore';
 import { Comment } from '../../types/comments';
 import { buildCommentTree } from '../../utils/buildCommentTree';
+import { getCommentAuthorAvatar } from '../../utils/getCommentAuthorAvatar';
 import { getCommentAuthorName } from '../../utils/getCommentAuthorName';
 import { Loader } from '../loader/Loader';
 import { NotFound } from '../notFound/NotFound';
@@ -250,6 +251,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
                 level={el.level}
                 currentUserId={currentSrmUserId}
                 userName={getCommentAuthorName(el, user, referenceBooks?.users || [])}
+                userAvatar={getCommentAuthorAvatar(el, user, referenceBooks?.users || [])}
                 onReply={handleStartReply}
                 onEdit={handleStartEdit}
                 allComments={comments || []}
