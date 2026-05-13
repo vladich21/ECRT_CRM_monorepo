@@ -1,5 +1,5 @@
 import { IdcardOutlined } from '@ant-design/icons';
-import { Col, Divider, Form, Row, Switch, Tooltip } from 'antd';
+import { Col, Divider, Form, Row, Switch } from 'antd';
 
 import type { PartnerFormRefs } from './partnerForm.types';
 import styles from '../../PartnerFormPage.module.scss';
@@ -52,9 +52,7 @@ export function PartnerFormFlagsFields({ formMode, refs }: Props) {
               valuePropName='checked'
               tooltip={ACTIVE_SWITCH_HELP}
             >
-              <Tooltip title={ACTIVE_SWITCH_HELP}>
-                <Switch checkedChildren='Да' unCheckedChildren='Нет' />
-              </Tooltip>
+              <Switch checkedChildren='Да' unCheckedChildren='Нет' />
             </Form.Item>
           </Col>
         )}
@@ -66,9 +64,7 @@ export function PartnerFormFlagsFields({ formMode, refs }: Props) {
               valuePropName='checked'
               tooltip={ARCHIVE_SWITCH_HELP}
             >
-              <Tooltip title={ARCHIVE_SWITCH_HELP}>
-                <Switch checkedChildren='Да' unCheckedChildren='Нет' />
-              </Tooltip>
+              <Switch checkedChildren='Да' unCheckedChildren='Нет' />
             </Form.Item>
           </Col>
         )}
