@@ -1,11 +1,15 @@
 import { Partner } from '../../types/partner';
 
-export const partnerUpdateFormMapper = (partnerData: Partner, opts?: { is_archived?: boolean }) => {
+export const partnerUpdateFormMapper = (
+  partnerData: Partner,
+  opts?: { is_archived?: boolean; is_active?: boolean },
+) => {
   const values = {
     name: partnerData.name || '',
     short_name: partnerData.short_name || '',
     comment: partnerData.comment || '',
     manual_archive: opts?.is_archived ?? false,
+    manual_active: opts?.is_active ?? false,
     category_id: partnerData.category_id || null,
     partner_economic_category_id: partnerData.partner_economic_category_id || null,
     type_ids: partnerData.type_ids || [],

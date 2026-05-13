@@ -264,6 +264,7 @@ export class SupplierEvaluationsService {
         id: supplierEvaluations.id,
         status: supplierEvaluations.status,
         scope: supplierEvaluations.scope,
+        partnerId: supplierEvaluations.partnerId,
       })
       .from(supplierEvaluations)
       .where(eq(supplierEvaluations.id, evaluationId))
@@ -287,6 +288,8 @@ export class SupplierEvaluationsService {
         updatedAt: new Date(),
       })
       .where(eq(supplierEvaluations.id, evaluationId));
+
+    await this.partnersService.refreshPartnerDerivedStatus(String(existing.partnerId));
 
     const archived = await this.findOne(evaluationId);
     if (!archived) {

@@ -775,6 +775,7 @@ export class PartnersService {
       ? await this.getPartnerStatusName(current.status_id ? String(current.status_id) : null)
       : null;
     const manualArchive = this.parseManualArchiveFlag(data);
+    const manualActive = this.parseManualActiveFlag(data);
     const merged = { ...current, ...data };
     this.validateInnKppRequired(merged);
     await this.validateReferences(data);
@@ -832,8 +833,14 @@ export class PartnersService {
       await this.supplierEvaluationsService.archiveAllActiveByPartner(id);
     } else if (manualArchive === false) {
       await this.exitArchiveStatus(id, userId);
+      if (manualActive !== undefined) {
+        await this.applyManualActiveForResource(id, manualActive, userId);
+      }
     } else if (this.isOperationalStatusDeriveEnabled()) {
       if ((currentStatusName ?? '').trim() !== 'Архив') {
+        if (manualActive !== undefined) {
+          await this.applyManualActiveForResource(id, manualActive, userId);
+        }
         await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
       }
     }
@@ -1014,6 +1021,32 @@ export class PartnersService {
     return undefined;
   }
 
+  private parseManualActiveFlag(data: Record<string, unknown>): boolean | undefined {
+    if (!('manual_active' in data) || data.manual_active === undefined) return undefined;
+    const raw = data.manual_active;
+    if (raw === true || raw === 'true') return true;
+    if (raw === false || raw === 'false') return false;
+    return undefined;
+  }
+
+  private async applyManualActiveForResource(
+    partnerId: string,
+    active: boolean,
+    userId?: string,
+  ): Promise<void> {
+    const categoryName = await this.loadPartnerCategoryName(partnerId);
+    if (inferPartnerCategoryKind(categoryName) !== 'resource') return;
+    const ids = await this.resolvePartnerOperationalStatusIds();
+    await this.db.db
+      .update(partners)
+      .set({
+        statusId: active ? ids.activeId : ids.potentialId,
+        updatedAt: new Date(),
+        ...(userId ? { updatedBy: userId } : {}),
+      })
+      .where(eq(partners.id, partnerId));
+  }
+
   private async getPartnerStatusName(statusId: string | null | undefined): Promise<string | null> {
     if (!statusId) return null;
     const nameRows = await this.db.db
@@ -1113,7 +1146,13 @@ export class PartnersService {
         weightedScore: supplierEvaluations.weightedScore,
       })
       .from(supplierEvaluations)
-      .where(and(eq(supplierEvaluations.partnerId, partnerId), eq(supplierEvaluations.status, 'active'))!);
+      .where(
+        and(
+          eq(supplierEvaluations.partnerId, partnerId),
+          eq(supplierEvaluations.status, 'active'),
+          eq(supplierEvaluations.scope, 'project'),
+        )!,
+      );
 
     type EvalPick = (typeof evalRows)[number];
     const byProject = new Map<string, EvalPick>();
@@ -1132,26 +1171,55 @@ export class PartnersService {
     return Math.round((sum / perProject.length) * 100) / 100;
   }
 
+  private async partnerHasActiveProjectEvaluation(partnerId: string): Promise<boolean> {
+    const rows = await this.db.db
+      .select({ id: supplierEvaluations.id })
+      .from(supplierEvaluations)
+      .where(
+        and(
+          eq(supplierEvaluations.partnerId, partnerId),
+          eq(supplierEvaluations.status, 'active'),
+          eq(supplierEvaluations.scope, 'project'),
+        )!,
+      )
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  private async loadPartnerCategoryName(partnerId: string): Promise<string | null> {
+    const rows = await this.db.db
+      .select({ categoryName: refPartnerCategories.name })
+      .from(partners)
+      .leftJoin(refPartnerCategories, eq(refPartnerCategories.id, partners.categoryId))
+      .where(eq(partners.id, partnerId))
+      .limit(1);
+    return rows[0]?.categoryName ?? null;
+  }
+
   private async computeAutoStatusIdForPartnerRow(
     partnerId: string,
     ids: { activeId: string; potentialId: string; blockedId: string },
     currentStatusId: string | null,
   ): Promise<string> {
-    const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
-    if (avg !== null && avg < 2) {
-      return ids.blockedId;
+    const categoryName = await this.loadPartnerCategoryName(partnerId);
+    const categoryKind = inferPartnerCategoryKind(categoryName);
+
+    if (categoryKind === 'engineering') {
+      const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
+      if (avg !== null && avg < 2) {
+        return ids.blockedId;
+      }
+      const hasActiveProjectEval = await this.partnerHasActiveProjectEvaluation(partnerId);
+      return hasActiveProjectEval ? ids.activeId : ids.potentialId;
     }
-    // TODO: вернуть автопереключение Активный/Потенциальный по договорам после миграции договоров.
-    // На текущий момент работа с договорами не ведётся, и автопереключение приводило к постоянным
-    // сбоям статусов. Оставляем текущий статус Активный/Потенциальный без изменений.
-    // Разблокировка (был Заблокирован, оценка теперь >= 2) и разархивация — по умолчанию Потенциальный.
-    //
-    // const hasEffective = await this.partnerHasAtLeastOneEffectiveContract(partnerId);
-    // if (hasEffective) {
-    //   return ids.activeId;
-    // }
-    // return ids.potentialId;
-    if (currentStatusId === ids.activeId || currentStatusId === ids.potentialId) {
+
+    // Ресурсные и прочие: автодеривация не работает — оставляем текущий Активный/Потенциальный/Заблокирован.
+    // Если выходим из Архива (current не в наборе), по умолчанию Потенциальный (применяется в exitArchiveStatus).
+    if (
+      currentStatusId === ids.activeId ||
+      currentStatusId === ids.potentialId ||
+      currentStatusId === ids.blockedId
+    ) {
       return currentStatusId;
     }
     return ids.potentialId;
