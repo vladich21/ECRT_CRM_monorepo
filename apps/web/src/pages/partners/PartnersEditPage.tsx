@@ -52,8 +52,12 @@ export default function PartnerEditPage() {
       const archiveEntry = referenceBooks.partnerStatuses.find(
         status => (status.name ?? '').trim() === 'Архив',
       );
+      const activeEntry = referenceBooks.partnerStatuses.find(
+        status => (status.name ?? '').trim() === 'Активный',
+      );
       const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
-      form.setFieldsValue(partnerUpdateFormMapper(partner, { is_archived: isArchived }));
+      const isActive = Boolean(activeEntry && String(partner.status_id) === String(activeEntry.id));
+      form.setFieldsValue(partnerUpdateFormMapper(partner, { is_archived: isArchived, is_active: isActive }));
       isFormInitializedRef.current = true;
     }
   }, [partner, referenceBooks, form]);
@@ -75,9 +79,13 @@ export default function PartnerEditPage() {
     const archiveEntry = referenceBooks.partnerStatuses?.find(
       status => (status.name ?? '').trim() === 'Архив',
     );
+    const activeEntry = referenceBooks.partnerStatuses?.find(
+      status => (status.name ?? '').trim() === 'Активный',
+    );
     const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
+    const isActive = Boolean(activeEntry && String(partner.status_id) === String(activeEntry.id));
     const wasUnarchivedFromArchive = isArchived && values.manual_archive === false;
-    const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived }));
+    const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived, is_active: isActive }));
     payload.type_ids = values.type_ids ?? [];
     payload.competence_ids = values.competence_ids ?? [];
     mutate(

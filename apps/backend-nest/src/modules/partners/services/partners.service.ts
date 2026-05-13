@@ -775,6 +775,7 @@ export class PartnersService {
       ? await this.getPartnerStatusName(current.status_id ? String(current.status_id) : null)
       : null;
     const manualArchive = this.parseManualArchiveFlag(data);
+    const manualActive = this.parseManualActiveFlag(data);
     const merged = { ...current, ...data };
     this.validateInnKppRequired(merged);
     await this.validateReferences(data);
@@ -832,8 +833,14 @@ export class PartnersService {
       await this.supplierEvaluationsService.archiveAllActiveByPartner(id);
     } else if (manualArchive === false) {
       await this.exitArchiveStatus(id, userId);
+      if (manualActive !== undefined) {
+        await this.applyManualActiveForResource(id, manualActive, userId);
+      }
     } else if (this.isOperationalStatusDeriveEnabled()) {
       if ((currentStatusName ?? '').trim() !== 'Архив') {
+        if (manualActive !== undefined) {
+          await this.applyManualActiveForResource(id, manualActive, userId);
+        }
         await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
       }
     }
@@ -1012,6 +1019,32 @@ export class PartnersService {
     if (manualArchiveRaw === true || manualArchiveRaw === 'true') return true;
     if (manualArchiveRaw === false || manualArchiveRaw === 'false') return false;
     return undefined;
+  }
+
+  private parseManualActiveFlag(data: Record<string, unknown>): boolean | undefined {
+    if (!('manual_active' in data) || data.manual_active === undefined) return undefined;
+    const raw = data.manual_active;
+    if (raw === true || raw === 'true') return true;
+    if (raw === false || raw === 'false') return false;
+    return undefined;
+  }
+
+  private async applyManualActiveForResource(
+    partnerId: string,
+    active: boolean,
+    userId?: string,
+  ): Promise<void> {
+    const categoryName = await this.loadPartnerCategoryName(partnerId);
+    if (inferPartnerCategoryKind(categoryName) !== 'resource') return;
+    const ids = await this.resolvePartnerOperationalStatusIds();
+    await this.db.db
+      .update(partners)
+      .set({
+        statusId: active ? ids.activeId : ids.potentialId,
+        updatedAt: new Date(),
+        ...(userId ? { updatedBy: userId } : {}),
+      })
+      .where(eq(partners.id, partnerId));
   }
 
   private async getPartnerStatusName(statusId: string | null | undefined): Promise<string | null> {
