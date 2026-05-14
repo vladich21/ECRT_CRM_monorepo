@@ -188,11 +188,7 @@ export class ContractsService {
     const code = meta.code.trim().toLowerCase();
     const name = meta.name.trim().toLowerCase();
     if (['closed', 'clozed', 'completed', 'terminated'].includes(code)) return true;
-    return (
-      name.includes('заверш') ||
-      name.includes('исполн') ||
-      name.includes('расторг')
-    );
+    return name.includes('заверш') || name.includes('расторг');
   }
 
   private async rowHasDraftState(stateId: string | null): Promise<boolean> {
