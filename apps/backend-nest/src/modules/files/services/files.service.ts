@@ -58,9 +58,13 @@ export class FilesService {
   ) {}
 
   /**
-   * Деривация статусов проверки контрагента (юрпроверка / анкета) от ФАКТИЧЕСКОГО
-   * наличия файлов соответствующего entityType. Делает статус корректным независимо
-   * от способа появления файла (UI, импорт из ecrt/Тезиса, синхронизация).
+   * Деривация статусов проверки контрагента (юрпроверка / анкета) от наличия файлов.
+   *
+   * ТОЛЬКО ПОВЫШЕНИЕ (upgrade-only): загрузка файла partner-legal /
+   * partner-questionnaire переводит флаг в true. Авто-понижения нет: флаг = true
+   * — легитимное состояние без файлов (массово выставлен импортом из ecrt/Тезиса
+   * напрямую, без записей в files), его нельзя затирать удалением файла.
+   * Снятие статуса — отдельным явным действием.
    */
   private async syncPartnerVerificationFlags(entityType: string, entityId: string): Promise<void> {
     if (!isPartnerVerificationEntityType(entityType)) return;
@@ -77,18 +81,18 @@ export class FilesService {
     const partnerRow = partnerRows[0];
     if (!partnerRow) return;
 
+    // Уже true — ничего не делаем (не понижаем).
+    if (Boolean(partnerRow[flagColumn] ?? false)) return;
+
     const [{ value: fileCount } = { value: 0 }] = await this.db.db
       .select({ value: count() })
       .from(files)
       .where(and(eq(files.entityType, entityType), eq(files.tableId, entityId)));
-    const hasFiles = Number(fileCount ?? 0) > 0;
-
-    const currentValue = Boolean(partnerRow[flagColumn] ?? false);
-    if (currentValue === hasFiles) return;
+    if (Number(fileCount ?? 0) === 0) return;
 
     await this.db.db
       .update(partners)
-      .set({ [flagColumn]: hasFiles, updatedAt: new Date() })
+      .set({ [flagColumn]: true, updatedAt: new Date() })
       .where(eq(partners.id, entityId));
 
     // Пересчитать производный операционный статус (Активный/Потенциальный) — флаг
@@ -299,7 +303,7 @@ export class FilesService {
     if (entityType === 'patent') {
       await syncPatentAutoStatus(this.db, entityId);
     }
-    await this.syncPartnerVerificationFlags(entityType, entityId);
+    // Деривация статусов проверки — upgrade-only, удаление файла флаг не понижает.
     return row;
   }
 
