@@ -1,13 +1,26 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DatabaseService } from '../../../database/database.service';
-import { files } from '../../../database/schema';
+import { files, partners } from '../../../database/schema';
 import { getFileBaseUrl, getUploadPath } from '../files-config';
 import type { FileResponseDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
 import { syncPatentAutoStatus } from '../../patents/services/patent-auto-status';
+import { PartnersService } from '../../partners/services/partners.service';
+
+/** entityType файла → булева колонка статуса проверки контрагента, выводимая из наличия файлов. */
+const PARTNER_VERIFICATION_FLAG_BY_ENTITY_TYPE = {
+  'partner-legal': 'legalCheckPassed',
+  'partner-questionnaire': 'questionnaireFilled',
+} as const;
+
+type PartnerVerificationEntityType = keyof typeof PARTNER_VERIFICATION_FLAG_BY_ENTITY_TYPE;
+
+function isPartnerVerificationEntityType(value: string): value is PartnerVerificationEntityType {
+  return value in PARTNER_VERIFICATION_FLAG_BY_ENTITY_TYPE;
+}
 
 const PATENT_FILE_SECTIONS = new Set([
   'application',
@@ -41,7 +54,47 @@ export class FilesService {
   constructor(
     private readonly db: DatabaseService,
     private readonly config: ConfigService,
+    private readonly partnersService: PartnersService,
   ) {}
+
+  /**
+   * Деривация статусов проверки контрагента (юрпроверка / анкета) от ФАКТИЧЕСКОГО
+   * наличия файлов соответствующего entityType. Делает статус корректным независимо
+   * от способа появления файла (UI, импорт из ecrt/Тезиса, синхронизация).
+   */
+  private async syncPartnerVerificationFlags(entityType: string, entityId: string): Promise<void> {
+    if (!isPartnerVerificationEntityType(entityType)) return;
+    const flagColumn = PARTNER_VERIFICATION_FLAG_BY_ENTITY_TYPE[entityType];
+
+    const partnerRows = await this.db.db
+      .select({
+        legalCheckPassed: partners.legalCheckPassed,
+        questionnaireFilled: partners.questionnaireFilled,
+      })
+      .from(partners)
+      .where(eq(partners.id, entityId))
+      .limit(1);
+    const partnerRow = partnerRows[0];
+    if (!partnerRow) return;
+
+    const [{ value: fileCount } = { value: 0 }] = await this.db.db
+      .select({ value: count() })
+      .from(files)
+      .where(and(eq(files.entityType, entityType), eq(files.tableId, entityId)));
+    const hasFiles = Number(fileCount ?? 0) > 0;
+
+    const currentValue = Boolean(partnerRow[flagColumn] ?? false);
+    if (currentValue === hasFiles) return;
+
+    await this.db.db
+      .update(partners)
+      .set({ [flagColumn]: hasFiles, updatedAt: new Date() })
+      .where(eq(partners.id, entityId));
+
+    // Пересчитать производный операционный статус (Активный/Потенциальный) — флаг
+    // влияет на «утверждён» и автодеривацию статуса инжиниринговых контрагентов.
+    await this.partnersService.refreshPartnerDerivedStatus(entityId);
+  }
 
   async upload(
     uploadedFiles: Express.Multer.File[],
@@ -95,6 +148,7 @@ export class FilesService {
     if (entityType === 'patent') {
       await syncPatentAutoStatus(this.db, entityId);
     }
+    await this.syncPartnerVerificationFlags(entityType, entityId);
     return result;
   }
 
@@ -245,6 +299,7 @@ export class FilesService {
     if (entityType === 'patent') {
       await syncPatentAutoStatus(this.db, entityId);
     }
+    await this.syncPartnerVerificationFlags(entityType, entityId);
     return row;
   }
 

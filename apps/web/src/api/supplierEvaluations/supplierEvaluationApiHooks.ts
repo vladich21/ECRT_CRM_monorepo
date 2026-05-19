@@ -57,6 +57,7 @@ export function useSupplierEvaluationTabCounts(
     evaluated_year?: string | number;
     evaluated_at_from?: string;
     evaluated_at_to?: string;
+    search?: string;
   },
   enabled = true,
 ) {
@@ -81,6 +82,7 @@ export function useSupplierEvaluationsList(
     ui_status?: SupplierEvaluationUiStatusParam;
     sort_field?: SupplierEvaluationSortField;
     sort_dir?: SupplierEvaluationSortDir;
+    search?: string;
     limit?: number;
     offset?: number;
   },
