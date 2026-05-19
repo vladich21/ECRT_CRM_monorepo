@@ -1,4 +1,4 @@
-import type { SupplierEvaluationListItem, SupplierEvaluationUiStatusParam } from '../../types/supplierEvaluation';
+import type { SupplierEvaluationUiStatusParam } from '../../types/supplierEvaluation';
 import {
   EMPTY_EVALUATIONS_REGISTRY_FILTERS,
   type EvaluationsRegistryAppliedFilters,
@@ -7,30 +7,9 @@ import { EVALUATION_REGISTRY_SORT_OPTIONS, EVALUATION_UI_TABS } from './supplier
 
 export const SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS = 350;
 
-export const SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_FETCH_LIMIT = 2000;
-
 export const SUPPLIER_EVALUATIONS_REGISTRY_PARTNER_LINK_STATE = {
   returnToAfterPartner: '/supplier-evaluations',
 } as const;
-
-export function filterSupplierEvaluationRegistryRowsBySearch(
-  rows: SupplierEvaluationListItem[],
-  searchTrimmed: string,
-  partnerNameById: Record<string, string | undefined>,
-  projectNameById: Record<string, string | number | undefined>,
-): SupplierEvaluationListItem[] {
-  const searchLowercase = searchTrimmed.toLowerCase();
-  if (!searchLowercase) return rows;
-  return rows.filter(row => {
-    const refName = String(partnerNameById[row.partner_id] ?? '').trim();
-    const rowName = String(row.partner_name ?? '').trim();
-    const partnerMatches = [rowName, refName, row.partner_id]
-      .filter(Boolean)
-      .some(chunk => chunk.toLowerCase().includes(searchLowercase));
-    const projectLabel = String(projectNameById[row.project_id] ?? '').toLowerCase();
-    return partnerMatches || projectLabel.includes(searchLowercase);
-  });
-}
 
 export function shouldShowSupplierEvaluationModalNoProjectsWarning(
   projectsLoading: boolean,

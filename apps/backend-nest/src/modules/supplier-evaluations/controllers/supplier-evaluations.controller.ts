@@ -167,6 +167,7 @@ export class SupplierEvaluationsController {
     @Query('evaluated_year') evaluatedYearRaw?: string,
     @Query('evaluated_at_from') evaluatedAtFromRaw?: string,
     @Query('evaluated_at_to') evaluatedAtToRaw?: string,
+    @Query('search') searchRaw?: string,
   ) {
     const category =
       categoryRaw && isSupplierEvaluationCategory(categoryRaw) ? categoryRaw : undefined;
@@ -178,6 +179,7 @@ export class SupplierEvaluationsController {
       evaluatedYears: parseEvaluatedYears(evaluatedYearRaw),
       evaluatedAtFrom: parseEvaluatedAtDate(evaluatedAtFromRaw),
       evaluatedAtTo: parseEvaluatedAtDate(evaluatedAtToRaw),
+      search: searchRaw?.trim() || undefined,
     });
   }
 
@@ -194,6 +196,7 @@ export class SupplierEvaluationsController {
     @Query('ui_status') uiStatusRaw?: string,
     @Query('sort_field') sortFieldRaw?: string,
     @Query('sort_dir') sortDirRaw?: string,
+    @Query('search') searchRaw?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
@@ -211,6 +214,7 @@ export class SupplierEvaluationsController {
       evaluatedAtFrom: parseEvaluatedAtDate(evaluatedAtFromRaw),
       evaluatedAtTo: parseEvaluatedAtDate(evaluatedAtToRaw),
       uiStatus,
+      search: searchRaw?.trim() || undefined,
       sortField: parseSortField(sortFieldRaw),
       sortDir: parseSortDir(sortDirRaw),
     });

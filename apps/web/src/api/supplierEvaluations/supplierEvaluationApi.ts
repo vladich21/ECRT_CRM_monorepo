@@ -56,6 +56,7 @@ export const supplierEvaluationApi = {
     evaluated_year?: string | number;
     evaluated_at_from?: string;
     evaluated_at_to?: string;
+    search?: string;
   }): Promise<SupplierEvaluationTabCounts> => {
     const { data } = await apiClient.get<SupplierEvaluationTabCounts>('/supplier-evaluations/counts-by-tab', {
       params: compactParams({
@@ -66,6 +67,7 @@ export const supplierEvaluationApi = {
         evaluated_year: params.evaluated_year,
         evaluated_at_from: params.evaluated_at_from,
         evaluated_at_to: params.evaluated_at_to,
+        search: params.search,
       }),
     });
     return (data && typeof data === 'object' ? data : {}) as SupplierEvaluationTabCounts;
@@ -84,6 +86,7 @@ export const supplierEvaluationApi = {
       ui_status?: SupplierEvaluationUiStatusParam;
       sort_field?: SupplierEvaluationSortField;
       sort_dir?: SupplierEvaluationSortDir;
+      search?: string;
       limit?: number;
       offset?: number;
     },
@@ -101,6 +104,7 @@ export const supplierEvaluationApi = {
         ui_status: params.ui_status === 'all' ? undefined : params.ui_status,
         sort_field: params.sort_field,
         sort_dir: params.sort_dir,
+        search: params.search,
         limit: params.limit ?? 50,
         offset: params.offset ?? 0,
       }),

@@ -58,6 +58,7 @@ export interface SupplierEvaluationQueryFilters {
   evaluatedAtFrom?: string;
   evaluatedAtTo?: string;
   uiStatus?: SupplierEvaluationUiStatusFilter;
+  search?: string;
   sortField?: SupplierEvaluationListSortField;
   sortDir?: SupplierEvaluationListSortDir;
 }
@@ -70,6 +71,7 @@ export interface SupplierEvaluationTabCountFilters {
   evaluatedYears?: number[];
   evaluatedAtFrom?: string;
   evaluatedAtTo?: string;
+  search?: string;
 }
 
 export type SupplierEvaluationTabCounts = Record<SupplierEvaluationUiStatusFilter, number>;
@@ -393,6 +395,7 @@ export class SupplierEvaluationsService {
       evaluatedYears: filters.evaluatedYears,
       evaluatedAtFrom: filters.evaluatedAtFrom,
       evaluatedAtTo: filters.evaluatedAtTo,
+      search: filters.search,
       status: 'all',
     };
     const entries = await Promise.all(
@@ -840,6 +843,28 @@ export class SupplierEvaluationsService {
     }
     if (filters.createdByIds?.length) {
       parts.push(inArray(supplierEvaluations.createdBy, filters.createdByIds));
+    }
+    const searchRaw = filters.search?.trim();
+    if (searchRaw) {
+      const normalized = searchRaw.replace(/\s+/g, ' ').trim();
+      if (normalized.length > 0) {
+        const escaped = normalized.replace(/[\\%_]/g, '\\$&');
+        const term = `%${escaped}%`;
+        parts.push(
+          or(
+            sql`EXISTS (SELECT 1 FROM ${partners} WHERE ${partners.id} = ${supplierEvaluations.partnerId} AND (
+              ${partners.name} ILIKE ${term} ESCAPE '\\' OR
+              ${partners.shortName} ILIKE ${term} ESCAPE '\\' OR
+              ${partners.inn} ILIKE ${term} ESCAPE '\\'
+            ))`,
+            sql`EXISTS (SELECT 1 FROM ${projects} WHERE ${projects.id} = ${supplierEvaluations.projectId} AND (
+              ${projects.name} ILIKE ${term} ESCAPE '\\' OR
+              ${projects.shortName} ILIKE ${term} ESCAPE '\\' OR
+              ${projects.code} ILIKE ${term} ESCAPE '\\'
+            ))`,
+          )!,
+        );
+      }
     }
     if (filters.category) {
       parts.push(eq(supplierEvaluations.category, filters.category));
