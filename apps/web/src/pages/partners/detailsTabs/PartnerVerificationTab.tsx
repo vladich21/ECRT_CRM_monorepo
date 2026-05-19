@@ -19,7 +19,7 @@ import { triggerFileDownload } from '../../../components/filePreview/FilePreview
 import { fileApi } from '../../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { fileQueryKeys } from '../../../api/files/fileQueryKeys';
-import { useUpdatePartner } from '../../../api/partners/partnerApiHooks';
+import { invalidatePartnerQueries } from '../../../api/partners/partnerQueryKeys';
 import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useNotification } from '../../../customhooks/useNotification';
 import type { MyFile } from '../../../types/files';
@@ -52,8 +52,8 @@ type SectionProps = {
   isConfirmed: boolean;
   confirmedLabel: string;
   pendingLabel: string;
-  onAfterUpload: () => void;
-  onAfterDeleteLast: () => void;
+  /** Вызывается после успешной загрузки/удаления файла — статус деривируется на сервере. */
+  onAfterChange: () => void;
 };
 
 function VerificationSection({
@@ -64,8 +64,7 @@ function VerificationSection({
   isConfirmed,
   confirmedLabel,
   pendingLabel,
-  onAfterUpload,
-  onAfterDeleteLast,
+  onAfterChange,
 }: SectionProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -95,7 +94,7 @@ function VerificationSection({
       await queryClient.invalidateQueries({ queryKey: fileQueryKeys.byEntity(entityType, partnerId) });
       onSuccess?.('ok');
       showNotification('success', 'Файл загружен', 'Документ успешно добавлен');
-      onAfterUpload();
+      onAfterChange();
     } catch {
       onError?.(new Error('Upload failed'));
       showNotification('error', 'Ошибка', 'Не удалось загрузить файл');
@@ -115,9 +114,7 @@ function VerificationSection({
       errorMessage: 'Не удалось удалить файл',
       navigate,
       onMutationSuccess: () => {
-        if (files.length <= 1) {
-          onAfterDeleteLast();
-        }
+        onAfterChange();
       },
     });
   };
@@ -189,17 +186,12 @@ function VerificationSection({
 export default function PartnerVerificationTab() {
   const partner = useOutletContext<Partner>();
   const { partnerId } = useParams();
-  const { mutate: updatePartner } = useUpdatePartner();
-  const { showNotification } = useNotification();
+  const queryClient = useQueryClient();
 
-  const setFlag = (field: 'legal_check_passed' | 'questionnaire_filled', value: boolean) => {
-    if (!partnerId) return;
-    updatePartner(
-      { id: partnerId, data: { [field]: value } as Partial<Partner> },
-      {
-        onError: () => showNotification('error', 'Ошибка', 'Не удалось обновить статус проверки'),
-      },
-    );
+  // Статусы проверки деривируются на сервере от наличия файлов (см. FilesService).
+  // После загрузки/удаления инвалидируем карточку контрагента, чтобы подтянуть свежий статус.
+  const handleAfterChange = () => {
+    void invalidatePartnerQueries(queryClient);
   };
 
   return (
@@ -215,8 +207,7 @@ export default function PartnerVerificationTab() {
               isConfirmed={Boolean(partner?.legal_check_passed)}
               confirmedLabel='Проверка пройдена'
               pendingLabel='Ожидает проверки'
-              onAfterUpload={() => setFlag('legal_check_passed', true)}
-              onAfterDeleteLast={() => setFlag('legal_check_passed', false)}
+              onAfterChange={handleAfterChange}
             />
           </Card>
         </Col>
@@ -231,8 +222,7 @@ export default function PartnerVerificationTab() {
               isConfirmed={Boolean(partner?.questionnaire_filled)}
               confirmedLabel='Анкета получена'
               pendingLabel='Анкета не получена'
-              onAfterUpload={() => setFlag('questionnaire_filled', true)}
-              onAfterDeleteLast={() => setFlag('questionnaire_filled', false)}
+              onAfterChange={handleAfterChange}
             />
           </Card>
         </Col>
