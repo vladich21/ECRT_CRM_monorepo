@@ -21,6 +21,7 @@ type PatentGrantCreateFormValues = {
   status?: string;
   renewal_date?: { format: (fmt: string) => string };
   notes?: string;
+  expected_licensee_partner_ids?: string[];
 };
 
 export default function PatentGrantCreatePage() {
@@ -34,7 +35,7 @@ export default function PatentGrantCreatePage() {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData(['patents']);
+  } = useReferenceData(['patents', 'partners']);
   const { mutate, isPending: isCreateLoading } = useCreatePatentGrant();
   const [ipsReminderOpen, setIpsReminderOpen] = useState(false);
   const pendingValuesRef = useRef<PatentGrantCreateFormValues | null>(null);
@@ -52,6 +53,7 @@ export default function PatentGrantCreatePage() {
       grant_number: grantNumber,
       status: values.status ?? 'Активный',
       renewal_date: values.renewal_date ? values.renewal_date.format('YYYY-MM-DD') : '',
+      expected_licensee_partner_ids: values.expected_licensee_partner_ids ?? [],
       ...(values.grant_date ? { grant_date: values.grant_date.format('YYYY-MM-DD') } : {}),
       ...(values.office?.trim() ? { office: values.office.trim() } : {}),
       ...(values.notes !== undefined && values.notes !== '' ? { notes: values.notes } : {}),
@@ -65,7 +67,7 @@ export default function PatentGrantCreatePage() {
           if (fromRegistry) {
             setTimeout(() => navigate('/patent-grants'), 1000);
           } else if (patentIdFromState) {
-            setTimeout(() => navigate(`/patents/${patentIdFromState}/grants`), 1000);
+            setTimeout(() => navigate(`/patents/${patentId}/grants`), 1000);
           } else {
             setTimeout(() => navigate(-1), 1000);
           }
@@ -170,7 +172,7 @@ export default function PatentGrantCreatePage() {
           }}
           scrollToFirstError
         >
-          <PatentGrantFormFields referenceBooks={referenceBooks} patentIdFromState={patentIdFromState} />
+          <PatentGrantFormFields referenceBooks={referenceBooks} />
         </Form>
       </div>
     </DetailPageHeader>

@@ -17,7 +17,22 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.leftColumnStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.leftColumnStack > .sectionBox {
+  flex: 0 0 auto;
+}
+
+.twoColSections > .sectionBox {
+  height: 100%;
 }
 
 @media (max-width: 992px) {

@@ -62,7 +62,7 @@ import {
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
 type PatentFilesTabKey = 'communication' | 'application';
-const DEFAULT_PATENT_FILES_TAB: PatentFilesTabKey = 'communication';
+const DEFAULT_PATENT_FILES_TAB: PatentFilesTabKey = 'application';
 
 function patentFilesTabBySection(sectionKey: string | undefined): PatentFilesTabKey {
   if (!sectionKey) return DEFAULT_PATENT_FILES_TAB;
@@ -624,19 +624,6 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                 onChange={k => setActivePatentTab(k as PatentFilesTabKey)}
                 items={[
                   {
-                    key: 'communication',
-                    label: (
-                      <span className={styles.patentTabLabel}>
-                        Запросы и решение <Badge count={communicationTabCount} />
-                      </span>
-                    ),
-                    children: (
-                      <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentCommunication}`}>
-                        {PATENT_FILE_COMMUNICATION_SECTIONS.map(renderSectionColumn)}
-                      </div>
-                    ),
-                  },
-                  {
                     key: 'application',
                     label: (
                       <span className={styles.patentTabLabel}>
@@ -646,6 +633,19 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                     children: (
                       <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentApplication}`}>
                         {PATENT_FILE_APPLICATION_SECTIONS.map(renderSectionColumn)}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'communication',
+                    label: (
+                      <span className={styles.patentTabLabel}>
+                        Запросы и решение <Badge count={communicationTabCount} />
+                      </span>
+                    ),
+                    children: (
+                      <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentCommunication}`}>
+                        {PATENT_FILE_COMMUNICATION_SECTIONS.map(renderSectionColumn)}
                       </div>
                     ),
                   },

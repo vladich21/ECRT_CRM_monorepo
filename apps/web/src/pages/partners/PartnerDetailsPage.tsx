@@ -110,9 +110,13 @@ export default function PartnerDetailsPage() {
   const backLabel =
     returnToAfterPartner === '/supplier-evaluations'
       ? 'Реестр оценок поставщиков'
-      : returnToAfterPartner
-        ? 'Назад'
-        : 'Реестр контрагентов';
+      : returnToAfterPartner?.startsWith('/patent-grants/')
+        ? 'К охранному документу'
+        : returnToAfterPartner?.startsWith('/patents/')
+          ? 'К РИД'
+          : returnToAfterPartner
+            ? 'Назад'
+            : 'Реестр контрагентов';
 
   const handleBack = () => {
     if (returnToAfterPartner) {

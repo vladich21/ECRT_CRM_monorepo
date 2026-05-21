@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { CloseOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useContractById } from '@/api/contracts/contractApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
+import { usePartnerById } from '@/api/partners/partnerApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { usePatentById, useUpdatePatent } from '@/api/patents/patentApiHooks';
 import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
@@ -31,6 +32,10 @@ import {
   type PatentFormRefs,
 } from './components/form';
 import { buildPatentFormPayload } from './patentFormPayload';
+import {
+  applyPatentRidVatAmounts,
+  PATENT_DEFAULT_RID_VAT_RATE,
+} from './utils/patentRidCostUtils';
 import type { Patent } from '@/types/patent';
 import patentHeaderStyles from './PatentDetails.module.scss';
 import styles from './PatentFormPage.module.scss';
@@ -52,6 +57,7 @@ export default function PatentEditPage() {
       'users',
       'contracts',
       'projects',
+      'partners',
       'patentIntellectProps',
       'patentStatuses',
       'patentAreas',
@@ -73,6 +79,27 @@ export default function PatentEditPage() {
     if (!patent || !referenceBooks) return;
     form.setFieldsValue(patentUpdateFormMapper(patent, referenceBooks));
   }, [patent, referenceBooks, form]);
+
+  useEffect(() => {
+    const currentVatRate = form.getFieldValue('rid_vat_rate');
+    if (currentVatRate == null || currentVatRate === '') {
+      form.setFieldValue('rid_vat_rate', PATENT_DEFAULT_RID_VAT_RATE);
+    }
+  }, [form]);
+
+  const handleRidCostChange = (value: number | null) => {
+    const vatRate = form.getFieldValue('rid_vat_rate');
+    if (value != null && vatRate != null) {
+      applyPatentRidVatAmounts(form, value, Number(vatRate));
+    }
+  };
+
+  const handleRidVatRateChange = (value: number | null) => {
+    const amountExcl = form.getFieldValue('rid_cost_excl_vat');
+    if (value != null && amountExcl != null) {
+      applyPatentRidVatAmounts(form, Number(amountExcl), value);
+    }
+  };
 
   const handleUpdate = (values: Record<string, unknown>) => {
     const payload = buildPatentFormPayload(values) as Partial<Patent>;
@@ -124,6 +151,27 @@ export default function PatentEditPage() {
     }
     return options;
   }, [referenceBooks?.contracts, incomeContractFetched]);
+
+  const partnerMissingFromPicker =
+    Boolean(patent?.expected_licensee_partner_id) &&
+    !(referenceBooks?.partners ?? []).some(row => row.id === patent?.expected_licensee_partner_id);
+  const partnerFetchId =
+    partnerMissingFromPicker && patent?.expected_licensee_partner_id
+      ? patent.expected_licensee_partner_id
+      : '';
+  const { data: partnerFetched } = usePartnerById(partnerFetchId);
+  const partnerOptions = useMemo(() => {
+    const options = [...(referenceBooks?.partners ?? [])];
+    if (partnerFetched && !options.some(row => row.id === partnerFetched.id)) {
+      options.unshift({
+        id: partnerFetched.id,
+        name: partnerFetched.name,
+        short_name: partnerFetched.short_name,
+        inn: partnerFetched.inn,
+      });
+    }
+    return options;
+  }, [referenceBooks?.partners, partnerFetched]);
 
   if (isReferencesLoading || isPatentLoading) {
     return <Loader />;
@@ -244,10 +292,14 @@ export default function PatentEditPage() {
               areasField='multi'
             />
             <div className={styles.twoColSections}>
-              <PatentFormRegistrationFields />
+              <PatentFormRegistrationFields
+                onRidCostChange={handleRidCostChange}
+                onRidVatRateChange={handleRidVatRateChange}
+              />
               <PatentFormOrgFields
                 refs={refs}
                 incomeContracts={incomeContractOptions}
+                partnerOptions={partnerOptions}
                 onProjectChange={handleProjectChange}
               />
             </div>

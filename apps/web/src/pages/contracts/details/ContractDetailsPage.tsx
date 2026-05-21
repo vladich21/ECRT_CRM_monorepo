@@ -8,6 +8,7 @@ import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
 import type { DeletionScope } from '@/constants/deletionScope';
+import { resolveInternalReturnPath } from '@/helpers/internalReturnNavigation';
 import { CONTRACTS_REGISTRY_PATH, getContractEditPath } from '../constants/routes';
 import tagStyles from '../list/ContractsListPage.module.scss';
 import {
@@ -45,7 +46,7 @@ export default function ContractDetailsPage() {
   } | null;
   const from = navState?.from;
   const detailNavBase = navState ?? {};
-  const contractsListPath = from || CONTRACTS_REGISTRY_PATH;
+  const contractsListPath = resolveInternalReturnPath(from, CONTRACTS_REGISTRY_PATH);
 
   const {
     contract,
@@ -167,7 +168,11 @@ export default function ContractDetailsPage() {
       tabs={headerTabs}
       activeTab={activeTab}
       onTabChange={tabKey => {
-        if (contractId) navigate(getContractDetailsTabPath(contractId, tabKey as ContractDetailsTabKey));
+        if (contractId) {
+          navigate(getContractDetailsTabPath(contractId, tabKey as ContractDetailsTabKey), {
+            state: location.state,
+          });
+        }
       }}
       contextHolder={contextHolder}
     >

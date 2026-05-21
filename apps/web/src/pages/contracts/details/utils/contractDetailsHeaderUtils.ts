@@ -1,5 +1,6 @@
 import type { Contract } from '@/types/contract';
 import { detailHeaderVariantForContractHeader } from '@/components/pageLayout/DetailPageHeader';
+import { getInternalReturnBackLabel } from '@/helpers/internalReturnNavigation';
 import { formatContractDetailPageHeading } from '@/pages/contracts/utils/contractDetailsUtils';
 
 export function buildContractDetailsTitle(contract: Contract): string {
@@ -14,11 +15,8 @@ export function buildContractDetailsStatusBadge(contract: Contract) {
 }
 
 export function buildContractDetailsBackLabel(from: string | undefined): string {
-  if (typeof from === 'string' && from.includes('/partners/') && from.includes('/contracts')) {
-    return 'К договорам контрагента';
-  }
-  if (typeof from === 'string' && from.startsWith('/patents/')) {
-    return 'К РИД';
+  if (typeof from === 'string' && from.trim()) {
+    return getInternalReturnBackLabel(from.trim(), 'Договоры');
   }
   return 'Договоры';
 }

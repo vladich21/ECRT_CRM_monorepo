@@ -12,6 +12,11 @@ import {
   relPatentAuthors,
 } from '../../../database/schema';
 import { mapPatentGrantToApiDto } from '../../patent-grants/patent-grant.mapper';
+import {
+  loadExpectedLicenseePartnerIdsByGrantIds,
+  parseExpectedLicenseePartnerIds,
+  syncExpectedLicenseePartners,
+} from '../../patent-grants/patent-grant-expected-licensees';
 import { PaginationParams } from '../../../common/pagination';
 import { type DeletedScope, sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 import { syncPatentAutoStatus } from './patent-auto-status';
@@ -602,6 +607,19 @@ export class PatentsService {
       name: row.name ?? '',
       department_id: String(row.departmentId ?? ''),
       contract_id: row.contractId ? String(row.contractId) : '',
+      expected_licensee_partner_id: row.expectedLicenseePartnerId
+        ? String(row.expectedLicenseePartnerId)
+        : '',
+      rid_cost_excl_vat:
+        row.ridCostExclVat != null ? parseFloat(String(row.ridCostExclVat)) : null,
+      rid_vat_rate:
+        row.ridVatRate != null
+          ? parseFloat(String(row.ridVatRate))
+          : null,
+      rid_cost_vat:
+        row.ridCostVat != null ? parseFloat(String(row.ridCostVat)) : null,
+      rid_cost_incl_vat:
+        row.ridCostInclVat != null ? parseFloat(String(row.ridCostInclVat)) : null,
       project_id: row.projectId ? String(row.projectId) : '',
       responsible_for_patenting_id: row.responsibleForPatentId ? String(row.responsibleForPatentId) : '',
       kd_number: row.kdNumber ?? '',
@@ -695,6 +713,12 @@ export class PatentsService {
     const departmentId = toUuid(data.department_id);
     if (!departmentId) throw new BadRequestException('department_id обязателен');
 
+    const toNum = (v: unknown): string | null => {
+      if (v == null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? String(n) : null;
+    };
+
     const insertData = {
       name: data.name != null ? String(data.name) : '',
       registrationNumber: data.registration_number != null ? String(data.registration_number) : null,
@@ -704,6 +728,11 @@ export class PatentsService {
       applicationNumber: data.application_number != null ? String(data.application_number) : null,
       departmentId,
       contractId: toUuid(data.contract_id),
+      expectedLicenseePartnerId: toUuid(data.expected_licensee_partner_id),
+      ridCostExclVat: toNum(data.rid_cost_excl_vat),
+      ridVatRate: toNum(data.rid_vat_rate) ?? String(22),
+      ridCostVat: toNum(data.rid_cost_vat),
+      ridCostInclVat: toNum(data.rid_cost_incl_vat),
       projectId: toUuid(data.project_id),
       kdNumber: data.kd_number != null ? String(data.kd_number) : null,
       intellectpropId: toUuid(data.intellectprop_id),
@@ -751,6 +780,11 @@ export class PatentsService {
       application_number: 'applicationNumber',
       department_id: 'departmentId',
       contract_id: 'contractId',
+      expected_licensee_partner_id: 'expectedLicenseePartnerId',
+      rid_cost_excl_vat: 'ridCostExclVat',
+      rid_vat_rate: 'ridVatRate',
+      rid_cost_vat: 'ridCostVat',
+      rid_cost_incl_vat: 'ridCostInclVat',
       project_id: 'projectId',
       kd_number: 'kdNumber',
       intellectprop_id: 'intellectpropId',
@@ -761,7 +795,21 @@ export class PatentsService {
     for (const [snake, camel] of Object.entries(map)) {
       if (data[snake] !== undefined) {
         const val = data[snake];
-        updateObj[camel] = val == null || val === '' ? null : val;
+        if (
+          camel === 'ridCostExclVat' ||
+          camel === 'ridVatRate' ||
+          camel === 'ridCostVat' ||
+          camel === 'ridCostInclVat'
+        ) {
+          updateObj[camel] =
+            val == null || val === ''
+              ? null
+              : Number.isFinite(Number(val))
+                ? String(val)
+                : null;
+        } else {
+          updateObj[camel] = val == null || val === '' ? null : val;
+        }
       }
     }
     await this.db.db.update(patents).set(updateObj).where(eq(patents.id, id));
@@ -805,6 +853,11 @@ export class PatentsService {
           applicationNumber: null,
           departmentId: source.departmentId,
           contractId: source.contractId,
+          expectedLicenseePartnerId: source.expectedLicenseePartnerId,
+          ridCostExclVat: source.ridCostExclVat,
+          ridVatRate: source.ridVatRate,
+          ridCostVat: source.ridCostVat,
+          ridCostInclVat: source.ridCostInclVat,
           projectId: source.projectId,
           kdNumber: source.kdNumber,
           intellectpropId: source.intellectpropId,
@@ -913,11 +966,17 @@ export class PatentsService {
         .innerJoin(patents, eq(patentGrants.patentId, patents.id))
         .where(eq(patentGrants.patentId, patentId))
         .orderBy(asc(patentGrants.grantDate));
+      const grantIds = rows.map(({ grant }) => String(grant.id));
+      const expectedByGrantId = await loadExpectedLicenseePartnerIdsByGrantIds(this.db, grantIds);
       return rows.map(({ grant: row, patentName, patentRegistrationNumber }) =>
-        mapPatentGrantToApiDto(row, {
-          name: patentName,
-          registrationNumber: patentRegistrationNumber,
-        }),
+        mapPatentGrantToApiDto(
+          row,
+          {
+            name: patentName,
+            registrationNumber: patentRegistrationNumber,
+          },
+          expectedByGrantId.get(String(row.id)) ?? [],
+        ),
       );
     } catch {
       return [];
@@ -926,6 +985,18 @@ export class PatentsService {
 
   async createGrant(patentId: string, data: Record<string, unknown>) {
     if (!(await this.patentExists(patentId))) return null;
+    const [patentRow] = await this.db.db
+      .select({ expectedLicenseePartnerId: patents.expectedLicenseePartnerId })
+      .from(patents)
+      .where(eq(patents.id, patentId))
+      .limit(1);
+    const expectedFromBody = parseExpectedLicenseePartnerIds(data);
+    const expectedLicenseePartnerIds =
+      expectedFromBody !== undefined
+        ? expectedFromBody
+        : patentRow?.expectedLicenseePartnerId
+          ? [String(patentRow.expectedLicenseePartnerId)]
+          : [];
     const insertData: Record<string, unknown> = {
       patentId,
       grantNumber: data.grant_number ?? null,
@@ -937,6 +1008,7 @@ export class PatentsService {
     };
     const [row] = await this.db.db.insert(patentGrants).values(insertData).returning();
     if (!row) return null;
+    await syncExpectedLicenseePartners(this.db, String(row.id), expectedLicenseePartnerIds);
     const grants = await this.getGrants(patentId);
     return grants ? grants[grants.length - 1] : null;
   }

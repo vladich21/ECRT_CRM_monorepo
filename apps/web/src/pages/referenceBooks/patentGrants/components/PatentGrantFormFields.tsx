@@ -1,61 +1,135 @@
-import { CalendarOutlined, CopyrightOutlined, FileTextOutlined, NumberOutlined } from '@ant-design/icons';
+import { CalendarOutlined, CopyrightOutlined, FileTextOutlined, NumberOutlined, TeamOutlined } from '@ant-design/icons';
 import { Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import { useMemo } from 'react';
 
+import { useContractById } from '../../../../api/contracts/contractApiHooks';
+import { usePatentById } from '../../../../api/patents/patentApiHooks';
 import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrantRegions';
+import { getNameById } from '../../../../helpers/getNameById';
 import { Reference } from '../../../../types/referenceTypes';
+import { usePatentGrantRidLink } from '../hooks/usePatentGrantRidLink';
+import { getContractDisplayLabel } from '../utils/patentGrantCardHelpers';
 import styles from '../PatentGrantFormPage.module.scss';
 
 export type PatentGrantPatentSelectFallback = { id: string; name: string };
 
 const { TextArea } = Input;
 
+type PartnerOption = { id: string; label: string; searchLabel: string; inn: string };
+
 function buildOfficeSelectOptions(savedOffice?: string | null) {
   const opts = [...PATENT_GRANT_OFFICE_OPTIONS];
-  const t = savedOffice?.trim();
-  if (t && !opts.some(o => o.value === t)) {
-    opts.unshift({ value: t, label: `${t} (текущее в записи)` });
+  const saved = savedOffice?.trim();
+  if (saved && !opts.some(o => o.value === saved)) {
+    opts.unshift({ value: saved, label: `${saved} (текущее в записи)` });
   }
   return opts;
+}
+
+function buildPartnerOptions(partners: Reference[] | undefined): PartnerOption[] {
+  return (partners ?? []).map(partner => {
+    const fullName = String(partner.name ?? '').trim();
+    const label = String(partner.short_name ?? '').trim() || fullName || 'Контрагент без имени';
+    const inn = String(partner.inn ?? '').trim();
+    return { id: String(partner.id), label, searchLabel: `${label} ${fullName} ${inn}`.trim().toLowerCase(), inn };
+  });
+}
+
+function PartnerSelect({
+  name,
+  label,
+  multiple,
+  options,
+}: {
+  name: string;
+  label: string;
+  multiple?: boolean;
+  options: PartnerOption[];
+}) {
+  return (
+    <Form.Item label={label} name={name}>
+      <Select
+        mode={multiple ? 'multiple' : undefined}
+        placeholder='Выберите контрагента или найдите по названию / ИНН'
+        allowClear
+        showSearch
+        optionFilterProp='label'
+        optionLabelProp='label'
+        filterOption={(input, option) =>
+          String((option as { searchLabel?: string }).searchLabel ?? option?.label ?? '')
+            .includes(input.toLowerCase().trim())
+        }
+        suffixIcon={<TeamOutlined />}
+      >
+        {options.map(partner => (
+          <Select.Option key={partner.id} value={partner.id} label={partner.label} searchLabel={partner.searchLabel}>
+            <div>
+              <div>{partner.label}</div>
+              {partner.inn ? <div style={{ fontSize: 12, color: '#888' }}>ИНН {partner.inn}</div> : null}
+            </div>
+          </Select.Option>
+        ))}
+      </Select>
+    </Form.Item>
+  );
 }
 
 interface PatentGrantFormFieldsProps {
   referenceBooks: {
     patents?: Reference[];
+    partners?: Reference[];
+    projects?: Reference[];
+    contracts?: Reference[];
   };
-  patentIdFromState?: string | null;
   savedOfficeForLegacy?: string | null;
   patentSelectFallback?: PatentGrantPatentSelectFallback | null;
+  mode?: 'create' | 'edit';
+  initialPatentId?: string;
+  initialRidRegNumber?: string;
 }
+
 export function PatentGrantFormFields({
   referenceBooks,
-  patentIdFromState,
   savedOfficeForLegacy,
   patentSelectFallback,
+  mode = 'create',
+  initialPatentId,
+  initialRidRegNumber,
 }: PatentGrantFormFieldsProps) {
+  const form = Form.useFormInstance();
+  const patentId = Form.useWatch('patent_id', form);
+  const isEdit = mode === 'edit';
+  const { data: selectedPatent } = usePatentById(patentId ?? '');
+  const { linkedRidRegNumber } = usePatentGrantRidLink({ form, patentId, selectedPatent, initialPatentId, initialRidRegNumber });
+
   const officeOptions = useMemo(() => buildOfficeSelectOptions(savedOfficeForLegacy), [savedOfficeForLegacy]);
+  const partnerOptions = useMemo(() => buildPartnerOptions(referenceBooks.partners), [referenceBooks.partners]);
 
   const patentsForSelect = useMemo(() => {
     const list = [...(referenceBooks.patents ?? [])];
-    const fb = patentSelectFallback;
-    if (!fb?.id?.trim()) return list;
-    const id = fb.id.trim();
-    const idx = list.findIndex(p => p.id === id);
-    if (idx === -1) {
-      return [{ id, name: fb.name }, ...list];
-    }
-    const row = list[idx]!;
-    if (!row.name?.trim() && fb.name.trim()) {
+    const fallback = patentSelectFallback;
+    if (!fallback?.id?.trim()) return list;
+    const id = fallback.id.trim();
+    const index = list.findIndex(p => p.id === id);
+    if (index === -1) return [{ id, name: fallback.name }, ...list];
+    if (!list[index]?.name?.trim() && fallback.name.trim()) {
       const next = [...list];
-      next[idx] = { ...row, name: fb.name };
+      next[index] = { ...list[index]!, name: fallback.name };
       return next;
     }
     return list;
   }, [referenceBooks.patents, patentSelectFallback]);
 
+  const linkedContractId = selectedPatent?.contract_id?.trim() ?? '';
+  const needContractFetch = Boolean(linkedContractId && !referenceBooks.contracts?.some(c => c.id === linkedContractId));
+  const { data: linkedContractFetched } = useContractById(needContractFetch ? linkedContractId : '');
+  const linkedContract =
+    referenceBooks.contracts?.find(row => row.id === linkedContractId) ??
+    (linkedContractFetched?.id === linkedContractId ? linkedContractFetched : undefined);
+
   return (
-    <>
-      <div className={styles.twoColSections}>
+    <div className={styles.twoColSections}>
+      <div className={styles.leftColumnStack}>
         <div className={styles.sectionBox}>
           <Divider orientation='left' style={{ marginTop: 0 }}>
             <CopyrightOutlined /> Основная информация
@@ -71,21 +145,18 @@ export function PatentGrantFormFields({
               </Form.Item>
             </Col>
             <Col xs={24}>
-              <Form.Item label='РИД' name='patent_id' rules={[{ required: true, message: 'Выберите патент' }]}>
+              <Form.Item label='РИД' name='patent_id' rules={[{ required: true, message: 'Выберите РИД' }]}>
                 <Select
                   placeholder='Выберите РИД'
-                  allowClear={!patentIdFromState}
-                  disabled={!!patentIdFromState}
+                  allowClear
                   showSearch
                   optionFilterProp='children'
                   filterOption={(input, option) =>
-                    String(option?.children ?? '')
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
+                    String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
                   }
                   suffixIcon={<CopyrightOutlined />}
                 >
-                  {patentsForSelect.map((patent: Reference) => (
+                  {patentsForSelect.map(patent => (
                     <Select.Option key={patent.id} value={patent.id}>
                       {patent.name?.trim() || `Патент ${patent.id}`}
                     </Select.Option>
@@ -93,59 +164,87 @@ export function PatentGrantFormFields({
                 </Select>
               </Form.Item>
             </Col>
+
+            {isEdit ? (
+              <>
+                <Col xs={24}>
+                  <Form.Item label='Рег. номер РИД'>
+                    <Input value={linkedRidRegNumber || '—'} readOnly disabled prefix={<NumberOutlined />} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label='Проект'>
+                    <Input
+                      value={getNameById(selectedPatent?.project_id, referenceBooks.projects) || '—'}
+                      readOnly
+                      disabled
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item label='Договор (доходный)'>
+                    <Input value={getContractDisplayLabel(linkedContract) || '—'} readOnly disabled />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <PartnerSelect name='actual_licensee_partner_id' label='Фактический лицензиат' options={partnerOptions} />
+                </Col>
+              </>
+            ) : null}
+
+            <Col xs={24} md={isEdit ? 12 : 24}>
+              <PartnerSelect
+                name='expected_licensee_partner_ids'
+                label='Предполагаемый лицензиат'
+                multiple
+                options={partnerOptions}
+              />
+            </Col>
           </Row>
         </div>
 
         <div className={styles.sectionBox}>
           <Divider orientation='left' style={{ marginTop: 0 }}>
-            <CalendarOutlined /> Статус и даты
+            <FileTextOutlined /> Дополнительная информация
           </Divider>
-          <Row gutter={16}>
-            <Col xs={24}>
-              <Form.Item label='Статус' name='status' rules={[{ required: true, message: 'Выберите статус' }]}>
-                <Select placeholder='Выберите статус'>
-                  <Select.Option value='Активный'>Активный</Select.Option>
-                  <Select.Option value='Неактивный'>Неактивный</Select.Option>
-                  <Select.Option value='Истек'>Истек</Select.Option>
-                  <Select.Option value='Отозван'>Отозван</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item label='Дата выдачи' name='grant_date'>
-                <DatePicker placeholder='Выберите дату выдачи' style={{ width: '100%' }} format='DD.MM.YYYY' />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item label='Дата продления' name='renewal_date'>
-                <DatePicker placeholder='Выберите дату продления' style={{ width: '100%' }} format='DD.MM.YYYY' />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item label='Ведомство' name='office'>
-                <Select
-                  placeholder='Выберите ведомство'
-                  allowClear
-                  showSearch
-                  optionFilterProp='label'
-                  options={officeOptions}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </div>
-      </div>
-
-      <Divider orientation='left'>
-        <FileTextOutlined /> Дополнительная информация
-      </Divider>
-      <Row gutter={16}>
-        <Col xs={24}>
           <Form.Item label='Примечания' name='notes'>
             <TextArea placeholder='Введите дополнительные сведения о охранном документе' rows={3} />
           </Form.Item>
-        </Col>
-      </Row>
-    </>
+        </div>
+      </div>
+
+      <div className={styles.sectionBox}>
+        <Divider orientation='left' style={{ marginTop: 0 }}>
+          <CalendarOutlined /> Статус и даты
+        </Divider>
+        <Row gutter={16}>
+          <Col xs={24}>
+            <Form.Item label='Статус' name='status' rules={[{ required: true, message: 'Выберите статус' }]}>
+              <Select placeholder='Выберите статус'>
+                <Select.Option value='Активный'>Активный</Select.Option>
+                <Select.Option value='Неактивный'>Неактивный</Select.Option>
+                <Select.Option value='Истек'>Истек</Select.Option>
+                <Select.Option value='Отозван'>Отозван</Select.Option>
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col xs={24}>
+            <Form.Item label='Дата выдачи' name='grant_date'>
+              <DatePicker placeholder='Выберите дату выдачи' style={{ width: '100%' }} format='DD.MM.YYYY' />
+            </Form.Item>
+          </Col>
+          <Col xs={24}>
+            <Form.Item label='Дата продления' name='renewal_date'>
+              <DatePicker placeholder='Выберите дату продления' style={{ width: '100%' }} format='DD.MM.YYYY' />
+            </Form.Item>
+          </Col>
+          <Col xs={24}>
+            <Form.Item label='Ведомство' name='office'>
+              <Select placeholder='Выберите ведомство' allowClear showSearch optionFilterProp='label' options={officeOptions} />
+            </Form.Item>
+          </Col>
+        </Row>
+      </div>
+    </div>
   );
 }

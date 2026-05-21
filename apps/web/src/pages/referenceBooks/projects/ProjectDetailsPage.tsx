@@ -16,6 +16,10 @@ import type { DeletionScope } from '../../../constants/deletionScope';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getNameById } from '../../../helpers/getNameById';
+import {
+  getInternalReturnBackLabel,
+  resolveInternalReturnPath,
+} from '../../../helpers/internalReturnNavigation';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 import type { ProjectDetailsOutletContext } from './tabs/projectDetailsOutletContext';
 import type { ProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
@@ -36,11 +40,14 @@ export default function ProjectDetailsPage() {
   const mutation = useDeleteProject();
   const restoreMutation = useRestoreProject();
   const navState = location.state as {
+    from?: string;
     deletionScope?: DeletionScope;
     projectsListReturn?: ProjectsListNavSnapshot;
   } | null;
   const listDeletionScope = navState?.deletionScope ?? 'active';
   const projectsListReturn = navState?.projectsListReturn;
+  const backPath = resolveInternalReturnPath(navState?.from, '/projects');
+  const backLabel = getInternalReturnBackLabel(backPath, 'Проекты');
   const { handleOpenModal } = useConfirmByModal({
     mutation,
     successMessage: 'Проект успешно удалён',
@@ -95,15 +102,19 @@ export default function ProjectDetailsPage() {
   return (
     <DetailPageHeader
       title={project.name}
-      backLabel='Проекты'
-      onBack={() =>
+      backLabel={backLabel}
+      onBack={() => {
+        if (backPath !== '/projects') {
+          navigate(backPath);
+          return;
+        }
         navigate('/projects', {
           state: {
             deletionScope: listDeletionScope,
             ...(projectsListReturn ? { projectsListReturn } : {}),
           },
-        })
-      }
+        });
+      }}
       statusBadge={
         project.is_deleted
           ? { label: 'Удалён', variant: 'danger' }

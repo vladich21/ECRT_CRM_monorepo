@@ -11,6 +11,8 @@ export type PatentGrantApiDto = {
   status: string;
   renewal_date: string;
   notes: string;
+  expected_licensee_partner_ids: string[];
+  actual_licensee_partner_id: string;
   created_at: string;
   updated_at: string;
   patent_name: string;
@@ -22,7 +24,11 @@ type PatentSnapshot = {
   registrationNumber: string | null | undefined;
 };
 
-export function mapPatentGrantToApiDto(row: PatentGrantRow, patent?: PatentSnapshot | null): PatentGrantApiDto {
+export function mapPatentGrantToApiDto(
+  row: PatentGrantRow,
+  patent?: PatentSnapshot | null,
+  expectedLicenseePartnerIds: string[] = [],
+): PatentGrantApiDto {
   return {
     id: String(row.id),
     patent_id: row.patentId ? String(row.patentId) : '',
@@ -32,6 +38,8 @@ export function mapPatentGrantToApiDto(row: PatentGrantRow, patent?: PatentSnaps
     status: row.status ?? '',
     renewal_date: row.renewalDate ? String(row.renewalDate) : '',
     notes: row.notes ?? '',
+    expected_licensee_partner_ids: expectedLicenseePartnerIds,
+    actual_licensee_partner_id: row.actualLicenseePartnerId ? String(row.actualLicenseePartnerId) : '',
     created_at: row.createdAt ? row.createdAt.toISOString() : '',
     updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     patent_name: patent?.name ?? '',

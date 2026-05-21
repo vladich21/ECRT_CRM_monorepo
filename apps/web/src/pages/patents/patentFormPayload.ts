@@ -1,5 +1,13 @@
 import dayjs from 'dayjs';
 
+import { PATENT_DEFAULT_RID_VAT_RATE } from '@/pages/patents/utils/patentRidCostUtils';
+
+function numOrNull(raw: unknown): number | null {
+  if (raw === '' || raw == null) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function buildPatentFormPayload(
   values: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -20,6 +28,11 @@ export function buildPatentFormPayload(
     department_id: values.department_id || null,
     responsible_for_patenting_id: values.responsible_for_patenting_id || null,
     contract_id: values.contract_id || null,
+    expected_licensee_partner_id: values.expected_licensee_partner_id || null,
+    rid_cost_excl_vat: numOrNull(values.rid_cost_excl_vat),
+    rid_vat_rate: numOrNull(values.rid_vat_rate) ?? PATENT_DEFAULT_RID_VAT_RATE,
+    rid_cost_vat: numOrNull(values.rid_cost_vat),
+    rid_cost_incl_vat: numOrNull(values.rid_cost_incl_vat),
     project_id: values.project_id || null,
     intellectprop_id: values.intellectprop_id || null,
     area_ids: areaIds,
