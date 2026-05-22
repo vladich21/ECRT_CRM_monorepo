@@ -25,7 +25,7 @@ const ProfilePage = () => {
       try {
         await refreshSessionUser();
       } catch {
-        /* остаёмся на данных из persist */
+        /* остаемся на данных из persist */
       } finally {
         if (!cancelled) setProfileReady(true);
       }

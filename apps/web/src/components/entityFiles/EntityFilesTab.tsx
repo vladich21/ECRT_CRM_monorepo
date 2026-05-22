@@ -219,7 +219,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
       });
       showNotification('success', 'Готово', 'Параметры запроса обновлены');
       if (entityType === 'patent') {
-        showNotification('info', 'Статус обновлён', 'Статус РИД пересчитан автоматически');
+        showNotification('info', 'Статус обновлен', 'Статус РИД пересчитан автоматически');
       }
       setEditModalOpen(false);
       setEditingFile(null);
@@ -244,7 +244,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
         fileId: pendingDeleteId.current,
       }),
       showNotification,
-      successMessage: 'Файл успешно удалён',
+      successMessage: 'Файл успешно удален',
       errorMessage: 'Не удалось удалить файл',
       navigate,
     });
@@ -290,7 +290,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
         if (entityType === 'patent' && shouldNotifyPatentAutoStatus(sectionKey)) {
           showNotification(
             'info',
-            'Статус обновлён',
+            'Статус обновлен',
             'Статус РИД пересчитан автоматически по действиям в разделе «Файлы»',
           );
         }

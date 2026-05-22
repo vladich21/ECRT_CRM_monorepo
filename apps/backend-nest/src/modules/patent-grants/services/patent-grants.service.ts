@@ -21,9 +21,10 @@ import {
   PatentGrantsRegistryQueryBuilder,
   type PatentGrantsRegistryFindAllInput,
   type PatentGrantRegistryListScope,
+  type PatentGrantRegistrySortBy,
 } from '../patent-grants-registry.query-builder';
 
-export type { PatentGrantRegistryListScope, PatentGrantsRegistryFindAllInput };
+export type { PatentGrantRegistryListScope, PatentGrantsRegistryFindAllInput, PatentGrantRegistrySortBy };
 
 export interface PatentGrantsRegistryPayload {
   data: PatentGrantApiDto[];
@@ -61,8 +62,16 @@ export class PatentGrantsService {
   }
 
   async findAll(input: PatentGrantsRegistryFindAllInput): Promise<PatentGrantsRegistryPayload> {
-    const { pagination, listScope } = input;
+    const { pagination, listScope, sortBy: sortByRaw, sortOrder: sortOrderRaw } = input;
     const { limit, offset } = pagination;
+    const sortBy: PatentGrantRegistrySortBy =
+      sortByRaw === 'grant_date' ||
+      sortByRaw === 'grant_number' ||
+      sortByRaw === 'created_at' ||
+      sortByRaw === 'patent_registration_number'
+        ? sortByRaw
+        : 'patent_registration_number';
+    const sortOrder: 'asc' | 'desc' = sortOrderRaw === 'desc' ? 'desc' : 'asc';
     const baseParts = this.registryQB.buildRegistryBaseParts(input);
     const whereAll = this.registryQB.registryWhereForScope(baseParts, 'all');
     const whereActive = this.registryQB.registryWhereForScope(baseParts, 'active');
@@ -74,7 +83,7 @@ export class PatentGrantsService {
       this.registryQB.countRegistryWhere(whereActive),
       this.registryQB.countRegistryWhere(whereOther),
       this.registryQB.countRegistryWhere(listWhere),
-      this.registryQB.fetchRegistryRows(listWhere, limit, offset),
+      this.registryQB.fetchRegistryRows(listWhere, limit, offset, sortBy, sortOrder),
     ]);
 
     return {
@@ -96,7 +105,7 @@ export class PatentGrantsService {
       .where(and(eq(patents.id, patentId), eq(patents.isDeleted, false)))
       .limit(1);
     if (!patentRow) {
-      throw new NotFoundException('РИД не найден или удалён');
+      throw new NotFoundException('РИД не найден или удален');
     }
 
     const toDateStr = (v: unknown): string | null =>

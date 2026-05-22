@@ -29,7 +29,7 @@ const PartnerStatusesListPage: React.FC = () => {
   const { handleOpenModal: openEditModal } = useMutateByModal<PartnerStatus, Error>({
     isEdit: true,
     mutation: editPartnerStatusMutation,
-    successMessage: 'Статус контрагента успешно изменён',
+    successMessage: 'Статус контрагента успешно изменен',
     errorMessage: 'Не удалось изменить статус контрагента',
     modalType: 'positionForm',
     getModalData: () => ({
@@ -55,7 +55,7 @@ const PartnerStatusesListPage: React.FC = () => {
       mutation: deletePartnerStatusMutation,
       getVariables: () => deleteIdRef.current,
       showNotification,
-      successMessage: 'Статус контрагента успешно удалён',
+      successMessage: 'Статус контрагента успешно удален',
       errorMessage: 'Не удалось удалить статус контрагента',
       navigate,
     });

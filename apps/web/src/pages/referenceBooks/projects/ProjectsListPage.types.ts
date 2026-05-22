@@ -26,20 +26,20 @@ export const PROJECT_FILTER_TABS: {
 }[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активные' },
-  { key: 'completed', label: 'Завершённые' },
+  { key: 'completed', label: 'Завершенные' },
   { key: 'pending', label: 'В ожидании' },
   { key: 'paused', label: 'Приостановленные' },
-  { key: 'cancelled', label: 'Отменённые' },
-  { key: 'deleted', label: 'Удалённые' },
+  { key: 'cancelled', label: 'Отмененные' },
+  { key: 'deleted', label: 'Удаленные' },
 ];
 export type ProjectStatusVisual = StatusBadgeSurface & { label: string };
 
 export const PROJECT_STATUS_CONFIG: Record<string, ProjectStatusVisual> = {
   active: { label: 'Активный', ...PROJECT_STATUS_SURFACES.active },
-  completed: { label: 'Завершён', ...PROJECT_STATUS_SURFACES.completed },
+  completed: { label: 'Завершен', ...PROJECT_STATUS_SURFACES.completed },
   pending: { label: 'В ожидании', ...PROJECT_STATUS_SURFACES.pending },
   paused: { label: 'Приостановлен', ...PROJECT_STATUS_SURFACES.paused },
-  cancelled: { label: 'Отменён', ...PROJECT_STATUS_SURFACES.cancelled },
+  cancelled: { label: 'Отменен', ...PROJECT_STATUS_SURFACES.cancelled },
 };
 export const END_DATE_PRESENCE_OPTIONS: {
   label: string;

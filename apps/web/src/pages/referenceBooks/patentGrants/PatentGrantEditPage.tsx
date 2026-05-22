@@ -51,7 +51,7 @@ export default function PatentGrantEditPage() {
       { id: grantId!, data: payload },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Охранный документ успешно изменён');
+          showNotification('success', 'Успех', 'Охранный документ успешно изменен');
           setTimeout(() => navigate(`/patent-grants/${grantId}`), 1000);
         },
         onError: () => {  

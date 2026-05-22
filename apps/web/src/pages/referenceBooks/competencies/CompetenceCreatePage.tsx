@@ -30,7 +30,7 @@ export default function PartnerCompetenceCreatePage() {
       {contextHolder}
       <Modal
         open
-        title='Создание компетенции партнёра'
+        title='Создание компетенции партнера'
         centered
         width={520}
         onCancel={() => navigate(-1)}

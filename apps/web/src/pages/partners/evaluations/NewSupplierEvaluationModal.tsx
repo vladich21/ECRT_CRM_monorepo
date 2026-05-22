@@ -36,7 +36,7 @@ type Props = {
   onClose: () => void;
   partnerId: string;
   initialProjectId?: string;
-  /** Подпись проекта, если id есть в форме, но проекта ещё нет в списке по договорам (иначе показывали бы UUID). */
+  /** Подпись проекта, если id есть в форме, но проекта еще нет в списке по договорам (иначе показывали бы UUID). */
   initialProjectLabel?: string;
   onSuccess?: () => void;
 };
@@ -56,7 +56,7 @@ function pickFrozenScoreLines(
   return seedDetail.scores;
 }
 
-/** Баллы по критериям: дефолт 4, затем перекрытие из сохранённой оценки. */
+/** Баллы по критериям: дефолт 4, затем перекрытие из сохраненной оценки. */
 function scoresMapFromSeed(
   criteriaOrdered: SupplierEvaluationCriterion[],
   seedLines: SupplierEvaluationScoreDetail[] | undefined,

@@ -22,7 +22,7 @@ export async function assertActivePatentExists(db: DatabaseService, patentId: st
     .limit(1);
 
   if (!row) {
-    throw new NotFoundException('РИД не найден или удалён');
+    throw new NotFoundException('РИД не найден или удален');
   }
 }
 

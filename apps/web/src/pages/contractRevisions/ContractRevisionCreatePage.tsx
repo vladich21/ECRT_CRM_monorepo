@@ -64,7 +64,7 @@ export default function CreateContractRevisionPage() {
     if (getEntityById(record.state_id, referenceBooks?.contractStageStates)?.code !== 'COMPLETED') {
       setStages(prev => [...prev.filter(el => el.id !== record.id)]);
     } else {
-      showNotification('error', 'Ошибка', 'Нельзя удалять завершённые этапы');
+      showNotification('error', 'Ошибка', 'Нельзя удалять завершенные этапы');
     }
   };
   const handleAddStage = () => {

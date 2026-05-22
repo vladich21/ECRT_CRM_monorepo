@@ -110,7 +110,7 @@ function VerificationSection({
       mutation: deleteFileMutation,
       getVariables: () => ({ entityType, entityId: partnerId, fileId: pendingDeleteId.current }),
       showNotification,
-      successMessage: 'Файл удалён',
+      successMessage: 'Файл удален',
       errorMessage: 'Не удалось удалить файл',
       navigate,
       onMutationSuccess: () => {

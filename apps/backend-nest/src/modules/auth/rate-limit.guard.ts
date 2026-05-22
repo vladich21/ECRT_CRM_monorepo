@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 
-/** Общий счётчик на IP для POST login, verify-2fa и resend-code (каждый запрос увеличивает счётчик). */
+/** Общий счетчик на IP для POST login, verify-2fa и resend-code (каждый запрос увеличивает счетчик). */
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 минут
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // очистка каждые 5 минут

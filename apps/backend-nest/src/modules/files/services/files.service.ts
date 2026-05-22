@@ -96,7 +96,7 @@ export class FilesService {
       .where(eq(partners.id, entityId));
 
     // Пересчитать производный операционный статус (Активный/Потенциальный) — флаг
-    // влияет на «утверждён» и автодеривацию статуса инжиниринговых контрагентов.
+    // влияет на «утвержден» и автодеривацию статуса инжиниринговых контрагентов.
     await this.partnersService.refreshPartnerDerivedStatus(entityId);
   }
 

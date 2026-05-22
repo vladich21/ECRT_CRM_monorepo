@@ -4,7 +4,7 @@ export class CreateRoleDto {
   @IsString()
   @MinLength(2)
   @MaxLength(100)
-  @Matches(/^[a-z][a-z0-9_]*$/, { message: 'code: только строчные буквы, цифры, подчёркивание; начинается с буквы' })
+  @Matches(/^[a-z][a-z0-9_]*$/, { message: 'code: только строчные буквы, цифры, подчеркивание; начинается с буквы' })
   code!: string;
 
   @IsString()

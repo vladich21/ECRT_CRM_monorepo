@@ -43,6 +43,7 @@ export function buildPatentsListNavSnapshot(
   pageSize: number,
   sortBy: PatentListSortBy,
   sortOrder: 'asc' | 'desc',
+  scrollY?: number,
 ): PatentsListNavSnapshot {
   return {
     ...makeListReturnSnapshot({
@@ -58,6 +59,7 @@ export function buildPatentsListNavSnapshot(
       },
       page,
       pageSize,
+      scrollY,
     }),
     sortBy,
     sortOrder,
@@ -72,6 +74,7 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
   pageSize: number;
   sortBy: PatentListSortBy;
   sortOrder: 'asc' | 'desc';
+  scrollY?: number;
 } | null {
   const parsed = readListReturnSnapshot(raw, {
     defaultTab: 'all',
@@ -110,5 +113,6 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
     appliedFilters: { ...DEFAULT_PATENT_FILTERS, ...parsed.appliedFilters },
     sortBy,
     sortOrder,
+    scrollY: parsed.scrollY,
   };
 }

@@ -1,5 +1,8 @@
 import type { PatentGrantRegistryListScope } from '@/api/patents/patentGrantsApi';
-import type { PatentGrantsRegistryAdvancedFilters } from '@/api/patents/patentGrantsRegistryFilters.types';
+import type {
+  PatentGrantsRegistryAdvancedFilters,
+  PatentGrantsRegistrySortBy,
+} from '@/api/patents/patentGrantsRegistryFilters.types';
 
 import {
   buildPatentGrantsRegistryListSnapshot,
@@ -28,6 +31,8 @@ export function savePatentGrantsRegistryPersistedUi(params: {
   appliedFilters: PatentGrantsRegistryAdvancedFilters;
   page: number;
   pageSize: number;
+  sortBy: PatentGrantsRegistrySortBy;
+  sortOrder: 'asc' | 'desc';
 }): void {
   try {
     const snapshot = buildPatentGrantsRegistryListSnapshot(
@@ -36,6 +41,8 @@ export function savePatentGrantsRegistryPersistedUi(params: {
       params.appliedFilters,
       params.page,
       params.pageSize,
+      params.sortBy,
+      params.sortOrder,
     );
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   } catch {

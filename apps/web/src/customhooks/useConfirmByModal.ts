@@ -44,7 +44,7 @@ interface UseDeleteReturn {
 }
 export const useConfirmByModal = <TData = void, TError = Error, TVariables = string>({
   mutation,
-  successMessage = 'Элемент успешно удалён',
+  successMessage = 'Элемент успешно удален',
   errorMessage = 'Не удалось удалить элемент',
   redirectPath,
   redirectState,
@@ -73,7 +73,7 @@ export const useConfirmByModal = <TData = void, TError = Error, TVariables = str
     }
     const feedback: DeleteMutationFeedbackConfig<TData> = {
       showNotification,
-      successMessage: successMessage ?? 'Элемент успешно удалён',
+      successMessage: successMessage ?? 'Элемент успешно удален',
       errorMessage,
       navigate,
       redirectPath,

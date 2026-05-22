@@ -23,7 +23,7 @@ export function runDeleteMutationWithFeedback<TData, TError, TVariables>(
 
 /**
  * Тот же сценарий, но с Promise для `Modal.confirm({ onOk: () => promise })` —
- * пока запрос не завершится, кнопка остаётся в loading.
+ * пока запрос не завершится, кнопка остается в loading.
  */
 export function runDeleteMutationWithFeedbackAsync<TData, TError, TVariables>(
   mutation: UseMutationResult<TData, TError, TVariables>,

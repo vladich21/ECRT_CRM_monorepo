@@ -51,19 +51,19 @@ export function partnerEditBadgeOptions(
 
 function approvalTooltipTitle(approved: boolean, categoryName: string | null | undefined): string {
   if (!categoryName) {
-    return approved ? 'Утверждён' : 'Не утверждён';
+    return approved ? 'Утвержден' : 'Не утвержден';
   }
   const kind = inferPartnerCategoryKind(categoryName);
   if (kind === 'resource') {
     if (approved) {
-      return 'Утверждён: юр. проверка пройдена, нет блокировки по оценке';
+      return 'Утвержден: юр. проверка пройдена, нет блокировки по оценке';
     }
-    return 'Не утверждён: нет юр. проверки или есть блокировка по оценке';
+    return 'Не утвержден: нет юр. проверки или есть блокировка по оценке';
   }
   if (approved) {
-    return 'Утверждён: юр. проверка, анкета, первичная оценка; нет блокировки по оценке';
+    return 'Утвержден: юр. проверка, анкета, первичная оценка; нет блокировки по оценке';
   }
-  return 'Не утверждён: не все этапы пройдены или есть блокировка по оценке';
+  return 'Не утвержден: не все этапы пройдены или есть блокировка по оценке';
 }
 
 function isApprovedForBadges(partner: Partner, options?: PartnerDetailHeaderBadgeOptions): boolean {
@@ -118,12 +118,12 @@ export function partnerDetailHeaderBadges(
   const approvalChip = approved ? (
     <div className={chipStyles.chipApproved}>
       <CheckCircleFilled className={chipStyles.chipIcon} />
-      Утверждён
+      Утвержден
     </div>
   ) : (
     <div className={chipStyles.chipNotApproved}>
       <ClockCircleFilled className={chipStyles.chipIcon} />
-      Не утверждён
+      Не утвержден
     </div>
   );
 

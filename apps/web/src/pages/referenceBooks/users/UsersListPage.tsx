@@ -153,7 +153,7 @@ export default function UsersListPage() {
         content: (
           <div>
             <p>
-              Сейчас вы войдёте в систему как <strong>{fullName}</strong> и будете видеть систему его глазами.
+              Сейчас вы войдете в систему как <strong>{fullName}</strong> и будете видеть систему его глазами.
             </p>
             <p>В шапке появится баннер «Вернуться в свою сессию». Все действия будут выполняться от имени этого пользователя.</p>
           </div>
@@ -212,7 +212,7 @@ export default function UsersListPage() {
                       showNotification(
                         'warning',
                         'Синхронизация с HR завершена с предупреждениями',
-                        `${summary} Записей в отчёте: ${res.errors.length} (см. логи сервера).`,
+                        `${summary} Записей в отчете: ${res.errors.length} (см. логи сервера).`,
                       );
                     } else {
                       showNotification('success', 'Синхронизация с HR завершена', summary);

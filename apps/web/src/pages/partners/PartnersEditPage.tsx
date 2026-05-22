@@ -92,7 +92,7 @@ export default function PartnerEditPage() {
       { id: partnerId!, data: payload },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Контрагент успешно изменён');
+          showNotification('success', 'Успех', 'Контрагент успешно изменен');
           if (wasUnarchivedFromArchive) {
             setUnarchiveReminderOpen(true);
           } else {
@@ -125,7 +125,7 @@ export default function PartnerEditPage() {
           onBack={() => navigate(-1)}
           statusBadge={
             partner.is_deleted
-              ? { label: 'Удалён', variant: 'danger' }
+              ? { label: 'Удален', variant: 'danger' }
               : headerLabels.statusName
                 ? {
                     label: headerLabels.statusName,

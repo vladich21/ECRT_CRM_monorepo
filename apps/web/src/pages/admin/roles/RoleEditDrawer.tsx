@@ -31,7 +31,7 @@ export function RoleEditDrawer({ open, role, onClose, onSubmit, isSubmitting }: 
   }>();
 
   const isEdit = !!role;
-  // Признак ручной правки code: с момента когда пользователь сам ввёл что-то
+  // Признак ручной правки code: с момента когда пользователь сам ввел что-то
   // в поле code, авто-заполнение из name отключается.
   const codeManuallyEditedRef = useRef(false);
 
@@ -100,7 +100,7 @@ export function RoleEditDrawer({ open, role, onClose, onSubmit, isSubmitting }: 
           type='warning'
           showIcon
           message='Системная роль'
-          description='Эта роль защищена системой. Удалить и деактивировать её нельзя — изменения возможны только для названия и описания.'
+          description='Эта роль защищена системой. Удалить и деактивировать ее нельзя — изменения возможны только для названия и описания.'
           style={{ marginBottom: 16 }}
         />
       )}
@@ -121,7 +121,7 @@ export function RoleEditDrawer({ open, role, onClose, onSubmit, isSubmitting }: 
             { required: true, message: 'Код обязателен' },
             {
               pattern: /^[a-z][a-z0-9_]*$/,
-              message: 'Только строчные буквы, цифры и подчёркивание; начинается с буквы',
+              message: 'Только строчные буквы, цифры и подчеркивание; начинается с буквы',
             },
           ]}
           extra={

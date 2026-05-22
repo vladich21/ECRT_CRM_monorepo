@@ -14,6 +14,7 @@ import { BackButton } from '../../components/backButton/BackButton';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { getListScrollY, useListScrollRestoration } from '../../hooks/useListScrollRestoration';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
@@ -80,7 +81,7 @@ export default function PartnersListPage() {
     useServerTablePagination({ defaultPageSize: 20 });
   const restoredFromNavigationRef = useRef(false);
   const canPersistPartnersListUiRef = useRef(false);
-  const { skipNextListResetRef } = useListReturnFromDetail({
+  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
     location,
     navigate,
     getRawSnapshot: navigationState => navigationState.partnersListReturn,
@@ -202,6 +203,7 @@ export default function PartnersListPage() {
           pageSize,
           sortBy,
           sortOrder,
+          getListScrollY(),
         ),
       },
     });
@@ -211,6 +213,10 @@ export default function PartnersListPage() {
       current: newPage,
       pageSize: newPageSize ?? pageSize,
     });
+
+  const isListReady = !isInitialLoad && !isFetching;
+  useListScrollRestoration({ pendingScrollY, isListReady });
+
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
@@ -359,7 +365,7 @@ export default function PartnersListPage() {
         <div className={`${styles.cardsList}${isFetching && !isLoading ? ` ${styles.cardsListDimmed}` : ''}`}>
           {partners.length === 0 ? (
             <div className={styles.emptyState}>
-              {activeTab === 'deleted' ? 'Нет удалённых контрагентов' : 'Контрагенты не найдены'}
+              {activeTab === 'deleted' ? 'Нет удаленных контрагентов' : 'Контрагенты не найдены'}
             </div>
           ) : (
             partners.map((partner, index) => (

@@ -17,7 +17,7 @@ export type DeleteMutationFeedbackConfig<TData> = {
   redirectDelayMs?: number;
   /**
    * Сразу после success-уведомления: закрытие глобальной модалки из ModalStore.
-   * У Ant Design Modal.confirm ничего не передаём.
+   * У Ant Design Modal.confirm ничего не передаем.
    */
   onAfterSuccessNotification?: () => void;
   /** Дополнительно к уведомлению (например invalidateQueries). */

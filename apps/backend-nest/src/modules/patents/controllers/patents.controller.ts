@@ -1,44 +1,7 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
-import {
-  PatentsService,
-  type PatentFindAllParams,
-  type PatentListSortBy,
-} from '../services/patents.service';
-import { parsePatentGrantRegionKeys } from '../patent-grant-region-filter';
-import { parsePagination } from '../../../common/pagination';
 import { parseDeletedScope } from '../../../common/deleted-scope';
-
-function parseAuthorIds(raw?: string): string[] {
-  if (!raw?.trim()) return [];
-  return raw.split(',').map((s) => s.trim()).filter(Boolean);
-}
-
-function parseRegistrationYears(raw?: string): number[] {
-  if (!raw?.trim()) return [];
-  return raw
-    .split(',')
-    .map((s) => Number.parseInt(s.trim(), 10))
-    .filter((y) => Number.isInteger(y) && y >= 1900 && y <= 2100);
-}
-
-function parsePatentListSortBy(raw?: string): PatentListSortBy | undefined {
-  if (
-    raw === 'created_at' ||
-    raw === 'registration_date' ||
-    raw === 'registration_date_cir' ||
-    raw === 'registration_number' ||
-    raw === 'patent_status'
-  ) {
-    return raw;
-  }
-  return undefined;
-}
-
-function parsePatentListSortOrder(raw?: string): 'asc' | 'desc' | undefined {
-  const v = raw?.trim().toLowerCase();
-  if (v === 'asc' || v === 'desc') return v;
-  return undefined;
-}
+import { PatentsService } from '../services/patents.service';
+import { parsePatentListQuery, type PatentListHttpQuery } from '../patent-list-query.parser';
 
 @Controller('patents')
 export class PatentsController {
@@ -52,94 +15,20 @@ export class PatentsController {
   }
 
   @Get()
-  findAll(
-    @Query('preview') preview?: string,
-    @Query('deleted_scope') deletedScopeRaw?: string,
-    @Query('search') search?: string,
-    @Query('department_id') departmentId?: string,
-    @Query('status_id') statusId?: string,
-    @Query('author_ids') authorIdsRaw?: string,
-    @Query('area_ids') areaIdsRaw?: string,
-    @Query('responsible_for_patenting_id') responsibleForPatentingId?: string,
-    @Query('registration_years') registrationYearsRaw?: string,
-    @Query('registration_cir_years') registrationCirYearsRaw?: string,
-    @Query('project_id') projectId?: string,
-    @Query('contract_id') contractId?: string,
-    @Query('grant_regions') grantRegionsRaw?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-    @Query('sort_by') sortByRaw?: string,
-    @Query('sort_order') sortOrderRaw?: string,
-  ) {
-    const registrationYears = parseRegistrationYears(registrationYearsRaw);
-    const registrationCirYears = parseRegistrationYears(registrationCirYearsRaw);
-    const grantRegionKeys = parsePatentGrantRegionKeys(grantRegionsRaw);
-    const sortBy = parsePatentListSortBy(sortByRaw);
-    const sortOrder = parsePatentListSortOrder(sortOrderRaw);
-    const params: PatentFindAllParams = {
-      preview: preview === '1',
-      deletedScope: parseDeletedScope(deletedScopeRaw),
-      pagination: parsePagination(limit, offset),
-      search: search?.trim() || undefined,
-      departmentId: departmentId?.trim() || undefined,
-      statusId: statusId?.trim() || undefined,
-      authorIds: parseAuthorIds(authorIdsRaw),
-      areaIds: parseAuthorIds(areaIdsRaw),
-      responsibleForPatentingId: responsibleForPatentingId?.trim() || undefined,
-      registrationYears: registrationYears.length > 0 ? registrationYears : undefined,
-      registrationCirYears: registrationCirYears.length > 0 ? registrationCirYears : undefined,
-      projectId: projectId?.trim() || undefined,
-      contractId: contractId?.trim() || undefined,
-      grantRegionKeys: grantRegionKeys.length > 0 ? grantRegionKeys : undefined,
-      ...(sortBy ? { sortBy } : {}),
-      ...(sortOrder ? { sortOrder } : {}),
-    };
-    return this.service.findAll(params);
+  findAll(@Query() query: PatentListHttpQuery) {
+    return this.service.findAll(parsePatentListQuery(query, { includePagination: true }));
   }
 
   @Get('deleted')
-  findDeleted(
-    @Query('preview') preview?: string,
-    @Query('search') search?: string,
-    @Query('department_id') departmentId?: string,
-    @Query('status_id') statusId?: string,
-    @Query('author_ids') authorIdsRaw?: string,
-    @Query('area_ids') areaIdsRaw?: string,
-    @Query('responsible_for_patenting_id') responsibleForPatentingId?: string,
-    @Query('registration_years') registrationYearsRaw?: string,
-    @Query('registration_cir_years') registrationCirYearsRaw?: string,
-    @Query('project_id') projectId?: string,
-    @Query('contract_id') contractId?: string,
-    @Query('grant_regions') grantRegionsRaw?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-    @Query('sort_by') sortByRaw?: string,
-    @Query('sort_order') sortOrderRaw?: string,
-  ) {
-    const registrationYears = parseRegistrationYears(registrationYearsRaw);
-    const registrationCirYears = parseRegistrationYears(registrationCirYearsRaw);
-    const grantRegionKeys = parsePatentGrantRegionKeys(grantRegionsRaw);
-    const sortBy = parsePatentListSortBy(sortByRaw);
-    const sortOrder = parsePatentListSortOrder(sortOrderRaw);
-    const params: PatentFindAllParams = {
-      preview: preview === '1',
-      deletedScope: 'deleted',
-      pagination: parsePagination(limit, offset),
-      search: search?.trim() || undefined,
-      departmentId: departmentId?.trim() || undefined,
-      statusId: statusId?.trim() || undefined,
-      authorIds: parseAuthorIds(authorIdsRaw),
-      areaIds: parseAuthorIds(areaIdsRaw),
-      responsibleForPatentingId: responsibleForPatentingId?.trim() || undefined,
-      registrationYears: registrationYears.length > 0 ? registrationYears : undefined,
-      registrationCirYears: registrationCirYears.length > 0 ? registrationCirYears : undefined,
-      projectId: projectId?.trim() || undefined,
-      contractId: contractId?.trim() || undefined,
-      grantRegionKeys: grantRegionKeys.length > 0 ? grantRegionKeys : undefined,
-      ...(sortBy ? { sortBy } : {}),
-      ...(sortOrder ? { sortOrder } : {}),
-    };
-    return this.service.findAll(params);
+  findDeleted(@Query() query: PatentListHttpQuery) {
+    return this.service.findAll(
+      parsePatentListQuery(query, { deletedScope: 'deleted', includePagination: true }),
+    );
+  }
+
+  @Get('export')
+  exportList(@Query() query: PatentListHttpQuery) {
+    return this.service.findAllForExport(parsePatentListQuery(query));
   }
 
   @Get('filter/linked-contract-ids')

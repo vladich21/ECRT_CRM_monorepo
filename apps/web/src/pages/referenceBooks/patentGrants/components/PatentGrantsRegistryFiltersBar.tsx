@@ -1,7 +1,11 @@
-import { SearchOutlined } from '@ant-design/icons';
-import { Input } from 'antd';
+import { SearchOutlined, SortAscendingOutlined } from '@ant-design/icons';
+import { Button, Input, Select } from 'antd';
 
 import type { PatentGrantRegistryListScope } from '../../../../api/patents/patentGrantsApi';
+import {
+  PATENT_GRANTS_REGISTRY_SORT_OPTIONS,
+  type PatentGrantsRegistrySortBy,
+} from '../../../../api/patents/patentGrantsRegistryFilters.types';
 import patentListStyles from '../../../patents/PatentsListPage.module.scss';
 
 export const PATENT_GRANT_REGISTRY_TABS: { key: PatentGrantRegistryListScope; label: string }[] = [
@@ -20,6 +24,10 @@ export type PatentGrantsRegistryFiltersBarProps = {
   onSearchChange: (value: string) => void;
   shownCount: number;
   totalCount: number;
+  sortBy: PatentGrantsRegistrySortBy;
+  sortOrder: 'asc' | 'desc';
+  onSortFieldChange: (field: PatentGrantsRegistrySortBy) => void;
+  onToggleSortOrder: () => void;
 };
 
 export function PatentGrantsRegistryFiltersBar({
@@ -30,6 +38,10 @@ export function PatentGrantsRegistryFiltersBar({
   onSearchChange,
   shownCount,
   totalCount,
+  sortBy,
+  sortOrder,
+  onSortFieldChange,
+  onToggleSortOrder,
 }: PatentGrantsRegistryFiltersBarProps) {
   return (
     <div className={patentListStyles.filterSection}>
@@ -48,9 +60,25 @@ export function PatentGrantsRegistryFiltersBar({
           ))}
         </div>
         <div className={patentListStyles.filterTabsRight}>
+          <Select<PatentGrantsRegistrySortBy>
+            className={patentListStyles.sortSelect}
+            value={sortBy}
+            options={PATENT_GRANTS_REGISTRY_SORT_OPTIONS}
+            onChange={onSortFieldChange}
+            popupMatchSelectWidth={false}
+          />
+          <Button
+            type='default'
+            icon={<SortAscendingOutlined />}
+            title={sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}
+            onClick={onToggleSortOrder}
+            className={patentListStyles.sortDirBtn}
+          >
+            {sortOrder === 'asc' ? 'A→Я' : 'Я→A'}
+          </Button>
           <Input.Search
             className={patentListStyles.searchInTabsRow}
-            placeholder='Номер документа, ведомство, название или номер РИД...'
+            placeholder='Номер документа, ведомство, название, номер РИД или КД...'
             allowClear
             enterButton={false}
             prefix={<SearchOutlined className={patentListStyles.searchIcon} />}

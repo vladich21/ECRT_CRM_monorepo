@@ -158,7 +158,7 @@ export default function ContractEditPage() {
       { id: contractId!, data },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Договор успешно изменён');
+          showNotification('success', 'Успех', 'Договор успешно изменен');
           const state = location.state;
           setTimeout(() => {
             navigate(`/contracts/${contractId}`, state != null ? { state } : undefined);
@@ -191,7 +191,7 @@ export default function ContractEditPage() {
   }
   if (contract.is_deleted) {
     return (
-      <NotFound errorMessage='Удалённый договор нельзя редактировать. Откройте карточку договора и нажмите «Восстановить».' />
+      <NotFound errorMessage='Удаленный договор нельзя редактировать. Откройте карточку договора и нажмите «Восстановить».' />
     );
   }
 

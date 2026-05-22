@@ -107,7 +107,7 @@ export default function PatentEditPage() {
       { id: patentId!, data: payload },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Патент успешно изменён');
+          showNotification('success', 'Успех', 'Патент успешно изменен');
           setTimeout(() => navigate(`/patents/${patentId}`), 1000);
         },
         onError: (e: unknown) => {
@@ -217,7 +217,7 @@ export default function PatentEditPage() {
     name: headerName,
   });
   const headerStatusBadge = patent.is_deleted
-    ? { label: 'Удалён' as const, variant: 'danger' as const }
+    ? { label: 'Удален' as const, variant: 'danger' as const }
     : {
         label: formatPatentStatusDisplayName(autoStatusName, requestsEarliestDeadline) || 'Статус не выбран',
         variant: detailHeaderVariantForPatentRidStatus(autoStatusName, requestsEarliestDeadline),

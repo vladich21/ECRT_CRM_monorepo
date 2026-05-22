@@ -1,7 +1,7 @@
 import { useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 
 import { Patent } from '../../types/patent';
-import { patentApi, PatentsListResponse, type PatentListQuery } from './patentApi';
+import { patentApi, PatentsListResponse, buildPatentsExportQuery, type PatentListQuery, type PatentsDeletedScope } from './patentApi';
 import type { PatentsListServerFilters } from './patentListFilters.types';
 import { invalidatePatentQueries, patentQueryKeys } from './patentQueryKeys';
 
@@ -21,7 +21,7 @@ export const patentsListServerFiltersEmpty: PatentsListServerFilters = {
   sortOrder: 'asc',
 };
 
-export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
+export type { PatentsDeletedScope } from './patentApi';
 
 export type { PatentsListServerFilters } from './patentListFilters.types';
 
@@ -31,29 +31,11 @@ function buildListQuery(
   pageSize: number,
   filters: PatentsListServerFilters,
 ): PatentListQuery {
-  const authorIds = filters.authorIds ?? [];
-  const areaIds = filters.areaIds ?? [];
-  const registrationYears = filters.registrationYears ?? [];
-  const registrationCirYears = filters.registrationCirYears ?? [];
-  const grantRegionKeys = filters.grantRegionKeys ?? [];
   return {
+    ...buildPatentsExportQuery(deletedScope, filters),
     preview: false,
-    deletedScope,
     limit: pageSize,
     offset: (page - 1) * pageSize,
-    search: filters.search.trim() || undefined,
-    department_id: filters.departmentId ?? undefined,
-    status_id: filters.statusId ?? undefined,
-    author_ids: authorIds.length > 0 ? authorIds : undefined,
-    area_ids: areaIds.length > 0 ? areaIds : undefined,
-    responsible_for_patenting_id: filters.responsibleId ?? undefined,
-    registration_years: registrationYears.length > 0 ? registrationYears.join(',') : undefined,
-    registration_cir_years: registrationCirYears.length > 0 ? registrationCirYears.join(',') : undefined,
-    project_id: filters.projectId ?? undefined,
-    contract_id: filters.contractId ?? undefined,
-    grant_regions: grantRegionKeys.length > 0 ? grantRegionKeys.join(',') : undefined,
-    sort_by: filters.sortBy,
-    sort_order: filters.sortOrder,
   };
 }
 
@@ -78,7 +60,7 @@ export function usePatentsList(
     queryFn: async () => {
       const res = await patentApi.getPatents(listQuery);
       if (Array.isArray(res)) {
-        throw new Error('Ожидался полный список патентов, пришёл preview');
+        throw new Error('Ожидался полный список патентов, пришел preview');
       }
       return res;
     },

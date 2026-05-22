@@ -1,12 +1,10 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, desc, eq, exists, ilike, inArray, isNotNull, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import {
-  contracts,
   files,
   patents,
-  projects,
   relPatentsApplicationAreas,
   patentGrants,
   relPatentAuthors,
@@ -21,12 +19,11 @@ import { PaginationParams } from '../../../common/pagination';
 import { type DeletedScope, sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 import { syncPatentAutoStatus } from './patent-auto-status';
 import {
-  appendPatentGrantRegionFilter,
-  type PatentGrantRegionKey,
-} from '../patent-grant-region-filter';
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  appendPatentRegistryFilterParts,
+  type PatentRegistryFilterParams,
+} from '../patent-registry-filter-parts';
+import { type PatentGrantRegionKey } from '../patent-grant-region-filter';
+import type { PatentExportParams } from '../patent-list-query.parser';
 
 export type PatentListSortBy =
   | 'registration_number'
@@ -60,7 +57,14 @@ export interface PatentsListPayload {
   tab_counts: { active: number; deleted: number; all: number };
 }
 
+export interface PatentsExportPayload {
+  data: unknown[];
+  total: number;
+  truncated: boolean;
+}
+
 const PATENT_LIST_GRANT_PREVIEW_LIMIT = 4;
+const PATENT_EXPORT_MAX_ROWS = 10_000;
 
 type PatentGrantListPreviewForApi = {
   count: number;
@@ -158,6 +162,7 @@ export class PatentsService {
 
   private async getPatentGrantsPreviewByPatentIds(
     patentIds: string[],
+    previewLimit: number | null = PATENT_LIST_GRANT_PREVIEW_LIMIT,
   ): Promise<Record<string, PatentGrantListPreviewForApi>> {
     if (patentIds.length === 0) {
       return {};
@@ -200,7 +205,7 @@ export class PatentsService {
       });
 
       const previewItems = sortedByGrantDateNewestFirst
-        .slice(0, PATENT_LIST_GRANT_PREVIEW_LIMIT)
+        .slice(0, previewLimit ?? sortedByGrantDateNewestFirst.length)
         .map((grantRow) => ({
           grant_number: grantRow.grantNumber ?? '',
           grant_date: grantRow.grantDate ? String(grantRow.grantDate) : '',
@@ -280,144 +285,9 @@ export class PatentsService {
     }
   }
 
-  private buildPatentFilterParts(params: {
-    search?: string;
-    departmentId?: string;
-    statusId?: string;
-    authorIds: string[];
-    areaIds: string[];
-    responsibleForPatentingId?: string;
-    registrationYears?: number[];
-    registrationCirYears?: number[];
-    projectId?: string;
-    contractId?: string;
-    grantRegionKeys?: PatentGrantRegionKey[];
-  }): SQL[] {
+  private buildPatentFilterParts(params: PatentRegistryFilterParams): SQL[] {
     const parts: SQL[] = [];
-
-    const rawSearch = params.search?.trim();
-    if (rawSearch) {
-      const safe = rawSearch.replace(/[%_]/g, '');
-      if (safe.length > 0) {
-        const pattern = `%${safe}%`;
-        const contractMatch = exists(
-          this.db.db
-            .select({ one: sql`1` })
-            .from(contracts)
-            .where(
-              and(
-                eq(contracts.id, patents.contractId),
-                or(
-                  ilike(contracts.cipher, pattern),
-                  ilike(contracts.number, pattern),
-                  ilike(contracts.name, pattern),
-                )!,
-              ),
-            ),
-        );
-        const projectMatch = exists(
-          this.db.db
-            .select({ one: sql`1` })
-            .from(projects)
-            .where(
-              and(
-                eq(projects.id, patents.projectId),
-                or(ilike(projects.code, pattern), ilike(projects.name, pattern))!,
-              ),
-            ),
-        );
-        parts.push(
-          or(
-            ilike(patents.name, pattern),
-            ilike(patents.registrationNumber, pattern),
-            ilike(patents.kdNumber, pattern),
-            ilike(patents.applicationNumber, pattern),
-            ilike(patents.registrationNumberCir, pattern),
-            contractMatch,
-            projectMatch,
-          )!,
-        );
-      }
-    }
-
-    if (params.departmentId && UUID_RE.test(params.departmentId)) {
-      parts.push(eq(patents.departmentId, params.departmentId));
-    }
-    if (params.statusId && UUID_RE.test(params.statusId)) {
-      parts.push(eq(patents.statusId, params.statusId));
-    }
-    if (params.responsibleForPatentingId && UUID_RE.test(params.responsibleForPatentingId)) {
-      parts.push(eq(patents.responsibleForPatentId, params.responsibleForPatentingId));
-    }
-
-    const years = (params.registrationYears ?? []).filter(
-      (y) => Number.isInteger(y) && y >= 1900 && y <= 2100,
-    );
-    if (years.length > 0) {
-      parts.push(
-        sql`extract(year from ${patents.registrationDate})::int in (${sql.join(
-          years.map((y) => sql`${y}`),
-          sql`, `,
-        )})`,
-      );
-    }
-
-    const cirYears = (params.registrationCirYears ?? []).filter(
-      (y) => Number.isInteger(y) && y >= 1900 && y <= 2100,
-    );
-    if (cirYears.length > 0) {
-      parts.push(
-        sql`extract(year from ${patents.registrationDateCir})::int in (${sql.join(
-          cirYears.map((y) => sql`${y}`),
-          sql`, `,
-        )})`,
-      );
-    }
-
-    if (params.projectId && UUID_RE.test(params.projectId)) {
-      parts.push(eq(patents.projectId, params.projectId));
-    }
-
-    if (params.contractId && UUID_RE.test(params.contractId)) {
-      parts.push(eq(patents.contractId, params.contractId));
-    }
-
-    appendPatentGrantRegionFilter(parts, this.db.db, params.grantRegionKeys ?? []);
-
-    const validAuthorIds = params.authorIds.filter((id) => UUID_RE.test(id));
-    if (validAuthorIds.length > 0) {
-      parts.push(
-        exists(
-          this.db.db
-            .select({ one: sql`1` })
-            .from(relPatentAuthors)
-            .where(
-              and(
-                eq(relPatentAuthors.patentId, patents.id),
-                inArray(relPatentAuthors.userId, validAuthorIds),
-              ),
-            ),
-        ),
-      );
-    }
-
-    const validAreaIds = params.areaIds.filter((id) => UUID_RE.test(id));
-    if (validAreaIds.length > 0) {
-      parts.push(
-        exists(
-          this.db.db
-            .select({ one: sql`1` })
-            .from(relPatentsApplicationAreas)
-            .where(
-              and(
-                eq(relPatentsApplicationAreas.patentId, patents.id),
-                inArray(relPatentsApplicationAreas.areaId, validAreaIds),
-              ),
-            ),
-        ),
-      );
-    }
-
+    appendPatentRegistryFilterParts(parts, this.db.db, params);
     return parts;
   }
 
@@ -548,13 +418,103 @@ export class PatentsService {
     const total =
       deletedScope === 'active' ? tabActive : deletedScope === 'deleted' ? tabDeleted : tabAll;
 
+    const data = await this.enrichListPatentRows(rows);
+
+    return {
+      data,
+      total,
+      tab_counts: { active: tabActive, deleted: tabDeleted, all: tabAll },
+    };
+  }
+
+  async findAllForExport(params: PatentExportParams): Promise<PatentsExportPayload> {
+    const {
+      deletedScope,
+      search,
+      departmentId,
+      statusId,
+      authorIds,
+      areaIds,
+      responsibleForPatentingId,
+      registrationYears,
+      registrationCirYears,
+      projectId,
+      contractId,
+      grantRegionKeys,
+      sortBy: sortByRaw,
+      sortOrder: sortOrderRaw,
+    } = params;
+
+    const sortBy: PatentListSortBy =
+      sortByRaw === 'created_at' ||
+      sortByRaw === 'registration_date' ||
+      sortByRaw === 'registration_date_cir' ||
+      sortByRaw === 'registration_number' ||
+      sortByRaw === 'patent_status'
+        ? sortByRaw
+        : 'registration_number';
+    const sortOrder: 'asc' | 'desc' = sortOrderRaw === 'desc' ? 'desc' : 'asc';
+
+    const baseParts = this.buildPatentFilterParts({
+      search,
+      departmentId,
+      statusId,
+      authorIds,
+      areaIds,
+      responsibleForPatentingId,
+      registrationYears,
+      registrationCirYears,
+      projectId,
+      contractId,
+      grantRegionKeys,
+    });
+    const listWhere = this.whereForListScope(baseParts, deletedScope);
+    const listOrderBy =
+      sortBy === 'patent_status'
+        ? this.patentListOrderByPatentStatus(sortOrder)
+        : this.patentListOrderBy(sortBy, sortOrder);
+
+    const [total, rows] = await Promise.all([
+      this.countPatentsWhere(listWhere),
+      this.db.db
+        .select()
+        .from(patents)
+        .where(listWhere)
+        .orderBy(...listOrderBy)
+        .limit(PATENT_EXPORT_MAX_ROWS),
+    ]);
+
+    const data = await this.enrichListPatentRows(rows, {
+      includeAllGrantPreviews: true,
+      includeTransformationSnapshots: true,
+    });
+
+    return {
+      data,
+      total,
+      truncated: total > data.length,
+    };
+  }
+
+  private async enrichListPatentRows(
+    rows: (typeof patents.$inferSelect)[],
+    options?: { includeAllGrantPreviews?: boolean; includeTransformationSnapshots?: boolean },
+  ): Promise<unknown[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+
     const patentIds = rows.map((row) => String(row.id));
     const [areaIdsMap, authorIdsMap, grantsPreviewByPatentId, requestSummaries] = await Promise.all([
       this.getAreaIdsMap(patentIds),
       this.getAuthorIdsMap(patentIds),
-      this.getPatentGrantsPreviewByPatentIds(patentIds),
+      this.getPatentGrantsPreviewByPatentIds(
+        patentIds,
+        options?.includeAllGrantPreviews ? null : PATENT_LIST_GRANT_PREVIEW_LIMIT,
+      ),
       this.getPatentRequestSummariesByPatentIds(patentIds),
     ]);
+
     const data = rows.map((patentRow) => {
       const patentId = String(patentRow.id);
       const basePayload = this.toResponse(
@@ -572,10 +532,7 @@ export class PatentsService {
               patent_grants_preview: grantListPreview.preview,
             }
           : basePayload;
-      if (
-        reqSum != null &&
-        (reqSum.requests_earliest_deadline != null || reqSum.requests_has_response_required)
-      ) {
+      if (reqSum != null) {
         return {
           ...withGrants,
           requests_earliest_deadline: reqSum.requests_earliest_deadline,
@@ -585,11 +542,53 @@ export class PatentsService {
       return withGrants;
     });
 
-    return {
-      data,
-      total,
-      tab_counts: { active: tabActive, deleted: tabDeleted, all: tabAll },
-    };
+    if (!options?.includeTransformationSnapshots) {
+      return data;
+    }
+
+    return this.attachTransformationSnapshots(rows, data as Record<string, unknown>[]);
+  }
+
+  private async attachTransformationSnapshots(
+    rows: (typeof patents.$inferSelect)[],
+    data: Record<string, unknown>[],
+  ): Promise<unknown[]> {
+    const linkedIds = [
+      ...new Set(
+        rows.flatMap((row) =>
+          [
+            row.transformedIntoPatentId ? String(row.transformedIntoPatentId) : '',
+            row.transformedFromPatentId ? String(row.transformedFromPatentId) : '',
+          ].filter(Boolean),
+        ),
+      ),
+    ];
+    if (linkedIds.length === 0) {
+      return data;
+    }
+
+    const linkedRows = await this.db.db
+      .select({ id: patents.id, registrationNumber: patents.registrationNumber })
+      .from(patents)
+      .where(inArray(patents.id, linkedIds));
+    const registrationById = new Map(
+      linkedRows.map((row) => [String(row.id), row.registrationNumber ?? '']),
+    );
+
+    return data.map((item, index) => {
+      const sourceRow = rows[index];
+      const intoId = sourceRow.transformedIntoPatentId ? String(sourceRow.transformedIntoPatentId) : '';
+      const fromId = sourceRow.transformedFromPatentId ? String(sourceRow.transformedFromPatentId) : '';
+      return {
+        ...item,
+        ...(intoId
+          ? { transformation_target_registration_number: registrationById.get(intoId) ?? '' }
+          : {}),
+        ...(fromId
+          ? { transformation_source_registration_number: registrationById.get(fromId) ?? '' }
+          : {}),
+      };
+    });
   }
 
   private toResponse(
@@ -697,7 +696,7 @@ export class PatentsService {
       throw new BadRequestException('Целевой РИД не найден.');
     }
     if (target.isDeleted) {
-      throw new BadRequestException('Нельзя ссылаться на удалённый РИД.');
+      throw new BadRequestException('Нельзя ссылаться на удаленный РИД.');
     }
     const from = target.transformedFromPatentId ? String(target.transformedFromPatentId) : '';
     if (from && from !== sourceId) {

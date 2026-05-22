@@ -36,9 +36,11 @@ export default function PartnerDetailsPage() {
     deletionScope?: DeletionScope;
     partnersListReturn?: PartnersListNavSnapshot;
     returnToAfterPartner?: string;
+    evaluationsRegistryReturn?: unknown;
   } | null;
   const listDeletionScope = navState?.deletionScope ?? 'active';
   const partnersListReturn = navState?.partnersListReturn;
+  const evaluationsRegistryReturn = navState?.evaluationsRegistryReturn;
   const returnToAfterPartnerRaw = navState?.returnToAfterPartner?.trim();
   const returnToAfterPartner =
     returnToAfterPartnerRaw && isSafeInternalReturnPath(returnToAfterPartnerRaw)
@@ -62,7 +64,7 @@ export default function PartnerDetailsPage() {
 
   const { handleOpenModal } = useConfirmByModal({
     mutation,
-    successMessage: 'Контрагент успешно удалён',
+    successMessage: 'Контрагент успешно удален',
     errorMessage: 'Не удалось удалить контрагента',
     getMutationProps: () => partnerId!,
     showNotification,
@@ -120,7 +122,9 @@ export default function PartnerDetailsPage() {
 
   const handleBack = () => {
     if (returnToAfterPartner) {
-      navigate(returnToAfterPartner);
+      navigate(returnToAfterPartner, {
+        state: evaluationsRegistryReturn ? { evaluationsRegistryReturn } : undefined,
+      });
       return;
     }
     navigate(PARTNERS_REGISTRY_PATH, {
@@ -139,7 +143,7 @@ export default function PartnerDetailsPage() {
       onBack={handleBack}
       statusBadge={
         partner.is_deleted
-          ? { label: 'Удалён', variant: 'danger' }
+          ? { label: 'Удален', variant: 'danger' }
           : statusName
             ? { label: statusName, variant: detailHeaderVariantForPartnerStatusName(statusName) }
             : undefined

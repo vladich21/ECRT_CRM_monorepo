@@ -24,7 +24,7 @@ interface MatrixRow extends RoleSectionWithPermissions {
 const EMPTY_FLAGS: RolePermissionFlags = { canRead: false, canEdit: false, canDelete: false };
 
 /**
- * Из плоского списка с parent_id строим иерархию (папка → её дети) и
+ * Из плоского списка с parent_id строим иерархию (папка → ее дети) и
  * сразу разворачиваем в плоскость для Table.dataSource, чтобы можно было
  * показывать вложенность через отступы level.
  */
@@ -102,9 +102,9 @@ export function RolePermissionsMatrix({ roleId, readOnly, onSaved }: Props) {
         cleaned[code] = flags;
       }
     }
-    // Также передаём пустые объекты (canRead=false) для отзыва прав;
+    // Также передаем пустые объекты (canRead=false) для отзыва прав;
     // однако backend пропускает {false,false,false} — для этого нам нужно
-    // явно передать список и без флагов: пройдёмся по всем известным разделам.
+    // явно передать список и без флагов: пройдемся по всем известным разделам.
     const payload: Record<string, RolePermissionFlags> = {};
     for (const code of Object.keys(draft)) {
       payload[code] = draft[code];

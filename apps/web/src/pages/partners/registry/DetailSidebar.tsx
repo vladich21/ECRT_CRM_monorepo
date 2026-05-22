@@ -18,7 +18,7 @@ function countOtherContacts(contacts: PartnerContact[], featuredId: string): num
   );
 }
 
-/** «1 контакт / 2 контакта / 5 контактов» для фразы «Ещё N …». */
+/** «1 контакт / 2 контакта / 5 контактов» для фразы «Еще N …». */
 function pluralContactsRu(contactCount: number): string {
   const countFloored = Math.max(0, Math.floor(contactCount));
   const lastDigit = countFloored % 10;
@@ -88,9 +88,9 @@ function ContactInfoClassificationRows({
       </div>
       {extraCount > 0 ? (
         <div className={`${styles.classRow} ${styles.moreContactsInGrid}`}>
-          <span className={styles.classLabel}>Ещё контакты</span>
+          <span className={styles.classLabel}>Еще контакты</span>
           <Link to={`/partners/${partnerId}/contacts`} className={styles.moreContactsLink}>
-            Ещё {pluralContactsRu(extraCount)}
+            Еще {pluralContactsRu(extraCount)}
           </Link>
         </div>
       ) : null}
@@ -217,7 +217,7 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
             </Tag>
           </div>
           <div className={styles.classRowBorder}>
-            <span className={styles.classLabel}>Утверждён</span>
+            <span className={styles.classLabel}>Утвержден</span>
             <Tag
               bordered={false}
               style={mutedTagStyle(approvedByRules ? SURFACE_ACTIVE : SURFACE_BLOCKED, { fontSize: 14 })}

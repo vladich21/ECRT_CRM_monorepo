@@ -9,7 +9,7 @@ export function buildContractDetailsTitle(contract: Contract): string {
 
 export function buildContractDetailsStatusBadge(contract: Contract) {
   return {
-    label: contract.is_deleted ? 'Удалён' : contract.is_active ? 'Действует' : 'Не действует',
+    label: contract.is_deleted ? 'Удален' : contract.is_active ? 'Действует' : 'Не действует',
     variant: detailHeaderVariantForContractHeader(!!contract.is_deleted, !!contract.is_active),
   };
 }

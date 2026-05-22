@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Input, Modal, Table, Tag, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -17,6 +17,8 @@ import {
 import { invalidateSupplierEvaluationQueries } from '../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
+import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
+import { getListScrollY, useListScrollRestoration } from '../../hooks/useListScrollRestoration';
 import { useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
 import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
@@ -48,16 +50,22 @@ import {
   evaluationYearsToApiParam,
 } from './supplierEvaluationsConstants';
 import {
-  SUPPLIER_EVALUATIONS_REGISTRY_PARTNER_LINK_STATE,
   SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
   loadSupplierEvaluationsRegistryPersistedUi,
   saveSupplierEvaluationsRegistryPersistedUi,
 } from './supplierEvaluationsRegistry.model';
+import {
+  buildEvaluationsRegistryNavSnapshot,
+  EVALUATIONS_REGISTRY_RETURN_STATE_KEY,
+  parseEvaluationsRegistryNavSnapshot,
+} from './supplierEvaluationsRegistryNavSnapshot';
 
 const { Text } = Typography;
 
 export default function SupplierEvaluationsRegistryPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
   const deleteMut = useDeleteSupplierEvaluation();
   const [searchInput, setSearchInput] = useState('');
@@ -78,8 +86,31 @@ export default function SupplierEvaluationsRegistryPage() {
   const [reevaluationProjectId, setReevaluationProjectId] = useState<string | undefined>();
   const [reevaluationProjectLabel, setReevaluationProjectLabel] = useState<string | undefined>();
 
-  const { page, pageSize, handleTableChange, getPaginationConfig, resetPage } = useServerTablePagination({
-    defaultPageSize: 20,
+  const { page, pageSize, setPage, setPageSize, handleTableChange, getPaginationConfig, resetPage } =
+    useServerTablePagination({
+      defaultPageSize: 20,
+    });
+
+  const restoredFromNavigationRef = useRef(false);
+  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
+    location,
+    navigate,
+    getRawSnapshot: navigationState => navigationState[EVALUATIONS_REGISTRY_RETURN_STATE_KEY],
+    parse: parseEvaluationsRegistryNavSnapshot,
+    applyParsed: restoredListState => {
+      restoredFromNavigationRef.current = true;
+      setSearchInput(restoredListState.searchQuery);
+      setDebouncedSearch(restoredListState.searchQuery.trim());
+      setRowStatusTab(restoredListState.rowStatusTab);
+      setAppliedListFilters(restoredListState.appliedListFilters);
+      setDraftListFilters(restoredListState.appliedListFilters);
+      setPage(restoredListState.page);
+      setPageSize(restoredListState.pageSize);
+      saveSupplierEvaluationsRegistryPersistedUi({
+        appliedListFilters: restoredListState.appliedListFilters,
+        rowStatusTab: restoredListState.rowStatusTab,
+      });
+    },
   });
 
   useEffect(() => {
@@ -200,9 +231,12 @@ export default function SupplierEvaluationsRegistryPage() {
     setDraftListFilters(prev => ({ ...prev, ...patch }));
   };
 
-  useEffect(() => {
-    resetPage();
-  }, [rowStatusTab, appliedListFilters, debouncedSearch, resetPage]);
+  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [
+    rowStatusTab,
+    appliedListFilters,
+    debouncedSearch,
+    resetPage,
+  ]);
 
   useEffect(() => {
     saveSupplierEvaluationsRegistryPersistedUi({ appliedListFilters, rowStatusTab });
@@ -211,6 +245,27 @@ export default function SupplierEvaluationsRegistryPage() {
   const displayRows = data?.data ?? [];
   const total = data?.total ?? 0;
   const displayTabCounts = tabCounts;
+
+  const openPartnerEvaluations = (partnerId: string) => {
+    navigate(`/partners/${partnerId}/evaluations`, {
+      state: {
+        returnToAfterPartner: '/supplier-evaluations',
+        [EVALUATIONS_REGISTRY_RETURN_STATE_KEY]: buildEvaluationsRegistryNavSnapshot(
+          searchInput,
+          rowStatusTab,
+          appliedListFilters,
+          page,
+          pageSize,
+          getListScrollY(),
+        ),
+      },
+    });
+  };
+
+  useListScrollRestoration({
+    pendingScrollY,
+    isListReady: !isLoading,
+  });
 
   const columns: ColumnsType<SupplierEvaluationListItem> = [
     Table.EXPAND_COLUMN,
@@ -225,13 +280,9 @@ export default function SupplierEvaluationsRegistryPage() {
           partnerNameById[row.partner_id] ||
           row.partner_id;
         return (
-          <Link
-            className={registryStyles.tableCellMultiline}
-            to={`/partners/${row.partner_id}/evaluations`}
-            state={SUPPLIER_EVALUATIONS_REGISTRY_PARTNER_LINK_STATE}
-          >
+          <Button type='link' className={registryStyles.tableCellMultiline} onClick={() => openPartnerEvaluations(row.partner_id)}>
             {label}
-          </Link>
+          </Button>
         );
       },
     },

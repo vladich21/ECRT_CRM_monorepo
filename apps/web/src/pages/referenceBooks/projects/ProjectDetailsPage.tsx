@@ -50,7 +50,7 @@ export default function ProjectDetailsPage() {
   const backLabel = getInternalReturnBackLabel(backPath, 'Проекты');
   const { handleOpenModal } = useConfirmByModal({
     mutation,
-    successMessage: 'Проект успешно удалён',
+    successMessage: 'Проект успешно удален',
     errorMessage: 'Не удалось удалить проект',
     getMutationProps: () => projectId!,
     showNotification,
@@ -117,7 +117,7 @@ export default function ProjectDetailsPage() {
       }}
       statusBadge={
         project.is_deleted
-          ? { label: 'Удалён', variant: 'danger' }
+          ? { label: 'Удален', variant: 'danger' }
           : { label: st.label, variant: detailHeaderVariantForProjectStatus(project.status) }
       }
       metaItems={[

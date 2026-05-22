@@ -4,7 +4,7 @@ export const DELETION_SCOPE_TABS: {
   label: string;
 }[] = [
   { key: 'active', label: 'Активные' },
-  { key: 'deleted', label: 'Удалённые' },
+  { key: 'deleted', label: 'Удаленные' },
   { key: 'all', label: 'Все записи' },
 ];
 export type DeletionTabCounts = {

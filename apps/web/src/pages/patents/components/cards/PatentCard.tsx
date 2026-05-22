@@ -24,12 +24,12 @@ const MAX_GRANT_MINI_CARDS_IN_LIST = 2;
 
 function grantsRemainderLabel(remainderCount: number): string {
   if (remainderCount === 1) {
-    return 'Ещё 1 документ';
+    return 'Еще 1 документ';
   }
   if (remainderCount >= 2 && remainderCount <= 4) {
-    return `Ещё ${remainderCount} документа`;
+    return `Еще ${remainderCount} документа`;
   }
-  return `Ещё ${remainderCount} документов`;
+  return `Еще ${remainderCount} документов`;
 }
 
 type Props = {
@@ -82,7 +82,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
         <div className={styles.chipsRow}>
           {patent.is_deleted ? (
             <Tag bordered={false} style={mutedTagStyle(deletedSurface, { fontSize: 12 })}>
-              Удалён
+              Удален
             </Tag>
           ) : statusName ? (
             <Tag bordered={false} style={mutedTagStyle(ridSurface, { fontSize: 12 })}>

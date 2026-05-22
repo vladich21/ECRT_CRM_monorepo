@@ -9,6 +9,7 @@ import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { useNotification } from '@/customhooks/useNotification';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '@/hooks/useListReturnFromDetail';
+import { getListScrollY, useListScrollRestoration } from '@/hooks/useListScrollRestoration';
 import { useServerTablePagination } from '@/hooks/useServerTablePagination';
 import { Contract } from '@/types/contract';
 import { useContractListFilters } from '../hooks/useContractListFilters';
@@ -60,7 +61,7 @@ export default function ContractsListPage() {
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
-  const { skipNextListResetRef } = useListReturnFromDetail({
+  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
     location,
     navigate,
     getRawSnapshot: navigationState => navigationState.contractsListReturn,
@@ -129,7 +130,14 @@ export default function ContractsListPage() {
         contract,
         from: location.pathname,
         deletionScope: activeTab === 'deleted' ? ('deleted' as const) : undefined,
-        contractsListReturn: buildContractsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
+        contractsListReturn: buildContractsListNavSnapshot(
+          searchQuery,
+          activeTab,
+          appliedFilters,
+          page,
+          pageSize,
+          getListScrollY(),
+        ),
       },
     });
 
@@ -138,6 +146,9 @@ export default function ContractsListPage() {
       current: newPage,
       pageSize: newPageSize ?? pageSize,
     });
+
+  const isListReady = !isInitialLoad && !isFetching;
+  useListScrollRestoration({ pendingScrollY, isListReady });
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
@@ -229,7 +240,7 @@ export default function ContractsListPage() {
       ) : (
         <div className={`${styles.cardList}${isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''}`}>
           {contracts.length === 0 ? (
-            <div className={styles.empty}>{activeTab === 'deleted' ? 'Нет удалённых договоров' : 'Нет договоров'}</div>
+            <div className={styles.empty}>{activeTab === 'deleted' ? 'Нет удаленных договоров' : 'Нет договоров'}</div>
           ) : (
             contracts.map(contract => (
               <ContractCard key={contract.id} contract={contract} refs={references} onClick={handleContractClick} />

@@ -27,7 +27,7 @@ import { UpdateFileMetaDto } from '../dto/update-file-meta.dto';
 export class FilesController {
   constructor(private readonly service: FilesService) {}
 
-  /** Клиент (`apiClient`) шлёт `{ body: { ... } }`; поддерживаем и плоское тело для совместимости. */
+  /** Клиент (`apiClient`) шлет `{ body: { ... } }`; поддерживаем и плоское тело для совместимости. */
   private parseUpdateFileMetaFromRequest(reqBody: unknown): UpdateFileMetaDto {
     const raw =
       reqBody != null && typeof reqBody === 'object' && !Array.isArray(reqBody)

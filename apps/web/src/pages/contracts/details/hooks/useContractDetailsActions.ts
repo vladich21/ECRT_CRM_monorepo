@@ -26,8 +26,8 @@ export function useContractDetailsActions(
     mutation: deleteContractMutation,
     successMessage: (data: ContractDeleteResult) =>
       data.deletion_mode === 'hard'
-        ? 'Черновик удалён безвозвратно'
-        : 'Договор перемещён в удалённые',
+        ? 'Черновик удален безвозвратно'
+        : 'Договор перемещен в удаленные',
     errorMessage: 'Не удалось удалить договор',
     getMutationProps: () => contractId,
     showNotification,
@@ -64,7 +64,7 @@ export function useContractDetailsActions(
       handleOpenModal({
         title: 'Удалить черновик безвозвратно?',
         content:
-          'Черновик договора будет удалён навсегда. Восстановить его нельзя — запись исчезнет из системы.',
+          'Черновик договора будет удален навсегда. Восстановить его нельзя — запись исчезнет из системы.',
         okText: 'Удалить навсегда',
         confirmAppearance: 'delete',
       });

@@ -47,7 +47,7 @@ export class HrSyncController {
     const expected = (this.config.get<string>('HR_USERS_SYNC_SECRET') ?? '').trim();
     if (!expected) {
       throw new ServiceUnavailableException(
-        'Эндпоинт отключён: задайте HR_USERS_SYNC_SECRET в окружении',
+        'Эндпоинт отключен: задайте HR_USERS_SYNC_SECRET в окружении',
       );
     }
     const secret = readHrSyncSecret(req);

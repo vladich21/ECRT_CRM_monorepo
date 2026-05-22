@@ -201,7 +201,7 @@ export class PartnersService {
     const isEngineering = this.partnerEngineeringCategorySql();
     const approvedExpr = this.partnerApprovedMatchSql();
 
-    // Только утверждённые инжиниринговые со статусом Активный или Потенциальный.
+    // Только утвержденные инжиниринговые со статусом Активный или Потенциальный.
     const shouldBeEvaluated = and(
       isEngineering,
       approvedExpr,
@@ -858,7 +858,7 @@ export class PartnersService {
       .limit(1);
     if (contractRefs.length > 0) {
       throw new ConflictException(
-        'Невозможно удалить партнёра: к нему привязаны активные (не удалённые) договоры.',
+        'Невозможно удалить партнера: к нему привязаны активные (не удаленные) договоры.',
       );
     }
     await this.db.db
@@ -1346,7 +1346,7 @@ export class PartnersService {
     statusIds: { activeId: string; potentialId: string };
   }): PartnerEvaluationRequiredValue {
     const isEngineering = inferPartnerCategoryKind(params.categoryName) === 'engineering';
-    // Только утверждённые инжиниринговые (активные или потенциальные) подлежат обязательной оценке.
+    // Только утвержденные инжиниринговые (активные или потенциальные) подлежат обязательной оценке.
     if (!isEngineering || !params.isApproved) return 'none';
     const isActive = params.statusId === params.statusIds.activeId;
     const isPotential = params.statusId === params.statusIds.potentialId;

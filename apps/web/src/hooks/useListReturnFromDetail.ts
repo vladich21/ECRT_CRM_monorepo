@@ -1,8 +1,13 @@
-import { useEffect, useLayoutEffect, useRef, type DependencyList, type MutableRefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type DependencyList, type MutableRefObject } from 'react';
 import type { Location, NavigateFunction } from 'react-router-dom';
 
 type NavigationStateRecord = Record<string, unknown>;
-export function useListReturnFromDetail<RestoredListState>(options: {
+
+export type ListRestoredScrollState = {
+  scrollY?: number;
+};
+
+export function useListReturnFromDetail<RestoredListState extends ListRestoredScrollState>(options: {
   location: Location;
   navigate: NavigateFunction;
   getRawSnapshot: (navigationState: NavigationStateRecord) => unknown;
@@ -11,8 +16,10 @@ export function useListReturnFromDetail<RestoredListState>(options: {
   applyFallback?: (navigationState: NavigationStateRecord) => void;
 }): {
   skipNextListResetRef: MutableRefObject<boolean>;
+  pendingScrollY: number | undefined;
 } {
   const skipNextListResetRef = useRef(false);
+  const [pendingScrollY, setPendingScrollY] = useState<number | undefined>();
   const getRawSnapshotRef = useRef(options.getRawSnapshot);
   const parseRef = useRef(options.parse);
   const applyParsedRef = useRef(options.applyParsed);
@@ -30,13 +37,14 @@ export function useListReturnFromDetail<RestoredListState>(options: {
     const restoredListState = parseRef.current(rawSnapshot);
     if (restoredListState != null) {
       skipNextListResetRef.current = true;
+      setPendingScrollY(restoredListState.scrollY);
       applyParsedRef.current(restoredListState);
       navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: {} });
       return;
     }
     applyFallbackRef.current?.(navigationState);
   }, [location.state, location.pathname, location.search, navigate]);
-  return { skipNextListResetRef };
+  return { skipNextListResetRef, pendingScrollY };
 }
 export function useResetServerPageUnlessSkipped(
   skipNextPaginationResetRef: MutableRefObject<boolean>,

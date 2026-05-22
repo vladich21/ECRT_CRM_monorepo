@@ -68,7 +68,7 @@ export default function PatentDetailsPage() {
   const activeTab = getActiveTabFromPath(location.pathname);
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteMutation,
-    successMessage: 'Патент успешно удалён',
+    successMessage: 'Патент успешно удален',
     errorMessage: 'Не удалось удалить патент',
     redirectPath: '/patents',
     getMutationProps: () => patentId!,
@@ -127,7 +127,7 @@ export default function PatentDetailsPage() {
   const projectEntity = getEntityById(patent.project_id, referenceBooks?.projects ?? []);
   const projectChipLabel = formatProjectChipLabel(projectEntity);
   const headerStatusBadge = patent.is_deleted
-    ? { label: 'Удалён' as const, variant: 'danger' as const }
+    ? { label: 'Удален' as const, variant: 'danger' as const }
     : {
         label: formatPatentStatusDisplayName(statusName, earliestRequestDeadline) || 'Статус не указан',
         variant: detailHeaderVariantForPatentRidStatus(statusName, earliestRequestDeadline),

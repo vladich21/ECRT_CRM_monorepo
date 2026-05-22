@@ -97,7 +97,7 @@ function LoginPage() {
       const fromBody = getApiErrorMessage(err);
       const hasResponse =
         err && typeof err === 'object' && 'response' in err && (err as { response?: unknown }).response != null;
-      const fallback = hasResponse ? 'Не удалось выполнить запрос. Попробуйте ещё раз.' : 'Ошибка подключения к серверу';
+      const fallback = hasResponse ? 'Не удалось выполнить запрос. Попробуйте еще раз.' : 'Ошибка подключения к серверу';
       set({ error: fromBody ?? fallback });
     } finally {
       if (!keepLoading) set({ loading: false });

@@ -11,7 +11,7 @@ import {
 } from './supplierEvaluationUi';
 import styles from './partnerEvalKpiDisplay.module.scss';
 
-/** Тег среднего балла или «Не оценён» для шапки детальной страницы. */
+/** Тег среднего балла или «Не оценен» для шапки детальной страницы. */
 export function PartnerHeaderAvgScoreTag({
   avgScore,
   loading,
@@ -29,13 +29,13 @@ export function PartnerHeaderAvgScoreTag({
     if (forDarkHeader) {
       return (
         <Tag bordered className={`${styles.avgTag} ${styles.avgTagHeaderGhost}`}>
-          Не оценён
+          Не оценен
         </Tag>
       );
     }
     return (
       <Tag color='default' className={styles.avgTag}>
-        Не оценён
+        Не оценен
       </Tag>
     );
   }
@@ -100,7 +100,7 @@ export function PartnerNextEvalDateTags({
     );
   }
 
-  // ─── Шапка контрагента (тёмный фон) ───
+  // ─── Шапка контрагента (темный фон) ───
   if (forDarkHeader) {
     let line2: ReactNode = null;
 

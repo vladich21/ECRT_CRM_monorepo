@@ -28,7 +28,7 @@ type Props = CanAccessSingleProps | CanAccessAnyProps;
  * Один раздел:
  *   <CanAccess section={SECTIONS.PARTNERS_LIST} action="edit">…</CanAccess>
  *
- * Несколько разделов (хотя бы один из них даёт право):
+ * Несколько разделов (хотя бы один из них дает право):
  *   <CanAccess sections={[SECTIONS.A, SECTIONS.B]} action="read">…</CanAccess>
  */
 export function CanAccess({ section, sections, action = 'read', fallback = null, children }: Props) {

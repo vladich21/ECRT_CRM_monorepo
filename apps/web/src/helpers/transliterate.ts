@@ -29,7 +29,7 @@ export function transliterateToSlug(input: string): string {
     else if (/[a-z0-9]/.test(ch)) out += ch;
     else out += '_';
   }
-  // схлопываем подряд идущие подчёркивания и обрезаем по краям
+  // схлопываем подряд идущие подчеркивания и обрезаем по краям
   out = out.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
   // обязательно начинается с буквы; если первый символ — цифра, префикс "r_"
   if (out && /^\d/.test(out)) out = `r_${out}`;

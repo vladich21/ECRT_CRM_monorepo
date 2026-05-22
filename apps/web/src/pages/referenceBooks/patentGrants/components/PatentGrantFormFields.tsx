@@ -8,7 +8,7 @@ import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrant
 import { getNameById } from '../../../../helpers/getNameById';
 import { Reference } from '../../../../types/referenceTypes';
 import { usePatentGrantRidLink } from '../hooks/usePatentGrantRidLink';
-import { getContractDisplayLabel } from '../utils/patentGrantCardHelpers';
+import { buildPatentSelectLabel, getContractDisplayLabel, hasActualLicensee } from '../utils/patentGrantCardHelpers';
 import styles from '../PatentGrantFormPage.module.scss';
 
 export type PatentGrantPatentSelectFallback = { id: string; name: string };
@@ -98,7 +98,9 @@ export function PatentGrantFormFields({
 }: PatentGrantFormFieldsProps) {
   const form = Form.useFormInstance();
   const patentId = Form.useWatch('patent_id', form);
+  const actualLicenseePartnerId = Form.useWatch('actual_licensee_partner_id', form);
   const isEdit = mode === 'edit';
+  const showExpectedLicensee = !hasActualLicensee(actualLicenseePartnerId);
   const { data: selectedPatent } = usePatentById(patentId ?? '');
   const { linkedRidRegNumber } = usePatentGrantRidLink({ form, patentId, selectedPatent, initialPatentId, initialRidRegNumber });
 
@@ -150,17 +152,21 @@ export function PatentGrantFormFields({
                   placeholder='Выберите РИД'
                   allowClear
                   showSearch
-                  optionFilterProp='children'
+                  optionLabelProp='label'
+                  optionFilterProp='label'
                   filterOption={(input, option) =>
-                    String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   }
                   suffixIcon={<CopyrightOutlined />}
                 >
-                  {patentsForSelect.map(patent => (
-                    <Select.Option key={patent.id} value={patent.id}>
-                      {patent.name?.trim() || `Патент ${patent.id}`}
-                    </Select.Option>
-                  ))}
+                  {patentsForSelect.map(patent => {
+                    const label = buildPatentSelectLabel(patent);
+                    return (
+                      <Select.Option key={patent.id} value={patent.id} label={label}>
+                        {label}
+                      </Select.Option>
+                    );
+                  })}
                 </Select>
               </Form.Item>
             </Col>
@@ -192,14 +198,16 @@ export function PatentGrantFormFields({
               </>
             ) : null}
 
-            <Col xs={24} md={isEdit ? 12 : 24}>
-              <PartnerSelect
-                name='expected_licensee_partner_ids'
-                label='Предполагаемый лицензиат'
-                multiple
-                options={partnerOptions}
-              />
-            </Col>
+            {showExpectedLicensee ? (
+              <Col xs={24} md={isEdit ? 12 : 24}>
+                <PartnerSelect
+                  name='expected_licensee_partner_ids'
+                  label='Предполагаемый лицензиат'
+                  multiple
+                  options={partnerOptions}
+                />
+              </Col>
+            ) : null}
           </Row>
         </div>
 

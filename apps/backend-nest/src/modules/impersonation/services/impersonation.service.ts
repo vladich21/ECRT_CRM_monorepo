@@ -46,10 +46,10 @@ export class ImpersonationService {
 
     const target = await this.users.findOne(targetUserId);
     if (!target) throw new NotFoundException('Пользователь не найден');
-    if (!target.is_active) throw new ForbiddenException('Учётная запись цели деактивирована');
+    if (!target.is_active) throw new ForbiddenException('Учетная запись цели деактивирована');
 
     // Защита от «админ-под-админом»: если у цели есть право admin.impersonate:edit,
-    // войти под ней не даём — иначе можно эскалировать привилегии через цепочку.
+    // войти под ней не даем — иначе можно эскалировать привилегии через цепочку.
     const targetPerms = await this.permissions.getUserSectionPermissions(targetUserId);
     if (this.permissions.hasSectionPermission(targetPerms, SECTIONS.ADMIN_IMPERSONATE, 'edit')) {
       throw new ForbiddenException(
@@ -96,12 +96,12 @@ export class ImpersonationService {
       // Очистим cookies — невалидное состояние
       res.clearCookie(AUTH_COOKIE, { path: '/' });
       res.clearCookie(ADMIN_BACKUP_COOKIE, { path: '/' });
-      throw new NotFoundException('Учётная запись администратора не найдена');
+      throw new NotFoundException('Учетная запись администратора не найдена');
     }
     if (!admin.is_active) {
       res.clearCookie(AUTH_COOKIE, { path: '/' });
       res.clearCookie(ADMIN_BACKUP_COOKIE, { path: '/' });
-      throw new ForbiddenException('Учётная запись администратора деактивирована');
+      throw new ForbiddenException('Учетная запись администратора деактивирована');
     }
 
     const adminPerms = await this.permissions.getUserSectionPermissions(adminId);
@@ -120,7 +120,7 @@ export class ImpersonationService {
 
   /**
    * Контекст имперсонации для /auth/me.
-   * Возвращает данные admin'а, который вошёл под текущего пользователя, либо null.
+   * Возвращает данные admin'а, который вошел под текущего пользователя, либо null.
    */
   async getContext(impersonatedBy: string | undefined): Promise<{
     active: true;

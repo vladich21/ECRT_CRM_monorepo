@@ -5,18 +5,8 @@ import {
   PATENT_GRANT_STATUS_FILTER_OPTIONS,
   type PatentGrantsRegistryAdvancedFilters,
 } from '../../../../api/patents/patentGrantsRegistryFilters.types';
+import type { PatentListFiltersSelectOptions } from '../../../patents/types/PatentsListPage.types';
 import patentListStyles from '../../../patents/PatentsListPage.module.scss';
-
-const CALENDAR_YEAR_START = 2022;
-const CALENDAR_YEAR_END = 2050;
-
-const CALENDAR_YEAR_OPTIONS: Array<{ label: string; value: number }> = (() => {
-  const years: Array<{ label: string; value: number }> = [];
-  for (let year = CALENDAR_YEAR_START; year <= CALENDAR_YEAR_END; year++) {
-    years.push({ label: String(year), value: year });
-  }
-  return years;
-})();
 
 type Props = {
   open: boolean;
@@ -25,6 +15,7 @@ type Props = {
   onClose: () => void;
   onApply: () => void;
   onReset: () => void;
+  selectOptions: PatentListFiltersSelectOptions;
 };
 
 export function PatentGrantsRegistryFiltersModal({
@@ -34,6 +25,7 @@ export function PatentGrantsRegistryFiltersModal({
   onClose,
   onApply,
   onReset,
+  selectOptions,
 }: Props) {
   return (
     <Modal
@@ -59,6 +51,45 @@ export function PatentGrantsRegistryFiltersModal({
     >
       <div className={patentListStyles.filtersModalGrid}>
         <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Подразделение</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            placeholder='Все подразделения'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.departments}
+            value={draftFilters.departmentId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ departmentId: value ?? null })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Проект</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            placeholder='Все проекты'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.projects}
+            value={draftFilters.projectId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ projectId: value ?? null })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Договор (работы по договору)</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            placeholder='Все договоры'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.contracts}
+            value={draftFilters.contractId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ contractId: value ?? null })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
           <span className={patentListStyles.filtersModalLabel}>Статус охранного документа</span>
           <Select
             className={patentListStyles.filtersModalControl}
@@ -83,14 +114,42 @@ export function PatentGrantsRegistryFiltersModal({
           />
         </div>
         <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Год регистрации (ИЦ ЖТ)</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            mode='multiple'
+            placeholder='Все годы'
+            allowClear
+            options={selectOptions.calendarYears}
+            value={
+              draftFilters.registrationYears.length > 0 ? draftFilters.registrationYears : undefined
+            }
+            onChange={value => onUpdateDraftFilter({ registrationYears: value ?? [] })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Год регистрации (ЦИР)</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            mode='multiple'
+            placeholder='Все годы'
+            allowClear
+            options={selectOptions.calendarYears}
+            value={
+              draftFilters.registrationCirYears.length > 0 ? draftFilters.registrationCirYears : undefined
+            }
+            onChange={value => onUpdateDraftFilter({ registrationCirYears: value ?? [] })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
           <span className={patentListStyles.filtersModalLabel}>Год выдачи</span>
           <Select
             className={patentListStyles.filtersModalControl}
             mode='multiple'
             allowClear
             placeholder='Любой год'
-            options={CALENDAR_YEAR_OPTIONS}
-            value={draftFilters.grantIssueYears}
+            options={selectOptions.calendarYears}
+            value={draftFilters.grantIssueYears.length > 0 ? draftFilters.grantIssueYears : undefined}
             onChange={value => onUpdateDraftFilter({ grantIssueYears: value ?? [] })}
           />
         </div>
@@ -101,9 +160,61 @@ export function PatentGrantsRegistryFiltersModal({
             mode='multiple'
             allowClear
             placeholder='Любой год'
-            options={CALENDAR_YEAR_OPTIONS}
-            value={draftFilters.grantRenewalYears}
+            options={selectOptions.calendarYears}
+            value={draftFilters.grantRenewalYears.length > 0 ? draftFilters.grantRenewalYears : undefined}
             onChange={value => onUpdateDraftFilter({ grantRenewalYears: value ?? [] })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Состояние РИД</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            placeholder='Все состояния'
+            allowClear
+            options={selectOptions.statuses}
+            value={draftFilters.statusId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ statusId: value ?? null })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Область применения</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            mode='multiple'
+            placeholder='Все области'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.applicationAreas}
+            value={draftFilters.areaIds.length > 0 ? draftFilters.areaIds : undefined}
+            onChange={value => onUpdateDraftFilter({ areaIds: value ?? [] })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Исполнители</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            placeholder='Все исполнители'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            mode='multiple'
+            options={selectOptions.users}
+            value={draftFilters.authorIds}
+            onChange={value => onUpdateDraftFilter({ authorIds: value ?? [] })}
+          />
+        </div>
+        <div className={patentListStyles.filtersModalField}>
+          <span className={patentListStyles.filtersModalLabel}>Ответственный за патентование</span>
+          <Select
+            className={patentListStyles.filtersModalControl}
+            placeholder='Все ответственные'
+            allowClear
+            showSearch
+            optionFilterProp='label'
+            options={selectOptions.users}
+            value={draftFilters.responsibleId ?? undefined}
+            onChange={value => onUpdateDraftFilter({ responsibleId: value ?? null })}
           />
         </div>
       </div>

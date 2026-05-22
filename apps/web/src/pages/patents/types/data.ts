@@ -6,6 +6,7 @@ export type ReferenceDataForPatents = Pick<
   | 'departments'
   | 'contracts'
   | 'projects'
+  | 'partners'
   | 'contractCategories'
   | 'patentStatuses'
   | 'patentIntellectProps'

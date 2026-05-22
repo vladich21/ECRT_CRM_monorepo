@@ -36,7 +36,7 @@ export default function PatentGrantDetailsPage() {
 
   const { handleOpenModal } = useConfirmByModal({
     mutation,
-    successMessage: 'Охранный документ успешно удалён',
+    successMessage: 'Охранный документ успешно удален',
     errorMessage: 'Не удалось удалить охранный документ',
     redirectPath: backTarget.path,
     redirectState: patentCardExtras,

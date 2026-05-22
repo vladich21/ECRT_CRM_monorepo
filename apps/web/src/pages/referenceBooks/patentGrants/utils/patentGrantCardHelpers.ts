@@ -37,8 +37,18 @@ export function buildPatentGrantRidDescription(grant: PatentGrant): string | und
 export function buildPatentGrantRidSelectLabel(
   grant: Pick<PatentGrant, 'patent_name' | 'patent_registration_number'>,
 ): string {
-  const reg = grant.patent_registration_number?.trim();
-  const name = grant.patent_name?.trim();
+  return buildPatentSelectLabel({
+    registration_number: grant.patent_registration_number,
+    name: grant.patent_name,
+  });
+}
+
+export function buildPatentSelectLabel(patent: {
+  registration_number?: string | null;
+  name?: string | null;
+}): string {
+  const reg = patent.registration_number?.trim();
+  const name = patent.name?.trim();
   if (reg && name) return `${reg} — ${name}`;
   if (reg) return reg;
   if (name) return name;
