@@ -25,7 +25,6 @@ export function usePartners(
   return useQuery<PartnersListResponse, Error>({
     queryKey: partnerQueryKeys.list(filters ?? null, page, pageSize),
     queryFn: () => partnerApi.getPartners(filters, limit, offset),
-    placeholderData: previousData => previousData,
   });
 }
 

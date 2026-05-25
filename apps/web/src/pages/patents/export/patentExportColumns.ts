@@ -1,3 +1,16 @@
+import {
+  getDefaultExportColumnKeys,
+  getExportColumnsByKeys,
+  getExportExtraGroupsWithColumns,
+  getExportMainColumns,
+  loadExportColumnKeys,
+  saveExportColumnKeys,
+} from '../../../components/registryExport/registryExportColumnUtils';
+import type {
+  RegistryExportColumn,
+  RegistryExportExtraGroup,
+} from '../../../components/registryExport/registryExportTypes';
+
 export type PatentExportColumnKey =
   | 'name'
   | 'registration_number'
@@ -29,13 +42,16 @@ export type PatentExportColumnKey =
   | 'transformed_from_rid'
   | 'transformation_notification_ic_zht'
   | 'transformation_notification_cir'
+  | 'application_files'
+  | 'consent_files'
+  | 'notification_files'
+  | 'requests_files'
+  | 'decision_positive_files'
+  | 'decision_negative_files'
   | 'is_deleted';
 
-export type PatentExportColumn = {
-  key: PatentExportColumnKey;
-  label: string;
-  defaultSelected: boolean;
-};
+export type PatentExportColumn = RegistryExportColumn<PatentExportColumnKey>;
+export type PatentExportExtraGroup = RegistryExportExtraGroup<PatentExportColumnKey>;
 
 export const PATENT_EXPORT_COLUMNS: PatentExportColumn[] = [
   { key: 'name', label: 'Наименование РИД', defaultSelected: true },
@@ -68,33 +84,27 @@ export const PATENT_EXPORT_COLUMNS: PatentExportColumn[] = [
   { key: 'transformed_from_rid', label: 'Создано из РИД (номер)', defaultSelected: false },
   { key: 'transformation_notification_ic_zht', label: 'Уведомление о преобразовании (ИЦ ЖТ)', defaultSelected: false },
   { key: 'transformation_notification_cir', label: 'Уведомление о преобразовании (ЦИР)', defaultSelected: false },
+  { key: 'application_files', label: 'Файлы заявки', defaultSelected: false },
+  { key: 'consent_files', label: 'Файлы согласия', defaultSelected: false },
+  { key: 'notification_files', label: 'Файлы уведомления', defaultSelected: false },
+  { key: 'requests_files', label: 'Файлы запросов', defaultSelected: false },
+  { key: 'decision_positive_files', label: 'Файлы положительного решения', defaultSelected: false },
+  { key: 'decision_negative_files', label: 'Файлы отрицательного решения', defaultSelected: false },
   { key: 'is_deleted', label: 'Удален', defaultSelected: false },
 ];
 
 export const PATENT_EXPORT_COLUMNS_STORAGE_KEY = 'patentsExportSelectedColumns';
 
 export function getDefaultPatentExportColumnKeys(): PatentExportColumnKey[] {
-  return PATENT_EXPORT_COLUMNS.filter(column => column.defaultSelected).map(column => column.key);
+  return getDefaultExportColumnKeys(PATENT_EXPORT_COLUMNS);
 }
 
 export function loadPatentExportColumnKeys(): PatentExportColumnKey[] {
-  try {
-    const raw = localStorage.getItem(PATENT_EXPORT_COLUMNS_STORAGE_KEY);
-    if (!raw) return getDefaultPatentExportColumnKeys();
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return getDefaultPatentExportColumnKeys();
-    const allowed = new Set(PATENT_EXPORT_COLUMNS.map(column => column.key));
-    const keys = parsed.filter(
-      (key): key is PatentExportColumnKey => typeof key === 'string' && allowed.has(key as PatentExportColumnKey),
-    );
-    return keys.length > 0 ? keys : getDefaultPatentExportColumnKeys();
-  } catch {
-    return getDefaultPatentExportColumnKeys();
-  }
+  return loadExportColumnKeys(PATENT_EXPORT_COLUMNS, PATENT_EXPORT_COLUMNS_STORAGE_KEY);
 }
 
 export function savePatentExportColumnKeys(keys: PatentExportColumnKey[]): void {
-  localStorage.setItem(PATENT_EXPORT_COLUMNS_STORAGE_KEY, JSON.stringify(keys));
+  saveExportColumnKeys(PATENT_EXPORT_COLUMNS_STORAGE_KEY, keys);
 }
 
 export const PATENT_EXPORT_NUMERIC_COLUMN_KEYS = new Set<PatentExportColumnKey>([
@@ -126,6 +136,22 @@ export const PATENT_EXPORT_MONEY_COLUMN_KEYS = new Set<PatentExportColumnKey>([
 
 export const PATENT_EXPORT_INTEGER_COLUMN_KEYS = new Set<PatentExportColumnKey>(['grants_count']);
 
+export const PATENT_EXPORT_LONG_TEXT_COLUMN_KEYS = new Set<PatentExportColumnKey>([
+  'name',
+  'project',
+  'authors',
+  'areas',
+  'grants',
+  'transformation_notification_ic_zht',
+  'transformation_notification_cir',
+  'application_files',
+  'consent_files',
+  'notification_files',
+  'requests_files',
+  'decision_positive_files',
+  'decision_negative_files',
+]);
+
 export type PatentExportCellAlignment = 'left' | 'center' | 'right';
 
 export function getPatentExportColumnAlignment(key: PatentExportColumnKey): PatentExportCellAlignment {
@@ -134,46 +160,29 @@ export function getPatentExportColumnAlignment(key: PatentExportColumnKey): Pate
   return 'left';
 }
 
-export type PatentExportExtraGroup = {
-  id: string;
-  title: string;
-  keys: PatentExportColumnKey[];
-};
-
 export const PATENT_EXPORT_EXTRA_GROUPS: PatentExportExtraGroup[] = [
   {
     id: 'registration',
     title: 'Регистрационные данные',
+    column: 0,
     keys: ['registration_date', 'registration_number_cir', 'registration_date_cir', 'application_number'],
   },
   {
     id: 'contract_project',
     title: 'Договор и проект',
+    column: 0,
     keys: ['contract_cipher', 'project_code', 'expected_licensee'],
-  },
-  {
-    id: 'participants',
-    title: 'Участники и классификация',
-    keys: ['department', 'responsible', 'authors', 'areas'],
-  },
-  {
-    id: 'grants',
-    title: 'Охранные документы',
-    keys: ['grants_count', 'grants'],
   },
   {
     id: 'finance',
     title: 'Финансы',
+    column: 0,
     keys: ['rid_cost_excl_vat', 'rid_vat_rate', 'rid_cost_vat', 'rid_cost_incl_vat'],
-  },
-  {
-    id: 'requests',
-    title: 'Запросы',
-    keys: ['requests_earliest_deadline', 'requests_response_required'],
   },
   {
     id: 'transformation',
     title: 'Преобразование РИД',
+    column: 0,
     keys: [
       'transformed_into_rid',
       'transformed_from_rid',
@@ -184,24 +193,84 @@ export const PATENT_EXPORT_EXTRA_GROUPS: PatentExportExtraGroup[] = [
   {
     id: 'other',
     title: 'Прочее',
+    column: 0,
     keys: ['is_deleted'],
+  },
+  {
+    id: 'participants',
+    title: 'Участники и классификация',
+    column: 1,
+    keys: ['department', 'responsible', 'authors', 'areas'],
+  },
+  {
+    id: 'grants',
+    title: 'Охранные документы',
+    column: 1,
+    keys: ['grants_count', 'grants'],
+  },
+  {
+    id: 'requests',
+    title: 'Запросы',
+    column: 1,
+    keys: ['requests_earliest_deadline', 'requests_response_required'],
+  },
+  {
+    id: 'files_application',
+    title: 'Документы заявки',
+    column: 1,
+    keys: ['application_files', 'consent_files', 'notification_files'],
+  },
+  {
+    id: 'files_communication',
+    title: 'Запросы и решение',
+    column: 1,
+    keys: ['requests_files', 'decision_positive_files', 'decision_negative_files'],
   },
 ];
 
-const PATENT_EXPORT_COLUMN_BY_KEY = new Map(PATENT_EXPORT_COLUMNS.map(column => [column.key, column]));
-
 export function getPatentExportColumnsByKeys(keys: PatentExportColumnKey[]): PatentExportColumn[] {
-  return keys.map(key => PATENT_EXPORT_COLUMN_BY_KEY.get(key)).filter((column): column is PatentExportColumn => column != null);
+  return getExportColumnsByKeys(PATENT_EXPORT_COLUMNS, keys);
 }
 
 export function getPatentExportMainColumns(): PatentExportColumn[] {
-  return PATENT_EXPORT_COLUMNS.filter(column => column.defaultSelected);
+  return getExportMainColumns(PATENT_EXPORT_COLUMNS);
 }
 
-export function getPatentExportExtraGroupsWithColumns(): Array<PatentExportExtraGroup & { columns: PatentExportColumn[] }> {
-  return PATENT_EXPORT_EXTRA_GROUPS.map(group => ({
-    ...group,
-    columns: getPatentExportColumnsByKeys(group.keys),
-  })).filter(group => group.columns.length > 0);
+export function getPatentExportExtraGroupsWithColumns(): Array<
+  PatentExportExtraGroup & { columns: PatentExportColumn[] }
+> {
+  return getExportExtraGroupsWithColumns(PATENT_EXPORT_COLUMNS, PATENT_EXPORT_EXTRA_GROUPS);
 }
 
+export const PATENT_EXPORT_MODAL_CONFIG = {
+  columns: PATENT_EXPORT_COLUMNS,
+  extraGroups: PATENT_EXPORT_EXTRA_GROUPS,
+  storageKey: PATENT_EXPORT_COLUMNS_STORAGE_KEY,
+};
+
+export const PATENT_EXPORT_HYPERLINK_COLUMN_KEYS = new Set<PatentExportColumnKey>([
+  'application_files',
+  'consent_files',
+  'notification_files',
+  'requests_files',
+  'decision_positive_files',
+  'decision_negative_files',
+]);
+
+export const PATENT_EXPORT_EXCEL_OPTIONS = {
+  sheetName: 'РИД',
+  fileNamePrefix: 'reestr_rid',
+  numericKeys: PATENT_EXPORT_NUMERIC_COLUMN_KEYS,
+  centerKeys: PATENT_EXPORT_CENTER_COLUMN_KEYS,
+  moneyKeys: PATENT_EXPORT_MONEY_COLUMN_KEYS,
+  integerKeys: PATENT_EXPORT_INTEGER_COLUMN_KEYS,
+  longTextKeys: PATENT_EXPORT_LONG_TEXT_COLUMN_KEYS,
+  hyperlinkKeys: PATENT_EXPORT_HYPERLINK_COLUMN_KEYS,
+  getAlignment: getPatentExportColumnAlignment,
+  getNumericFormat: (key: PatentExportColumnKey): string | undefined => {
+    if (PATENT_EXPORT_MONEY_COLUMN_KEYS.has(key)) return '#,##0.00';
+    if (PATENT_EXPORT_INTEGER_COLUMN_KEYS.has(key)) return '#,##0';
+    if (key === 'rid_vat_rate') return '0.##';
+    return undefined;
+  },
+};

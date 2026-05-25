@@ -2,21 +2,25 @@ import {
   BadRequestException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { FilesService } from '../services/files.service';
+import { assertFileLinkAccessAllowed } from '../file-download-url';
 import * as path from 'path';
 import { ALLOWED_MIME_TYPES } from '../constants/file-formats';
 import { Public } from '../../auth/public.decorator';
@@ -25,7 +29,10 @@ import type { EntityParamsDto } from '../dto';
 import { UpdateFileMetaDto } from '../dto/update-file-meta.dto';
 @Controller()
 export class FilesController {
-  constructor(private readonly service: FilesService) {}
+  constructor(
+    private readonly service: FilesService,
+    private readonly config: ConfigService,
+  ) {}
 
   /** Клиент (`apiClient`) шлет `{ body: { ... } }`; поддерживаем и плоское тело для совместимости. */
   private parseUpdateFileMetaFromRequest(reqBody: unknown): UpdateFileMetaDto {
@@ -115,12 +122,47 @@ export class FilesController {
 
   @Get('files/:fileId')
   async getFile(@Param('fileId') fileId: string, @Res() res: Response) {
-    const file = await this.service.findById(fileId);
+    const file = await this.service.resolvePublicFileDownload(fileId);
     if (!file) throw new NotFoundException(`Файл ${fileId} не найден`);
-    if (!file.url || file.url.endsWith(`/files/${fileId}`)) {
-      throw new NotFoundException(`Файл ${fileId} недоступен для скачивания`);
+    return this.sendDownloadResponse(res, file);
+  }
+
+  @Public()
+  @Get('files/public/:fileId')
+  async servePublicFile(
+    @Param('fileId') fileId: string,
+    @Query('e') expiresAtRaw: string | undefined,
+    @Query('s') signatureRaw: string | undefined,
+    @Res() res: Response,
+  ) {
+    try {
+      assertFileLinkAccessAllowed(this.config, fileId, expiresAtRaw, signatureRaw);
+    } catch {
+      throw new ForbiddenException('Ссылка на файл недействительна или устарела');
     }
-    return res.redirect(302, file.url);
+
+    const file = await this.service.resolvePublicFileDownload(fileId);
+    if (!file) throw new NotFoundException('Файл не найден');
+    return this.sendDownloadResponse(res, file);
+  }
+
+  private sendDownloadResponse(
+    res: Response,
+    file: { filePath: string; filename: string; mimeType: string },
+  ) {
+    let mimeType = file.mimeType;
+    if (
+      mimeType.startsWith('text/') ||
+      ['application/json', 'application/xml'].includes(mimeType)
+    ) {
+      mimeType = `${mimeType}; charset=utf-8`;
+    }
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
+    );
+    return res.sendFile(path.resolve(file.filePath));
   }
 
   @Get(':entityType/:entityId/files')

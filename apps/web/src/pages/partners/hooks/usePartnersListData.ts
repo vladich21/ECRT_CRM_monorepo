@@ -1,40 +1,21 @@
 import { useQueries } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
-import { partnerApi, type PartnerListParams } from '../../../api/partners/partnerApi';
-import { partnerQueryKeys } from '../../../api/partners/partnerQueryKeys';
 import { usePartners } from '../../../api/partners/partnerApiHooks';
 import { fetchPartnerSupplierEvalKpi, supplierEvaluationApi } from '../../../api/supplierEvaluations/supplierEvaluationApi';
 import {
   getPartnerInitialEvalQueryKey,
   getPartnerSupplierEvalKpiQueryKey,
 } from '../../../api/supplierEvaluations/supplierEvaluationQueryKeys';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
-import type { PartnerFilters } from '../PartnerFiltersModal';
-import { PARTNER_FILTER_TABS, type PartnerListTab } from '../PartnersListPage.types';
-import { buildPartnersApiFilters, partnerFiltersToTabCountKey } from '../utils/buildPartnersApiFilters';
+import type { PartnerListParams } from '../../../api/partners/partnerApi';
 
 export function usePartnersListData(
   apiFilters: PartnerListParams,
   page: number,
   pageSize: number,
-  debouncedSearch: string,
-  appliedFilters: PartnerFilters,
 ) {
   const { data: partnersData, isLoading, isError, isFetching } = usePartners(apiFilters, page, pageSize);
-
-  const tabCountQueries = useQueries({
-    queries: PARTNER_FILTER_TABS.map(({ key }) => ({
-      queryKey: partnerQueryKeys.tabCount(key, debouncedSearch.trim(), partnerFiltersToTabCountKey(appliedFilters)),
-      queryFn: async () => {
-        const tabFilters = buildPartnersApiFilters(debouncedSearch, key, appliedFilters);
-        const response = await partnerApi.getPartners(tabFilters, 1, 0);
-        return response.total;
-      },
-      staleTime: 15 * 1000,
-    })),
-  });
 
   const {
     data: references,
@@ -63,29 +44,6 @@ export function usePartnersListData(
       enabled: !isInitialLoad && partners.length > 0,
     })),
   });
-
-  const tabCounts = useMemo(
-    () =>
-      partnersData?.tab_counts ?? {
-        all: 0,
-        ready: 0,
-        in_progress: 0,
-        key_supplier: 0,
-      },
-    [partnersData?.tab_counts],
-  );
-
-  const deletionTabCounts = partnersData?.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS;
-
-  const getTabCount = useCallback(
-    (tabKey: PartnerListTab) => {
-      const tabIndex = PARTNER_FILTER_TABS.findIndex(tab => tab.key === tabKey);
-      const queriedTotal = tabIndex >= 0 ? tabCountQueries[tabIndex]?.data : undefined;
-      if (typeof queriedTotal === 'number') return queriedTotal;
-      return tabKey === 'deleted' ? deletionTabCounts.deleted : tabCounts[tabKey];
-    },
-    [tabCountQueries, deletionTabCounts.deleted, tabCounts],
-  );
 
   const filterOptions = useMemo(
     () => ({
@@ -118,7 +76,6 @@ export function usePartnersListData(
     isRefsError,
     partnerEvalKpiQueries,
     partnerInitialEvalQueries,
-    getTabCount,
     filterOptions,
   };
 }

@@ -21,6 +21,7 @@ export type PartnerFilters = {
   reevaluationOverdue: PartnerTriState;
   hasActiveBlocks: PartnerTriState;
   isApproved: PartnerTriState;
+  isDeleted: PartnerTriState;
   legalCheckPassed: PartnerTriState;
   questionnaireFilled: PartnerTriState;
   initialAssessmentDone: PartnerTriState;
@@ -38,6 +39,7 @@ export const EMPTY_FILTERS: PartnerFilters = {
   reevaluationOverdue: 'all',
   hasActiveBlocks: 'all',
   isApproved: 'all',
+  isDeleted: 'all',
   legalCheckPassed: 'all',
   questionnaireFilled: 'all',
   initialAssessmentDone: 'all',
@@ -220,6 +222,11 @@ export function PartnerFiltersModal({
               label='Анкета'
               value={draftFilters.questionnaireFilled}
               onChange={nextValue => onUpdateDraftFilter({ questionnaireFilled: nextValue })}
+            />
+            <TriRadioRow
+              label='Удален'
+              value={draftFilters.isDeleted}
+              onChange={nextValue => onUpdateDraftFilter({ isDeleted: nextValue })}
             />
           </div>
         </Col>

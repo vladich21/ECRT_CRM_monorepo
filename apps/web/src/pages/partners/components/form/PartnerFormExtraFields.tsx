@@ -51,6 +51,7 @@ export function PartnerFormExtraFields({ refs }: Props) {
             <Select
               mode='multiple'
               showSearch
+              className={styles.competenceSelect}
               optionFilterProp='label'
               filterOption={(searchText, option) =>
                 String(option?.label ?? '')

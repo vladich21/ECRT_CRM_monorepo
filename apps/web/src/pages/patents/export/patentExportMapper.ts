@@ -9,9 +9,10 @@ import { formatPatentStatusDisplayName } from '@/pages/patents/utils/patentStatu
 import type { ReferenceDataForPatents } from '@/pages/patents/types/data';
 import type { Contract } from '@/types/contract';
 import type { Partner } from '@/types/partner';
-import type { Patent } from '@/types/patent';
+import type { Patent, PatentExportFileLink } from '@/types/patent';
 
 import type { PatentExportColumnKey } from './patentExportColumns';
+import type { RegistryExportCellValue } from '../../../components/registryExport/registryExportTypes';
 
 function formatExportDate(value?: string | null): string {
   if (!value?.trim()) return '';
@@ -101,15 +102,21 @@ function formatYesNo(value: boolean | undefined): string {
   return value ? 'Да' : 'Нет';
 }
 
+function formatFileLinksCell(links: PatentExportFileLink[] | undefined): RegistryExportCellValue {
+  if (!links?.length) return '';
+  return { links };
+}
+
 export function mapPatentToExportRow(
   patent: Patent,
   refs: ReferenceDataForPatents,
-): Record<PatentExportColumnKey, string> {
+): Record<PatentExportColumnKey, RegistryExportCellValue> {
   const statusName = getNameById(patent.status_id, refs.patentStatuses) || '';
   const requestDeadline = patent.requests_earliest_deadline
     ? new Date(patent.requests_earliest_deadline)
     : null;
   const contract = getEntityById(patent.contract_id, refs.contracts ?? []);
+  const extras = patent.export_extras;
 
   return {
     name: patent.name?.trim() || '',
@@ -145,6 +152,12 @@ export function mapPatentToExportRow(
     transformed_from_rid: patent.transformation_source_registration_number?.trim() || '',
     transformation_notification_ic_zht: patent.transformation_notification_ic_zht?.trim() || '',
     transformation_notification_cir: patent.transformation_notification_cir?.trim() || '',
+    application_files: formatFileLinksCell(extras?.application_file_links),
+    consent_files: formatFileLinksCell(extras?.consent_file_links),
+    notification_files: formatFileLinksCell(extras?.notification_file_links),
+    requests_files: formatFileLinksCell(extras?.requests_file_links),
+    decision_positive_files: formatFileLinksCell(extras?.decision_positive_file_links),
+    decision_negative_files: formatFileLinksCell(extras?.decision_negative_file_links),
     is_deleted: formatYesNo(patent.is_deleted),
   };
 }
@@ -153,7 +166,7 @@ export function mapPatentsToExportRows(
   patents: Patent[],
   refs: ReferenceDataForPatents,
   columnKeys: PatentExportColumnKey[],
-): string[][] {
+): RegistryExportCellValue[][] {
   return patents.map(patent => {
     const row = mapPatentToExportRow(patent, refs);
     return columnKeys.map(key => row[key] ?? '');

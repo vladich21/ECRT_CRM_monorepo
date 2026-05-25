@@ -68,22 +68,16 @@ function approvalTooltipTitle(approved: boolean, categoryName: string | null | u
 
 function isApprovedForBadges(partner: Partner, options?: PartnerDetailHeaderBadgeOptions): boolean {
   const draft = options?.approvalPreviewDraft;
-  if (!draft) {
+  if (draft) {
     return computePartnerIsApproved({
-      kind: inferPartnerCategoryKind(options?.categoryName),
-      legalCheckPassed: partner.legal_check_passed,
-      questionnaireFilled: partner.questionnaire_filled,
-      initialAssessmentDone: partner.initial_assessment_done,
-      hasActiveSupplierEvaluationBlock: partner.has_active_evaluation_block ?? false,
+      kind: inferPartnerCategoryKind(options.categoryName),
+      legalCheckPassed: draft.legalCheckPassed,
+      questionnaireFilled: draft.questionnaireFilled,
+      initialAssessmentDone: draft.initialAssessmentDone,
+      hasActiveSupplierEvaluationBlock: draft.hasActiveEvaluationBlock,
     });
   }
-  return computePartnerIsApproved({
-    kind: inferPartnerCategoryKind(options.categoryName),
-    legalCheckPassed: draft.legalCheckPassed,
-    questionnaireFilled: draft.questionnaireFilled,
-    initialAssessmentDone: draft.initialAssessmentDone,
-    hasActiveSupplierEvaluationBlock: draft.hasActiveEvaluationBlock,
-  });
+  return partner.is_approved;
 }
 
 function renderCategoryChip(categoryName: string | null | undefined): ReactNode | null {

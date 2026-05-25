@@ -1,11 +1,17 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query, Req } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Request } from 'express';
 import { parseDeletedScope } from '../../../common/deleted-scope';
+import { getFileBaseUrl } from '../../files/files-config';
 import { PatentsService } from '../services/patents.service';
 import { parsePatentListQuery, type PatentListHttpQuery } from '../patent-list-query.parser';
 
 @Controller('patents')
 export class PatentsController {
-  constructor(private readonly service: PatentsService) {}
+  constructor(
+    private readonly service: PatentsService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Post()
   async create(@Body('body') body?: Record<string, unknown>) {
@@ -27,8 +33,10 @@ export class PatentsController {
   }
 
   @Get('export')
-  exportList(@Query() query: PatentListHttpQuery) {
-    return this.service.findAllForExport(parsePatentListQuery(query));
+  exportList(@Query() query: PatentListHttpQuery, @Req() req: Request) {
+    return this.service.findAllForExport(parsePatentListQuery(query), {
+      fileBaseUrl: getFileBaseUrl(this.config, req),
+    });
   }
 
   @Get('filter/linked-contract-ids')

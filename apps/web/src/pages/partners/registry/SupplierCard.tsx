@@ -71,6 +71,8 @@ export default function SupplierCard({
 }: SupplierCardProps) {
   const statusName =
     references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
+  const listStatusName = partner.is_deleted ? 'Удален' : statusName;
+  const listStatusClass = partner.is_deleted ? styles.tagDeleted : statusBadgeClass(statusName);
   const categoryName =
     references?.partnerCategories?.find(category => String(category.id) === String(partner.category_id))?.name ?? '';
   const typeNames = (partner.type_ids ?? [])
@@ -106,7 +108,7 @@ export default function SupplierCard({
           <span className={styles.name}>{displayName}</span>
         </div>
         <div className={styles.metaRow}>
-          <span className={`${styles.mutedTag} ${statusBadgeClass(statusName)}`}>{statusName}</span>
+          <span className={`${styles.mutedTag} ${listStatusClass}`}>{listStatusName}</span>
           {isEngineeringCategory ? (
             <span className={styles.chipCategoryEngineering}>
               <ToolOutlined className={styles.chipIcon} />

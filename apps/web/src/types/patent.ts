@@ -5,6 +5,26 @@ export type PatentGrantListPreviewItem = {
   status?: string;
 };
 
+export interface PatentExportFileLink {
+  name: string;
+  url: string;
+}
+
+export interface PatentExportExtras {
+  application_files: string;
+  application_file_links: PatentExportFileLink[];
+  consent_files: string;
+  consent_file_links: PatentExportFileLink[];
+  notification_files: string;
+  notification_file_links: PatentExportFileLink[];
+  requests_files: string;
+  requests_file_links: PatentExportFileLink[];
+  decision_positive_files: string;
+  decision_positive_file_links: PatentExportFileLink[];
+  decision_negative_files: string;
+  decision_negative_file_links: PatentExportFileLink[];
+}
+
 export interface Patent {
   id: string;
   registration_number: string;
@@ -47,6 +67,7 @@ export interface Patent {
   transformation_notification_cir?: string;
   transformation_target_registration_number?: string;
   transformation_source_registration_number?: string;
+  export_extras?: PatentExportExtras;
 }
 
 export interface PatentArea {

@@ -40,7 +40,12 @@ export function PartnerFormClassificationFields({ refs }: Props) {
         </Col>
         <Col xs={24}>
           <Form.Item label='Тип контрагента' name='type_ids' rules={[{ required: true, message: 'Выберите тип' }]}>
-            <Select mode='multiple' placeholder='Выберите тип' suffixIcon={<SafetyCertificateOutlined />}>
+            <Select
+              mode='multiple'
+              className={styles.competenceSelect}
+              placeholder='Выберите тип'
+              suffixIcon={<SafetyCertificateOutlined />}
+            >
               {refs.partnerTypes?.map(type => (
                 <Select.Option key={type.id} value={type.id}>
                   {type.name}
