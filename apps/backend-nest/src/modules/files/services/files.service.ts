@@ -5,7 +5,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DatabaseService } from '../../../database/database.service';
 import { files, partners } from '../../../database/schema';
-import { getFileBaseUrl, getUploadPath } from '../files-config';
+import { buildFileDownloadUrl } from '../file-download-url';
+import { getUploadPath } from '../files-config';
 import type { FileResponseDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
 import { syncPatentAutoStatus } from '../../patents/services/patent-auto-status';
 import { PartnersService } from '../../partners/services/partners.service';
@@ -117,7 +118,6 @@ export class FilesService {
     const responseDeadline = applyRequestsMeta ? requestsMeta.responseDeadline : null;
 
     const uploadPath = getUploadPath(this.config);
-    const baseUrl = getFileBaseUrl(this.config);
     const basePath = path.join(uploadPath, entityType, entityId);
     fs.mkdirSync(basePath, { recursive: true });
 
@@ -128,7 +128,7 @@ export class FilesService {
       fs.writeFileSync(destPath, file.buffer);
 
       const fileType = file.mimetype || 'application/octet-stream';
-      await this.upsertFile(
+      const fileId = await this.upsertFile(
         entityType,
         entityId,
         file.originalname,
@@ -140,12 +140,11 @@ export class FilesService {
         responseDeadline,
       );
 
-      const url = `${baseUrl}/${entityType}/${entityId}/${encodeURIComponent(file.originalname)}`;
       result.push({
         name: file.originalname,
         size: String(file.size),
         type: fileType,
-        url,
+        url: buildFileDownloadUrl(this.config, fileId),
       });
     }
 
@@ -166,8 +165,8 @@ export class FilesService {
     documentSection: string,
     responseRequired: boolean,
     responseDeadline: Date | null,
-  ): Promise<void> {
-    await this.db.db
+  ): Promise<string> {
+    const [row] = await this.db.db
       .insert(files)
       .values({
         entityType,
@@ -190,7 +189,13 @@ export class FilesService {
           responseDeadline,
           updatedAt: new Date(),
         },
-      });
+      })
+      .returning({ id: files.id });
+
+    if (!row?.id) {
+      throw new BadRequestException('Не удалось сохранить файл');
+    }
+    return String(row.id);
   }
 
   async updateMeta(
@@ -315,6 +320,20 @@ export class FilesService {
     return fs.existsSync(filePath) ? filePath : null;
   }
 
+  async resolvePublicFileDownload(
+    fileId: string,
+  ): Promise<{ filePath: string; filename: string; mimeType: string } | null> {
+    const [row] = await this.db.db.select().from(files).where(eq(files.id, fileId)).limit(1);
+    if (!row?.entityType || !row.tableId || !row.name) return null;
+    const filePath = this.getFilePath(row.entityType, String(row.tableId), row.name);
+    if (!filePath) return null;
+    return {
+      filePath,
+      filename: row.name,
+      mimeType: this.getMimeType(row.name),
+    };
+  }
+
   getMimeType(filename: string): string {
     const ext = path.extname(filename).toLowerCase();
     const mimeMap: Record<string, string> = {
@@ -346,19 +365,13 @@ export class FilesService {
     entityType?: string,
     tableId?: string,
   ): FileResponseDto {
-    const baseUrl = getFileBaseUrl(this.config);
-    const url =
-      entityType && tableId && r.name
-        ? `${baseUrl}/${entityType}/${tableId}/${encodeURIComponent(r.name)}`
-        : `${baseUrl}/files/${r.id}`;
-
     return {
       id: String(r.id),
       entitytype: r.entityType,
       name: r.name,
       document_section: r.documentSection ?? 'default',
       size: r.size != null ? String(r.size) : null,
-      url,
+      url: buildFileDownloadUrl(this.config, String(r.id)),
       uploadedby_id: r.uploadedById ? String(r.uploadedById) : null,
       uploaded_at: r.uploadedAt ? r.uploadedAt.toISOString() : null,
       response_required: Boolean(r.responseRequired),

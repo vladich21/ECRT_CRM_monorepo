@@ -30,6 +30,7 @@ import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 import { SupplierEvaluationsService } from '../../supplier-evaluations/services/supplier-evaluations.service';
+import { buildFileDownloadUrl } from '../../files/file-download-url';
 import { getFileBaseUrl } from '../../files/files-config';
 
 export type PartnerListTabScope = 'all' | 'ready' | 'in_progress' | 'key_supplier';
@@ -724,7 +725,11 @@ export class PartnersService {
     };
   }
 
-  async findAllForExport(filters?: PartnerQueryFilters): Promise<PartnersExportPayload> {
+  async findAllForExport(
+    filters?: PartnerQueryFilters,
+    options?: { fileBaseUrl?: string },
+  ): Promise<PartnersExportPayload> {
+    const fileBaseUrl = options?.fileBaseUrl ?? getFileBaseUrl(this.config);
     const result = await this.findAll(
       false,
       { limit: PARTNER_EXPORT_MAX_ROWS, offset: 0 },
@@ -733,7 +738,7 @@ export class PartnersService {
     const total = result.total;
     const rows = result.data as Array<Record<string, unknown>>;
     const partnerIds = rows.map((row) => String(row.id ?? '')).filter(Boolean);
-    const extrasByPartnerId = await this.loadPartnerExportExtrasByIds(partnerIds);
+    const extrasByPartnerId = await this.loadPartnerExportExtrasByIds(partnerIds, fileBaseUrl);
     const data = rows.map((row) => {
       const partnerId = String(row.id ?? '');
       return {
@@ -795,19 +800,13 @@ export class PartnersService {
     return head || name;
   }
 
-  private buildPartnerFileDownloadUrl(entityType: string, partnerId: string, filename: string): string {
-    const baseUrl = getFileBaseUrl(this.config);
-    return `${baseUrl}/${entityType}/${partnerId}/${encodeURIComponent(filename)}`;
-  }
-
   private formatPartnerFileLinks(
-    entityType: string,
-    partnerId: string,
-    filenames: string[],
+    fileRecords: Array<{ id: string; name: string }>,
+    fileBaseUrl: string,
   ): PartnerExportFileLinkPayload[] {
-    return filenames.map(name => ({
-      name,
-      url: this.buildPartnerFileDownloadUrl(entityType, partnerId, name),
+    return fileRecords.map(file => ({
+      name: file.name,
+      url: buildFileDownloadUrl(this.config, file.id, { fileBaseUrl }),
     }));
   }
 
@@ -820,6 +819,7 @@ export class PartnersService {
 
   private async loadPartnerExportExtrasByIds(
     partnerIds: string[],
+    fileBaseUrl: string,
   ): Promise<Map<string, PartnerExportExtrasPayload>> {
     const map = new Map<string, PartnerExportExtrasPayload>();
     if (partnerIds.length === 0) return map;
@@ -857,17 +857,17 @@ export class PartnersService {
         .where(and(inArray(contracts.partnerId, partnerIds), eq(contracts.isDeleted, false))!)
         .orderBy(asc(contracts.number), asc(contracts.name)),
       this.db.db
-        .select({ tableId: files.tableId, name: files.name })
+        .select({ id: files.id, tableId: files.tableId, name: files.name })
         .from(files)
         .where(and(eq(files.entityType, 'partner-legal'), inArray(files.tableId, partnerIds))!)
         .orderBy(asc(files.name)),
       this.db.db
-        .select({ tableId: files.tableId, name: files.name })
+        .select({ id: files.id, tableId: files.tableId, name: files.name })
         .from(files)
         .where(and(eq(files.entityType, 'partner-questionnaire'), inArray(files.tableId, partnerIds))!)
         .orderBy(asc(files.name)),
       this.db.db
-        .select({ tableId: files.tableId, name: files.name })
+        .select({ id: files.id, tableId: files.tableId, name: files.name })
         .from(files)
         .where(and(eq(files.entityType, 'partner'), inArray(files.tableId, partnerIds))!)
         .orderBy(asc(files.name)),
@@ -933,30 +933,31 @@ export class PartnersService {
       contractsByPartner.set(pid, arr);
     }
 
-    const legalFilesByPartner = new Map<string, string[]>();
+    type PartnerExportFileRecord = { id: string; name: string };
+    const legalFilesByPartner = new Map<string, PartnerExportFileRecord[]>();
     for (const row of legalFileRows) {
-      if (!row.tableId || !row.name) continue;
+      if (!row.tableId || !row.name || !row.id) continue;
       const pid = String(row.tableId);
       const arr = legalFilesByPartner.get(pid) ?? [];
-      arr.push(String(row.name));
+      arr.push({ id: String(row.id), name: String(row.name) });
       legalFilesByPartner.set(pid, arr);
     }
 
-    const questionnaireFilesByPartner = new Map<string, string[]>();
+    const questionnaireFilesByPartner = new Map<string, PartnerExportFileRecord[]>();
     for (const row of questionnaireFileRows) {
-      if (!row.tableId || !row.name) continue;
+      if (!row.tableId || !row.name || !row.id) continue;
       const pid = String(row.tableId);
       const arr = questionnaireFilesByPartner.get(pid) ?? [];
-      arr.push(String(row.name));
+      arr.push({ id: String(row.id), name: String(row.name) });
       questionnaireFilesByPartner.set(pid, arr);
     }
 
-    const partnerFilesByPartner = new Map<string, string[]>();
+    const partnerFilesByPartner = new Map<string, PartnerExportFileRecord[]>();
     for (const row of partnerFileRows) {
-      if (!row.tableId || !row.name) continue;
+      if (!row.tableId || !row.name || !row.id) continue;
       const pid = String(row.tableId);
       const arr = partnerFilesByPartner.get(pid) ?? [];
-      arr.push(String(row.name));
+      arr.push({ id: String(row.id), name: String(row.name) });
       partnerFilesByPartner.set(pid, arr);
     }
 
@@ -1040,16 +1041,12 @@ export class PartnersService {
         }
       }
 
-      const legalFileNames = legalFilesByPartner.get(partnerId) ?? [];
-      const questionnaireFileNames = questionnaireFilesByPartner.get(partnerId) ?? [];
-      const partnerFileNames = partnerFilesByPartner.get(partnerId) ?? [];
-      const legalFileLinks = this.formatPartnerFileLinks('partner-legal', partnerId, legalFileNames);
-      const questionnaireFileLinks = this.formatPartnerFileLinks(
-        'partner-questionnaire',
-        partnerId,
-        questionnaireFileNames,
-      );
-      const partnerFileLinks = this.formatPartnerFileLinks('partner', partnerId, partnerFileNames);
+      const legalFileRecords = legalFilesByPartner.get(partnerId) ?? [];
+      const questionnaireFileRecords = questionnaireFilesByPartner.get(partnerId) ?? [];
+      const partnerFileRecords = partnerFilesByPartner.get(partnerId) ?? [];
+      const legalFileLinks = this.formatPartnerFileLinks(legalFileRecords, fileBaseUrl);
+      const questionnaireFileLinks = this.formatPartnerFileLinks(questionnaireFileRecords, fileBaseUrl);
+      const partnerFileLinks = this.formatPartnerFileLinks(partnerFileRecords, fileBaseUrl);
 
       map.set(partnerId, {
         contacts_summary: contactsSummary,
@@ -1059,11 +1056,11 @@ export class PartnersService {
         primary_contact_email: (primary?.email ?? '').trim(),
         contracts_summary: contractsSummary,
         contracts_count: partnerContracts.length,
-        legal_verification_files: legalFileNames.join('; '),
+        legal_verification_files: legalFileRecords.map(file => file.name).join('; '),
         legal_verification_file_links: legalFileLinks,
-        questionnaire_files: questionnaireFileNames.join('; '),
+        questionnaire_files: questionnaireFileRecords.map(file => file.name).join('; '),
         questionnaire_file_links: questionnaireFileLinks,
-        partner_files: partnerFileNames.join('; '),
+        partner_files: partnerFileRecords.map(file => file.name).join('; '),
         partner_file_links: partnerFileLinks,
         avg_project_score: avgProjectScore,
         next_reevaluation_date: nextReevaluationDate,

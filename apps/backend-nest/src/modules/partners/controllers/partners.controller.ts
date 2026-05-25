@@ -13,6 +13,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { Request } from 'express';
 import {
   PartnersService,
   type PartnerEvaluationCategoryFilterToken,
@@ -24,6 +25,7 @@ import {
 import { PartnerInnLookupService } from '../services/partner-inn-lookup.service';
 import { parsePagination } from '../../../common/pagination';
 import { parseDeletedScope } from '../../../common/deleted-scope';
+import { getFileBaseUrl } from '../../files/files-config';
 
 function parseListTab(raw?: string): PartnerListTabScope {
   if (raw === 'ready' || raw === 'in_progress' || raw === 'key_supplier') return raw;
@@ -161,6 +163,7 @@ export class PartnersController {
 
   @Get('export')
   exportList(
+    @Req() req: Request,
     @Query('search') search?: string,
     @Query('type_ids') typeIds?: string,
     @Query('status_ids') statusIds?: string,
@@ -204,7 +207,9 @@ export class PartnersController {
       sortBy: parseSortBy(sortByRaw),
       sortOrder: parseSortOrder(sortOrderRaw),
     };
-    return this.service.findAllForExport(filters);
+    return this.service.findAllForExport(filters, {
+      fileBaseUrl: getFileBaseUrl(this.config, req),
+    });
   }
 
   @Get('inn-lookup')
