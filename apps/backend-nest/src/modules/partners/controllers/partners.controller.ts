@@ -159,6 +159,54 @@ export class PartnersController {
     return this.service.findAll(preview === '1', pagination, filters);
   }
 
+  @Get('export')
+  exportList(
+    @Query('search') search?: string,
+    @Query('type_ids') typeIds?: string,
+    @Query('status_ids') statusIds?: string,
+    @Query('competence_ids') competenceIds?: string,
+    @Query('readiness') readiness?: string,
+    @Query('deleted_scope') deletedScopeRaw?: string,
+    @Query('evaluation_categories') evaluationCategoriesRaw?: string,
+    @Query('category_ids') categoryIdsRaw?: string,
+    @Query('evaluation_required') evaluationRequiredRaw?: string,
+    @Query('is_key_supplier') isKeySupplierRaw?: string,
+    @Query('is_targeted') isTargetedRaw?: string,
+    @Query('reevaluation_overdue') reevaluationOverdueRaw?: string,
+    @Query('has_active_blocks') hasActiveBlocksRaw?: string,
+    @Query('is_approved') isApprovedRaw?: string,
+    @Query('legal_check_passed') legalCheckPassedRaw?: string,
+    @Query('questionnaire_filled') questionnaireFilledRaw?: string,
+    @Query('initial_assessment_done') initialAssessmentDoneRaw?: string,
+    @Query('sort_by') sortByRaw?: string,
+    @Query('sort_order') sortOrderRaw?: string,
+  ) {
+    const parsedCategoryIds = parseCategoryIds(categoryIdsRaw);
+    const filters = {
+      search: search || undefined,
+      typeIds: typeIds ? typeIds.split(',').filter(Boolean) : undefined,
+      statusIds: statusIds ? statusIds.split(',').filter(Boolean) : undefined,
+      competenceIds: competenceIds ? competenceIds.split(',').filter(Boolean) : undefined,
+      readiness: parseListTab(readiness),
+      deletedScope: parseDeletedScope(deletedScopeRaw),
+      evaluationCategories: parseEvaluationCategories(evaluationCategoriesRaw),
+      categoryIds: parsedCategoryIds.ids,
+      categoryIdsIncludeNull: parsedCategoryIds.includeNull,
+      evaluationRequired: parseTriState(evaluationRequiredRaw),
+      isKeySupplier: parseTriState(isKeySupplierRaw),
+      isTargeted: parseTriState(isTargetedRaw),
+      reevaluationOverdue: parseTriState(reevaluationOverdueRaw),
+      hasActiveBlocks: parseTriState(hasActiveBlocksRaw),
+      isApproved: parseTriState(isApprovedRaw),
+      legalCheckPassed: parseTriState(legalCheckPassedRaw),
+      questionnaireFilled: parseTriState(questionnaireFilledRaw),
+      initialAssessmentDone: parseTriState(initialAssessmentDoneRaw),
+      sortBy: parseSortBy(sortByRaw),
+      sortOrder: parseSortOrder(sortOrderRaw),
+    };
+    return this.service.findAllForExport(filters);
+  }
+
   @Get('inn-lookup')
   async lookupByInn(@Query('inn') inn?: string) {
     if (!inn?.trim()) {

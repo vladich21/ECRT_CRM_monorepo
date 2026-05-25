@@ -57,6 +57,13 @@
 .filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
 .filterTabs      { @include lp.filterTabs; }
 .filterTab       { @include lp.filterTab; }
+.filterTabScopeLabel {
+  @include lp.filterTab;
+  @include lp.filterTabActive;
+  cursor: default;
+  pointer-events: none;
+  border-bottom-width: 4px;
+}
 .filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
 .filterTabCount  { @include lp.filterTabCount; }
 .filterTabsRight { @include lp.filterTabsRight; }

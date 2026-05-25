@@ -1,0 +1,195 @@
+@use '../../styles/variables' as v;
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.intro {
+  margin: 0;
+  font-size: v.$font-base;
+  line-height: 1.5;
+  color: v.$text-tertiary;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selectionSummary {
+  font-size: v.$font-base;
+  color: v.$text-secondary;
+}
+
+.sectionsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid v.$border-secondary;
+  border-radius: 8px;
+  background: v.$bg-secondary;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$text-primary;
+}
+
+.extraGroups {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.extraGroupsColumn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid v.$border-tertiary;
+  border-radius: 6px;
+  background: v.$bg-primary;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$text-secondary;
+}
+
+.checkboxGrid {
+  display: grid;
+  gap: 8px 16px;
+}
+
+.checkboxGridSplit {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.checkboxGridRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.checkboxGridRow .checkboxItem:global(.ant-checkbox-wrapper) {
+  flex: 1 1 calc(33.333% - 8px);
+  min-width: 120px;
+}
+
+.fieldGroupSections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fieldGroupSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subgroupTitle {
+  margin: 0;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$text-tertiary;
+}
+
+.checkboxGridColumn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkboxItem:global(.ant-checkbox-wrapper) {
+  display: flex;
+  align-items: center;
+  margin-inline-start: 0;
+  width: 100%;
+  max-width: 100%;
+  font-size: v.$font-base;
+  line-height: 1.4;
+  color: v.$text-primary;
+
+  :global(.ant-checkbox) {
+    top: 0;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  :global(.ant-checkbox + span) {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 8px 0;
+    line-height: 1.4;
+  }
+}
+
+.checkboxGridMain {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.checkboxGridExtra {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 720px) {
+  .extraGroups {
+    flex-direction: column;
+  }
+
+  .checkboxGridSplit {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .checkboxGridRow .checkboxItem:global(.ant-checkbox-wrapper) {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .checkboxGridMain {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 
 import type { PartnerListParams, PartnerListSortBy } from '../../../api/partners/partnerApi';
 import { EMPTY_FILTERS, type PartnerFilters } from '../PartnerFiltersModal';
-import type { PartnerListTab } from '../PartnersListPage.types';
 
 const DEFAULT_SORT_BY: PartnerListSortBy = 'name';
 const DEFAULT_SORT_ORDER: 'asc' | 'desc' = 'asc';
@@ -23,6 +22,7 @@ function countActivePartnerFilters(filters: PartnerFilters): number {
   if (filters.reevaluationOverdue !== 'all') count += 1;
   if (filters.hasActiveBlocks !== 'all') count += 1;
   if (filters.isApproved !== 'all') count += 1;
+  if (filters.isDeleted !== 'all') count += 1;
   if (filters.legalCheckPassed !== 'all') count += 1;
   if (filters.questionnaireFilled !== 'all') count += 1;
   if (filters.initialAssessmentDone !== 'all') count += 1;
@@ -31,7 +31,6 @@ function countActivePartnerFilters(filters: PartnerFilters): number {
 
 export function usePartnersListFilters() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<PartnerListTab>('all');
   const [appliedFilters, setAppliedFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [draftFilters, setDraftFilters] = useState<PartnerFilters>(EMPTY_FILTERS);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -81,8 +80,6 @@ export function usePartnersListFilters() {
   return {
     searchQuery,
     setSearchQuery,
-    activeTab,
-    setActiveTab,
     appliedFilters,
     setAppliedFilters,
     draftFilters,

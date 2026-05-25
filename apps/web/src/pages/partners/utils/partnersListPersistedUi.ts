@@ -1,7 +1,6 @@
 import type { PartnerListSortBy } from '../../../api/partners/partnerApi';
 
 import type { PartnerFilters } from '../PartnerFiltersModal';
-import type { PartnerListTab } from '../PartnersListPage.types';
 
 import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './partnersListNavSnapshot';
 
@@ -21,7 +20,6 @@ export function loadPartnersListPersistedUi(): PartnersListPersistedUi | null {
 
 export function savePartnersListPersistedUi(params: {
   searchQuery: string;
-  activeTab: PartnerListTab;
   appliedFilters: PartnerFilters;
   page: number;
   pageSize: number;
@@ -31,7 +29,6 @@ export function savePartnersListPersistedUi(params: {
   try {
     const snapshot = buildPartnersListNavSnapshot(
       params.searchQuery,
-      params.activeTab,
       params.appliedFilters,
       params.page,
       params.pageSize,

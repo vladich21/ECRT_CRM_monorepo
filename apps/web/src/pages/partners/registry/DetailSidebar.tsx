@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom';
 
 import { SURFACE_ACTIVE, SURFACE_BLOCKED, getPartnerStatusSurface, mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner, PartnerContact } from '../../../types/partner';
-import { computePartnerIsApproved, inferPartnerCategoryKind } from '../../../utils/partnerApproval';
+import { inferPartnerCategoryKind } from '../../../utils/partnerApproval';
 import styles from './DetailSidebar.module.scss';
 
-/** Контакт для карточки сайдбара: основной или первый в списке. */
 function pickFeaturedContact(contacts: PartnerContact[]): PartnerContact {
   return contacts.find(contact => contact.is_primary) ?? contacts[0];
 }
@@ -18,7 +17,6 @@ function countOtherContacts(contacts: PartnerContact[], featuredId: string): num
   );
 }
 
-/** «1 контакт / 2 контакта / 5 контактов» для фразы «Еще N …». */
 function pluralContactsRu(contactCount: number): string {
   const countFloored = Math.max(0, Math.floor(contactCount));
   const lastDigit = countFloored % 10;
@@ -35,7 +33,6 @@ function websiteHref(raw: string): string {
   return `https://${trimmedUrl}`;
 }
 
-/** Строки «лейбл — значение» для блока «Контактные лица». */
 function ContactInfoClassificationRows({
   partnerId,
   contact,
@@ -123,6 +120,10 @@ interface DetailSidebarProps {
 export default function DetailSidebar({ partner, references, contacts = [] }: DetailSidebarProps) {
   const statusName =
     references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
+  const displayStatusName = partner.is_deleted ? 'Удален' : statusName;
+  const displayStatusSurface = partner.is_deleted
+    ? SURFACE_BLOCKED
+    : getPartnerStatusSurface(statusName);
   const typeNames = (partner.type_ids ?? [])
     .map(typeId => references?.partnerTypes?.find(partnerType => partnerType.id === typeId)?.name)
     .filter(Boolean);
@@ -134,13 +135,7 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
     'Не указана';
   const categoryNameForRules = categoryDisplayName === 'Не указана' ? null : categoryDisplayName;
   const categoryKind = inferPartnerCategoryKind(categoryNameForRules);
-  const approvedByRules = computePartnerIsApproved({
-    kind: inferPartnerCategoryKind(categoryNameForRules),
-    legalCheckPassed: partner.legal_check_passed,
-    questionnaireFilled: partner.questionnaire_filled,
-    initialAssessmentDone: partner.initial_assessment_done,
-    hasActiveSupplierEvaluationBlock: partner.has_active_evaluation_block ?? false,
-  });
+  const isApproved = partner.is_approved;
   const website = partner.website?.trim();
   const partnerPhone = partner.phone?.trim();
   const partnerEmail = partner.email?.trim();
@@ -212,17 +207,17 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Статус</span>
-            <Tag bordered={false} style={mutedTagStyle(getPartnerStatusSurface(statusName), { fontSize: 14 })}>
-              {statusName}
+            <Tag bordered={false} style={mutedTagStyle(displayStatusSurface, { fontSize: 14 })}>
+              {displayStatusName}
             </Tag>
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Утвержден</span>
             <Tag
               bordered={false}
-              style={mutedTagStyle(approvedByRules ? SURFACE_ACTIVE : SURFACE_BLOCKED, { fontSize: 14 })}
+              style={mutedTagStyle(isApproved ? SURFACE_ACTIVE : SURFACE_BLOCKED, { fontSize: 14 })}
             >
-              {approvedByRules ? 'Да' : 'Нет'}
+              {isApproved ? 'Да' : 'Нет'}
             </Tag>
           </div>
           <div className={styles.classRowBorder}>

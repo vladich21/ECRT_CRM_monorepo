@@ -19,6 +19,53 @@
   background-color: rgba(22, 119, 255, 0.12);
   color: v.$primary-color;
   border-color: v.$primary-color;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  height: auto;
+  line-height: 1.35;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.competenceSelect {
+  width: 100%;
+  max-width: 100%;
+
+  :global(.ant-select-selector) {
+    height: auto !important;
+    min-height: 32px;
+    align-items: flex-start;
+    overflow: hidden;
+  }
+
+  :global(.ant-select-selection-overflow) {
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100%;
+    row-gap: 4px;
+  }
+
+  :global(.ant-select-selection-overflow-item) {
+    max-width: 100%;
+    flex: 0 1 auto;
+  }
+
+  :global(.ant-select-selection-item) {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    height: auto;
+    line-height: 1.35;
+  }
+
+  :global(.ant-select-selection-search) {
+    flex: 1 1 120px;
+    max-width: 100%;
+    margin-inline-start: 0 !important;
+  }
 }
 
 .competenceOptionContainer {

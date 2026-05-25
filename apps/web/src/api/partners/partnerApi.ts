@@ -67,35 +67,51 @@ export interface PartnerListParams {
   sortOrder?: 'asc' | 'desc';
 }
 
+export type PartnerExportQuery = PartnerListParams;
+
+export interface PartnersExportResponse {
+  data: Partner[];
+  total: number;
+  truncated: boolean;
+}
+
+function buildPartnerListQueryParams(filters?: PartnerListParams, pagination?: { limit?: number; offset?: number }) {
+  const evaluationCategoriesParam = filters?.evaluationCategories?.length
+    ? filters.evaluationCategories.map(c => (c === 'none' ? 'none' : c)).join(',')
+    : undefined;
+  return {
+    ...(pagination?.limit != null ? { limit: pagination.limit } : {}),
+    ...(pagination?.offset != null ? { offset: pagination.offset } : {}),
+    deleted_scope: filters?.deletedScope ?? 'active',
+    search: filters?.search || undefined,
+    type_ids: filters?.typeIds?.length ? filters.typeIds.join(',') : undefined,
+    status_ids: filters?.statusIds?.length ? filters.statusIds.join(',') : undefined,
+    competence_ids: filters?.competenceIds?.length ? filters.competenceIds.join(',') : undefined,
+    readiness: filters?.readiness && filters.readiness !== 'all' ? filters.readiness : undefined,
+    evaluation_categories: evaluationCategoriesParam,
+    category_ids: filters?.categoryIds?.length ? filters.categoryIds.join(',') : undefined,
+    evaluation_required: filters?.evaluationRequired,
+    is_key_supplier: filters?.isKeySupplier,
+    is_targeted: filters?.isTargeted,
+    reevaluation_overdue: filters?.reevaluationOverdue,
+    has_active_blocks: filters?.hasActiveBlocks,
+    is_approved: filters?.isApproved,
+    legal_check_passed: filters?.legalCheckPassed,
+    questionnaire_filled: filters?.questionnaireFilled,
+    initial_assessment_done: filters?.initialAssessmentDone,
+    sort_by: filters?.sortBy,
+    sort_order: filters?.sortOrder,
+  };
+}
+
+export function buildPartnersExportQuery(filters: PartnerListParams): PartnerExportQuery {
+  return { ...filters };
+}
+
 export const partnerApi = {
   getPartners: async (filters?: PartnerListParams, limit = 20, offset = 0): Promise<PartnersListResponse> => {
-    const evaluationCategoriesParam = filters?.evaluationCategories?.length
-      ? filters.evaluationCategories.map(c => (c === 'none' ? 'none' : c)).join(',')
-      : undefined;
     const response = await apiClient.get('/partners', {
-      params: {
-        limit,
-        offset,
-        deleted_scope: filters?.deletedScope ?? 'active',
-        search: filters?.search || undefined,
-        type_ids: filters?.typeIds?.length ? filters.typeIds.join(',') : undefined,
-        status_ids: filters?.statusIds?.length ? filters.statusIds.join(',') : undefined,
-        competence_ids: filters?.competenceIds?.length ? filters.competenceIds.join(',') : undefined,
-        readiness: filters?.readiness && filters.readiness !== 'all' ? filters.readiness : undefined,
-        evaluation_categories: evaluationCategoriesParam,
-        category_ids: filters?.categoryIds?.length ? filters.categoryIds.join(',') : undefined,
-        evaluation_required: filters?.evaluationRequired,
-        is_key_supplier: filters?.isKeySupplier,
-        is_targeted: filters?.isTargeted,
-        reevaluation_overdue: filters?.reevaluationOverdue,
-        has_active_blocks: filters?.hasActiveBlocks,
-        is_approved: filters?.isApproved,
-        legal_check_passed: filters?.legalCheckPassed,
-        questionnaire_filled: filters?.questionnaireFilled,
-        initial_assessment_done: filters?.initialAssessmentDone,
-        sort_by: filters?.sortBy,
-        sort_order: filters?.sortOrder,
-      },
+      params: buildPartnerListQueryParams(filters, { limit, offset }),
     });
     const responseBody = response.data as PartnersListResponse;
     const tabCounts = responseBody.tab_counts;
@@ -108,6 +124,17 @@ export const partnerApi = {
         key_supplier: tabCounts?.key_supplier ?? 0,
       },
       deletion_tab_counts: responseBody.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS,
+    };
+  },
+  exportPartners: async (filters: PartnerExportQuery): Promise<PartnersExportResponse> => {
+    const response = await apiClient.get('/partners/export', {
+      params: buildPartnerListQueryParams(filters),
+    });
+    const body = response.data as PartnersExportResponse;
+    return {
+      data: body.data ?? [],
+      total: body.total ?? 0,
+      truncated: Boolean(body.truncated),
     };
   },
   getPartnersForReference: async (opts?: { excludeArchived?: boolean }): Promise<Partner[]> => {

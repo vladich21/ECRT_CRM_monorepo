@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   CloudSyncOutlined,
+  ExportOutlined,
   FilterOutlined,
   PlusOutlined,
   SearchOutlined,
@@ -22,11 +23,7 @@ import type { PartnerListSortBy } from '../../api/partners/partnerApi';
 import { usePartnerSyncNow, usePartnerSyncStatus } from '../../api/partners/partnerApiHooks';
 import type { Partner } from '../../types/partner';
 import { PartnerFiltersModal } from './PartnerFiltersModal';
-import styles from './PartnersListPage.module.scss';
-import { PARTNER_FILTER_TABS, type PartnerListTab } from './PartnersListPage.types';
-import { usePartnersListData } from './hooks/usePartnersListData';
-import { usePartnersListFilters } from './hooks/usePartnersListFilters';
-import SupplierCard from './registry/SupplierCard';
+import { PartnerExportModal } from './components/export/PartnerExportModal';
 import { buildPartnersApiFilters } from './utils/buildPartnersApiFilters';
 import { toPartnerListDisplayPartner } from './utils/partnersListDisplayUtils';
 import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
@@ -35,9 +32,14 @@ import {
   isPartnerCreateRestricted,
   PARTNER_CREATE_RESTRICTED_MESSAGE,
 } from './utils/partnerCreateRestriction';
+import styles from './PartnersListPage.module.scss';
+import { usePartnersListData } from './hooks/usePartnersListData';
+import { usePartnersListFilters } from './hooks/usePartnersListFilters';
+import SupplierCard from './registry/SupplierCard';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const PERSIST_UI_DEBOUNCE_MS = 400;
+const PARTNERS_LIST_SCOPE_TAB_LABEL = 'Все контрагенты';
 
 const SORT_OPTIONS: { value: PartnerListSortBy; label: string }[] = [
   { value: 'name', label: 'По названию' },
@@ -56,8 +58,6 @@ export default function PartnersListPage() {
   const {
     searchQuery,
     setSearchQuery,
-    activeTab,
-    setActiveTab,
     appliedFilters,
     setAppliedFilters,
     draftFilters,
@@ -76,6 +76,7 @@ export default function PartnersListPage() {
     restoreListSorting,
   } = usePartnersListFilters();
   const [debouncedSearch, flushDebouncedSearch] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const isCreateRestricted = isPartnerCreateRestricted();
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
@@ -90,7 +91,6 @@ export default function PartnersListPage() {
       restoredFromNavigationRef.current = true;
       setSearchQuery(restoredListState.searchQuery);
       flushDebouncedSearch(restoredListState.searchQuery.trim());
-      setActiveTab(restoredListState.activeTab);
       setAppliedFilters(restoredListState.appliedFilters);
       setDraftFilters(restoredListState.appliedFilters);
       setPage(restoredListState.page);
@@ -98,7 +98,6 @@ export default function PartnersListPage() {
       restoreListSorting({ sortBy: restoredListState.sortBy, sortOrder: restoredListState.sortOrder });
       savePartnersListPersistedUi({
         searchQuery: restoredListState.searchQuery,
-        activeTab: restoredListState.activeTab,
         appliedFilters: restoredListState.appliedFilters,
         page: restoredListState.page,
         pageSize: restoredListState.pageSize,
@@ -107,14 +106,22 @@ export default function PartnersListPage() {
       });
     },
     applyFallback: navigationState => {
-      if (navigationState.listTab != null) {
+      if (navigationState.listTab === 'deleted' || navigationState.deletionScope === 'deleted') {
         restoredFromNavigationRef.current = true;
-        setActiveTab(navigationState.listTab as PartnerListTab);
+        setAppliedFilters(prev => ({ ...prev, isDeleted: 'yes' }));
+        setDraftFilters(prev => ({ ...prev, isDeleted: 'yes' }));
         return;
       }
-      if (navigationState.deletionScope === 'deleted') {
+      if (navigationState.listTab === 'ready') {
         restoredFromNavigationRef.current = true;
-        setActiveTab('deleted');
+        setAppliedFilters(prev => ({ ...prev, isApproved: 'yes' }));
+        setDraftFilters(prev => ({ ...prev, isApproved: 'yes' }));
+        return;
+      }
+      if (navigationState.listTab === 'in_progress') {
+        restoredFromNavigationRef.current = true;
+        setAppliedFilters(prev => ({ ...prev, isApproved: 'no' }));
+        setDraftFilters(prev => ({ ...prev, isApproved: 'no' }));
       }
     },
   });
@@ -127,7 +134,6 @@ export default function PartnersListPage() {
         skipNextListResetRef.current = true;
         setSearchQuery(persisted.searchQuery);
         flushDebouncedSearch(persisted.searchQuery.trim());
-        setActiveTab(persisted.activeTab);
         setAppliedFilters(persisted.appliedFilters);
         setDraftFilters(persisted.appliedFilters);
         setPage(persisted.page);
@@ -137,10 +143,10 @@ export default function PartnersListPage() {
     }
     canPersistPartnersListUiRef.current = true;
   }, []);
-  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
+  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, appliedFilters, resetPage]);
   const apiFilters = useMemo(
-    () => buildPartnersApiFilters(debouncedSearch, activeTab, appliedFilters, sortBy, sortOrder),
-    [debouncedSearch, appliedFilters, activeTab, sortBy, sortOrder],
+    () => buildPartnersApiFilters(debouncedSearch, appliedFilters, sortBy, sortOrder),
+    [debouncedSearch, appliedFilters, sortBy, sortOrder],
   );
   const {
     partners,
@@ -153,16 +159,14 @@ export default function PartnersListPage() {
     isRefsError,
     partnerEvalKpiQueries,
     partnerInitialEvalQueries,
-    getTabCount,
     filterOptions,
-  } = usePartnersListData(apiFilters, page, pageSize, debouncedSearch, appliedFilters);
+  } = usePartnersListData(apiFilters, page, pageSize);
 
   useEffect(() => {
     if (!canPersistPartnersListUiRef.current) return;
     const timeoutId = window.setTimeout(() => {
       savePartnersListPersistedUi({
         searchQuery,
-        activeTab,
         appliedFilters,
         page,
         pageSize,
@@ -171,7 +175,7 @@ export default function PartnersListPage() {
       });
     }, PERSIST_UI_DEBOUNCE_MS);
     return () => window.clearTimeout(timeoutId);
-  }, [searchQuery, activeTab, appliedFilters, page, pageSize, sortBy, sortOrder]);
+  }, [searchQuery, appliedFilters, page, pageSize, sortBy, sortOrder]);
 
   const applyFilters = () => {
     commitAppliedFilters();
@@ -194,10 +198,9 @@ export default function PartnersListPage() {
     navigate(`/partners/${partner.id}`, {
       state: {
         from: 'partners-list',
-        deletionScope: activeTab === 'deleted' ? ('deleted' as const) : undefined,
+        deletionScope: partner.is_deleted ? ('deleted' as const) : undefined,
         partnersListReturn: buildPartnersListNavSnapshot(
           searchQuery,
-          activeTab,
           appliedFilters,
           page,
           pageSize,
@@ -278,13 +281,20 @@ export default function PartnersListPage() {
               Фильтры
               {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
             </Button>
+            <Button
+              icon={<ExportOutlined />}
+              onClick={() => setIsExportModalOpen(true)}
+              disabled={isInitialLoad}
+            >
+              Экспорт
+            </Button>
             {isCreateRestricted ? (
               <span className={styles.createRestrictedHint}>{PARTNER_CREATE_RESTRICTED_MESSAGE}</span>
             ) : (
               <Button
                 type='primary'
                 icon={<PlusOutlined />}
-                disabled={activeTab === 'deleted'}
+                disabled={appliedFilters.isDeleted === 'yes'}
                 onClick={() => navigate('/partners/create')}
               >
                 Добавить контрагента
@@ -297,18 +307,10 @@ export default function PartnersListPage() {
             <div className={styles.filterSection}>
               <div className={styles.filterTabsRow}>
                 <div className={styles.filterTabs}>
-                  {PARTNER_FILTER_TABS.map(({ key, label, hint }) => (
-                    <button
-                      key={key}
-                      type='button'
-                      title={hint}
-                      className={`${styles.filterTab}${activeTab === key ? ` ${styles.filterTabActive}` : ''}`}
-                      onClick={() => setActiveTab(key)}
-                    >
-                      {label}{' '}
-                      <span className={styles.filterTabCount}>{getTabCount(key)}</span>
-                    </button>
-                  ))}
+                  <span className={styles.filterTabScopeLabel}>
+                    {PARTNERS_LIST_SCOPE_TAB_LABEL}{' '}
+                    <span className={styles.filterTabCount}>{isFetching ? '…' : total}</span>
+                  </span>
                 </div>
                 <div className={styles.filterTabsRight}>
                   <Select<PartnerListSortBy>
@@ -365,7 +367,7 @@ export default function PartnersListPage() {
         <div className={`${styles.cardsList}${isFetching && !isLoading ? ` ${styles.cardsListDimmed}` : ''}`}>
           {partners.length === 0 ? (
             <div className={styles.emptyState}>
-              {activeTab === 'deleted' ? 'Нет удаленных контрагентов' : 'Контрагенты не найдены'}
+              {appliedFilters.isDeleted === 'yes' ? 'Нет удаленных контрагентов' : 'Контрагенты не найдены'}
             </div>
           ) : (
             partners.map((partner, index) => (
@@ -407,6 +409,13 @@ export default function PartnersListPage() {
         onApply={applyFilters}
         onReset={resetFilters}
         selectOptions={filterOptions}
+      />
+
+      <PartnerExportModal
+        open={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        exportFilters={apiFilters}
+        references={references ?? {}}
       />
     </div>
   );

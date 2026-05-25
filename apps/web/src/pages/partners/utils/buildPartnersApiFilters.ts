@@ -1,8 +1,6 @@
 import type { PartnerListParams, PartnerListTriStateParam } from '../../../api/partners/partnerApi';
-import type { PartnerTabCountFilters } from '../../../api/partners/partnerQueryKeys';
 import type { DeletionScope } from '../../../constants/deletionScope';
 import type { PartnerFilters, PartnerTriState } from '../PartnerFiltersModal';
-import type { PartnerListTab } from '../PartnersListPage.types';
 
 function normalizePartnerSearchQuery(raw: string): string {
   return raw.trim().replace(/\s+/g, ' ');
@@ -13,28 +11,14 @@ function triToApi(value: PartnerTriState): PartnerListTriStateParam | undefined 
   return value;
 }
 
-export function partnerFiltersToTabCountKey(filters: PartnerFilters): PartnerTabCountFilters {
-  return {
-    typeIds: [...filters.typeIds],
-    statusIds: [...filters.statusIds],
-    competenceIds: [...filters.competenceIds],
-    categoryIds: [...filters.categoryIds],
-    evaluationCategoryTokens: [...filters.evaluationCategoryTokens],
-    evaluationRequired: filters.evaluationRequired,
-    isKeySupplier: filters.isKeySupplier,
-    isTargeted: filters.isTargeted,
-    reevaluationOverdue: filters.reevaluationOverdue,
-    hasActiveBlocks: filters.hasActiveBlocks,
-    isApproved: filters.isApproved,
-    legalCheckPassed: filters.legalCheckPassed,
-    questionnaireFilled: filters.questionnaireFilled,
-    initialAssessmentDone: filters.initialAssessmentDone,
-  };
+function triToDeletedScope(value: PartnerTriState): DeletionScope {
+  if (value === 'yes') return 'deleted';
+  if (value === 'all') return 'all';
+  return 'active';
 }
 
 export function buildPartnersApiFilters(
   debouncedSearch: string,
-  activeTab: PartnerListTab,
   appliedFilters: PartnerFilters,
   sortBy?: PartnerListParams['sortBy'],
   sortOrder?: PartnerListParams['sortOrder'],
@@ -46,8 +30,7 @@ export function buildPartnersApiFilters(
     statusIds: appliedFilters.statusIds.length > 0 ? appliedFilters.statusIds : undefined,
     competenceIds: appliedFilters.competenceIds.length > 0 ? appliedFilters.competenceIds : undefined,
     categoryIds: appliedFilters.categoryIds.length > 0 ? appliedFilters.categoryIds : undefined,
-    readiness: (activeTab === 'deleted' ? 'all' : activeTab) as 'all' | 'ready' | 'in_progress',
-    deletedScope: (activeTab === 'deleted' ? 'deleted' : 'active') as DeletionScope,
+    deletedScope: triToDeletedScope(appliedFilters.isDeleted),
     evaluationCategories:
       appliedFilters.evaluationCategoryTokens.length > 0
         ? appliedFilters.evaluationCategoryTokens

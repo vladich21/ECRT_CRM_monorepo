@@ -17,7 +17,6 @@ import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
 } from './partnerDetailHeaderContent';
-import type { PartnerListTab } from './PartnersListPage.types';
 import type { PartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 
 function isSafeInternalReturnPath(raw: string): boolean {
@@ -80,7 +79,6 @@ export default function PartnerDetailsPage() {
     showNotification,
     redirectPath: PARTNERS_REGISTRY_PATH,
     redirectReplace: true,
-    redirectState: { listTab: 'all' as PartnerListTab },
   });
 
   const tabNavigateOpts =

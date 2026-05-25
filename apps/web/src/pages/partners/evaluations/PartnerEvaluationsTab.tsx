@@ -44,7 +44,9 @@ import {
 import EvaluationExpandedContent from './EvaluationExpandedContent';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
 import NewInitialSupplierEvaluationModal from './NewInitialSupplierEvaluationModal';
-import { ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP } from './supplierEvaluationPartnerArchiveUi';
+import {
+  partnerEvaluationsCreationDisabledTooltip,
+} from './supplierEvaluationPartnerArchiveUi';
 import {
   CategoryTag,
   formatEvaluationScoreDisplay,
@@ -179,11 +181,10 @@ export default function PartnerEvaluationsTab() {
   const shouldShowInitialTable = Boolean(initialEvaluation);
   const shouldRequireInitialForProjectFlow = !hasActiveInitialEvaluation && !hasProjectEvaluations;
   const evaluationRequired = partner.evaluation_required ?? 'none';
-  const newEvaluationDisabledReason = isPartnerArchived
-    ? ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP
-    : shouldRequireInitialForProjectFlow
-      ? 'Сначала запустите первичную оценку поставщика'
-      : undefined;
+  const evaluationsBlockedTooltip = partnerEvaluationsCreationDisabledTooltip(partner, isPartnerArchived);
+  const newEvaluationDisabledReason =
+    evaluationsBlockedTooltip ??
+    (shouldRequireInitialForProjectFlow ? 'Сначала запустите первичную оценку поставщика' : undefined);
   const evaluationRequiredAlert = useMemo(() => {
     if (evaluationRequired === 'missing') {
       return {
@@ -372,8 +373,8 @@ export default function PartnerEvaluationsTab() {
         >
           <Text strong>Первичная оценка</Text>
           {!hasActiveInitialEvaluation ? (
-            evaluationsCreationDisabled && isPartnerArchived ? (
-              <Tooltip title={ARCHIVED_PARTNER_EVALUATIONS_TOOLTIP}>
+            evaluationsCreationDisabled ? (
+              <Tooltip title={evaluationsBlockedTooltip}>
                 <span>
                   <Button type='default' disabled>
                     Первичная оценка

@@ -2,12 +2,6 @@ import type { PartnerListSortBy } from '../../../api/partners/partnerApi';
 import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '../../../utils/listNavSnapshotShared';
 
 import { EMPTY_FILTERS, type PartnerFilters } from '../PartnerFiltersModal';
-import type { PartnerListTab } from '../PartnersListPage.types';
-
-const TABS: PartnerListTab[] = ['all', 'ready', 'in_progress', 'deleted'];
-function isPartnerTab(candidate: unknown): candidate is PartnerListTab {
-  return typeof candidate === 'string' && (TABS as string[]).includes(candidate);
-}
 
 const VALID_SORT_BY = new Set<PartnerListSortBy>([
   'name',
@@ -16,6 +10,8 @@ const VALID_SORT_BY = new Set<PartnerListSortBy>([
   'next_reevaluation_date',
   'status_name',
 ]);
+
+type LegacyPartnerListTab = 'all' | 'ready' | 'in_progress' | 'deleted';
 
 function parseTriFromSnapshot(raw: unknown): PartnerFilters['isKeySupplier'] {
   if (raw === 'yes' || raw === 'no' || raw === 'all') return raw;
@@ -30,10 +26,29 @@ function parseEvalCategories(raw: unknown): PartnerFilters['evaluationCategoryTo
   });
 }
 
-function normalizeAppliedFromSnapshot(raw: unknown): PartnerFilters {
+function parseIsDeletedFromSnapshot(raw: unknown, wasDeletedTab: boolean): PartnerFilters['isDeleted'] {
+  if (raw === 'yes' || raw === 'no' || raw === 'all') return raw;
+  return wasDeletedTab ? 'yes' : 'all';
+}
+
+function applyLegacyReadinessTab(
+  filters: PartnerFilters,
+  legacyTab: LegacyPartnerListTab | undefined,
+): PartnerFilters {
+  if (filters.isApproved !== 'all') return filters;
+  if (legacyTab === 'ready') return { ...filters, isApproved: 'yes' };
+  if (legacyTab === 'in_progress') return { ...filters, isApproved: 'no' };
+  return filters;
+}
+
+function normalizeAppliedFromSnapshot(
+  raw: unknown,
+  legacyTab: LegacyPartnerListTab | undefined,
+): PartnerFilters {
   if (!raw || typeof raw !== 'object') return { ...EMPTY_FILTERS };
   const snapshot = raw as Record<string, unknown>;
-  return {
+  const wasDeletedTab = legacyTab === 'deleted';
+  const filters: PartnerFilters = {
     ...EMPTY_FILTERS,
     typeIds: Array.isArray(snapshot.typeIds)
       ? snapshot.typeIds.filter((id): id is string => typeof id === 'string')
@@ -54,16 +69,17 @@ function normalizeAppliedFromSnapshot(raw: unknown): PartnerFilters {
     reevaluationOverdue: parseTriFromSnapshot(snapshot.reevaluationOverdue),
     hasActiveBlocks: parseTriFromSnapshot(snapshot.hasActiveBlocks),
     isApproved: parseTriFromSnapshot(snapshot.isApproved),
+    isDeleted: parseIsDeletedFromSnapshot(snapshot.isDeleted, wasDeletedTab),
     legalCheckPassed: parseTriFromSnapshot(snapshot.legalCheckPassed),
     questionnaireFilled: parseTriFromSnapshot(snapshot.questionnaireFilled),
     initialAssessmentDone: parseTriFromSnapshot(snapshot.initialAssessmentDone),
   };
+  return applyLegacyReadinessTab(filters, legacyTab);
 }
 
 export type PartnersListNavSnapshot = {
-  version: 1 | 2;
+  version: 3;
   searchQuery: string;
-  activeTab: PartnerListTab;
   applied: PartnerFilters;
   page: number;
   pageSize: number;
@@ -74,7 +90,6 @@ export type PartnersListNavSnapshot = {
 
 export function buildPartnersListNavSnapshot(
   searchQuery: string,
-  activeTab: PartnerListTab,
   applied: PartnerFilters,
   page: number,
   pageSize: number,
@@ -83,9 +98,8 @@ export function buildPartnersListNavSnapshot(
   scrollY?: number,
 ): PartnersListNavSnapshot {
   return {
-    version: 2,
+    version: 3,
     searchQuery,
-    activeTab,
     applied: { ...applied },
     page,
     pageSize,
@@ -97,7 +111,6 @@ export function buildPartnersListNavSnapshot(
 
 export function parsePartnersListNavSnapshot(raw: unknown): {
   searchQuery: string;
-  activeTab: PartnerListTab;
   appliedFilters: PartnerFilters;
   page: number;
   pageSize: number;
@@ -108,8 +121,16 @@ export function parsePartnersListNavSnapshot(raw: unknown): {
   const body = asListNavSnapshotV1Record(raw);
   if (!body) return null;
   const { searchQuery, page, pageSize, scrollY } = parseListNavSnapshotBase(body, 20);
-  const snapshotRecord = body as unknown as PartnersListNavSnapshot;
-  const appliedFilters = normalizeAppliedFromSnapshot(snapshotRecord.applied);
+  const snapshotRecord = body as Record<string, unknown>;
+  const legacyTabRaw = snapshotRecord.activeTab;
+  const legacyTab =
+    legacyTabRaw === 'all' ||
+    legacyTabRaw === 'ready' ||
+    legacyTabRaw === 'in_progress' ||
+    legacyTabRaw === 'deleted'
+      ? legacyTabRaw
+      : undefined;
+  const appliedFilters = normalizeAppliedFromSnapshot(snapshotRecord.applied, legacyTab);
   const sortByRaw = snapshotRecord.sortBy;
   const sortBy =
     typeof sortByRaw === 'string' && VALID_SORT_BY.has(sortByRaw as PartnerListSortBy)
@@ -119,7 +140,6 @@ export function parsePartnersListNavSnapshot(raw: unknown): {
   const sortOrder = sortOrderRaw === 'desc' || sortOrderRaw === 'asc' ? sortOrderRaw : 'asc';
   return {
     searchQuery,
-    activeTab: isPartnerTab(snapshotRecord.activeTab) ? snapshotRecord.activeTab : 'all',
     appliedFilters,
     page,
     pageSize,
