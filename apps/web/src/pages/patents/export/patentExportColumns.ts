@@ -42,6 +42,12 @@ export type PatentExportColumnKey =
   | 'transformed_from_rid'
   | 'transformation_notification_ic_zht'
   | 'transformation_notification_cir'
+  | 'application_files'
+  | 'consent_files'
+  | 'notification_files'
+  | 'requests_files'
+  | 'decision_positive_files'
+  | 'decision_negative_files'
   | 'is_deleted';
 
 export type PatentExportColumn = RegistryExportColumn<PatentExportColumnKey>;
@@ -78,6 +84,12 @@ export const PATENT_EXPORT_COLUMNS: PatentExportColumn[] = [
   { key: 'transformed_from_rid', label: 'Создано из РИД (номер)', defaultSelected: false },
   { key: 'transformation_notification_ic_zht', label: 'Уведомление о преобразовании (ИЦ ЖТ)', defaultSelected: false },
   { key: 'transformation_notification_cir', label: 'Уведомление о преобразовании (ЦИР)', defaultSelected: false },
+  { key: 'application_files', label: 'Файлы заявки', defaultSelected: false },
+  { key: 'consent_files', label: 'Файлы согласия', defaultSelected: false },
+  { key: 'notification_files', label: 'Файлы уведомления', defaultSelected: false },
+  { key: 'requests_files', label: 'Файлы запросов', defaultSelected: false },
+  { key: 'decision_positive_files', label: 'Файлы положительного решения', defaultSelected: false },
+  { key: 'decision_negative_files', label: 'Файлы отрицательного решения', defaultSelected: false },
   { key: 'is_deleted', label: 'Удален', defaultSelected: false },
 ];
 
@@ -132,6 +144,12 @@ export const PATENT_EXPORT_LONG_TEXT_COLUMN_KEYS = new Set<PatentExportColumnKey
   'grants',
   'transformation_notification_ic_zht',
   'transformation_notification_cir',
+  'application_files',
+  'consent_files',
+  'notification_files',
+  'requests_files',
+  'decision_positive_files',
+  'decision_negative_files',
 ]);
 
 export type PatentExportCellAlignment = 'left' | 'center' | 'right';
@@ -162,6 +180,17 @@ export const PATENT_EXPORT_EXTRA_GROUPS: PatentExportExtraGroup[] = [
     keys: ['rid_cost_excl_vat', 'rid_vat_rate', 'rid_cost_vat', 'rid_cost_incl_vat'],
   },
   {
+    id: 'transformation',
+    title: 'Преобразование РИД',
+    column: 0,
+    keys: [
+      'transformed_into_rid',
+      'transformed_from_rid',
+      'transformation_notification_ic_zht',
+      'transformation_notification_cir',
+    ],
+  },
+  {
     id: 'other',
     title: 'Прочее',
     column: 0,
@@ -186,15 +215,16 @@ export const PATENT_EXPORT_EXTRA_GROUPS: PatentExportExtraGroup[] = [
     keys: ['requests_earliest_deadline', 'requests_response_required'],
   },
   {
-    id: 'transformation',
-    title: 'Преобразование РИД',
+    id: 'files_application',
+    title: 'Документы заявки',
     column: 1,
-    keys: [
-      'transformed_into_rid',
-      'transformed_from_rid',
-      'transformation_notification_ic_zht',
-      'transformation_notification_cir',
-    ],
+    keys: ['application_files', 'consent_files', 'notification_files'],
+  },
+  {
+    id: 'files_communication',
+    title: 'Запросы и решение',
+    column: 1,
+    keys: ['requests_files', 'decision_positive_files', 'decision_negative_files'],
   },
 ];
 
@@ -218,6 +248,15 @@ export const PATENT_EXPORT_MODAL_CONFIG = {
   storageKey: PATENT_EXPORT_COLUMNS_STORAGE_KEY,
 };
 
+export const PATENT_EXPORT_HYPERLINK_COLUMN_KEYS = new Set<PatentExportColumnKey>([
+  'application_files',
+  'consent_files',
+  'notification_files',
+  'requests_files',
+  'decision_positive_files',
+  'decision_negative_files',
+]);
+
 export const PATENT_EXPORT_EXCEL_OPTIONS = {
   sheetName: 'РИД',
   fileNamePrefix: 'reestr_rid',
@@ -226,6 +265,7 @@ export const PATENT_EXPORT_EXCEL_OPTIONS = {
   moneyKeys: PATENT_EXPORT_MONEY_COLUMN_KEYS,
   integerKeys: PATENT_EXPORT_INTEGER_COLUMN_KEYS,
   longTextKeys: PATENT_EXPORT_LONG_TEXT_COLUMN_KEYS,
+  hyperlinkKeys: PATENT_EXPORT_HYPERLINK_COLUMN_KEYS,
   getAlignment: getPatentExportColumnAlignment,
   getNumericFormat: (key: PatentExportColumnKey): string | undefined => {
     if (PATENT_EXPORT_MONEY_COLUMN_KEYS.has(key)) return '#,##0.00';

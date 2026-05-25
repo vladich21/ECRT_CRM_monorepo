@@ -26,7 +26,8 @@ const refs: ReferenceDataForPatents = {
   ],
   patentStatuses: [{ id: 'status-1', name: 'Патент получен' }],
   patentIntellectProps: [{ id: 'ip-1', name: 'Изобретение' }],
-  patentAreas: [{ id: 'area-1', name: 'Химия', code: 'A01' }],
+  patentAreas: [{ id: 'area-1', name: 'Химия', code: 'A01', description: '', created_at: '', updated_at: '' }],
+  contractCategories: [],
 };
 
 const fullPatent: Patent = {
@@ -73,10 +74,10 @@ describe('mapPatentToExportRow', () => {
     const row = mapPatentToExportRow(fullPatent, refs);
     const keys = PATENT_EXPORT_COLUMNS.map(column => column.key);
 
-    expect(keys).toHaveLength(31);
+    expect(keys).toHaveLength(37);
     expect(Object.keys(row).sort()).toEqual([...keys].sort());
 
-    const expected: Record<PatentExportColumnKey, string> = {
+    const expected: Record<PatentExportColumnKey, string | { links: never[] }> = {
       name: 'Способ получения вещества',
       registration_number: 'RU-123',
       registration_date: '15.03.2024',
@@ -107,11 +108,17 @@ describe('mapPatentToExportRow', () => {
       transformed_from_rid: 'RU-111',
       transformation_notification_ic_zht: 'Увед-ИЦ',
       transformation_notification_cir: 'Увед-ЦИР',
+      application_files: '',
+      consent_files: '',
+      notification_files: '',
+      requests_files: '',
+      decision_positive_files: '',
+      decision_negative_files: '',
       is_deleted: 'Нет',
     };
 
     for (const key of keys) {
-      expect(row[key], key).toBe(expected[key]);
+      expect(row[key], key).toEqual(expected[key]);
     }
   });
 

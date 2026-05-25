@@ -26,6 +26,7 @@ import {
   Spin,
   Tag,
   Tabs,
+  theme,
   Tooltip,
   Typography,
   Upload,
@@ -127,6 +128,7 @@ function resolveGenericSectionKey(
 }
 
 export function EntityFilesTab({ entityType, patentFileSections, documentSections }: EntityFilesTabProps) {
+  const { token } = theme.useToken();
   const params = useParams();
   const navigate = useNavigate();
   const entityId = params[`${entityType}Id`] as string;
@@ -627,7 +629,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                     key: 'application',
                     label: (
                       <span className={styles.patentTabLabel}>
-                        Документы заявки <Badge count={applicationTabCount} />
+                        Документы заявки <Badge count={applicationTabCount} color={token.colorPrimary} />
                       </span>
                     ),
                     children: (
@@ -640,7 +642,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                     key: 'communication',
                     label: (
                       <span className={styles.patentTabLabel}>
-                        Запросы и решение <Badge count={communicationTabCount} />
+                        Запросы и решение <Badge count={communicationTabCount} color={token.colorPrimary} />
                       </span>
                     ),
                     children: (
