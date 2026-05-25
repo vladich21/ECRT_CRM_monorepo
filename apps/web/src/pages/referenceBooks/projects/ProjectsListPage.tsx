@@ -13,6 +13,7 @@ import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
 import { getNameById } from '../../../helpers/getNameById';
 import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
+import { getListScrollY, useListScrollRestoration } from '../../../hooks/useListScrollRestoration';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import type { Project } from '../../../types/referenceTypes';
 import { useProjectListFilters } from './hooks/useProjectListFilters';
@@ -59,7 +60,7 @@ export default function ProjectsListPage() {
   }, [searchQuery]);
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
-  const { skipNextListResetRef } = useListReturnFromDetail({
+  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
     location,
     navigate,
     getRawSnapshot: navigationState => navigationState.projectsListReturn,
@@ -138,7 +139,14 @@ export default function ProjectsListPage() {
       state: {
         from: 'projects-list',
         deletionScope: activeTab === 'deleted' ? ('deleted' as const) : undefined,
-        projectsListReturn: buildProjectsListNavSnapshot(searchQuery, activeTab, appliedFilters, page, pageSize),
+        projectsListReturn: buildProjectsListNavSnapshot(
+          searchQuery,
+          activeTab,
+          appliedFilters,
+          page,
+          pageSize,
+          getListScrollY(),
+        ),
       },
     });
   const handlePageChange = (newPage: number, newPageSize?: number) =>
@@ -146,10 +154,14 @@ export default function ProjectsListPage() {
       current: newPage,
       pageSize: newPageSize ?? pageSize,
     });
+
+  const isInitialLoad = isRefsLoading || (isLoading && !data);
+  const isListReady = !isInitialLoad && !isFetching;
+  useListScrollRestoration({ pendingScrollY, isListReady });
+
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-  const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
   return (
     <div className={styles.wrap}>
@@ -239,7 +251,7 @@ export default function ProjectsListPage() {
         <div className={`${styles.cardList}${isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''}`}>
           {projects.length === 0 ? (
             <div className={styles.empty}>
-              {activeTab === 'deleted' ? 'Нет удалённых проектов' : 'Проекты не найдены'}
+              {activeTab === 'deleted' ? 'Нет удаленных проектов' : 'Проекты не найдены'}
             </div>
           ) : (
             projects.map(project => (

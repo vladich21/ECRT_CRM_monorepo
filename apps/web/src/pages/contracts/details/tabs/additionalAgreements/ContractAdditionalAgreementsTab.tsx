@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react';
+import { useMemo } from 'react';
 import { FileAddOutlined } from '@ant-design/icons';
 import { Button, Card, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -26,7 +26,7 @@ type OutletContext = {
 const statusConfig = {
   active: { label: 'Действует', color: 'success' as const },
   draft: { label: 'Проект', color: 'default' as const },
-  expired: { label: 'Истёк', color: 'error' as const },
+  expired: { label: 'Истек', color: 'error' as const },
 };
 
 function formatRuDate(iso: string): string {

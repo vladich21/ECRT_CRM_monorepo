@@ -246,7 +246,7 @@ export function PartnerFiltersModal({
               onChange={nextValue => onUpdateDraftFilter({ hasActiveBlocks: nextValue })}
             />
             <TriRadioRow
-              label='Утверждён'
+              label='Утвержден'
               value={draftFilters.isApproved}
               onChange={nextValue => onUpdateDraftFilter({ isApproved: nextValue })}
             />

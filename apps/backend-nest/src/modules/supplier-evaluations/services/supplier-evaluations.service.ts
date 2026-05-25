@@ -675,7 +675,7 @@ export class SupplierEvaluationsService {
       .where(and(eq(partners.id, dto.partner_id), eq(partners.isDeleted, false)))
       .limit(1);
     if (!partnerRow) {
-      throw new BadRequestException('Контрагент не найден или удалён');
+      throw new BadRequestException('Контрагент не найден или удален');
     }
 
     await this.assertPartnerNotArchivedForNewEvaluation(dto.partner_id);
@@ -962,7 +962,7 @@ export class SupplierEvaluationsService {
       .where(and(eq(partners.id, partnerId), eq(partners.isDeleted, false)))
       .limit(1);
     if (!partnerRow) {
-      throw new BadRequestException('Контрагент не найден или удалён');
+      throw new BadRequestException('Контрагент не найден или удален');
     }
     const [projectRow] = await this.db.db
       .select({ id: projects.id })
@@ -970,7 +970,7 @@ export class SupplierEvaluationsService {
       .where(and(eq(projects.id, projectId), eq(projects.isDeleted, false)))
       .limit(1);
     if (!projectRow) {
-      throw new BadRequestException('Проект не найден или удалён');
+      throw new BadRequestException('Проект не найден или удален');
     }
   }
 

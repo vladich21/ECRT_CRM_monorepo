@@ -1,5 +1,5 @@
 import type { SQL } from 'drizzle-orm';
-import { and, count, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import { PaginationParams } from '../../common/pagination';
 import { DatabaseService } from '../../database/database.service';
 import { patentGrants, patents } from '../../database/schema';
@@ -7,17 +7,28 @@ import {
   appendCurrentGrantRowRegionFilter,
   type PatentGrantRegionKey,
 } from '../patents/patent-grant-region-filter';
+import {
+  appendPatentRegistryFilterParts,
+  type PatentRegistryFilterParams,
+} from '../patents/patent-registry-filter-parts';
 
 export type PatentGrantRegistryListScope = 'all' | 'active' | 'other';
 
-export interface PatentGrantsRegistryFindAllInput {
+export type PatentGrantRegistrySortBy =
+  | 'patent_registration_number'
+  | 'grant_date'
+  | 'grant_number'
+  | 'created_at';
+
+export interface PatentGrantsRegistryFindAllInput extends PatentRegistryFilterParams {
   pagination: PaginationParams;
-  search?: string;
   listScope: PatentGrantRegistryListScope;
   grantStatuses?: string[];
   grantRegionKeys?: PatentGrantRegionKey[];
   grantIssueYears?: number[];
   grantRenewalYears?: number[];
+  sortBy?: PatentGrantRegistrySortBy;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export class PatentGrantsRegistryQueryBuilder {
@@ -31,7 +42,7 @@ export class PatentGrantsRegistryQueryBuilder {
     return or(isNull(patents.id), eq(patents.isDeleted, false))!;
   }
 
-  /** Поиск только по полям охранного документа. */
+  /** Поиск по полям охранного документа и связанного РИД. */
   private buildRegistrySearchPart(search?: string): SQL | undefined {
     const rawSearch = search?.trim();
     if (!rawSearch) return undefined;
@@ -43,6 +54,9 @@ export class PatentGrantsRegistryQueryBuilder {
       ilike(patentGrants.office, pattern),
       ilike(patentGrants.status, pattern),
       ilike(patentGrants.notes, pattern),
+      ilike(patents.name, pattern),
+      ilike(patents.registrationNumber, pattern),
+      ilike(patents.kdNumber, pattern),
     )!;
   }
 
@@ -86,12 +100,29 @@ export class PatentGrantsRegistryQueryBuilder {
     return parts;
   }
 
+  private buildPatentFilterParts(input: PatentGrantsRegistryFindAllInput): SQL[] {
+    const parts: SQL[] = [];
+    appendPatentRegistryFilterParts(parts, this.db.db, {
+      departmentId: input.departmentId,
+      statusId: input.statusId,
+      authorIds: input.authorIds ?? [],
+      areaIds: input.areaIds ?? [],
+      responsibleForPatentingId: input.responsibleForPatentingId,
+      registrationYears: input.registrationYears,
+      registrationCirYears: input.registrationCirYears,
+      projectId: input.projectId,
+      contractId: input.contractId,
+    });
+    return parts;
+  }
+
   buildRegistryBaseParts(input: PatentGrantsRegistryFindAllInput): SQL[] {
     const parts: SQL[] = [this.patentNotDeletedOrNoPatent()];
     const searchPart = this.buildRegistrySearchPart(input.search);
     if (searchPart) {
       parts.push(searchPart);
     }
+    parts.push(...this.buildPatentFilterParts(input));
     parts.push(...this.buildGrantDocumentFilterParts(input));
     return parts;
   }
@@ -106,6 +137,21 @@ export class PatentGrantsRegistryQueryBuilder {
     return scopeParts.length > 0 ? and(...scopeParts)! : sql`true`;
   }
 
+  private registryOrderBy(sortBy: PatentGrantRegistrySortBy, sortOrder: 'asc' | 'desc'): SQL[] {
+    const dir = sortOrder === 'desc' ? desc : asc;
+    switch (sortBy) {
+      case 'grant_date':
+        return [dir(patentGrants.grantDate), desc(patentGrants.id)];
+      case 'grant_number':
+        return [dir(patentGrants.grantNumber), desc(patentGrants.id)];
+      case 'created_at':
+        return [dir(patentGrants.createdAt), desc(patentGrants.id)];
+      case 'patent_registration_number':
+      default:
+        return [dir(patents.registrationNumber), desc(patentGrants.id)];
+    }
+  }
+
   async countRegistryWhere(whereClause: SQL): Promise<number> {
     const rows = await this.db.db
       .select({ value: count() })
@@ -115,7 +161,13 @@ export class PatentGrantsRegistryQueryBuilder {
     return Number(rows[0]?.value ?? 0);
   }
 
-  async fetchRegistryRows(listWhere: SQL, limit: number, offset: number) {
+  async fetchRegistryRows(
+    listWhere: SQL,
+    limit: number,
+    offset: number,
+    sortBy: PatentGrantRegistrySortBy = 'patent_registration_number',
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ) {
     return this.db.db
       .select({
         grant: patentGrants,
@@ -125,7 +177,7 @@ export class PatentGrantsRegistryQueryBuilder {
       .from(patentGrants)
       .leftJoin(patents, eq(patentGrants.patentId, patents.id))
       .where(listWhere)
-      .orderBy(desc(patentGrants.grantDate), desc(patentGrants.createdAt), desc(patentGrants.id))
+      .orderBy(...this.registryOrderBy(sortBy, sortOrder))
       .limit(limit)
       .offset(offset);
   }

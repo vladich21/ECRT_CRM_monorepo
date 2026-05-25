@@ -54,7 +54,7 @@ export class ContractStatesService {
     return 1000;
   }
 
-  /** Состояние «Исполняется» убрано из продукта; не отдаём в списках даже до прогона миграции. */
+  /** Состояние «Исполняется» убрано из продукта; не отдаем в списках даже до прогона миграции. */
   private isRemovedExecutingContractState(row: typeof refContractStates.$inferSelect): boolean {    const code = (row.code ?? '').trim().toLowerCase();
     const name = (row.name ?? '').trim().toLowerCase();
     return (

@@ -103,7 +103,7 @@ export const StageCard: React.FC<StageCardProps> = ({
             {onDelete && (
               <Popconfirm
                 title='Удалить этап?'
-                description='Этап будет безвозвратно удалён.'
+                description='Этап будет безвозвратно удален.'
                 okText='Удалить'
                 cancelText='Отмена'
                 okButtonProps={{ danger: true }}

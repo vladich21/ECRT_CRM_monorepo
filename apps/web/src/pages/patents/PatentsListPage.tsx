@@ -1,6 +1,6 @@
-import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
+import { ExportOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Pagination, Spin } from 'antd';
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
@@ -9,6 +9,7 @@ import { BackButton } from '@/components/backButton/BackButton';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { useResetServerPageUnlessSkipped } from '@/hooks/useListReturnFromDetail';
+import { getListScrollY, useListScrollRestoration } from '@/hooks/useListScrollRestoration';
 import { useServerTablePagination } from '@/hooks/useServerTablePagination';
 import type { Patent } from '@/types/patent';
 import type { ReferenceDataForPatents } from './types/data';
@@ -21,6 +22,7 @@ import { usePatentsListSelectOptions } from './hooks/usePatentsListSelectOptions
 import { usePatentsListServerFilters } from './hooks/usePatentsListServerFilters';
 import { PatentCard } from './components/cards/PatentCard';
 import { PatentFiltersModal } from './components/filters/PatentFiltersModal';
+import { PatentExportModal } from './components/export/PatentExportModal';
 import { PatentsListFiltersBar } from './components/filters/PatentsListFiltersBar';
 import styles from './PatentsListPage.module.scss';
 import { buildPatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
@@ -62,8 +64,9 @@ export default function PatentsListPage() {
 
   const restoredFromNavigationRef = useRef(false);
   const canPersistPatentsListUiRef = useRef(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  const { skipNextListResetRef } = usePatentsListRestoreFromDetail(
+  const { skipNextListResetRef, pendingScrollY } = usePatentsListRestoreFromDetail(
     location,
     navigate,
     { setSearchQuery, alignDebouncedWithQuery },
@@ -131,6 +134,7 @@ export default function PatentsListPage() {
       'users',
       'contracts',
       'projects',
+      'partners',
       'contractCategories',
       'patentStatuses',
       'patentIntellectProps',
@@ -185,6 +189,14 @@ export default function PatentsListPage() {
 
   const selectOptions = usePatentsListSelectOptions(refs, contractIdsForPatentFilter);
 
+  const isInitialLoad = isRefsLoading || (isLoading && !listData);
+  const paginationConfig = getPaginationConfig(total);
+
+  useListScrollRestoration({
+    pendingScrollY,
+    isListReady: !isInitialLoad && !isFetching,
+  });
+
   const handlePatentClick = (patent: Patent) =>
     navigate(`/patents/${patent.id}`, {
       state: {
@@ -198,6 +210,7 @@ export default function PatentsListPage() {
           pageSize,
           sortBy,
           sortOrder,
+          getListScrollY(),
         ),
       },
     });
@@ -211,9 +224,6 @@ export default function PatentsListPage() {
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-
-  const isInitialLoad = isRefsLoading || (isLoading && !listData);
-  const paginationConfig = getPaginationConfig(total);
 
   return (
     <div className={styles.wrap}>
@@ -233,6 +243,14 @@ export default function PatentsListPage() {
             >
               Фильтры
               {activeFiltersCount > 0 && <span className={styles.filtersBadge}>{activeFiltersCount}</span>}
+            </Button>
+            <Button
+              type='default'
+              icon={<ExportOutlined />}
+              onClick={() => setIsExportModalOpen(true)}
+              disabled={isInitialLoad}
+            >
+              Экспорт
             </Button>
             <Button
               type='primary'
@@ -267,6 +285,14 @@ export default function PatentsListPage() {
             />
           ) : undefined
         }
+      />
+
+      <PatentExportModal
+        open={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        deletedScope={deletedScope}
+        serverFilters={serverFilters}
+        refs={refs}
       />
 
       <PatentFiltersModal

@@ -41,6 +41,7 @@ export type ProjectsListNavSnapshot = {
   };
   page: number;
   pageSize: number;
+  scrollY?: number;
 };
 export function buildProjectsListNavSnapshot(
   searchQuery: string,
@@ -48,6 +49,7 @@ export function buildProjectsListNavSnapshot(
   applied: ProjectAdvancedFilters,
   page: number,
   pageSize: number,
+  scrollY?: number,
 ): ProjectsListNavSnapshot {
   return {
     version: 1,
@@ -63,6 +65,7 @@ export function buildProjectsListNavSnapshot(
     },
     page,
     pageSize,
+    scrollY,
   };
 }
 export function parseProjectsListNavSnapshot(raw: unknown): {
@@ -71,10 +74,11 @@ export function parseProjectsListNavSnapshot(raw: unknown): {
   appliedFilters: ProjectAdvancedFilters;
   page: number;
   pageSize: number;
+  scrollY?: number;
 } | null {
   const body = asListNavSnapshotV1Record(raw);
   if (!body) return null;
-  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 20);
+  const { searchQuery, page, pageSize, scrollY } = parseListNavSnapshotBase(body, 20);
   const snapshotRecord = body as unknown as ProjectsListNavSnapshot;
   const appliedSnapshot = snapshotRecord.applied;
   return {
@@ -93,5 +97,6 @@ export function parseProjectsListNavSnapshot(raw: unknown): {
     },
     page,
     pageSize,
+    scrollY,
   };
 }

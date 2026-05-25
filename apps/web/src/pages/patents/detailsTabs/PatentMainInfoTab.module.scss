@@ -20,6 +20,35 @@
   }
 }
 
+.metaRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metaRowSingle {
+  grid-template-columns: 1fr;
+}
+
+.compactCard {
+  padding: 16px 18px;
+}
+
+.compactCardTitle {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #141414;
+}
+
+.compactCard .infoRow {
+  padding: 6px 0;
+}
+
 .kpiRow {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -160,7 +189,22 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  align-self: start;
+}
+
+.sidebar .card {
+  padding: 16px 18px;
+}
+
+.sidebar .cardTitle {
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sidebar .infoRow {
+  padding: 6px 0;
 }
 
 .authorItem {

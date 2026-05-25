@@ -103,7 +103,7 @@ export const useAuthStore = create<IAuthStore>()(
     },
     {
       name: 'auth-storage',
-      // Не персистим snapshot прав — он живёт в JWT и подгружается через /auth/me.
+      // Не персистим snapshot прав — он живет в JWT и подгружается через /auth/me.
       // Также не персистим impersonation: контекст приходит из /auth/me, актуален
       // только пока валиден токен.
       partialize: (state) => ({ user: state.user, isAuth: state.isAuth }),

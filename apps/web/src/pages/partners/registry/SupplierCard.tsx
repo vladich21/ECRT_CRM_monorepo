@@ -122,12 +122,12 @@ export default function SupplierCard({
           {partner.is_approved ? (
             <span className={styles.chipApproved}>
               <CheckCircleFilled className={styles.chipIcon} />
-              Утверждён
+              Утвержден
             </span>
           ) : (
             <span className={styles.chipNotApproved}>
               <ClockCircleFilled className={styles.chipIcon} />
-              Не утверждён
+              Не утвержден
             </span>
           )}
           {partner.is_key_supplier ? (

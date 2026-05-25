@@ -22,6 +22,10 @@ import {
   type PatentFormRefs,
 } from './components/form';
 import { buildPatentFormPayload } from './patentFormPayload';
+import {
+  applyPatentRidVatAmounts,
+  PATENT_DEFAULT_RID_VAT_RATE,
+} from './utils/patentRidCostUtils';
 import styles from './PatentFormPage.module.scss';
 
 export default function PatentCreatePage() {
@@ -38,6 +42,7 @@ export default function PatentCreatePage() {
       'users',
       'contracts',
       'projects',
+      'partners',
       'patentIntellectProps',
       'patentStatuses',
       'patentAreas',
@@ -71,6 +76,27 @@ export default function PatentCreatePage() {
       }
     }
   }, [addAreaResult, form]);
+
+  useEffect(() => {
+    const currentVatRate = form.getFieldValue('rid_vat_rate');
+    if (currentVatRate == null || currentVatRate === '') {
+      form.setFieldValue('rid_vat_rate', PATENT_DEFAULT_RID_VAT_RATE);
+    }
+  }, [form]);
+
+  const handleRidCostChange = (value: number | null) => {
+    const vatRate = form.getFieldValue('rid_vat_rate');
+    if (value != null && vatRate != null) {
+      applyPatentRidVatAmounts(form, value, Number(vatRate));
+    }
+  };
+
+  const handleRidVatRateChange = (value: number | null) => {
+    const amountExcl = form.getFieldValue('rid_cost_excl_vat');
+    if (value != null && amountExcl != null) {
+      applyPatentRidVatAmounts(form, Number(amountExcl), value);
+    }
+  };
 
   const handleCreate = (values: Record<string, unknown>) => {
     const payload = buildPatentFormPayload(values) as Omit<
@@ -133,7 +159,10 @@ export default function PatentCreatePage() {
           <div className={styles.formSectionsStack}>
             <PatentFormIdentityFields refs={refs} areasField='quickAdd' onOpenAreaModal={openMutateModal} />
             <div className={styles.twoColSections}>
-              <PatentFormRegistrationFields />
+              <PatentFormRegistrationFields
+                onRidCostChange={handleRidCostChange}
+                onRidVatRateChange={handleRidVatRateChange}
+              />
               <PatentFormOrgFields
                 refs={refs}
                 incomeContracts={referenceBooks.contracts ?? []}

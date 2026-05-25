@@ -2,7 +2,10 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { Location, NavigateFunction } from 'react-router-dom';
 
 import type { PatentGrantRegistryListScope } from '@/api/patents/patentGrantsApi';
-import type { PatentGrantsRegistryAdvancedFilters } from '@/api/patents/patentGrantsRegistryFilters.types';
+import type {
+  PatentGrantsRegistryAdvancedFilters,
+  PatentGrantsRegistrySortBy,
+} from '@/api/patents/patentGrantsRegistryFilters.types';
 import { useListReturnFromDetail } from '@/hooks/useListReturnFromDetail';
 
 import { PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY } from '../navigation/patentGrantListNavigation';
@@ -18,6 +21,7 @@ type PatentGrantsRegistryFiltersSlice = {
   setGrantScopeTab: (tab: PatentGrantRegistryListScope) => void;
   setAppliedFilters: Dispatch<SetStateAction<PatentGrantsRegistryAdvancedFilters>>;
   setDraftFilters: Dispatch<SetStateAction<PatentGrantsRegistryAdvancedFilters>>;
+  restoreListSorting: (next: { sortBy: PatentGrantsRegistrySortBy; sortOrder: 'asc' | 'desc' }) => void;
 };
 
 type PatentGrantsRegistryPagination = {
@@ -53,12 +57,18 @@ export function usePatentGrantsRegistryRestoreFromDetail(
       filters.setDraftFilters(restoredListState.appliedFilters);
       pagination.setPage(restoredListState.page);
       pagination.setPageSize(restoredListState.pageSize);
+      filters.restoreListSorting({
+        sortBy: restoredListState.sortBy,
+        sortOrder: restoredListState.sortOrder,
+      });
       savePatentGrantsRegistryPersistedUi({
         searchQuery: restoredListState.searchQuery,
         grantScopeTab: restoredListState.grantScopeTab,
         appliedFilters: restoredListState.appliedFilters,
         page: restoredListState.page,
         pageSize: restoredListState.pageSize,
+        sortBy: restoredListState.sortBy,
+        sortOrder: restoredListState.sortOrder,
       });
     },
   });

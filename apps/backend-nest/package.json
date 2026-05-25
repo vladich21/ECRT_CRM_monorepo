@@ -9,7 +9,8 @@
     "start:prod": "node dist/src/main.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

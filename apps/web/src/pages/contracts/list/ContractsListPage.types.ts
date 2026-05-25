@@ -31,5 +31,5 @@ export const FILTER_TABS: {
   { key: 'active', label: 'Действующие' },
   { key: 'draft', label: 'Черновики' },
   { key: 'inactive', label: 'Не действующие' },
-  { key: 'deleted', label: 'Удалённые' },
+  { key: 'deleted', label: 'Удаленные' },
 ];

@@ -13,7 +13,7 @@ interface Props {
 }
 
 /**
- * Обёртка маршрута: доступ по snapshot прав из стора (после PrivateRoute уже синхронизирован с /auth/me).
+ * Обертка маршрута: доступ по snapshot прав из стора (после PrivateRoute уже синхронизирован с /auth/me).
  */
 export function RequireSection({ section, sections, action = 'read', children }: Props) {
   const { hasSectionPermission, hasAnySectionPermission } = usePermissions();

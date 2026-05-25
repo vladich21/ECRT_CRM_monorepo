@@ -35,7 +35,7 @@ export class CreateInitialSupplierEvaluationDto {
   @IsString()
   comment?: string;
 
-  /** Только включённые критерии (исключённые не передаются). */
+  /** Только включенные критерии (исключенные не передаются). */
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

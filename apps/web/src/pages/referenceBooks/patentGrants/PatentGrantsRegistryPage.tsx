@@ -3,6 +3,8 @@ import { Button, Pagination, Spin } from 'antd';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { useReferenceData } from '../../../api/hooks/useReferences';
+import { usePatentsLinkedContractIds } from '../../../api/patents/patentApiHooks';
 import { usePatentGrantsRegistry } from '../../../api/patents/patentGrantsApiHooks';
 import type { PatentGrantRegistryListScope } from '../../../api/patents/patentGrantsApi';
 import { BackButton } from '../../../components/backButton/BackButton';
@@ -10,10 +12,14 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
 import { useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
+import { getListScrollY, useListScrollRestoration } from '../../../hooks/useListScrollRestoration';
 import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
 import type { PatentGrant } from '../../../types/patent';
+import { usePatentsListContractIdsForFilter } from '../../patents/hooks/usePatentsListContractIdsForFilter';
 import { usePatentsListPaginationClamp } from '../../patents/hooks/usePatentsListPaginationClamp';
 import { usePatentsListSearchDebounce } from '../../patents/hooks/usePatentsListSearchDebounce';
+import { usePatentsListSelectOptions } from '../../patents/hooks/usePatentsListSelectOptions';
+import type { ReferenceDataForPatents } from '../../patents/types/data';
 import patentListStyles from '../../patents/PatentsListPage.module.scss';
 import {
   PATENT_GRANT_NAV_FROM_REGISTRY,
@@ -59,6 +65,11 @@ export default function PatentGrantsRegistryPage() {
     applyFilters,
     resetDraftFilters,
     activeFiltersCount,
+    sortBy,
+    sortOrder,
+    setSortField,
+    toggleSortOrder,
+    restoreListSorting,
   } = usePatentGrantsRegistryFilters();
 
   const { debouncedSearch, alignDebouncedWithQuery } = usePatentsListSearchDebounce(searchQuery);
@@ -67,11 +78,11 @@ export default function PatentGrantsRegistryPage() {
     useServerTablePagination();
 
   const restoredFromNavigationRef = useRef(false);
-  const { skipNextListResetRef } = usePatentGrantsRegistryRestoreFromDetail(
+  const { skipNextListResetRef, pendingScrollY } = usePatentGrantsRegistryRestoreFromDetail(
     location,
     navigate,
     { setSearchQuery, alignDebouncedWithQuery },
-    { setGrantScopeTab, setAppliedFilters, setDraftFilters },
+    { setGrantScopeTab, setAppliedFilters, setDraftFilters, restoreListSorting },
     { setPage, setPageSize },
     { restoredFromNavigationRef },
   );
@@ -92,16 +103,31 @@ export default function PatentGrantsRegistryPage() {
         setDraftFilters(persisted.appliedFilters);
         setPage(persisted.page);
         setPageSize(persisted.pageSize);
+        restoreListSorting({ sortBy: persisted.sortBy, sortOrder: persisted.sortOrder });
       }
     }
     canPersistRegistryUiRef.current = true;
   }, []);
 
-  const serverFilters = usePatentGrantsRegistryServerFilters(debouncedSearch, appliedFilters);
+  const serverFilters = usePatentGrantsRegistryServerFilters(
+    debouncedSearch,
+    appliedFilters,
+    sortBy,
+    sortOrder,
+  );
 
   const appliedFiltersResetKey = useMemo(
     () =>
       JSON.stringify({
+        departmentId: appliedFilters.departmentId,
+        projectId: appliedFilters.projectId,
+        contractId: appliedFilters.contractId,
+        statusId: appliedFilters.statusId,
+        responsibleId: appliedFilters.responsibleId,
+        authorIds: [...appliedFilters.authorIds].sort(),
+        areaIds: [...appliedFilters.areaIds].sort(),
+        registrationYears: [...appliedFilters.registrationYears].sort((a, b) => a - b),
+        registrationCirYears: [...appliedFilters.registrationCirYears].sort((a, b) => a - b),
         grantStatuses: [...appliedFilters.grantStatuses].sort(),
         grantRegionKeys: [...appliedFilters.grantRegionKeys].sort(),
         grantIssueYears: [...appliedFilters.grantIssueYears].sort((a, b) => a - b),
@@ -114,6 +140,8 @@ export default function PatentGrantsRegistryPage() {
     debouncedSearch,
     grantScopeTab,
     appliedFiltersResetKey,
+    sortBy,
+    sortOrder,
     resetPage,
   ]);
 
@@ -126,10 +154,12 @@ export default function PatentGrantsRegistryPage() {
         appliedFilters,
         page,
         pageSize,
+        sortBy,
+        sortOrder,
       });
     }, PERSIST_UI_DEBOUNCE_MS);
     return () => window.clearTimeout(timeoutId);
-  }, [searchQuery, grantScopeTab, appliedFilters, page, pageSize]);
+  }, [searchQuery, grantScopeTab, appliedFilters, page, pageSize, sortBy, sortOrder]);
 
   const listQuery = useMemo(
     () => ({
@@ -146,13 +176,43 @@ export default function PatentGrantsRegistryPage() {
   const total = data?.total ?? 0;
   const tabCounts = data?.tab_counts ?? EMPTY_TAB_COUNTS;
 
+  const { data: patentLinkedContractIds = [] } = usePatentsLinkedContractIds('active');
+
+  const {
+    data: referenceBooks,
+    isError: isRefsError,
+    isLoading: isRefsLoading,
+  } = useReferenceData(
+    [
+      'departments',
+      'users',
+      'contracts',
+      'projects',
+      'contractCategories',
+      'patentStatuses',
+      'patentIntellectProps',
+      'patentAreas',
+    ],
+    { contractsIncludeInactive: true },
+  );
+
+  const refs = referenceBooks as ReferenceDataForPatents;
+
   usePatentsListPaginationClamp({
     total,
     page,
     pageSize,
-    isError,
+    isError: isRefsError || isError,
     handleTableChange,
   });
+
+  const contractIdsForPatentFilter = usePatentsListContractIdsForFilter(
+    patentLinkedContractIds,
+    appliedFilters.contractId,
+    draftFilters.contractId,
+  );
+
+  const selectOptions = usePatentsListSelectOptions(refs, contractIdsForPatentFilter);
 
   const handleOpenGrant = (grant: PatentGrant) => {
     navigate(`/patent-grants/${grant.id}`, {
@@ -164,6 +224,9 @@ export default function PatentGrantsRegistryPage() {
           appliedFilters,
           page,
           pageSize,
+          sortBy,
+          sortOrder,
+          getListScrollY(),
         ),
       },
     });
@@ -175,13 +238,18 @@ export default function PatentGrantsRegistryPage() {
       pageSize: newPageSize ?? pageSize,
     });
 
-  if (isError) {
-    return <NotFound errorMessage='Не удалось загрузить реестр охранных документов' />;
-  }
-
-  const isInitialLoad = isLoading && !data;
+  const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
   const showPagination = total > 0;
+
+  useListScrollRestoration({
+    pendingScrollY,
+    isListReady: !isInitialLoad && !isFetching,
+  });
+
+  if (isRefsError || isError) {
+    return <NotFound errorMessage='Не удалось загрузить реестр охранных документов' />;
+  }
 
   return (
     <div className={patentListStyles.wrap}>
@@ -190,7 +258,7 @@ export default function PatentGrantsRegistryPage() {
       <PageHeader
         title='Реестр охранных документов'
         titleWeight='medium'
-        subtitle='учёт охранных документов'
+        subtitle='учет охранных документов'
         actions={
           <>
             <Button
@@ -223,6 +291,16 @@ export default function PatentGrantsRegistryPage() {
               onSearchChange={setSearchQuery}
               shownCount={grants.length}
               totalCount={total}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSortFieldChange={field => {
+                setSortField(field);
+                resetPage();
+              }}
+              onToggleSortOrder={() => {
+                toggleSortOrder();
+                resetPage();
+              }}
             />
           ) : undefined
         }
@@ -238,6 +316,7 @@ export default function PatentGrantsRegistryPage() {
           resetPage();
         }}
         onReset={resetDraftFilters}
+        selectOptions={selectOptions}
       />
 
       {isInitialLoad ? (

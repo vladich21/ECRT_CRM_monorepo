@@ -130,7 +130,7 @@ export function useContractStageManager(
       await deleteStage({ contractId: contract.id, stageId: stage.id });
       // UI обновится автоматически через React Query invalidation
     } catch {
-      showNotification('error', 'Ошибка удаления', 'Не удалось удалить этап. Попробуйте ещё раз.');
+      showNotification('error', 'Ошибка удаления', 'Не удалось удалить этап. Попробуйте еще раз.');
     }
   };
 
@@ -181,7 +181,7 @@ export function useContractStageManager(
       addStageForm.resetFields();
       setUi(prev => ({ ...prev, isAddStageOpen: false, editingStageId: null }));
     } catch {
-      showNotification('error', 'Ошибка сохранения', 'Не удалось сохранить этап. Попробуйте ещё раз.');
+      showNotification('error', 'Ошибка сохранения', 'Не удалось сохранить этап. Попробуйте еще раз.');
     }
   };
 

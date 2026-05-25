@@ -1,4 +1,4 @@
-import { CalendarOutlined, CopyrightOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Space } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -6,7 +6,7 @@ import { useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { useDeletePatentGrant, usePatentGrantById } from '../../../api/patents/patentGrantsApiHooks';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
+import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { patentGrantDetailHeaderBadgeVariant } from './constants/patentGrantStatusStyles';
 import { getPatentGrantListBackTarget, stateWithoutGrantNavFrom } from './navigation/patentGrantListNavigation';
@@ -36,7 +36,7 @@ export default function PatentGrantDetailsPage() {
 
   const { handleOpenModal } = useConfirmByModal({
     mutation,
-    successMessage: 'Охранный документ успешно удалён',
+    successMessage: 'Охранный документ успешно удален',
     errorMessage: 'Не удалось удалить охранный документ',
     redirectPath: backTarget.path,
     redirectState: patentCardExtras,
@@ -78,7 +78,8 @@ export default function PatentGrantDetailsPage() {
 
   return (
     <DetailPageHeader
-      title={`Охранный документ ${patentGrant.grant_number}`}
+      title='Охранный документ'
+      titleWeight='medium'
       backLabel={backTarget.label}
       onBack={handleBack}
       statusBadge={
@@ -89,18 +90,6 @@ export default function PatentGrantDetailsPage() {
             }
           : undefined
       }
-      metaItems={[
-        patentGrant.grant_number && (
-          <span key='number' className={hStyles.metaText}>
-            <CopyrightOutlined /> {patentGrant.grant_number}
-          </span>
-        ),
-        patentGrant.renewal_date && (
-          <span key='date' className={hStyles.metaText}>
-            <CalendarOutlined /> {new Date(patentGrant.renewal_date).toLocaleDateString('ru-RU')}
-          </span>
-        ),
-      ].filter(Boolean)}
       actions={
         <Space>
           <Button type='primary' icon={<EditOutlined />} onClick={handleEdit}>
@@ -112,7 +101,7 @@ export default function PatentGrantDetailsPage() {
         </Space>
       }
       tabs={[
-        { key: 'main', label: 'Основное' },
+        { key: 'main', label: 'Основная информация' },
         { key: 'files', label: filesTabLabel },
       ]}
       activeTab={activeTab}

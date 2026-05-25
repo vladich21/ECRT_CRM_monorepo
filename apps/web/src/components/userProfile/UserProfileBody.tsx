@@ -52,7 +52,7 @@ export function UserProfileBody({ user, shellClassName }: Props) {
                     )}
                     {user.hired_at != null && user.hired_at !== '' && (
                       <div className={pi.field}>
-                        <span className={pi.fieldLabel}>Дата приёма</span>
+                        <span className={pi.fieldLabel}>Дата приема</span>
                         <span className={pi.fieldValue}>{user.hired_at}</span>
                       </div>
                     )}

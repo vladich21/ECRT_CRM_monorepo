@@ -52,7 +52,7 @@ export class AuthService {
     const user = await this.users.getAuthDataByEmail(email);
 
     if (!user) throw new NotFoundException('Пользователь не найден');
-    if (!user.isActive) throw new ForbiddenException('Учётная запись деактивирована');
+    if (!user.isActive) throw new ForbiddenException('Учетная запись деактивирована');
 
     if (!user.passwordHash) {
       await this.sendCode(user.id, user.email, 'temp_password');
@@ -264,13 +264,13 @@ export class AuthService {
     }
 
     const hasExpired = rows.some((row) => row.expiresAt < now);
-    if (hasExpired) throw new UnauthorizedException('Код истёк, запросите новый');
+    if (hasExpired) throw new UnauthorizedException('Код истек, запросите новый');
     throw new UnauthorizedException('Неверный код');
   }
 
   private validatePassword(password: string): void {
     if (password.length < 10) throw new BadRequestException('Пароль должен быть не менее 10 символов');
-    if (!/[A-ZА-ЯЁ]/.test(password)) throw new BadRequestException('Пароль должен содержать минимум 1 заглавную букву');
+    if (!/[A-ZА-ЯЕ]/.test(password)) throw new BadRequestException('Пароль должен содержать минимум 1 заглавную букву');
     if (!/\d/.test(password)) throw new BadRequestException('Пароль должен содержать минимум 1 цифру');
   }
 

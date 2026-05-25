@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { InfoCircleOutlined, SaveOutlined } from '@ant-design/icons';
 import { Alert, Button, Form, Modal, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
+import { usePatentById } from '../../../api/patents/patentApiHooks';
 import { useCreatePatentGrant } from '../../../api/patents/patentGrantsApiHooks';
 import { Loader } from '../../../components/loader/Loader';
 import { NotFound } from '../../../components/notFound/NotFound';
@@ -11,6 +12,7 @@ import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import type { PatentGrant } from '../../../types/patent';
 import { PatentGrantFormFields } from './components/PatentGrantFormFields';
+import { buildPatentSelectLabel } from './utils/patentGrantCardHelpers';
 import styles from './PatentGrantFormPage.module.scss';
 
 type PatentGrantCreateFormValues = {
@@ -21,6 +23,7 @@ type PatentGrantCreateFormValues = {
   status?: string;
   renewal_date?: { format: (fmt: string) => string };
   notes?: string;
+  expected_licensee_partner_ids?: string[];
 };
 
 export default function PatentGrantCreatePage() {
@@ -28,21 +31,34 @@ export default function PatentGrantCreatePage() {
   const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
-  const patentIdFromState = location.state?.patentId;
+  const patentIdFromState =
+    typeof location.state?.patentId === 'string' ? location.state.patentId.trim() : '';
   const fromRegistry = location.state?.fromRegistry === true;
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData(['patents']);
+  } = useReferenceData(['patents', 'partners']);
+  const { data: linkedPatentFromState } = usePatentById(patentIdFromState);
+  const patentSelectFallback = useMemo(() => {
+    if (!linkedPatentFromState?.id) return null;
+    return {
+      id: linkedPatentFromState.id,
+      name: buildPatentSelectLabel(linkedPatentFromState),
+    };
+  }, [linkedPatentFromState]);
   const { mutate, isPending: isCreateLoading } = useCreatePatentGrant();
   const [ipsReminderOpen, setIpsReminderOpen] = useState(false);
   const pendingValuesRef = useRef<PatentGrantCreateFormValues | null>(null);
   useEffect(() => {
-    if (patentIdFromState && referenceBooks?.patents) {
+    if (!patentIdFromState || !referenceBooks?.patents) return;
+
+    const inReferenceList = referenceBooks.patents.some(p => p.id === patentIdFromState);
+    const fallbackReady = linkedPatentFromState?.id === patentIdFromState;
+    if (inReferenceList || fallbackReady) {
       form.setFieldsValue({ patent_id: patentIdFromState });
     }
-  }, [patentIdFromState, referenceBooks, form]);
+  }, [patentIdFromState, referenceBooks, linkedPatentFromState, form]);
   const submitGrantCreation = (values: PatentGrantCreateFormValues) => {
     const patentId = values.patent_id;
     const grantNumber = values.grant_number?.trim();
@@ -52,6 +68,7 @@ export default function PatentGrantCreatePage() {
       grant_number: grantNumber,
       status: values.status ?? 'Активный',
       renewal_date: values.renewal_date ? values.renewal_date.format('YYYY-MM-DD') : '',
+      expected_licensee_partner_ids: values.expected_licensee_partner_ids ?? [],
       ...(values.grant_date ? { grant_date: values.grant_date.format('YYYY-MM-DD') } : {}),
       ...(values.office?.trim() ? { office: values.office.trim() } : {}),
       ...(values.notes !== undefined && values.notes !== '' ? { notes: values.notes } : {}),
@@ -65,7 +82,7 @@ export default function PatentGrantCreatePage() {
           if (fromRegistry) {
             setTimeout(() => navigate('/patent-grants'), 1000);
           } else if (patentIdFromState) {
-            setTimeout(() => navigate(`/patents/${patentIdFromState}/grants`), 1000);
+            setTimeout(() => navigate(`/patents/${patentId}/grants`), 1000);
           } else {
             setTimeout(() => navigate(-1), 1000);
           }
@@ -150,7 +167,7 @@ export default function PatentGrantCreatePage() {
           message='Загрузка в IPS'
           description={
             <Typography.Paragraph style={{ marginBottom: 0 }}>
-              После получения патента не забудьте выполнить загрузку сведений в IPS — это обязательный шаг для учёта
+              После получения патента не забудьте выполнить загрузку сведений в IPS — это обязательный шаг для учета
               охранного документа.
             </Typography.Paragraph>
           }
@@ -170,7 +187,7 @@ export default function PatentGrantCreatePage() {
           }}
           scrollToFirstError
         >
-          <PatentGrantFormFields referenceBooks={referenceBooks} patentIdFromState={patentIdFromState} />
+          <PatentGrantFormFields referenceBooks={referenceBooks} patentSelectFallback={patentSelectFallback} />
         </Form>
       </div>
     </DetailPageHeader>

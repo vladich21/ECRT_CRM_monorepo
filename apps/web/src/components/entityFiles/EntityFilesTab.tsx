@@ -62,7 +62,7 @@ import {
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
 type PatentFilesTabKey = 'communication' | 'application';
-const DEFAULT_PATENT_FILES_TAB: PatentFilesTabKey = 'communication';
+const DEFAULT_PATENT_FILES_TAB: PatentFilesTabKey = 'application';
 
 function patentFilesTabBySection(sectionKey: string | undefined): PatentFilesTabKey {
   if (!sectionKey) return DEFAULT_PATENT_FILES_TAB;
@@ -219,7 +219,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
       });
       showNotification('success', 'Готово', 'Параметры запроса обновлены');
       if (entityType === 'patent') {
-        showNotification('info', 'Статус обновлён', 'Статус РИД пересчитан автоматически');
+        showNotification('info', 'Статус обновлен', 'Статус РИД пересчитан автоматически');
       }
       setEditModalOpen(false);
       setEditingFile(null);
@@ -244,7 +244,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
         fileId: pendingDeleteId.current,
       }),
       showNotification,
-      successMessage: 'Файл успешно удалён',
+      successMessage: 'Файл успешно удален',
       errorMessage: 'Не удалось удалить файл',
       navigate,
     });
@@ -290,7 +290,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
         if (entityType === 'patent' && shouldNotifyPatentAutoStatus(sectionKey)) {
           showNotification(
             'info',
-            'Статус обновлён',
+            'Статус обновлен',
             'Статус РИД пересчитан автоматически по действиям в разделе «Файлы»',
           );
         }
@@ -624,19 +624,6 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                 onChange={k => setActivePatentTab(k as PatentFilesTabKey)}
                 items={[
                   {
-                    key: 'communication',
-                    label: (
-                      <span className={styles.patentTabLabel}>
-                        Запросы и решение <Badge count={communicationTabCount} />
-                      </span>
-                    ),
-                    children: (
-                      <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentCommunication}`}>
-                        {PATENT_FILE_COMMUNICATION_SECTIONS.map(renderSectionColumn)}
-                      </div>
-                    ),
-                  },
-                  {
                     key: 'application',
                     label: (
                       <span className={styles.patentTabLabel}>
@@ -646,6 +633,19 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                     children: (
                       <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentApplication}`}>
                         {PATENT_FILE_APPLICATION_SECTIONS.map(renderSectionColumn)}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'communication',
+                    label: (
+                      <span className={styles.patentTabLabel}>
+                        Запросы и решение <Badge count={communicationTabCount} />
+                      </span>
+                    ),
+                    children: (
+                      <div className={`${styles.sectionsStack} ${styles.sectionsStackPatentCommunication}`}>
+                        {PATENT_FILE_COMMUNICATION_SECTIONS.map(renderSectionColumn)}
                       </div>
                     ),
                   },

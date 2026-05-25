@@ -11,12 +11,12 @@
 ```ts
 import ContractsListPage from "../pages/contracts/list/ContractsListPage";
 import PatentsListPage from "../pages/patents/PatentsListPage";
-// ... ещё 28 импортов
+// ... еще 28 импортов
 ```
 
 В **dev-режиме Vite** каждый модуль = отдельный HTTP-запрос. Один файл компонента → 5-10 импортов → 5-10 запросов. 30 страниц × ~10 = 200-300 запросов. Это и есть твои 280.
 
-**В prod-сборке** (`npm build`) этого нет — Vite пакует всё в несколько chunk-файлов. Но без code splitting всё равно один большой бандл, который браузер качает целиком перед показом первого экрана.
+**В prod-сборке** (`npm build`) этого нет — Vite пакует все в несколько chunk-файлов. Но без code splitting все равно один большой бандл, который браузер качает целиком перед показом первого экрана.
 
 **Причина №2: Нет guard `enabled: isAuth` в запросах**
 
@@ -46,7 +46,7 @@ const ContractsListPage = lazy(() => import("../pages/contracts/list/ContractsLi
 npm install --save-dev rollup-plugin-visualizer
 ```
 
-Покажет визуально что и сколько весит — найдём тяжёлые зависимости для дополнительного сплиттинга.
+Покажет визуально что и сколько весит — найдем тяжелые зависимости для дополнительного сплиттинга.
 
 ### 3. Guard в React Query
 
@@ -77,9 +77,9 @@ return useQuery({
 | # | Задача | Эффект |
 |---|--------|--------|
 | 1 | Lazy loading маршрутов | -70% начальный бандл |
-| 2 | Bundle analyzer | найдём скрытые тяжёлые библиотеки |
+| 2 | Bundle analyzer | найдем скрытые тяжелые библиотеки |
 | 3 | `enabled: isAuth` guard | 0 лишних API запросов |
 | 4 | Prefetch после логина | быстрый переход на главную |
 | 5 | Skeleton для LCP | лучший perceived performance |
 
-Реализовать это всё? Начну с lazy loading `AppRoutes.tsx` — это основное и даёт наибольший выигрыш.
+Реализовать это все? Начну с lazy loading `AppRoutes.tsx` — это основное и дает наибольший выигрыш.

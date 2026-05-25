@@ -55,7 +55,7 @@ export const getColumnsData = (
     render: (date: string) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
   },
   {
-    title: 'Партнёр',
+    title: 'Партнер',
     dataIndex: 'partner_id',
     key: 'partner_id',
     width: 150,

@@ -33,7 +33,7 @@ interface UsePermissionsResult {
 }
 
 /**
- * Хук-обёртка над useAuthStore для проверки прав.
+ * Хук-обертка над useAuthStore для проверки прав.
  *
  * Источник правды — useAuthStore.sectionPermissions (после GET /auth/me).
  * До заполнения стора приватная зона не рендерится (см. PrivateRoute). JWT

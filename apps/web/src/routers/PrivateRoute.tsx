@@ -7,9 +7,9 @@ import { Loader } from '../components/loader/Loader';
 import useAuthStore from '../store/AuthStore';
 
 /**
- * Защита приватной зоны: cookie-сессия есть, но snapshot прав живёт в JWT и
- * подтягивается через GET /auth/me (не кладём его в localStorage — см. AuthStore).
- * Пока первый запрос не завершён — общий лоадер; ошибка — один экран «Повторить».
+ * Защита приватной зоны: cookie-сессия есть, но snapshot прав живет в JWT и
+ * подтягивается через GET /auth/me (не кладем его в localStorage — см. AuthStore).
+ * Пока первый запрос не завершен — общий лоадер; ошибка — один экран «Повторить».
  * Дочерние маршруты и RequireSection могут считать: при isAuth здесь права уже в сторе (ready).
  */
 const PrivateRoute = ({ children }: { children: ReactNode }) => {

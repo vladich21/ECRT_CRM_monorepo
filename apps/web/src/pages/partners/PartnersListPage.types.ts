@@ -7,13 +7,13 @@ export const PARTNER_FILTER_TABS: {
   { key: 'all', label: 'Все' },
   {
     key: 'ready',
-    label: 'Утверждён',
+    label: 'Утвержден',
     hint: 'Юр. проверка, анкета и первичная оценка пройдены',
   },
   {
     key: 'in_progress',
-    label: 'Не утверждён',
+    label: 'Не утвержден',
     hint: 'Не все этапы оформления завершены',
   },
-  { key: 'deleted', label: 'Удалённые', hint: 'Можно восстановить из карточки' },
+  { key: 'deleted', label: 'Удаленные', hint: 'Можно восстановить из карточки' },
 ];

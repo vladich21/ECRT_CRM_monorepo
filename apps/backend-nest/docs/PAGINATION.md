@@ -9,7 +9,7 @@
 | **Фильтрация** (patents) | **Бэкенд** | `GET /patents`: `search`, `department_id`, `status_id`, `author_ids` (через запятую), `created_by`, `deleted_scope` (`active` / `deleted` / `all`). Ответ включает `tab_counts`. |
 | **Фильтрация** (partners) | **Бэкенд** | `GET /partners`: плюс `deleted_scope` (`active` / `deleted` / `all`), мягкое удаление. Ответ: `tab_counts` + `deletion_tab_counts`. Восстановление: `PUT /partners/:id/restore`. |
 | **Фильтрация** (contracts) | **Бэкенд** | `GET /contracts`: плюс `deleted_scope`. Ответ: `tab_counts` + `deletion_tab_counts`. `PUT /contracts/:id/restore`. Справочники/превью — только строки с `is_deleted=false`. |
-| **Список проектов** | **Бэкенд** | `GET /projects` (без `preview`): плюс `deleted_scope`. Ответ `{ data, total, tab_counts, deletion_tab_counts }`. `PUT /projects/:id/restore`. Справочник: `GET /projects?preview=1` (без удалённых). |
+| **Список проектов** | **Бэкенд** | `GET /projects` (без `preview`): плюс `deleted_scope`. Ответ `{ data, total, tab_counts, deletion_tab_counts }`. `PUT /projects/:id/restore`. Справочник: `GET /projects?preview=1` (без удаленных). |
 
 ---
 
@@ -36,8 +36,8 @@
 
 ### Patents (`GET /patents`, `GET /patents/deleted`)
 
-- **Параметры:** `preview`, `deleted_scope` (`active` \| `deleted` \| `all`), `search`, `department_id`, `status_id`, `author_ids`, `created_by`, `limit`, `offset`. Фильтр по корзине удалённых — только `deleted_scope=deleted` (отдельного query `is_deleted` нет).
-- **Ответ (не preview):** `{ data, total, tab_counts: { active, deleted, all } }` — счётчики вкладок с теми же фильтрами поиска/модалки (без двойного клиентского фильтра).
+- **Параметры:** `preview`, `deleted_scope` (`active` \| `deleted` \| `all`), `search`, `department_id`, `status_id`, `author_ids`, `created_by`, `limit`, `offset`. Фильтр по корзине удаленных — только `deleted_scope=deleted` (отдельного query `is_deleted` нет).
+- **Ответ (не preview):** `{ data, total, tab_counts: { active, deleted, all } }` — счетчики вкладок с теми же фильтрами поиска/модалки (без двойного клиентского фильтра).
 - **Фронт:** хук `usePatentsList`, debounce поиска, `placeholderData` в React Query.
 
 ## Как проконтролировать, что проблема решена
@@ -110,10 +110,10 @@ curl -s "http://localhost:3000/api/contracts?limit=5&offset=0" -H "Cookie: ..." 
 4. В ответе: тело в формате `{ data: [...], total: N }`. В `data` — не больше 50 записей.
 5. Перейди на страницу 2: должен уйти запрос с `offset=50` (или с `offset=pageSize`). В `data` придут следующие 50 записей.
 
-Если всё так — пагинация на бэкенде и фронте работает, проблема с «без limit» закрыта.
+Если все так — пагинация на бэкенде и фронте работает, проблема с «без limit» закрыта.
 
 ## Готовность к проду
 
-- Запросы с `limit` и `offset` получают из БД ровно запрошенный диапазон (с учётом cap).
+- Запросы с `limit` и `offset` получают из БД ровно запрошенный диапазон (с учетом cap).
 - Без параметров — стабильные дефолты, нагрузка на БД ограничена.
-- Реализация корректна для выката в прод; при числе записей &gt; 50 на списках стоит запланировать доработку UI (пагинация/«ещё»).
+- Реализация корректна для выката в прод; при числе записей &gt; 50 на списках стоит запланировать доработку UI (пагинация/«еще»).

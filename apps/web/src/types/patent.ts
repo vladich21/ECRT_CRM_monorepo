@@ -17,6 +17,11 @@ export interface Patent {
   author_ids: Array<string>;
   area_ids: Array<string>;
   contract_id: string;
+  expected_licensee_partner_id: string;
+  rid_cost_excl_vat: number | null;
+  rid_vat_rate: number | null;
+  rid_cost_vat: number | null;
+  rid_cost_incl_vat: number | null;
   project_id: string;
   responsible_for_patenting_id: string;
   kd_number: string;
@@ -62,6 +67,8 @@ export interface PatentGrant {
   status: string;
   renewal_date: string;
   notes?: string;
+  expected_licensee_partner_ids?: string[];
+  actual_licensee_partner_id?: string;
   created_at: string;
   updated_at: string;
   patent_name?: string;

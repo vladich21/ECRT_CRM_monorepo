@@ -69,6 +69,7 @@ export type PartnersListNavSnapshot = {
   pageSize: number;
   sortBy?: PartnerListSortBy;
   sortOrder?: 'asc' | 'desc';
+  scrollY?: number;
 };
 
 export function buildPartnersListNavSnapshot(
@@ -79,6 +80,7 @@ export function buildPartnersListNavSnapshot(
   pageSize: number,
   sortBy: PartnerListSortBy,
   sortOrder: 'asc' | 'desc',
+  scrollY?: number,
 ): PartnersListNavSnapshot {
   return {
     version: 2,
@@ -89,6 +91,7 @@ export function buildPartnersListNavSnapshot(
     pageSize,
     sortBy,
     sortOrder,
+    scrollY,
   };
 }
 
@@ -100,10 +103,11 @@ export function parsePartnersListNavSnapshot(raw: unknown): {
   pageSize: number;
   sortBy: PartnerListSortBy;
   sortOrder: 'asc' | 'desc';
+  scrollY?: number;
 } | null {
   const body = asListNavSnapshotV1Record(raw);
   if (!body) return null;
-  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 20);
+  const { searchQuery, page, pageSize, scrollY } = parseListNavSnapshotBase(body, 20);
   const snapshotRecord = body as unknown as PartnersListNavSnapshot;
   const appliedFilters = normalizeAppliedFromSnapshot(snapshotRecord.applied);
   const sortByRaw = snapshotRecord.sortBy;
@@ -121,5 +125,6 @@ export function parsePartnersListNavSnapshot(raw: unknown): {
     pageSize,
     sortBy,
     sortOrder,
+    scrollY,
   };
 }

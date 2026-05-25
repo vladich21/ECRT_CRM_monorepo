@@ -1,4 +1,5 @@
 import { Patent } from '../../types/patent';
+import type { PatentsListServerFilters } from './patentListFilters.types';
 import { apiClient } from '../clients';
 
 export type PatentsTabCounts = {
@@ -7,11 +8,21 @@ export type PatentsTabCounts = {
   all: number;
 };
 
+export interface PatentsExportResponse {
+  data: Patent[];
+  total: number;
+  truncated: boolean;
+}
+
+export type PatentExportQuery = Omit<PatentListQuery, 'preview' | 'limit' | 'offset'>;
+
 export interface PatentsListResponse {
   data: Patent[];
   total: number;
   tab_counts: PatentsTabCounts;
 }
+
+export type PatentsDeletedScope = 'active' | 'deleted' | 'all';
 
 export type PatentListSortBy =
   | 'registration_number'
@@ -64,6 +75,33 @@ function buildPatentsQueryParams(q: PatentListQuery): Record<string, string | nu
   return params;
 }
 
+export function buildPatentsExportQuery(
+  deletedScope: PatentsDeletedScope,
+  filters: PatentsListServerFilters,
+): PatentExportQuery {
+  const authorIds = filters.authorIds ?? [];
+  const areaIds = filters.areaIds ?? [];
+  const registrationYears = filters.registrationYears ?? [];
+  const registrationCirYears = filters.registrationCirYears ?? [];
+  const grantRegionKeys = filters.grantRegionKeys ?? [];
+  return {
+    deletedScope,
+    search: filters.search.trim() || undefined,
+    department_id: filters.departmentId ?? undefined,
+    status_id: filters.statusId ?? undefined,
+    author_ids: authorIds.length > 0 ? authorIds : undefined,
+    area_ids: areaIds.length > 0 ? areaIds : undefined,
+    responsible_for_patenting_id: filters.responsibleId ?? undefined,
+    registration_years: registrationYears.length > 0 ? registrationYears.join(',') : undefined,
+    registration_cir_years: registrationCirYears.length > 0 ? registrationCirYears.join(',') : undefined,
+    project_id: filters.projectId ?? undefined,
+    contract_id: filters.contractId ?? undefined,
+    grant_regions: grantRegionKeys.length > 0 ? grantRegionKeys.join(',') : undefined,
+    sort_by: filters.sortBy,
+    sort_order: filters.sortOrder,
+  };
+}
+
 export const patentApi = {
   getLinkedContractIds: async (deletedScope: string): Promise<string[]> => {
     const response = await apiClient.get<string[]>('/patents/filter/linked-contract-ids', {
@@ -77,6 +115,14 @@ export const patentApi = {
       deletedScope: query.deletedScope ?? 'active',
     });
     const response = await apiClient.get<Patent[] | PatentsListResponse>('/patents', { params });
+    return response.data;
+  },
+  exportPatents: async (query: PatentExportQuery): Promise<PatentsExportResponse> => {
+    const params = buildPatentsQueryParams({
+      ...query,
+      deletedScope: query.deletedScope ?? 'active',
+    });
+    const response = await apiClient.get<PatentsExportResponse>('/patents/export', { params });
     return response.data;
   },
   getPatentById: async (id: string): Promise<Patent> => {

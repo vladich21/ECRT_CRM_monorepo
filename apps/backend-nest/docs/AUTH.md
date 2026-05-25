@@ -22,12 +22,12 @@
 
 | Колонка | Тип | Назначение |
 |---------|-----|-----------|
-| `email` | VARCHAR | Логин. По нему ищем пользователя, на него шлём коды. |
+| `email` | VARCHAR | Логин. По нему ищем пользователя, на него шлем коды. |
 | `password_hash` | VARCHAR NULL | argon2id хеш. NULL = первый вход, пароль не задан. |
 | `must_change_password` | BOOLEAN DEFAULT false | true = пользователь обязан сменить пароль. |
-| `two_factor_enabled` | BOOLEAN NULL | Резерв для будущей admin-панели (сейчас игнорируется — 2FA всегда включён). |
+| `two_factor_enabled` | BOOLEAN NULL | Резерв для будущей admin-панели (сейчас игнорируется — 2FA всегда включен). |
 | `last_login_at` | TIMESTAMPTZ NULL | Время последнего входа. |
-| `is_active` | BOOLEAN | false = вход запрещён. |
+| `is_active` | BOOLEAN | false = вход запрещен. |
 
 ### Таблица `auth_codes` — одноразовые коды
 
@@ -55,7 +55,7 @@
   → finishLogin() → JWT в cookie → ✅ Вход
 ```
 
-2FA при первом входе не нужна — email уже подтверждён через код.
+2FA при первом входе не нужна — email уже подтвержден через код.
 
 ### Сценарий 2: Обычный вход (password_hash заполнен)
 
@@ -89,8 +89,8 @@
 | POST | `/api/auth/verify-temp-code` | нет | Проверить temp-код (первый вход). |
 | POST | `/api/auth/verify-2fa` | 5/15мин | Проверить 2FA-код. Выдать JWT. Сбросить rate limit. |
 | POST | `/api/auth/set-password` | нет | Установить постоянный пароль. Выдать JWT. |
-| GET  | `/api/auth/me` | — | Текущий пользователь (защищён). |
-| POST | `/api/auth/logout` | — | Очистить cookie (защищён). |
+| GET  | `/api/auth/me` | — | Текущий пользователь (защищен). |
+| POST | `/api/auth/logout` | — | Очистить cookie (защищен). |
 
 ---
 
@@ -127,7 +127,7 @@ apps/web/src/api/clients.ts
 |-----------|---------|
 | `JWT_SECRET` | Секрет подписи JWT, мин. 32 символа |
 | `PORT` | Порт сервера (default 9001) |
-| `FRONTEND_URL` | Разрешённые origins для CORS, через запятую |
+| `FRONTEND_URL` | Разрешенные origins для CORS, через запятую |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SMTP_HOST` | SMTP-сервер (Mailhog: 192.0.2.12, порт 1025) |
 | `SMTP_PORT` | SMTP-порт |

@@ -67,7 +67,7 @@ export default function ProjectEditPage() {
       { id: projectId!, data: payload },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Проект успешно изменён');
+          showNotification('success', 'Успех', 'Проект успешно изменен');
           setTimeout(() => navigate(-1), 1000);
         },
         onError: () => {

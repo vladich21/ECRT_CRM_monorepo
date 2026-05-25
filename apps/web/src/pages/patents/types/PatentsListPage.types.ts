@@ -44,5 +44,5 @@ export const DEFAULT_PATENT_FILTERS: PatentAdvancedFilters = {
 
 export const PATENT_FILTER_TABS: { key: PatentFilterTab; label: string }[] = [
   { key: 'all', label: 'Все' },
-  { key: 'deleted', label: 'Удалённые' },
+  { key: 'deleted', label: 'Удаленные' },
 ];

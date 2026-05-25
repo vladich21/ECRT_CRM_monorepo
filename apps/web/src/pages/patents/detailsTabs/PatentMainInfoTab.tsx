@@ -11,17 +11,20 @@ import { Link, useOutletContext } from 'react-router-dom';
 
 import { useContractById } from '@/api/contracts/contractApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
+import { usePartnerById } from '@/api/partners/partnerApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
+import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
 import { Patent } from '@/types/patent';
 import {
   earliestPatentRequestsDeadlineFromFiles,
   formatPatentStatusDisplayName,
   isPatentRequestDeadlineOverdue,
 } from '@/pages/patents/utils/patentStatusDisplay';
+import { PatentRidFinanceCard } from './PatentRidFinanceCard';
 import styles from './PatentMainInfoTab.module.scss';
 
 function formatDate(dateString: string) {
@@ -50,6 +53,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
     'users',
     'contracts',
     'projects',
+    'partners',
     'patentIntellectProps',
     'patentStatuses',
     'patentAreas',
@@ -62,6 +66,14 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const { data: incomeContractFetched } = useContractById(
     fetchIncomeContractById ? patent.contract_id : '',
   );
+  const partnerInPicker = (referenceBooks?.partners ?? []).some(
+    row => row.id === patent.expected_licensee_partner_id,
+  );
+  const fetchPartnerById =
+    Boolean(patent.expected_licensee_partner_id && referenceBooks && !partnerInPicker);
+  const { data: partnerFetched } = usePartnerById(
+    fetchPartnerById ? patent.expected_licensee_partner_id : '',
+  );
   if (isReferencesLoading) return <Loader />;
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не подгрузились справочники' />;
@@ -70,13 +82,23 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses);
   const deptName = getNameById(patent.department_id, referenceBooks?.departments);
   const responsibleName = getNameById(patent.responsible_for_patenting_id, referenceBooks.users);
+  const projectEntity = getEntityById(patent.project_id, referenceBooks?.projects);
   const projectName = getNameById(patent.project_id, referenceBooks?.projects);
-  const projectCode = getEntityById(patent.project_id, referenceBooks?.projects)?.code;
+  const projectLabel = formatProjectChipLabel(projectEntity) || projectName;
+  const projectCode = projectEntity?.code;
+  const patentBackPath = `/patents/${patent.id}`;
   const statusDisplay = formatPatentStatusDisplayName(statusName, requestsEarliestDeadline);
   const statusOverdue = isPatentRequestDeadlineOverdue(requestsEarliestDeadline);
   const incomeContract =
     referenceBooks.contracts?.find(row => row.id === patent.contract_id) ??
     (incomeContractFetched?.id === patent.contract_id ? incomeContractFetched : undefined);
+  const expectedLicenseePartner =
+    referenceBooks.partners?.find(row => row.id === patent.expected_licensee_partner_id) ??
+    (partnerFetched?.id === patent.expected_licensee_partner_id ? partnerFetched : undefined);
+  const expectedLicenseeLabel = expectedLicenseePartner
+    ? String(expectedLicenseePartner.short_name ?? expectedLicenseePartner.name ?? '').trim() ||
+      '—'
+    : '';
   const authorNames = (patent.author_ids ?? [])
     .map(id => referenceBooks.users?.find(user => user.id === id)?.name)
     .filter((name): name is string => Boolean(name));
@@ -153,9 +175,17 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Проект</span>
-                <span className={projectName ? styles.infoValueWide : styles.infoValueMuted}>
-                  {projectName || 'Не указан'}
-                </span>
+                {patent.project_id?.trim() && projectLabel ? (
+                  <Link
+                    to={`/projects/${patent.project_id}`}
+                    state={{ from: patentBackPath }}
+                    className={`${styles.infoValue} ${styles.infoValueWide} ${styles.contractRegistryLink}`}
+                  >
+                    {projectLabel}
+                  </Link>
+                ) : (
+                  <span className={styles.infoValueMuted}>Не указан</span>
+                )}
               </div>
               {projectCode && (
                 <div className={styles.infoRow}>
@@ -163,6 +193,20 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                   <span className={styles.infoValue}>{projectCode}</span>
                 </div>
               )}
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Предполагаемый лицензиат</span>
+                {expectedLicenseePartner?.id ? (
+                  <Link
+                    to={`/partners/${expectedLicenseePartner.id}`}
+                    state={{ returnToAfterPartner: `/patents/${patent.id}` }}
+                    className={`${styles.infoValue} ${styles.contractRegistryLink}`}
+                  >
+                    {expectedLicenseeLabel}
+                  </Link>
+                ) : (
+                  <span className={styles.infoValueMuted}>Не указан</span>
+                )}
+              </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Область применения</span>
                 {areaNames.length > 0 ? (
@@ -212,9 +256,82 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
             </div>
           </div>
         </div>
+
+        <div
+          className={`${styles.metaRow} ${showTransformationCard ? '' : styles.metaRowSingle}`}
+        >
+          <div className={`${styles.card} ${styles.compactCard}`}>
+            <h3 className={styles.compactCardTitle}>Документация</h3>
+            <div className={styles.infoRows}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Номер КД</span>
+                <span className={patent.kd_number ? styles.infoValue : styles.infoValueMuted}>
+                  {patent.kd_number || 'Не указан'}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Договор (доходный)</span>
+                {incomeContract?.id ? (
+                  <Link
+                    to={`/contracts/${incomeContract.id}`}
+                    state={{ from: `/patents/${patent.id}` }}
+                    className={`${styles.infoValue} ${styles.contractRegistryLink}`}
+                  >
+                    {incomeContract.number?.trim() || incomeContract.name || '—'}
+                  </Link>
+                ) : (
+                  <span className={styles.infoValueMuted}>Не указан</span>
+                )}
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Шифр договора</span>
+                <span className={incomeContract?.cipher ? styles.infoValue : styles.infoValueMuted}>
+                  {incomeContract?.cipher ?? 'Не указан'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {showTransformationCard ? (
+            <div className={`${styles.card} ${styles.compactCard}`}>
+              <h3 className={styles.compactCardTitle}>
+                <SwapOutlined style={{ marginRight: 6 }} />
+                Связанные карточки РИД
+              </h3>
+              <div className={styles.infoRows}>
+                {patent.transformed_into_patent_id ? (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Преобразован в РИД</span>
+                    <Link
+                      to={`/patents/${patent.transformed_into_patent_id}`}
+                      className={`${styles.infoValue} ${styles.contractRegistryLink}`}
+                    >
+                      {patent.transformation_target_registration_number?.trim() ||
+                        patent.transformed_into_patent_id}
+                    </Link>
+                  </div>
+                ) : null}
+                {patent.transformed_from_patent_id ? (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Создано из РИД</span>
+                    <Link
+                      to={`/patents/${patent.transformed_from_patent_id}`}
+                      className={`${styles.infoValue} ${styles.contractRegistryLink}`}
+                    >
+                      {patent.transformation_source_registration_number?.trim() ||
+                        patent.transformed_from_patent_id}
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className={styles.sidebar}>
+        <PatentRidFinanceCard patent={patent} />
+
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Классификация</h3>
           <div className={styles.infoRows}>
@@ -244,73 +361,6 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               <span className={styles.infoLabel}>Ответственный за патентование</span>
               <span className={responsibleName ? styles.infoValue : styles.infoValueMuted}>
                 {responsibleName || '—'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {showTransformationCard ? (
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>
-              <SwapOutlined style={{ marginRight: 6 }} />
-              Связанные карточки РИД
-            </h3>
-            <div className={styles.infoRows}>
-              {patent.transformed_into_patent_id ? (
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Преобразован в РИД</span>
-                  <Link
-                    to={`/patents/${patent.transformed_into_patent_id}`}
-                    className={`${styles.infoValue} ${styles.contractRegistryLink}`}
-                  >
-                    {patent.transformation_target_registration_number?.trim() ||
-                      patent.transformed_into_patent_id}
-                  </Link>
-                </div>
-              ) : null}
-              {patent.transformed_from_patent_id ? (
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Создано из РИД</span>
-                  <Link
-                    to={`/patents/${patent.transformed_from_patent_id}`}
-                    className={`${styles.infoValue} ${styles.contractRegistryLink}`}
-                  >
-                    {patent.transformation_source_registration_number?.trim() ||
-                      patent.transformed_from_patent_id}
-                  </Link>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        <div className={styles.card}>
-          <h3 className={styles.cardTitle}>Документация</h3>
-          <div className={styles.infoRows}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Номер КД</span>
-              <span className={patent.kd_number ? styles.infoValue : styles.infoValueMuted}>
-                {patent.kd_number || 'Не указан'}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Договор (доходный)</span>
-              {incomeContract?.id ? (
-                <Link
-                  to={`/contracts/${incomeContract.id}`}
-                  state={{ from: `/patents/${patent.id}` }}
-                  className={`${styles.infoValue} ${styles.contractRegistryLink}`}
-                >
-                  {incomeContract.number?.trim() || incomeContract.name || '—'}
-                </Link>
-              ) : (
-                <span className={styles.infoValueMuted}>Не указан</span>
-              )}
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Шифр договора</span>
-              <span className={incomeContract?.cipher ? styles.infoValue : styles.infoValueMuted}>
-                {incomeContract?.cipher ?? 'Не указан'}
               </span>
             </div>
           </div>

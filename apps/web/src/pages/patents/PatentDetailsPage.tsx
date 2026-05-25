@@ -14,6 +14,10 @@ import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '@/compo
 import { useConfirmByModal } from '@/customhooks/useConfirmByModal';
 import { useNotification } from '@/customhooks/useNotification';
 import { getEntityById } from '@/helpers/getEntityById';
+import {
+  getInternalReturnBackLabel,
+  resolveInternalReturnPath,
+} from '@/helpers/internalReturnNavigation';
 import { getNameById } from '@/helpers/getNameById';
 import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
 import { formatPatentRegistryCardHeading } from '@/pages/patents/utils/patentRegistryCardUtils';
@@ -40,9 +44,13 @@ export default function PatentDetailsPage() {
   const navState = location.state as {
     tab?: ActionType;
     patentsListReturn?: PatentsListNavSnapshot;
+    from?: string;
   } | null;
   const returnTab = navState?.tab === 'deleted' ? 'deleted' : 'all';
   const patentsListReturn = navState?.patentsListReturn;
+  const from = navState?.from?.trim();
+  const backPath = resolveInternalReturnPath(from, '/patents');
+  const backLabel = getInternalReturnBackLabel(backPath, 'Реестр РИД');
   const { contextHolder, showNotification } = useNotification();
   const { data: patent, isLoading, isError } = usePatentById(patentId!);
   const { data: patentFiles, isLoading: isPatentFilesLoading } = useFilesByEntity('patent', patentId!);
@@ -60,7 +68,7 @@ export default function PatentDetailsPage() {
   const activeTab = getActiveTabFromPath(location.pathname);
   const { handleOpenModal: openDeleteModal } = useConfirmByModal({
     mutation: deleteMutation,
-    successMessage: 'Патент успешно удалён',
+    successMessage: 'Патент успешно удален',
     errorMessage: 'Не удалось удалить патент',
     redirectPath: '/patents',
     getMutationProps: () => patentId!,
@@ -93,6 +101,10 @@ export default function PatentDetailsPage() {
     }
   };
   const handleBack = () => {
+    if (backPath !== '/patents') {
+      navigate(backPath, navState != null ? { state: navState } : undefined);
+      return;
+    }
     navigate('/patents', {
       state: {
         tab: returnTab,
@@ -115,7 +127,7 @@ export default function PatentDetailsPage() {
   const projectEntity = getEntityById(patent.project_id, referenceBooks?.projects ?? []);
   const projectChipLabel = formatProjectChipLabel(projectEntity);
   const headerStatusBadge = patent.is_deleted
-    ? { label: 'Удалён' as const, variant: 'danger' as const }
+    ? { label: 'Удален' as const, variant: 'danger' as const }
     : {
         label: formatPatentStatusDisplayName(statusName, earliestRequestDeadline) || 'Статус не указан',
         variant: detailHeaderVariantForPatentRidStatus(statusName, earliestRequestDeadline),
@@ -129,7 +141,7 @@ export default function PatentDetailsPage() {
     <DetailPageHeader
       title={title}
       titleWeight='medium'
-      backLabel='Реестр РИД'
+      backLabel={backLabel}
       onBack={handleBack}
       statusBadge={headerStatusBadge}
       subtitle={

@@ -26,7 +26,7 @@ export default function PatentGrantEditPage() {
     data: referenceBooks,
     isLoading: isReferencesLoading,
     isError: isReferencesError,
-  } = useReferenceData(['patents']);
+  } = useReferenceData(['patents', 'partners', 'projects', 'contracts']);
   const { mutate, isPending: isUpdateLoading } = useUpdatePatentGrant();
   useLayoutEffect(() => {
     if (!patentGrant) return;
@@ -34,6 +34,8 @@ export default function PatentGrantEditPage() {
       ...patentGrant,
       grant_date: patentGrant.grant_date ? dayjs(patentGrant.grant_date) : null,
       renewal_date: patentGrant.renewal_date ? dayjs(patentGrant.renewal_date) : null,
+      expected_licensee_partner_ids: patentGrant.expected_licensee_partner_ids ?? [],
+      actual_licensee_partner_id: patentGrant.actual_licensee_partner_id?.trim() || null,
     };
     form.setFieldsValue(formData);
   }, [patentGrant, form]);
@@ -45,15 +47,12 @@ export default function PatentGrantEditPage() {
     if (payload.renewal_date && dayjs.isDayjs(payload.renewal_date)) {
       payload.renewal_date = payload.renewal_date.format('YYYY-MM-DD');
     }
-    const patentIdForRedirect = patentGrant?.patent_id;
     mutate(
       { id: grantId!, data: payload },
       {
         onSuccess: () => {
-          showNotification('success', 'Успех', 'Охранный документ успешно изменён');
-          if (patentIdForRedirect) {
-            setTimeout(() => navigate(`/patents/${patentIdForRedirect}/grants`), 1000);
-          }
+          showNotification('success', 'Успех', 'Охранный документ успешно изменен');
+          setTimeout(() => navigate(`/patent-grants/${grantId}`), 1000);
         },
         onError: () => {  
           showNotification('error', 'Ошибка', 'Не удалось изменить охранный документ');
@@ -115,12 +114,17 @@ export default function PatentGrantEditPage() {
           scrollToFirstError
         >
           <PatentGrantFormFields
+            mode='edit'
             referenceBooks={referenceBooks}
-            patentIdFromState={null}
             savedOfficeForLegacy={patentGrant.office}
+            initialPatentId={patentGrant.patent_id}
+            initialRidRegNumber={patentGrant.patent_registration_number}
             patentSelectFallback={
               patentGrant.patent_id?.trim()
-                ? { id: patentGrant.patent_id.trim(), name: buildPatentGrantRidSelectLabel(patentGrant) }
+                ? {
+                    id: patentGrant.patent_id.trim(),
+                    name: buildPatentGrantRidSelectLabel(patentGrant),
+                  }
                 : null
             }
           />

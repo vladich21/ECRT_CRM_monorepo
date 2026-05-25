@@ -53,6 +53,15 @@ $section-gap: 16px;
   height: 100%;
 }
 
+.sectionSubDivider {
+  margin: 12px 0 !important;
+  font-size: 16px;
+
+  :global(.ant-divider-inner-text) {
+    font-size: 16px;
+  }
+}
+
 .sectionBox :global(.ant-divider-horizontal.ant-divider-with-text-left) {
   margin-top: 0;
   margin-bottom: 12px;

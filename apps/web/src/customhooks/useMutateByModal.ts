@@ -36,7 +36,7 @@ interface UseEditReturn<TData> {
 export const useMutateByModal = <TData = void, TError = Error, TVariables = any>({
   isEdit,
   mutation,
-  successMessage = 'Элемент успешно изменён',
+  successMessage = 'Элемент успешно изменен',
   errorMessage = 'Не удалось изменить элемент',
   redirectPath,
   modalType,

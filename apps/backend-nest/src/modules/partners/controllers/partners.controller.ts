@@ -196,7 +196,7 @@ export class PartnersController {
   @Put(':id/restore')
   async restore(@Param('id') id: string) {
     const row = await this.service.restore(id);
-    if (!row) throw new NotFoundException(`Партнёр ${id} не найден`);
+    if (!row) throw new NotFoundException(`Партнер ${id} не найден`);
     return [row];
   }
 
@@ -208,14 +208,14 @@ export class PartnersController {
   ) {
     const userId = req?.user?.user_id;
     const row = await this.service.update(id, body ?? {}, userId);
-    if (!row) throw new NotFoundException(`Партнёр ${id} не найден`);
+    if (!row) throw new NotFoundException(`Партнер ${id} не найден`);
     return [row];
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
     const row = await this.service.remove(id);
-    if (!row) throw new NotFoundException(`Партнёр ${id} не найден`);
+    if (!row) throw new NotFoundException(`Партнер ${id} не найден`);
     return [row];
   }
 }
