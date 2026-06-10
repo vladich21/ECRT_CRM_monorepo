@@ -28,7 +28,11 @@ export const patentUpdateFormMapper = (
     area_ids: patentData.area_ids || [],
     project_id: patentData.project_id || null,
     contract_id: patentData.contract_id || null,
-    expected_licensee_partner_id: patentData.expected_licensee_partner_id || null,
+    expected_licensee_partner_ids: patentData.expected_licensee_partner_ids?.length
+      ? patentData.expected_licensee_partner_ids
+      : patentData.expected_licensee_partner_id
+        ? [patentData.expected_licensee_partner_id]
+        : [],
     rid_cost_excl_vat: numField(patentData.rid_cost_excl_vat),
     rid_vat_rate: numField(patentData.rid_vat_rate, PATENT_DEFAULT_RID_VAT_RATE),
     rid_cost_vat: numField(patentData.rid_cost_vat),

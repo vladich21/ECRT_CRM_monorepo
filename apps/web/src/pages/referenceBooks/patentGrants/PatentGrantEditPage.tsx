@@ -2,7 +2,7 @@ import { useLayoutEffect, useState } from 'react';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import dayjs from 'dayjs';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
 import { usePatentGrantById, useUpdatePatentGrant } from '../../../api/patents/patentGrantsApiHooks';
@@ -18,6 +18,7 @@ import { buildPatentGrantRidSelectLabel } from './utils/patentGrantCardHelpers';
 export default function PatentGrantEditPage() {
   const { grantId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -28,13 +29,13 @@ export default function PatentGrantEditPage() {
     isError: isReferencesError,
   } = useReferenceData(['patents', 'partners', 'projects', 'contracts']);
   const { mutate, isPending: isUpdateLoading } = useUpdatePatentGrant();
+  const grantDetailNavState = location.state;
   useLayoutEffect(() => {
     if (!patentGrant) return;
     const formData = {
       ...patentGrant,
       grant_date: patentGrant.grant_date ? dayjs(patentGrant.grant_date) : null,
       renewal_date: patentGrant.renewal_date ? dayjs(patentGrant.renewal_date) : null,
-      expected_licensee_partner_ids: patentGrant.expected_licensee_partner_ids ?? [],
       actual_licensee_partner_id: patentGrant.actual_licensee_partner_id?.trim() || null,
     };
     form.setFieldsValue(formData);
@@ -52,7 +53,11 @@ export default function PatentGrantEditPage() {
       {
         onSuccess: () => {
           showNotification('success', 'Успех', 'Охранный документ успешно изменен');
-          setTimeout(() => navigate(`/patent-grants/${grantId}`), 1000);
+          setTimeout(
+            () =>
+              navigate(`/patent-grants/${grantId}`, grantDetailNavState ? { state: grantDetailNavState } : {}),
+            1000,
+          );
         },
         onError: () => {  
           showNotification('error', 'Ошибка', 'Не удалось изменить охранный документ');
@@ -61,7 +66,7 @@ export default function PatentGrantEditPage() {
     );
   };
   const handleBack = () => {
-    navigate(-1);
+    navigate(`/patent-grants/${grantId}`, grantDetailNavState ? { state: grantDetailNavState } : {});
   };
   const handleFormChange = () => {
     setIsFormChanged(true);
@@ -75,7 +80,7 @@ export default function PatentGrantEditPage() {
   return (
     <DetailPageHeader
       title={`Редактирование: ${patentGrant.grant_number}`}
-      backLabel='Охранные документы'
+      backLabel='Охранный документ'
       onBack={handleBack}
       actions={
         <>

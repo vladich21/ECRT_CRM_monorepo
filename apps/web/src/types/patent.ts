@@ -37,6 +37,8 @@ export interface Patent {
   author_ids: Array<string>;
   area_ids: Array<string>;
   contract_id: string;
+  expected_licensee_partner_ids?: string[];
+  /** @deprecated первый id из expected_licensee_partner_ids для обратной совместимости */
   expected_licensee_partner_id: string;
   rid_cost_excl_vat: number | null;
   rid_vat_rate: number | null;

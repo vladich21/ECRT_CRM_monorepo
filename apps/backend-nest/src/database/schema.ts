@@ -321,8 +321,6 @@ export const patents = pgTable('patents', {
   name: varchar('name', { length: 255 }).notNull(),
   departmentId: uuid('department_id').notNull(),
   contractId: uuid('contract_id'),
-  /** Предполагаемый лицензиат (контрагент). */
-  expectedLicenseePartnerId: uuid('expected_licensee_partner_id'),
   ridCostExclVat: numeric('rid_cost_excl_vat', { precision: 19, scale: 2 }),
   ridVatRate: numeric('rid_vat_rate', { precision: 5, scale: 2 }),
   ridCostVat: numeric('rid_cost_vat', { precision: 19, scale: 2 }),
@@ -363,6 +361,13 @@ export const patentGrants = pgTable('patent_grants', {
 export const relPatentGrantExpectedLicensees = pgTable('rel_patent_grants_expected_licensees', {
   id: uuid('id').primaryKey().defaultRandom(),
   patentGrantId: uuid('patent_grant_id'),
+  partnerId: uuid('partner_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const relPatentsExpectedLicensees = pgTable('rel_patents_expected_licensees', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patentId: uuid('patent_id'),
   partnerId: uuid('partner_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });

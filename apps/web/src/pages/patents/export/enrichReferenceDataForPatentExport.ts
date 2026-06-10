@@ -29,9 +29,19 @@ async function fetchMissingEntities<T extends { id: string }>(
 }
 
 function collectPartnerIds(patents: Patent[]): string[] {
-  return patents
-    .map(patent => patent.expected_licensee_partner_id?.trim() ?? '')
-    .filter(Boolean);
+  const ids: string[] = [];
+  for (const patent of patents) {
+    if (patent.expected_licensee_partner_ids?.length) {
+      for (const partnerId of patent.expected_licensee_partner_ids) {
+        const trimmed = partnerId?.trim();
+        if (trimmed) ids.push(trimmed);
+      }
+      continue;
+    }
+    const legacyId = patent.expected_licensee_partner_id?.trim();
+    if (legacyId) ids.push(legacyId);
+  }
+  return ids;
 }
 
 function collectUserIds(patents: Patent[]): string[] {

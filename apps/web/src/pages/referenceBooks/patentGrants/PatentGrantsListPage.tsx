@@ -34,7 +34,13 @@ export default function PatentGrantsListPage() {
       title='Охранные документы'
       showBackButton={false}
       addButtonLabel='Добавить'
-      onAdd={() => navigate('/patent-grants/create', { state: { patentId } })}
+      onAdd={() => {
+        const parentState =
+          location.state && typeof location.state === 'object' && !Array.isArray(location.state)
+            ? (location.state as Record<string, unknown>)
+            : {};
+        navigate('/patent-grants/create', { state: { ...parentState, patentId, from: patentId } });
+      }}
     >
       {isLoading ? (
         <div className={styles.loading}>

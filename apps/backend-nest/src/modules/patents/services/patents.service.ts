@@ -7,15 +7,20 @@ import {
   files,
   patents,
   relPatentsApplicationAreas,
+  relPatentsExpectedLicensees,
   patentGrants,
   relPatentAuthors,
 } from '../../../database/schema';
 import { mapPatentGrantToApiDto } from '../../patent-grants/patent-grant.mapper';
 import {
   loadExpectedLicenseePartnerIdsByGrantIds,
-  parseExpectedLicenseePartnerIds,
   syncExpectedLicenseePartners,
 } from '../../patent-grants/patent-grant-expected-licensees';
+import {
+  loadExpectedLicenseePartnerIdsByPatentIds,
+  parseExpectedLicenseePartnerIds,
+  syncExpectedLicenseePartnersForPatent,
+} from '../patent-expected-licensees';
 import { PaginationParams } from '../../../common/pagination';
 import { type DeletedScope, sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 import { syncPatentAutoStatus } from './patent-auto-status';
@@ -158,11 +163,12 @@ export class PatentsService {
       .limit(1);
     const row = rows[0];
     if (!row) return null;
-    const [areaIds, authorIds] = await Promise.all([
+    const [areaIds, authorIds, expectedByPatentId] = await Promise.all([
       this.getAreaIdsForPatent(id),
       this.getAuthorIdsForPatent(id),
+      loadExpectedLicenseePartnerIdsByPatentIds(this.db, [id]),
     ]);
-    const base = this.toResponse(row, areaIds, authorIds);
+    const base = this.toResponse(row, areaIds, authorIds, expectedByPatentId.get(id) ?? []);
     return this.enrichPatentTransformationSnapshots(base, row);
   }
 
@@ -658,7 +664,8 @@ export class PatentsService {
     }
 
     const patentIds = rows.map((row) => String(row.id));
-    const [areaIdsMap, authorIdsMap, grantsPreviewByPatentId, requestSummaries] = await Promise.all([
+    const [areaIdsMap, authorIdsMap, grantsPreviewByPatentId, requestSummaries, expectedByPatentId] =
+      await Promise.all([
       this.getAreaIdsMap(patentIds),
       this.getAuthorIdsMap(patentIds),
       this.getPatentGrantsPreviewByPatentIds(
@@ -666,6 +673,7 @@ export class PatentsService {
         options?.includeAllGrantPreviews ? null : PATENT_LIST_GRANT_PREVIEW_LIMIT,
       ),
       this.getPatentRequestSummariesByPatentIds(patentIds),
+      loadExpectedLicenseePartnerIdsByPatentIds(this.db, patentIds),
     ]);
 
     const data = rows.map((patentRow) => {
@@ -674,6 +682,7 @@ export class PatentsService {
         patentRow,
         areaIdsMap[patentId] ?? [],
         authorIdsMap[patentId] ?? [],
+        expectedByPatentId.get(patentId) ?? [],
       );
       const grantListPreview = grantsPreviewByPatentId[patentId];
       const reqSum = requestSummaries[patentId];
@@ -748,6 +757,7 @@ export class PatentsService {
     row: (typeof patents.$inferSelect),
     areaIds: string[] = [],
     authorIds: string[] = [],
+    expectedLicenseePartnerIds: string[] = [],
   ) {
     return {
       id: String(row.id),
@@ -759,9 +769,8 @@ export class PatentsService {
       name: row.name ?? '',
       department_id: String(row.departmentId ?? ''),
       contract_id: row.contractId ? String(row.contractId) : '',
-      expected_licensee_partner_id: row.expectedLicenseePartnerId
-        ? String(row.expectedLicenseePartnerId)
-        : '',
+      expected_licensee_partner_ids: expectedLicenseePartnerIds,
+      expected_licensee_partner_id: expectedLicenseePartnerIds[0] ?? '',
       rid_cost_excl_vat:
         row.ridCostExclVat != null ? parseFloat(String(row.ridCostExclVat)) : null,
       rid_vat_rate:
@@ -880,7 +889,6 @@ export class PatentsService {
       applicationNumber: data.application_number != null ? String(data.application_number) : null,
       departmentId,
       contractId: toUuid(data.contract_id),
-      expectedLicenseePartnerId: toUuid(data.expected_licensee_partner_id),
       ridCostExclVat: toNum(data.rid_cost_excl_vat),
       ridVatRate: toNum(data.rid_vat_rate) ?? String(22),
       ridCostVat: toNum(data.rid_cost_vat),
@@ -905,6 +913,10 @@ export class PatentsService {
 
     await this.syncAreaIds(patentId, data);
     await this.syncAuthorIds(patentId, data);
+    const expectedFromBody = parseExpectedLicenseePartnerIds(data);
+    if (expectedFromBody !== undefined) {
+      await syncExpectedLicenseePartnersForPatent(this.db, patentId, expectedFromBody);
+    }
     await syncPatentAutoStatus(this.db, patentId);
     return this.findOne(patentId);
   }
@@ -932,7 +944,6 @@ export class PatentsService {
       application_number: 'applicationNumber',
       department_id: 'departmentId',
       contract_id: 'contractId',
-      expected_licensee_partner_id: 'expectedLicenseePartnerId',
       rid_cost_excl_vat: 'ridCostExclVat',
       rid_vat_rate: 'ridVatRate',
       rid_cost_vat: 'ridCostVat',
@@ -968,6 +979,10 @@ export class PatentsService {
 
     await this.syncAreaIds(id, data);
     await this.syncAuthorIds(id, data);
+    const expectedFromBody = parseExpectedLicenseePartnerIds(data);
+    if (expectedFromBody !== undefined) {
+      await syncExpectedLicenseePartnersForPatent(this.db, id, expectedFromBody);
+    }
     await syncPatentAutoStatus(this.db, id);
     return this.findOne(id);
   }
@@ -1005,7 +1020,6 @@ export class PatentsService {
           applicationNumber: null,
           departmentId: source.departmentId,
           contractId: source.contractId,
-          expectedLicenseePartnerId: source.expectedLicenseePartnerId,
           ridCostExclVat: source.ridCostExclVat,
           ridVatRate: source.ridVatRate,
           ridCostVat: source.ridCostVat,
@@ -1053,6 +1067,18 @@ export class PatentsService {
           authorRows
             .filter((row) => row.userId != null)
             .map((row) => ({ patentId: newId, userId: String(row.userId) })),
+        );
+      }
+
+      const expectedRows = await tx
+        .select({ partnerId: relPatentsExpectedLicensees.partnerId })
+        .from(relPatentsExpectedLicensees)
+        .where(eq(relPatentsExpectedLicensees.patentId, sourcePatentId));
+      if (expectedRows.length > 0) {
+        await tx.insert(relPatentsExpectedLicensees).values(
+          expectedRows
+            .filter((row) => row.partnerId != null)
+            .map((row) => ({ patentId: newId, partnerId: String(row.partnerId) })),
         );
       }
 
@@ -1137,18 +1163,8 @@ export class PatentsService {
 
   async createGrant(patentId: string, data: Record<string, unknown>) {
     if (!(await this.patentExists(patentId))) return null;
-    const [patentRow] = await this.db.db
-      .select({ expectedLicenseePartnerId: patents.expectedLicenseePartnerId })
-      .from(patents)
-      .where(eq(patents.id, patentId))
-      .limit(1);
-    const expectedFromBody = parseExpectedLicenseePartnerIds(data);
-    const expectedLicenseePartnerIds =
-      expectedFromBody !== undefined
-        ? expectedFromBody
-        : patentRow?.expectedLicenseePartnerId
-          ? [String(patentRow.expectedLicenseePartnerId)]
-          : [];
+    const expectedByPatentId = await loadExpectedLicenseePartnerIdsByPatentIds(this.db, [patentId]);
+    const expectedLicenseePartnerIds = expectedByPatentId.get(patentId) ?? [];
     const insertData: Record<string, unknown> = {
       patentId,
       grantNumber: data.grant_number ?? null,

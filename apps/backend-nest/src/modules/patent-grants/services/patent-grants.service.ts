@@ -6,10 +6,10 @@ import { mapPatentGrantToApiDto, type PatentGrantApiDto } from '../patent-grant.
 import {
   deleteExpectedLicenseePartnersForGrant,
   loadExpectedLicenseePartnerIdsByGrantIds,
-  parseExpectedLicenseePartnerIds,
   parseActualLicenseePartnerId,
   syncExpectedLicenseePartners,
 } from '../patent-grant-expected-licensees';
+import { loadExpectedLicenseePartnerIdsByPatentIds } from '../../patents/patent-expected-licensees';
 import {
   assertActivePatentExists,
   parsePatentId,
@@ -100,7 +100,7 @@ export class PatentGrantsService {
     }
 
     const [patentRow] = await this.db.db
-      .select({ expectedLicenseePartnerId: patents.expectedLicenseePartnerId })
+      .select({ id: patents.id })
       .from(patents)
       .where(and(eq(patents.id, patentId), eq(patents.isDeleted, false)))
       .limit(1);
@@ -110,13 +110,8 @@ export class PatentGrantsService {
 
     const toDateStr = (v: unknown): string | null =>
       v == null || v === '' ? null : typeof v === 'string' ? v : null;
-    const expectedFromBody = parseExpectedLicenseePartnerIds(body);
-    const expectedLicenseePartnerIds =
-      expectedFromBody !== undefined
-        ? expectedFromBody
-        : patentRow.expectedLicenseePartnerId
-          ? [String(patentRow.expectedLicenseePartnerId)]
-          : [];
+    const expectedByPatentId = await loadExpectedLicenseePartnerIdsByPatentIds(this.db, [patentId]);
+    const expectedLicenseePartnerIds = expectedByPatentId.get(patentId) ?? [];
 
     const insertData: Record<string, unknown> = {
       patentId,
@@ -192,9 +187,17 @@ export class PatentGrantsService {
 
     await this.db.db.update(patentGrants).set(updateObj).where(eq(patentGrants.id, id));
 
-    const expectedFromBody = parseExpectedLicenseePartnerIds(data);
-    if (expectedFromBody !== undefined) {
-      await syncExpectedLicenseePartners(this.db, id, expectedFromBody);
+    const effectivePatentId = patentChanged ? nextPatentId : previousPatentId;
+    const effectiveActualId =
+      actualFromBody !== undefined
+        ? actualFromBody
+        : current.actual_licensee_partner_id?.trim() || null;
+
+    if (patentChanged || actualFromBody === null) {
+      if (!effectiveActualId) {
+        const expectedByPatentId = await loadExpectedLicenseePartnerIdsByPatentIds(this.db, [effectivePatentId]);
+        await syncExpectedLicenseePartners(this.db, id, expectedByPatentId.get(effectivePatentId) ?? []);
+      }
     }
 
     if (patentChanged) {

@@ -20,7 +20,7 @@ import {
   patentGrantStatusTagInlineStyle,
   patentGrantStatusTagPreset,
 } from '../constants/patentGrantStatusStyles';
-import { getContractDisplayLabel, hasActualLicensee } from '../utils/patentGrantCardHelpers';
+import { getContractDisplayLabel, getPatentExpectedLicenseeIds, hasActualLicensee } from '../utils/patentGrantCardHelpers';
 import { LicenseeLinks } from './PatentGrantLicenseeLinks';
 import styles from './PatentGrantMainInfoTab.module.scss';
 
@@ -59,7 +59,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
     return <NotFound errorMessage='Справочники не найдены' />;
   }
 
-  const expectedLicenseeIds = patentGrant.expected_licensee_partner_ids ?? [];
+  const expectedLicenseeIds = hasActual ? [] : getPatentExpectedLicenseeIds(linkedPatent);
   const grantBackPath = `/patent-grants/${patentGrant.id}`;
   const ridName =
     linkedPatent?.name?.trim() ||

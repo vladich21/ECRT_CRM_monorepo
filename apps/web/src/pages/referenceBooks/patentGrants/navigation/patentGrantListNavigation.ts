@@ -17,9 +17,26 @@ export function stateWithoutGrantNavFrom(state: unknown): Record<string, unknown
 }
 
 export function getPatentGrantListBackTarget(state: unknown): { path: string; label: string } {
-  const from = (state as PatentGrantListNavState | null | undefined)?.from;
-  if (from === PATENT_GRANT_NAV_FROM_REGISTRY || from === undefined || from === '') {
+  return resolvePatentGrantBackTarget(state);
+}
+
+/** Куда вернуться из карточки / формы охранного документа. */
+export function resolvePatentGrantBackTarget(
+  state: unknown,
+  fallbackPatentId?: string | null,
+): { path: string; label: string } {
+  const from = (state as PatentGrantListNavState | null | undefined)?.from?.trim();
+  if (from === PATENT_GRANT_NAV_FROM_REGISTRY) {
     return { path: '/patent-grants', label: 'Реестр охранных документов' };
   }
-  return { path: `/patents/${from}/grants`, label: 'Охранные документы' };
+  if (from) {
+    return { path: `/patents/${from}`, label: 'Карточка РИД' };
+  }
+
+  const patentId = fallbackPatentId?.trim();
+  if (patentId) {
+    return { path: `/patents/${patentId}`, label: 'Карточка РИД' };
+  }
+
+  return { path: '/patent-grants', label: 'Реестр охранных документов' };
 }
