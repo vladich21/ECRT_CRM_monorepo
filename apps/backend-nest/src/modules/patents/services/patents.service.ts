@@ -13,6 +13,7 @@ import {
 } from '../../../database/schema';
 import { mapPatentGrantToApiDto } from '../../patent-grants/patent-grant.mapper';
 import {
+  loadActualLicenseePartnerIdsByGrantIds,
   loadExpectedLicenseePartnerIdsByGrantIds,
   syncExpectedLicenseePartners,
 } from '../../patent-grants/patent-grant-expected-licensees';
@@ -1145,7 +1146,10 @@ export class PatentsService {
         .where(eq(patentGrants.patentId, patentId))
         .orderBy(asc(patentGrants.grantDate));
       const grantIds = rows.map(({ grant }) => String(grant.id));
-      const expectedByGrantId = await loadExpectedLicenseePartnerIdsByGrantIds(this.db, grantIds);
+      const [expectedByGrantId, actualByGrantId] = await Promise.all([
+        loadExpectedLicenseePartnerIdsByGrantIds(this.db, grantIds),
+        loadActualLicenseePartnerIdsByGrantIds(this.db, grantIds),
+      ]);
       return rows.map(({ grant: row, patentName, patentRegistrationNumber }) =>
         mapPatentGrantToApiDto(
           row,
@@ -1154,6 +1158,7 @@ export class PatentsService {
             registrationNumber: patentRegistrationNumber,
           },
           expectedByGrantId.get(String(row.id)) ?? [],
+          actualByGrantId.get(String(row.id)) ?? [],
         ),
       );
     } catch {

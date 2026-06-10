@@ -8,7 +8,7 @@ import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrant
 import { getNameById } from '../../../../helpers/getNameById';
 import { Reference } from '../../../../types/referenceTypes';
 import { usePatentGrantRidLink } from '../hooks/usePatentGrantRidLink';
-import { buildPatentSelectLabel, getContractDisplayLabel, getPatentExpectedLicenseeIds, hasActualLicensee } from '../utils/patentGrantCardHelpers';
+import { buildPatentSelectLabel, getContractDisplayLabel, getPatentExpectedLicenseeIds, getPatentGrantActualLicenseeIds, hasActualLicensee } from '../utils/patentGrantCardHelpers';
 import styles from '../PatentGrantFormPage.module.scss';
 
 export type PatentGrantPatentSelectFallback = { id: string; name: string };
@@ -38,15 +38,19 @@ function buildPartnerOptions(partners: Reference[] | undefined): PartnerOption[]
 function PartnerSelect({
   name,
   label,
+  multiple,
   options,
 }: {
   name: string;
   label: string;
+  multiple?: boolean;
   options: PartnerOption[];
 }) {
   return (
     <Form.Item label={label} name={name}>
       <Select
+        mode={multiple ? 'multiple' : undefined}
+        maxTagCount={multiple ? 'responsive' : undefined}
         placeholder='Выберите контрагента или найдите по названию / ИНН'
         allowClear
         showSearch
@@ -95,9 +99,9 @@ export function PatentGrantFormFields({
 }: PatentGrantFormFieldsProps) {
   const form = Form.useFormInstance();
   const patentId = Form.useWatch('patent_id', form);
-  const actualLicenseePartnerId = Form.useWatch('actual_licensee_partner_id', form);
+  const actualLicenseePartnerIds = Form.useWatch('actual_licensee_partner_ids', form);
   const isEdit = mode === 'edit';
-  const showExpectedLicensee = !hasActualLicensee(actualLicenseePartnerId);
+  const showExpectedLicensee = !hasActualLicensee(actualLicenseePartnerIds);
   const { data: selectedPatent } = usePatentById(patentId ?? '');
   const { linkedRidRegNumber } = usePatentGrantRidLink({ patentId, selectedPatent, initialPatentId, initialRidRegNumber });
 
@@ -194,7 +198,12 @@ export function PatentGrantFormFields({
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <PartnerSelect name='actual_licensee_partner_id' label='Фактический лицензиат' options={partnerOptions} />
+                  <PartnerSelect
+                    name='actual_licensee_partner_ids'
+                    label='Фактический лицензиат'
+                    multiple
+                    options={partnerOptions}
+                  />
                 </Col>
               </>
             ) : null}

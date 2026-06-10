@@ -1,8 +1,9 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 import type { DatabaseService } from '../../database/database.service';
 import { patentGrants, relPatentsExpectedLicensees } from '../../database/schema';
 import {
+  loadActualLicenseePartnerIdsByGrantIds,
   parseExpectedLicenseePartnerIds,
   syncExpectedLicenseePartners,
 } from '../patent-grants/patent-grant-expected-licensees';
@@ -67,10 +68,14 @@ export async function syncExpectedLicenseesFromPatentToGrants(
   const grantRows = await db.db
     .select({ id: patentGrants.id })
     .from(patentGrants)
-    .where(and(eq(patentGrants.patentId, patentId), isNull(patentGrants.actualLicenseePartnerId)));
+    .where(eq(patentGrants.patentId, patentId));
+
+  const grantIds = grantRows.map(row => String(row.id));
+  const actualByGrantId = await loadActualLicenseePartnerIdsByGrantIds(db, grantIds);
+  const grantsWithoutActual = grantIds.filter(id => (actualByGrantId.get(id) ?? []).length === 0);
 
   const uniqueIds = [...new Set(partnerIds)];
   await Promise.all(
-    grantRows.map(row => syncExpectedLicenseePartners(db, String(row.id), uniqueIds)),
+    grantsWithoutActual.map(grantId => syncExpectedLicenseePartners(db, grantId, uniqueIds)),
   );
 }

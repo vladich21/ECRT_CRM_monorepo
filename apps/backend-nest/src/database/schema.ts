@@ -353,12 +353,18 @@ export const patentGrants = pgTable('patent_grants', {
   status: varchar('status', { length: 50 }),
   renewalDate: date('renewal_date'),
   notes: text('notes'),
-  actualLicenseePartnerId: uuid('actual_licensee_partner_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }),
 });
 
 export const relPatentGrantExpectedLicensees = pgTable('rel_patent_grants_expected_licensees', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patentGrantId: uuid('patent_grant_id'),
+  partnerId: uuid('partner_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const relPatentGrantActualLicensees = pgTable('rel_patent_grants_actual_licensees', {
   id: uuid('id').primaryKey().defaultRandom(),
   patentGrantId: uuid('patent_grant_id'),
   partnerId: uuid('partner_id'),

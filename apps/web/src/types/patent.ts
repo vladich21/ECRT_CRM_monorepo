@@ -91,6 +91,8 @@ export interface PatentGrant {
   renewal_date: string;
   notes?: string;
   expected_licensee_partner_ids?: string[];
+  actual_licensee_partner_ids?: string[];
+  /** @deprecated первый id из actual_licensee_partner_ids */
   actual_licensee_partner_id?: string;
   created_at: string;
   updated_at: string;

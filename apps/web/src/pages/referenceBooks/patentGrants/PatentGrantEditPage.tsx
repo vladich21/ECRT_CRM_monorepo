@@ -36,7 +36,11 @@ export default function PatentGrantEditPage() {
       ...patentGrant,
       grant_date: patentGrant.grant_date ? dayjs(patentGrant.grant_date) : null,
       renewal_date: patentGrant.renewal_date ? dayjs(patentGrant.renewal_date) : null,
-      actual_licensee_partner_id: patentGrant.actual_licensee_partner_id?.trim() || null,
+      actual_licensee_partner_ids: patentGrant.actual_licensee_partner_ids?.length
+        ? patentGrant.actual_licensee_partner_ids
+        : patentGrant.actual_licensee_partner_id?.trim()
+          ? [patentGrant.actual_licensee_partner_id.trim()]
+          : [],
     };
     form.setFieldsValue(formData);
   }, [patentGrant, form]);
