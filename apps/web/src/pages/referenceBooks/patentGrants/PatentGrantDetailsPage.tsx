@@ -1,5 +1,6 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Space } from 'antd';
+import { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useFilesByEntity } from '../../../api/files/fileApiHooks';
@@ -9,17 +10,20 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
 import { patentGrantDetailHeaderBadgeVariant } from './constants/patentGrantStatusStyles';
-import { getPatentGrantListBackTarget, stateWithoutGrantNavFrom } from './navigation/patentGrantListNavigation';
+import { resolvePatentGrantBackTarget, stateWithoutGrantNavFrom } from './navigation/patentGrantListNavigation';
 import { useNotification } from '../../../customhooks/useNotification';
 
 export default function PatentGrantDetailsPage() {
   const { grantId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const backTarget = getPatentGrantListBackTarget(location.state);
+  const { data: patentGrant, isLoading, isError } = usePatentGrantById(grantId!);
+  const backTarget = useMemo(
+    () => resolvePatentGrantBackTarget(location.state, patentGrant?.patent_id),
+    [location.state, patentGrant?.patent_id],
+  );
   const patentCardExtras = stateWithoutGrantNavFrom(location.state);
   const { contextHolder, showNotification } = useNotification();
-  const { data: patentGrant, isLoading, isError } = usePatentGrantById(grantId!);
   const { data: grantFiles, isLoading: isGrantFilesLoading } = useFilesByEntity('grant', grantId!);
   const mutation = useDeletePatentGrant();
 

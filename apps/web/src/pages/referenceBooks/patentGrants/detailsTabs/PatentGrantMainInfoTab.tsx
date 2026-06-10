@@ -20,7 +20,7 @@ import {
   patentGrantStatusTagInlineStyle,
   patentGrantStatusTagPreset,
 } from '../constants/patentGrantStatusStyles';
-import { getContractDisplayLabel, hasActualLicensee } from '../utils/patentGrantCardHelpers';
+import { getContractDisplayLabel, getPatentExpectedLicenseeIds, getPatentGrantActualLicenseeIds, hasActualLicensee } from '../utils/patentGrantCardHelpers';
 import { LicenseeLinks } from './PatentGrantLicenseeLinks';
 import styles from './PatentGrantMainInfoTab.module.scss';
 
@@ -36,8 +36,8 @@ interface PatentGrantMainInfoProps {
 
 function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
   const patentId = patentGrant?.patent_id?.trim() ?? '';
-  const actualLicenseeId = patentGrant?.actual_licensee_partner_id?.trim() ?? '';
-  const hasActual = hasActualLicensee(actualLicenseeId);
+  const actualLicenseeIds = getPatentGrantActualLicenseeIds(patentGrant);
+  const hasActual = hasActualLicensee(actualLicenseeIds);
 
   const {
     data: referenceBooks,
@@ -59,7 +59,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
     return <NotFound errorMessage='Справочники не найдены' />;
   }
 
-  const expectedLicenseeIds = patentGrant.expected_licensee_partner_ids ?? [];
+  const expectedLicenseeIds = hasActual ? [] : getPatentExpectedLicenseeIds(linkedPatent);
   const grantBackPath = `/patent-grants/${patentGrant.id}`;
   const ridName =
     linkedPatent?.name?.trim() ||
@@ -215,7 +215,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
               ) : (
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Фактический лицензиат</span>
-                  <LicenseeLinks partnerIds={[actualLicenseeId]} partners={referenceBooks.partners} backPath={grantBackPath} />
+                  <LicenseeLinks partnerIds={actualLicenseeIds} partners={referenceBooks.partners} backPath={grantBackPath} />
                 </div>
               )}
             </div>

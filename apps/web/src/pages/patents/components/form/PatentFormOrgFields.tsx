@@ -173,8 +173,10 @@ export function PatentFormOrgFields({ refs, incomeContracts, partnerOptions, onP
 
       <Row gutter={16}>
         <Col xs={24} md={12}>
-          <Form.Item label='Предполагаемый лицензиат' name='expected_licensee_partner_id'>
+          <Form.Item label='Предполагаемый лицензиат' name='expected_licensee_partner_ids'>
             <Select
+              mode='multiple'
+              maxTagCount='responsive'
               placeholder='Выберите контрагента или введите ИНН'
               allowClear
               showSearch

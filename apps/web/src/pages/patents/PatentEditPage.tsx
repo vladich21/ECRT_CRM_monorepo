@@ -152,14 +152,20 @@ export default function PatentEditPage() {
     return options;
   }, [referenceBooks?.contracts, incomeContractFetched]);
 
-  const partnerMissingFromPicker =
-    Boolean(patent?.expected_licensee_partner_id) &&
-    !(referenceBooks?.partners ?? []).some(row => row.id === patent?.expected_licensee_partner_id);
-  const partnerFetchId =
-    partnerMissingFromPicker && patent?.expected_licensee_partner_id
-      ? patent.expected_licensee_partner_id
-      : '';
-  const { data: partnerFetched } = usePartnerById(partnerFetchId);
+  const expectedLicenseeIds = useMemo(() => {
+    if (!patent) return [];
+    if (patent.expected_licensee_partner_ids?.length) {
+      return patent.expected_licensee_partner_ids.filter(id => id.trim());
+    }
+    return patent.expected_licensee_partner_id?.trim() ? [patent.expected_licensee_partner_id.trim()] : [];
+  }, [patent]);
+
+  const missingPartnerId = useMemo(() => {
+    const pickerIds = new Set((referenceBooks?.partners ?? []).map(row => row.id));
+    return expectedLicenseeIds.find(id => !pickerIds.has(id)) ?? '';
+  }, [expectedLicenseeIds, referenceBooks?.partners]);
+
+  const { data: partnerFetched } = usePartnerById(missingPartnerId);
   const partnerOptions = useMemo(() => {
     const options = [...(referenceBooks?.partners ?? [])];
     if (partnerFetched && !options.some(row => row.id === partnerFetched.id)) {

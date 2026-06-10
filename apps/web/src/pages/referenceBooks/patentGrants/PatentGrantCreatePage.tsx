@@ -13,6 +13,7 @@ import { useNotification } from '../../../customhooks/useNotification';
 import type { PatentGrant } from '../../../types/patent';
 import { PatentGrantFormFields } from './components/PatentGrantFormFields';
 import { buildPatentSelectLabel } from './utils/patentGrantCardHelpers';
+import { PATENT_GRANT_NAV_FROM_REGISTRY, resolvePatentGrantBackTarget } from './navigation/patentGrantListNavigation';
 import styles from './PatentGrantFormPage.module.scss';
 
 type PatentGrantCreateFormValues = {
@@ -23,7 +24,6 @@ type PatentGrantCreateFormValues = {
   status?: string;
   renewal_date?: { format: (fmt: string) => string };
   notes?: string;
-  expected_licensee_partner_ids?: string[];
 };
 
 export default function PatentGrantCreatePage() {
@@ -34,6 +34,14 @@ export default function PatentGrantCreatePage() {
   const patentIdFromState =
     typeof location.state?.patentId === 'string' ? location.state.patentId.trim() : '';
   const fromRegistry = location.state?.fromRegistry === true;
+  const backTarget = useMemo(
+    () =>
+      resolvePatentGrantBackTarget(
+        fromRegistry ? { from: PATENT_GRANT_NAV_FROM_REGISTRY } : { from: patentIdFromState || undefined },
+        patentIdFromState,
+      ),
+    [fromRegistry, patentIdFromState],
+  );
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
@@ -68,7 +76,6 @@ export default function PatentGrantCreatePage() {
       grant_number: grantNumber,
       status: values.status ?? 'Активный',
       renewal_date: values.renewal_date ? values.renewal_date.format('YYYY-MM-DD') : '',
-      expected_licensee_partner_ids: values.expected_licensee_partner_ids ?? [],
       ...(values.grant_date ? { grant_date: values.grant_date.format('YYYY-MM-DD') } : {}),
       ...(values.office?.trim() ? { office: values.office.trim() } : {}),
       ...(values.notes !== undefined && values.notes !== '' ? { notes: values.notes } : {}),
@@ -81,8 +88,8 @@ export default function PatentGrantCreatePage() {
           showNotification('success', 'Успех', 'Охранный документ успешно создан');
           if (fromRegistry) {
             setTimeout(() => navigate('/patent-grants'), 1000);
-          } else if (patentIdFromState) {
-            setTimeout(() => navigate(`/patents/${patentId}/grants`), 1000);
+          } else if (patentIdFromState || patentId) {
+            setTimeout(() => navigate(`/patents/${patentIdFromState || patentId}`), 1000);
           } else {
             setTimeout(() => navigate(-1), 1000);
           }
@@ -120,8 +127,8 @@ export default function PatentGrantCreatePage() {
     <DetailPageHeader
       title='Создание нового охранного документа'
       titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания</span>}
-      backLabel={fromRegistry ? 'Реестр охранных документов' : 'Назад'}
-      onBack={() => (fromRegistry ? navigate('/patent-grants') : navigate(-1))}
+      backLabel={backTarget.label}
+      onBack={() => navigate(backTarget.path)}
       actions={
         <>
           <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>

@@ -41,12 +41,25 @@ function formatProjectCode(projectId: string | undefined, refs: ReferenceDataFor
   return project?.code?.trim() || '';
 }
 
-function formatPartnerExportLabel(partnerId: string | undefined, refs: ReferenceDataForPatents): string {
-  const partner = getEntityById(partnerId, refs.partners ?? []) as Partner | undefined;
-  if (!partner) return '';
-  const shortName = String(partner.short_name ?? '').trim();
-  const fullName = String(partner.name ?? '').trim();
-  return shortName || fullName;
+function formatPartnerExportLabel(partnerIds: string[] | undefined, refs: ReferenceDataForPatents): string {
+  return (partnerIds ?? [])
+    .map(partnerId => {
+      const partner = getEntityById(partnerId, refs.partners ?? []) as Partner | undefined;
+      if (!partner) return '';
+      const shortName = String(partner.short_name ?? '').trim();
+      const fullName = String(partner.name ?? '').trim();
+      return shortName || fullName;
+    })
+    .filter(Boolean)
+    .join('; ');
+}
+
+function getExpectedLicenseePartnerIds(patent: Patent): string[] {
+  if (patent.expected_licensee_partner_ids?.length) {
+    return patent.expected_licensee_partner_ids.filter(id => id.trim());
+  }
+  const legacyId = patent.expected_licensee_partner_id?.trim();
+  return legacyId ? [legacyId] : [];
 }
 
 function formatAuthorsExportLabel(authorIds: string[] | undefined, refs: ReferenceDataForPatents): string {
@@ -136,7 +149,7 @@ export function mapPatentToExportRow(
     contract_cipher: formatContractCipher(contract),
     project: formatProjectExportLabel(patent.project_id, refs),
     project_code: formatProjectCode(patent.project_id, refs),
-    expected_licensee: formatPartnerExportLabel(patent.expected_licensee_partner_id, refs),
+    expected_licensee: formatPartnerExportLabel(getExpectedLicenseePartnerIds(patent), refs),
     responsible: getNameById(patent.responsible_for_patenting_id, refs.users ?? []) || '',
     authors: formatAuthorsExportLabel(patent.author_ids, refs),
     areas: formatAreasExportLabel(patent.area_ids, refs),

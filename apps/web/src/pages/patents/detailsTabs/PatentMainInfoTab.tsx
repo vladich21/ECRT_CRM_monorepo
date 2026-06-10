@@ -11,13 +11,13 @@ import { Link, useOutletContext } from 'react-router-dom';
 
 import { useContractById } from '@/api/contracts/contractApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
-import { usePartnerById } from '@/api/partners/partnerApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
+import { LicenseeLinks } from '@/pages/referenceBooks/patentGrants/detailsTabs/PatentGrantLicenseeLinks';
 import { Patent } from '@/types/patent';
 import {
   earliestPatentRequestsDeadlineFromFiles,
@@ -66,14 +66,13 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const { data: incomeContractFetched } = useContractById(
     fetchIncomeContractById ? patent.contract_id : '',
   );
-  const partnerInPicker = (referenceBooks?.partners ?? []).some(
-    row => row.id === patent.expected_licensee_partner_id,
-  );
-  const fetchPartnerById =
-    Boolean(patent.expected_licensee_partner_id && referenceBooks && !partnerInPicker);
-  const { data: partnerFetched } = usePartnerById(
-    fetchPartnerById ? patent.expected_licensee_partner_id : '',
-  );
+  const expectedLicenseeIds = (
+    patent.expected_licensee_partner_ids?.length
+      ? patent.expected_licensee_partner_ids
+      : patent.expected_licensee_partner_id?.trim()
+        ? [patent.expected_licensee_partner_id.trim()]
+        : []
+  ).filter(id => id.trim());
   if (isReferencesLoading) return <Loader />;
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не подгрузились справочники' />;
@@ -92,13 +91,6 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const incomeContract =
     referenceBooks.contracts?.find(row => row.id === patent.contract_id) ??
     (incomeContractFetched?.id === patent.contract_id ? incomeContractFetched : undefined);
-  const expectedLicenseePartner =
-    referenceBooks.partners?.find(row => row.id === patent.expected_licensee_partner_id) ??
-    (partnerFetched?.id === patent.expected_licensee_partner_id ? partnerFetched : undefined);
-  const expectedLicenseeLabel = expectedLicenseePartner
-    ? String(expectedLicenseePartner.short_name ?? expectedLicenseePartner.name ?? '').trim() ||
-      '—'
-    : '';
   const authorNames = (patent.author_ids ?? [])
     .map(id => referenceBooks.users?.find(user => user.id === id)?.name)
     .filter((name): name is string => Boolean(name));
@@ -195,17 +187,11 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               )}
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Предполагаемый лицензиат</span>
-                {expectedLicenseePartner?.id ? (
-                  <Link
-                    to={`/partners/${expectedLicenseePartner.id}`}
-                    state={{ returnToAfterPartner: `/patents/${patent.id}` }}
-                    className={`${styles.infoValue} ${styles.contractRegistryLink}`}
-                  >
-                    {expectedLicenseeLabel}
-                  </Link>
-                ) : (
-                  <span className={styles.infoValueMuted}>Не указан</span>
-                )}
+                <LicenseeLinks
+                  partnerIds={expectedLicenseeIds}
+                  partners={referenceBooks.partners}
+                  backPath={patentBackPath}
+                />
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Область применения</span>

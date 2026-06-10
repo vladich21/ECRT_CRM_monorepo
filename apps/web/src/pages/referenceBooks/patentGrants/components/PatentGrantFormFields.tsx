@@ -8,7 +8,7 @@ import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrant
 import { getNameById } from '../../../../helpers/getNameById';
 import { Reference } from '../../../../types/referenceTypes';
 import { usePatentGrantRidLink } from '../hooks/usePatentGrantRidLink';
-import { buildPatentSelectLabel, getContractDisplayLabel, hasActualLicensee } from '../utils/patentGrantCardHelpers';
+import { buildPatentSelectLabel, getContractDisplayLabel, getPatentExpectedLicenseeIds, getPatentGrantActualLicenseeIds, hasActualLicensee } from '../utils/patentGrantCardHelpers';
 import styles from '../PatentGrantFormPage.module.scss';
 
 export type PatentGrantPatentSelectFallback = { id: string; name: string };
@@ -50,6 +50,7 @@ function PartnerSelect({
     <Form.Item label={label} name={name}>
       <Select
         mode={multiple ? 'multiple' : undefined}
+        maxTagCount={multiple ? 'responsive' : undefined}
         placeholder='Выберите контрагента или найдите по названию / ИНН'
         allowClear
         showSearch
@@ -98,14 +99,18 @@ export function PatentGrantFormFields({
 }: PatentGrantFormFieldsProps) {
   const form = Form.useFormInstance();
   const patentId = Form.useWatch('patent_id', form);
-  const actualLicenseePartnerId = Form.useWatch('actual_licensee_partner_id', form);
+  const actualLicenseePartnerIds = Form.useWatch('actual_licensee_partner_ids', form);
   const isEdit = mode === 'edit';
-  const showExpectedLicensee = !hasActualLicensee(actualLicenseePartnerId);
+  const showExpectedLicensee = !hasActualLicensee(actualLicenseePartnerIds);
   const { data: selectedPatent } = usePatentById(patentId ?? '');
-  const { linkedRidRegNumber } = usePatentGrantRidLink({ form, patentId, selectedPatent, initialPatentId, initialRidRegNumber });
+  const { linkedRidRegNumber } = usePatentGrantRidLink({ patentId, selectedPatent, initialPatentId, initialRidRegNumber });
 
   const officeOptions = useMemo(() => buildOfficeSelectOptions(savedOfficeForLegacy), [savedOfficeForLegacy]);
   const partnerOptions = useMemo(() => buildPartnerOptions(referenceBooks.partners), [referenceBooks.partners]);
+  const expectedLicenseeIds = useMemo(
+    () => (patentId && selectedPatent?.id === patentId ? getPatentExpectedLicenseeIds(selectedPatent) : []),
+    [patentId, selectedPatent],
+  );
 
   const patentsForSelect = useMemo(() => {
     const list = [...(referenceBooks.patents ?? [])];
@@ -193,19 +198,43 @@ export function PatentGrantFormFields({
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <PartnerSelect name='actual_licensee_partner_id' label='Фактический лицензиат' options={partnerOptions} />
+                  <PartnerSelect
+                    name='actual_licensee_partner_ids'
+                    label='Фактический лицензиат'
+                    multiple
+                    options={partnerOptions}
+                  />
                 </Col>
               </>
             ) : null}
 
             {showExpectedLicensee ? (
               <Col xs={24} md={isEdit ? 12 : 24}>
-                <PartnerSelect
-                  name='expected_licensee_partner_ids'
-                  label='Предполагаемый лицензиат'
-                  multiple
-                  options={partnerOptions}
-                />
+                <Form.Item label='Предполагаемый лицензиат' tooltip='Заполняется в карточке РИД'>
+                  <Select
+                    mode='multiple'
+                    disabled
+                    value={expectedLicenseeIds}
+                    placeholder='Не указан'
+                    optionLabelProp='label'
+                    maxTagCount='responsive'
+                    suffixIcon={<TeamOutlined />}
+                  >
+                    {partnerOptions.map(partner => (
+                      <Select.Option
+                        key={partner.id}
+                        value={partner.id}
+                        label={partner.label}
+                        searchLabel={partner.searchLabel}
+                      >
+                        <div>
+                          <div>{partner.label}</div>
+                          {partner.inn ? <div style={{ fontSize: 12, color: '#888' }}>ИНН {partner.inn}</div> : null}
+                        </div>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
               </Col>
             ) : null}
           </Row>

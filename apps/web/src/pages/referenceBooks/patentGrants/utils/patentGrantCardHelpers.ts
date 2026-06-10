@@ -9,8 +9,33 @@ export function getPartnerDisplayLabel(
   return fullName || shortName;
 }
 
-export function hasActualLicensee(partnerId?: string | null): boolean {
-  return Boolean(partnerId?.trim());
+export function hasActualLicensee(partnerIds?: string[] | string | null): boolean {
+  if (Array.isArray(partnerIds)) {
+    return partnerIds.some(id => id.trim());
+  }
+  return Boolean(partnerIds?.trim());
+}
+
+export function getPatentGrantActualLicenseeIds(
+  grant?: { actual_licensee_partner_ids?: string[]; actual_licensee_partner_id?: string | null } | null,
+): string[] {
+  if (!grant) return [];
+  if (grant.actual_licensee_partner_ids?.length) {
+    return grant.actual_licensee_partner_ids.filter(id => id.trim());
+  }
+  const legacyId = grant.actual_licensee_partner_id?.trim();
+  return legacyId ? [legacyId] : [];
+}
+
+export function getPatentExpectedLicenseeIds(
+  patent?: { expected_licensee_partner_ids?: string[]; expected_licensee_partner_id?: string | null } | null,
+): string[] {
+  if (!patent) return [];
+  if (patent.expected_licensee_partner_ids?.length) {
+    return patent.expected_licensee_partner_ids.filter(id => id.trim());
+  }
+  const legacyId = patent.expected_licensee_partner_id?.trim();
+  return legacyId ? [legacyId] : [];
 }
 
 export function getContractDisplayLabel(contract?: { number?: string; name?: string } | null): string {
