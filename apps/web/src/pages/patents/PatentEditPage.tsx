@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useContractById } from '@/api/contracts/contractApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
+import { getPatentExpectedLicensees } from '@/helpers/licenseeEntryHelpers';
 import { usePartnerById } from '@/api/partners/partnerApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { usePatentById, useUpdatePatent } from '@/api/patents/patentApiHooks';
@@ -152,18 +153,12 @@ export default function PatentEditPage() {
     return options;
   }, [referenceBooks?.contracts, incomeContractFetched]);
 
-  const expectedLicenseeIds = useMemo(() => {
-    if (!patent) return [];
-    if (patent.expected_licensee_partner_ids?.length) {
-      return patent.expected_licensee_partner_ids.filter(id => id.trim());
-    }
-    return patent.expected_licensee_partner_id?.trim() ? [patent.expected_licensee_partner_id.trim()] : [];
-  }, [patent]);
+  const expectedLicensees = useMemo(() => (patent ? getPatentExpectedLicensees(patent) : []), [patent]);
 
   const missingPartnerId = useMemo(() => {
     const pickerIds = new Set((referenceBooks?.partners ?? []).map(row => row.id));
-    return expectedLicenseeIds.find(id => !pickerIds.has(id)) ?? '';
-  }, [expectedLicenseeIds, referenceBooks?.partners]);
+    return expectedLicensees.find(entry => entry.partner_id && !pickerIds.has(entry.partner_id))?.partner_id ?? '';
+  }, [expectedLicensees, referenceBooks?.partners]);
 
   const { data: partnerFetched } = usePartnerById(missingPartnerId);
   const partnerOptions = useMemo(() => {

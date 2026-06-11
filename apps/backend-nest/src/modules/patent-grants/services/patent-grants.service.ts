@@ -4,15 +4,16 @@ import { DatabaseService } from '../../../database/database.service';
 import { patentGrants, patents } from '../../../database/schema';
 import { mapPatentGrantToApiDto, type PatentGrantApiDto } from '../patent-grant.mapper';
 import {
-  deleteActualLicenseePartnersForGrant,
-  deleteExpectedLicenseePartnersForGrant,
-  loadActualLicenseePartnerIdsByGrantIds,
-  loadExpectedLicenseePartnerIdsByGrantIds,
-  parseActualLicenseePartnerIds,
-  syncActualLicenseePartners,
-  syncExpectedLicenseePartners,
-} from '../patent-grant-expected-licensees';
-import { loadExpectedLicenseePartnerIdsByPatentIds } from '../../patents/patent-expected-licensees';
+  deleteActualLicenseesForGrant,
+  deleteExpectedLicenseesForGrant,
+  hasLicenseeEntries,
+  loadActualLicenseesByGrantIds,
+  loadExpectedLicenseesByGrantIds,
+  loadExpectedLicenseesByPatentIds,
+  parseActualLicenseeEntries,
+  syncActualLicenseesForGrant,
+  syncExpectedLicenseesForGrant,
+} from '../../licensees/licensee-entry';
 import {
   assertActivePatentExists,
   parsePatentId,
@@ -52,8 +53,8 @@ export class PatentGrantsService {
   ): Promise<PatentGrantApiDto[]> {
     const grantIds = rows.map(row => String(row.grant.id));
     const [expectedByGrantId, actualByGrantId] = await Promise.all([
-      loadExpectedLicenseePartnerIdsByGrantIds(this.db, grantIds),
-      loadActualLicenseePartnerIdsByGrantIds(this.db, grantIds),
+      loadExpectedLicenseesByGrantIds(this.db, grantIds),
+      loadActualLicenseesByGrantIds(this.db, grantIds),
     ]);
     return rows.map(row =>
       mapPatentGrantToApiDto(
@@ -117,8 +118,8 @@ export class PatentGrantsService {
 
     const toDateStr = (v: unknown): string | null =>
       v == null || v === '' ? null : typeof v === 'string' ? v : null;
-    const expectedByPatentId = await loadExpectedLicenseePartnerIdsByPatentIds(this.db, [patentId]);
-    const expectedLicenseePartnerIds = expectedByPatentId.get(patentId) ?? [];
+    const expectedByPatentId = await loadExpectedLicenseesByPatentIds(this.db, [patentId]);
+    const expectedLicensees = expectedByPatentId.get(patentId) ?? [];
 
     const insertData: Record<string, unknown> = {
       patentId,
@@ -135,7 +136,7 @@ export class PatentGrantsService {
       throw new BadRequestException('Не удалось создать охранный документ');
     }
 
-    await syncExpectedLicenseePartners(this.db, String(row.id), expectedLicenseePartnerIds);
+    await syncExpectedLicenseesForGrant(this.db, String(row.id), expectedLicensees);
     await syncPatentAutoStatus(this.db, patentId);
 
     const created = await this.findOne(String(row.id));
@@ -187,31 +188,27 @@ export class PatentGrantsService {
     if (data.notes !== undefined) updateObj.notes = data.notes;
     if (patentChanged) updateObj.patentId = nextPatentId;
 
-    const actualFromBody = parseActualLicenseePartnerIds(data);
+    const actualFromBody = parseActualLicenseeEntries(data);
     if (actualFromBody !== undefined) {
-      await syncActualLicenseePartners(this.db, id, actualFromBody);
+      await syncActualLicenseesForGrant(this.db, id, actualFromBody);
     }
 
     await this.db.db.update(patentGrants).set(updateObj).where(eq(patentGrants.id, id));
 
     const effectivePatentId = patentChanged ? nextPatentId : previousPatentId;
-    const currentActualIds = current.actual_licensee_partner_ids?.length
-      ? current.actual_licensee_partner_ids
-      : current.actual_licensee_partner_id?.trim()
-        ? [current.actual_licensee_partner_id.trim()]
-        : [];
-    const effectiveActualIds = actualFromBody !== undefined ? actualFromBody : currentActualIds;
+    const currentActualEntries = current.actual_licensees ?? [];
+    const effectiveActualEntries = actualFromBody !== undefined ? actualFromBody : currentActualEntries;
 
     if (actualFromBody !== undefined) {
-      if (effectiveActualIds.length > 0) {
-        await syncExpectedLicenseePartners(this.db, id, []);
+      if (hasLicenseeEntries(effectiveActualEntries)) {
+        await syncExpectedLicenseesForGrant(this.db, id, []);
       } else {
-        const expectedByPatentId = await loadExpectedLicenseePartnerIdsByPatentIds(this.db, [effectivePatentId]);
-        await syncExpectedLicenseePartners(this.db, id, expectedByPatentId.get(effectivePatentId) ?? []);
+        const expectedByPatentId = await loadExpectedLicenseesByPatentIds(this.db, [effectivePatentId]);
+        await syncExpectedLicenseesForGrant(this.db, id, expectedByPatentId.get(effectivePatentId) ?? []);
       }
-    } else if (patentChanged && effectiveActualIds.length === 0) {
-      const expectedByPatentId = await loadExpectedLicenseePartnerIdsByPatentIds(this.db, [effectivePatentId]);
-      await syncExpectedLicenseePartners(this.db, id, expectedByPatentId.get(effectivePatentId) ?? []);
+    } else if (patentChanged && !hasLicenseeEntries(effectiveActualEntries)) {
+      const expectedByPatentId = await loadExpectedLicenseesByPatentIds(this.db, [effectivePatentId]);
+      await syncExpectedLicenseesForGrant(this.db, id, expectedByPatentId.get(effectivePatentId) ?? []);
     }
 
     if (patentChanged) {
@@ -231,8 +228,8 @@ export class PatentGrantsService {
       .where(eq(patentGrants.id, id))
       .limit(1);
 
-    await deleteExpectedLicenseePartnersForGrant(this.db, id);
-    await deleteActualLicenseePartnersForGrant(this.db, id);
+    await deleteExpectedLicenseesForGrant(this.db, id);
+    await deleteActualLicenseesForGrant(this.db, id);
     await this.db.db.delete(patentGrants).where(eq(patentGrants.id, id));
 
     const patentId = grantRow?.patentId ? String(grantRow.patentId) : '';

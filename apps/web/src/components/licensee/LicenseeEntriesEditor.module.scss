@@ -1,0 +1,59 @@
+.licenseeFormItem {
+  :global(.ant-form-item-label) {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  :global(.ant-form-item-label > label) {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.listWrap {
+  width: 100%;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.fieldLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: rgba(0, 0, 0, 0.88);
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+}
+
+.fieldTooltipIcon {
+  margin-inline-start: 4px;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: help;
+}
+
+.addButton {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: max-content;
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+
+.licenseeRowsItem {
+  margin-bottom: 0;
+}
+
+.readonlyRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}

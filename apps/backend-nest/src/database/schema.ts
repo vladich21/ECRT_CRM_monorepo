@@ -361,6 +361,8 @@ export const relPatentGrantExpectedLicensees = pgTable('rel_patent_grants_expect
   id: uuid('id').primaryKey().defaultRandom(),
   patentGrantId: uuid('patent_grant_id'),
   partnerId: uuid('partner_id'),
+  name: varchar('name', { length: 255 }),
+  inn: varchar('inn', { length: 32 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
@@ -368,6 +370,8 @@ export const relPatentGrantActualLicensees = pgTable('rel_patent_grants_actual_l
   id: uuid('id').primaryKey().defaultRandom(),
   patentGrantId: uuid('patent_grant_id'),
   partnerId: uuid('partner_id'),
+  name: varchar('name', { length: 255 }),
+  inn: varchar('inn', { length: 32 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
@@ -375,6 +379,8 @@ export const relPatentsExpectedLicensees = pgTable('rel_patents_expected_license
   id: uuid('id').primaryKey().defaultRandom(),
   patentId: uuid('patent_id'),
   partnerId: uuid('partner_id'),
+  name: varchar('name', { length: 255 }),
+  inn: varchar('inn', { length: 32 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

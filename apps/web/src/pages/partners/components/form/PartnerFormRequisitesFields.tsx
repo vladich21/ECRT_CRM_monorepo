@@ -1,6 +1,8 @@
 import { BankOutlined, CloudDownloadOutlined, IdcardOutlined } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Row, Space, Tooltip } from 'antd';
 
+import { innRequiredFormRules } from '@/helpers/innValidation';
+
 import styles from '../../PartnerFormPage.module.scss';
 
 type Props = {
@@ -22,10 +24,7 @@ export function PartnerFormRequisitesFields({ getFieldStatus, onUploadByInn, isL
             label='ИНН'
             name='inn'
             validateStatus={getFieldStatus('inn')}
-            rules={[
-              { required: true, message: 'Введите ИНН' },
-              { pattern: /^\d{10}$|^\d{12}$/, message: 'ИНН должен содержать 10 или 12 цифр' },
-            ]}
+            rules={innRequiredFormRules}
           >
             <Space.Compact className={styles.innInputContainer}>
               <Form.Item name='inn' noStyle>

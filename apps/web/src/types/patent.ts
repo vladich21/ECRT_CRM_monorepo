@@ -1,3 +1,5 @@
+import type { LicenseeEntry } from './licenseeEntry';
+
 export type PatentGrantListPreviewItem = {
   grant_number: string;
   grant_date?: string;
@@ -37,8 +39,8 @@ export interface Patent {
   author_ids: Array<string>;
   area_ids: Array<string>;
   contract_id: string;
+  expected_licensees?: LicenseeEntry[];
   expected_licensee_partner_ids?: string[];
-  /** @deprecated первый id из expected_licensee_partner_ids для обратной совместимости */
   expected_licensee_partner_id: string;
   rid_cost_excl_vat: number | null;
   rid_vat_rate: number | null;
@@ -58,9 +60,7 @@ export interface Patent {
   patent_grants_count?: number;
   patent_grants_preview?: PatentGrantListPreviewItem[];
 
-  /** Ближайший срок среди файлов раздела «Запросы» (ISO); только если есть дедлайны */
   requests_earliest_deadline?: string | null;
-  /** Есть ли среди файлов «Запросы» отмеченное «требуется ответ» */
   requests_has_response_required?: boolean;
 
   transformed_into_patent_id?: string;
@@ -90,9 +90,10 @@ export interface PatentGrant {
   status: string;
   renewal_date: string;
   notes?: string;
+  expected_licensees?: LicenseeEntry[];
+  actual_licensees?: LicenseeEntry[];
   expected_licensee_partner_ids?: string[];
   actual_licensee_partner_ids?: string[];
-  /** @deprecated первый id из actual_licensee_partner_ids */
   actual_licensee_partner_id?: string;
   created_at: string;
   updated_at: string;
