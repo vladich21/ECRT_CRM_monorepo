@@ -1,69 +1,29 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import type { DatabaseService } from '../../database/database.service';
-import { patentGrants, relPatentsExpectedLicensees } from '../../database/schema';
+import { patentGrants } from '../../database/schema';
 import {
-  loadActualLicenseePartnerIdsByGrantIds,
-  parseExpectedLicenseePartnerIds,
-  syncExpectedLicenseePartners,
-} from '../patent-grants/patent-grant-expected-licensees';
+  hasLicenseeEntries,
+  loadActualLicenseesByGrantIds,
+  syncExpectedLicenseesForGrant,
+  syncExpectedLicenseesForPatent,
+  type LicenseeEntryDto,
+} from '../licensees/licensee-entry';
 
-export { parseExpectedLicenseePartnerIds };
-
-export async function loadExpectedLicenseePartnerIdsByPatentIds(
-  db: DatabaseService,
-  patentIds: string[],
-): Promise<Map<string, string[]>> {
-  const result = new Map<string, string[]>();
-  if (patentIds.length === 0) return result;
-
-  const rows = await db.db
-    .select({
-      patentId: relPatentsExpectedLicensees.patentId,
-      partnerId: relPatentsExpectedLicensees.partnerId,
-    })
-    .from(relPatentsExpectedLicensees)
-    .where(inArray(relPatentsExpectedLicensees.patentId, patentIds));
-
-  for (const row of rows) {
-    const patentId = row.patentId ? String(row.patentId) : '';
-    const partnerId = row.partnerId ? String(row.partnerId) : '';
-    if (!patentId || !partnerId) continue;
-    const list = result.get(patentId) ?? [];
-    if (!list.includes(partnerId)) list.push(partnerId);
-    result.set(patentId, list);
-  }
-
-  return result;
-}
-
-export async function syncExpectedLicenseePartnersForPatent(
+export async function syncPatentExpectedLicensees(
   db: DatabaseService,
   patentId: string,
-  partnerIds: string[],
+  entries: LicenseeEntryDto[],
 ): Promise<void> {
-  await db.db
-    .delete(relPatentsExpectedLicensees)
-    .where(eq(relPatentsExpectedLicensees.patentId, patentId));
-
-  const uniqueIds = [...new Set(partnerIds)];
-  if (uniqueIds.length > 0) {
-    await db.db.insert(relPatentsExpectedLicensees).values(
-      uniqueIds.map(partnerId => ({
-        patentId,
-        partnerId,
-      })),
-    );
-  }
-
-  await syncExpectedLicenseesFromPatentToGrants(db, patentId, uniqueIds);
+  await syncExpectedLicenseesForPatent(db, patentId, entries);
+  await syncExpectedLicenseesToGrantsWithoutActual(db, patentId, entries);
 }
 
-/** Копирует предполагаемых лицензиатов из РИД во все охранные документы без фактического лицензиата. */
-export async function syncExpectedLicenseesFromPatentToGrants(
+/** Копирует предполагаемых лицензиатов из РИД в охранные документы без фактического лицензиата. */
+export async function syncExpectedLicenseesToGrantsWithoutActual(
   db: DatabaseService,
   patentId: string,
-  partnerIds: string[],
+  entries: LicenseeEntryDto[],
 ): Promise<void> {
   const grantRows = await db.db
     .select({ id: patentGrants.id })
@@ -71,11 +31,10 @@ export async function syncExpectedLicenseesFromPatentToGrants(
     .where(eq(patentGrants.patentId, patentId));
 
   const grantIds = grantRows.map(row => String(row.id));
-  const actualByGrantId = await loadActualLicenseePartnerIdsByGrantIds(db, grantIds);
-  const grantsWithoutActual = grantIds.filter(id => (actualByGrantId.get(id) ?? []).length === 0);
+  const actualByGrantId = await loadActualLicenseesByGrantIds(db, grantIds);
+  const grantsWithoutActual = grantIds.filter(id => !hasLicenseeEntries(actualByGrantId.get(id)));
 
-  const uniqueIds = [...new Set(partnerIds)];
   await Promise.all(
-    grantsWithoutActual.map(grantId => syncExpectedLicenseePartners(db, grantId, uniqueIds)),
+    grantsWithoutActual.map(grantId => syncExpectedLicenseesForGrant(db, grantId, entries)),
   );
 }

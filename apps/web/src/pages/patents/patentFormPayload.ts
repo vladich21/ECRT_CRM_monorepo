@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 
+import { normalizeLicenseeEntriesForPayload } from '@/helpers/licenseeEntryHelpers';
 import { PATENT_DEFAULT_RID_VAT_RATE } from '@/pages/patents/utils/patentRidCostUtils';
 
 function numOrNull(raw: unknown): number | null {
@@ -28,9 +29,7 @@ export function buildPatentFormPayload(
     department_id: values.department_id || null,
     responsible_for_patenting_id: values.responsible_for_patenting_id || null,
     contract_id: values.contract_id || null,
-    expected_licensee_partner_ids: Array.isArray(values.expected_licensee_partner_ids)
-      ? values.expected_licensee_partner_ids.filter((id: unknown) => id != null && String(id).trim())
-      : [],
+    expected_licensees: normalizeLicenseeEntriesForPayload(values.expected_licensees),
     rid_cost_excl_vat: numOrNull(values.rid_cost_excl_vat),
     rid_vat_rate: numOrNull(values.rid_vat_rate) ?? PATENT_DEFAULT_RID_VAT_RATE,
     rid_cost_vat: numOrNull(values.rid_cost_vat),

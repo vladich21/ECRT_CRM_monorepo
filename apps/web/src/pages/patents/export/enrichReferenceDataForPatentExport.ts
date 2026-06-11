@@ -1,5 +1,6 @@
 import { partnerApi } from '@/api/partners/partnerApi';
 import { userApi } from '@/api/users/userApi';
+import { getPatentExpectedLicensees } from '@/helpers/licenseeEntryHelpers';
 import type { ReferenceDataForPatents } from '@/pages/patents/types/data';
 import type { Patent } from '@/types/patent';
 
@@ -31,15 +32,10 @@ async function fetchMissingEntities<T extends { id: string }>(
 function collectPartnerIds(patents: Patent[]): string[] {
   const ids: string[] = [];
   for (const patent of patents) {
-    if (patent.expected_licensee_partner_ids?.length) {
-      for (const partnerId of patent.expected_licensee_partner_ids) {
-        const trimmed = partnerId?.trim();
-        if (trimmed) ids.push(trimmed);
-      }
-      continue;
+    for (const entry of getPatentExpectedLicensees(patent)) {
+      const partnerId = entry.partner_id?.trim();
+      if (partnerId) ids.push(partnerId);
     }
-    const legacyId = patent.expected_licensee_partner_id?.trim();
-    if (legacyId) ids.push(legacyId);
   }
   return ids;
 }

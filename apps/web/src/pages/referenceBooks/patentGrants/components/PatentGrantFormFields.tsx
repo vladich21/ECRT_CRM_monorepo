@@ -1,21 +1,24 @@
-import { CalendarOutlined, CopyrightOutlined, FileTextOutlined, NumberOutlined, TeamOutlined } from '@ant-design/icons';
+import { CalendarOutlined, CopyrightOutlined, FileTextOutlined, NumberOutlined } from '@ant-design/icons';
 import { Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import { useMemo } from 'react';
 
+import { buildLicenseePartnerOptions, LicenseeEntriesEditor } from '@/components/licensee/LicenseeEntriesEditor';
+import { getPatentExpectedLicensees, hasActualLicensee } from '@/helpers/licenseeEntryHelpers';
 import { useContractById } from '../../../../api/contracts/contractApiHooks';
 import { usePatentById } from '../../../../api/patents/patentApiHooks';
 import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrantRegions';
 import { getNameById } from '../../../../helpers/getNameById';
 import { Reference } from '../../../../types/referenceTypes';
 import { usePatentGrantRidLink } from '../hooks/usePatentGrantRidLink';
-import { buildPatentSelectLabel, getContractDisplayLabel, getPatentExpectedLicenseeIds, getPatentGrantActualLicenseeIds, hasActualLicensee } from '../utils/patentGrantCardHelpers';
+import {
+  buildPatentSelectLabel,
+  getContractDisplayLabel,
+} from '../utils/patentGrantCardHelpers';
 import styles from '../PatentGrantFormPage.module.scss';
 
 export type PatentGrantPatentSelectFallback = { id: string; name: string };
 
 const { TextArea } = Input;
-
-type PartnerOption = { id: string; label: string; searchLabel: string; inn: string };
 
 function buildOfficeSelectOptions(savedOffice?: string | null) {
   const opts = [...PATENT_GRANT_OFFICE_OPTIONS];
@@ -24,55 +27,6 @@ function buildOfficeSelectOptions(savedOffice?: string | null) {
     opts.unshift({ value: saved, label: `${saved} (текущее в записи)` });
   }
   return opts;
-}
-
-function buildPartnerOptions(partners: Reference[] | undefined): PartnerOption[] {
-  return (partners ?? []).map(partner => {
-    const fullName = String(partner.name ?? '').trim();
-    const label = String(partner.short_name ?? '').trim() || fullName || 'Контрагент без имени';
-    const inn = String(partner.inn ?? '').trim();
-    return { id: String(partner.id), label, searchLabel: `${label} ${fullName} ${inn}`.trim().toLowerCase(), inn };
-  });
-}
-
-function PartnerSelect({
-  name,
-  label,
-  multiple,
-  options,
-}: {
-  name: string;
-  label: string;
-  multiple?: boolean;
-  options: PartnerOption[];
-}) {
-  return (
-    <Form.Item label={label} name={name}>
-      <Select
-        mode={multiple ? 'multiple' : undefined}
-        maxTagCount={multiple ? 'responsive' : undefined}
-        placeholder='Выберите контрагента или найдите по названию / ИНН'
-        allowClear
-        showSearch
-        optionFilterProp='label'
-        optionLabelProp='label'
-        filterOption={(input, option) =>
-          String((option as { searchLabel?: string }).searchLabel ?? option?.label ?? '')
-            .includes(input.toLowerCase().trim())
-        }
-        suffixIcon={<TeamOutlined />}
-      >
-        {options.map(partner => (
-          <Select.Option key={partner.id} value={partner.id} label={partner.label} searchLabel={partner.searchLabel}>
-            <div>
-              <div>{partner.label}</div>
-              {partner.inn ? <div style={{ fontSize: 12, color: '#888' }}>ИНН {partner.inn}</div> : null}
-            </div>
-          </Select.Option>
-        ))}
-      </Select>
-    </Form.Item>
-  );
 }
 
 interface PatentGrantFormFieldsProps {
@@ -99,16 +53,16 @@ export function PatentGrantFormFields({
 }: PatentGrantFormFieldsProps) {
   const form = Form.useFormInstance();
   const patentId = Form.useWatch('patent_id', form);
-  const actualLicenseePartnerIds = Form.useWatch('actual_licensee_partner_ids', form);
+  const actualLicensees = Form.useWatch('actual_licensees', form);
   const isEdit = mode === 'edit';
-  const showExpectedLicensee = !hasActualLicensee(actualLicenseePartnerIds);
+  const showExpectedLicensee = !hasActualLicensee(actualLicensees);
   const { data: selectedPatent } = usePatentById(patentId ?? '');
   const { linkedRidRegNumber } = usePatentGrantRidLink({ patentId, selectedPatent, initialPatentId, initialRidRegNumber });
 
   const officeOptions = useMemo(() => buildOfficeSelectOptions(savedOfficeForLegacy), [savedOfficeForLegacy]);
-  const partnerOptions = useMemo(() => buildPartnerOptions(referenceBooks.partners), [referenceBooks.partners]);
-  const expectedLicenseeIds = useMemo(
-    () => (patentId && selectedPatent?.id === patentId ? getPatentExpectedLicenseeIds(selectedPatent) : []),
+  const partnerOptions = useMemo(() => buildLicenseePartnerOptions(referenceBooks.partners), [referenceBooks.partners]);
+  const expectedLicensees = useMemo(
+    () => (patentId && selectedPatent?.id === patentId ? getPatentExpectedLicensees(selectedPatent) : []),
     [patentId, selectedPatent],
   );
 
@@ -197,44 +151,24 @@ export function PatentGrantFormFields({
                     <Input value={getContractDisplayLabel(linkedContract) || '—'} readOnly disabled />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={12}>
-                  <PartnerSelect
-                    name='actual_licensee_partner_ids'
+                <Col xs={24}>
+                  <LicenseeEntriesEditor
+                    name='actual_licensees'
                     label='Фактический лицензиат'
-                    multiple
-                    options={partnerOptions}
+                    partnerOptions={partnerOptions}
                   />
                 </Col>
               </>
             ) : null}
 
             {showExpectedLicensee ? (
-              <Col xs={24} md={isEdit ? 12 : 24}>
-                <Form.Item label='Предполагаемый лицензиат' tooltip='Заполняется в карточке РИД'>
-                  <Select
-                    mode='multiple'
-                    disabled
-                    value={expectedLicenseeIds}
-                    placeholder='Не указан'
-                    optionLabelProp='label'
-                    maxTagCount='responsive'
-                    suffixIcon={<TeamOutlined />}
-                  >
-                    {partnerOptions.map(partner => (
-                      <Select.Option
-                        key={partner.id}
-                        value={partner.id}
-                        label={partner.label}
-                        searchLabel={partner.searchLabel}
-                      >
-                        <div>
-                          <div>{partner.label}</div>
-                          {partner.inn ? <div style={{ fontSize: 12, color: '#888' }}>ИНН {partner.inn}</div> : null}
-                        </div>
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
+              <Col xs={24}>
+                <LicenseeEntriesEditor
+                  label='Предполагаемый лицензиат'
+                  tooltip='Заполняется в карточке РИД'
+                  partnerOptions={partnerOptions}
+                  readonlyEntries={expectedLicensees}
+                />
               </Col>
             ) : null}
           </Row>

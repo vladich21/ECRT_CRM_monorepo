@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { useMutateByModal } from '@/customhooks/useMutateByModal';
 import { useNotification } from '@/customhooks/useNotification';
 import { getEntityById } from '@/helpers/getEntityById';
+import { defaultLicenseeFormRows } from '@/helpers/licenseeEntryHelpers';
 import type { Patent, PatentArea } from '@/types/patent';
 import {
   PatentFormIdentityFields,
@@ -76,13 +77,6 @@ export default function PatentCreatePage() {
       }
     }
   }, [addAreaResult, form]);
-
-  useEffect(() => {
-    const currentVatRate = form.getFieldValue('rid_vat_rate');
-    if (currentVatRate == null || currentVatRate === '') {
-      form.setFieldValue('rid_vat_rate', PATENT_DEFAULT_RID_VAT_RATE);
-    }
-  }, [form]);
 
   const handleRidCostChange = (value: number | null) => {
     const vatRate = form.getFieldValue('rid_vat_rate');
@@ -150,6 +144,10 @@ export default function PatentCreatePage() {
         <Form
           form={form}
           layout='vertical'
+          initialValues={{
+            expected_licensees: defaultLicenseeFormRows([]),
+            rid_vat_rate: PATENT_DEFAULT_RID_VAT_RATE,
+          }}
           onFinish={handleCreate}
           onKeyPress={e => {
             if (e.key === 'Enter') e.preventDefault();

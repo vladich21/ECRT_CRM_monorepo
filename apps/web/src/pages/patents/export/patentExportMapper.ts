@@ -1,3 +1,4 @@
+import { formatLicenseeEntriesExport, getPatentExpectedLicensees } from '@/helpers/licenseeEntryHelpers';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
@@ -54,12 +55,13 @@ function formatPartnerExportLabel(partnerIds: string[] | undefined, refs: Refere
     .join('; ');
 }
 
-function getExpectedLicenseePartnerIds(patent: Patent): string[] {
-  if (patent.expected_licensee_partner_ids?.length) {
-    return patent.expected_licensee_partner_ids.filter(id => id.trim());
-  }
-  const legacyId = patent.expected_licensee_partner_id?.trim();
-  return legacyId ? [legacyId] : [];
+function formatExpectedLicenseeExport(patent: Patent, refs: ReferenceDataForPatents): string {
+  const entries = getPatentExpectedLicensees(patent);
+  const inline = formatLicenseeEntriesExport(entries.filter(entry => entry.name.trim() || entry.inn));
+  if (inline) return inline;
+
+  const partnerIds = entries.map(entry => entry.partner_id).filter((id): id is string => Boolean(id));
+  return formatPartnerExportLabel(partnerIds, refs);
 }
 
 function formatAuthorsExportLabel(authorIds: string[] | undefined, refs: ReferenceDataForPatents): string {
@@ -149,7 +151,7 @@ export function mapPatentToExportRow(
     contract_cipher: formatContractCipher(contract),
     project: formatProjectExportLabel(patent.project_id, refs),
     project_code: formatProjectCode(patent.project_id, refs),
-    expected_licensee: formatPartnerExportLabel(getExpectedLicenseePartnerIds(patent), refs),
+    expected_licensee: formatExpectedLicenseeExport(patent, refs),
     responsible: getNameById(patent.responsible_for_patenting_id, refs.users ?? []) || '',
     authors: formatAuthorsExportLabel(patent.author_ids, refs),
     areas: formatAreasExportLabel(patent.area_ids, refs),

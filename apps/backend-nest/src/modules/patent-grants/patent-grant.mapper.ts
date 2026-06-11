@@ -1,4 +1,5 @@
 import { patentGrants } from '../../database/schema';
+import type { LicenseeEntryDto } from '../licensees/licensee-entry';
 
 export type PatentGrantRow = typeof patentGrants.$inferSelect;
 
@@ -11,9 +12,13 @@ export type PatentGrantApiDto = {
   status: string;
   renewal_date: string;
   notes: string;
+  expected_licensees: LicenseeEntryDto[];
+  actual_licensees: LicenseeEntryDto[];
+  /** @deprecated */
   expected_licensee_partner_ids: string[];
+  /** @deprecated */
   actual_licensee_partner_ids: string[];
-  /** @deprecated первый id из actual_licensee_partner_ids */
+  /** @deprecated */
   actual_licensee_partner_id: string;
   created_at: string;
   updated_at: string;
@@ -26,11 +31,15 @@ type PatentSnapshot = {
   registrationNumber: string | null | undefined;
 };
 
+function partnerIdsFromEntries(entries: LicenseeEntryDto[]): string[] {
+  return entries.map(entry => entry.partner_id).filter((id): id is string => Boolean(id));
+}
+
 export function mapPatentGrantToApiDto(
   row: PatentGrantRow,
   patent?: PatentSnapshot | null,
-  expectedLicenseePartnerIds: string[] = [],
-  actualLicenseePartnerIds: string[] = [],
+  expectedLicensees: LicenseeEntryDto[] = [],
+  actualLicensees: LicenseeEntryDto[] = [],
 ): PatentGrantApiDto {
   return {
     id: String(row.id),
@@ -41,9 +50,11 @@ export function mapPatentGrantToApiDto(
     status: row.status ?? '',
     renewal_date: row.renewalDate ? String(row.renewalDate) : '',
     notes: row.notes ?? '',
-    expected_licensee_partner_ids: expectedLicenseePartnerIds,
-    actual_licensee_partner_ids: actualLicenseePartnerIds,
-    actual_licensee_partner_id: actualLicenseePartnerIds[0] ?? '',
+    expected_licensees: expectedLicensees,
+    actual_licensees: actualLicensees,
+    expected_licensee_partner_ids: partnerIdsFromEntries(expectedLicensees),
+    actual_licensee_partner_ids: partnerIdsFromEntries(actualLicensees),
+    actual_licensee_partner_id: partnerIdsFromEntries(actualLicensees)[0] ?? '',
     created_at: row.createdAt ? row.createdAt.toISOString() : '',
     updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     patent_name: patent?.name ?? '',

@@ -11,6 +11,11 @@ import { NotFound } from '../../../components/notFound/NotFound';
 import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
 import { getChangedFields } from '../../../helpers/getChangedFields';
+import {
+  defaultLicenseeFormRows,
+  getPatentGrantActualLicensees,
+  normalizeLicenseeEntriesForPayload,
+} from '../../../helpers/licenseeEntryHelpers';
 import { PatentGrantFormFields } from './components/PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
 import { buildPatentGrantRidSelectLabel } from './utils/patentGrantCardHelpers';
@@ -36,16 +41,21 @@ export default function PatentGrantEditPage() {
       ...patentGrant,
       grant_date: patentGrant.grant_date ? dayjs(patentGrant.grant_date) : null,
       renewal_date: patentGrant.renewal_date ? dayjs(patentGrant.renewal_date) : null,
-      actual_licensee_partner_ids: patentGrant.actual_licensee_partner_ids?.length
-        ? patentGrant.actual_licensee_partner_ids
-        : patentGrant.actual_licensee_partner_id?.trim()
-          ? [patentGrant.actual_licensee_partner_id.trim()]
-          : [],
+      actual_licensees: defaultLicenseeFormRows(getPatentGrantActualLicensees(patentGrant)),
     };
     form.setFieldsValue(formData);
+    setIsFormChanged(false);
   }, [patentGrant, form]);
   const handleSave = async (values: any) => {
-    const payload = getChangedFields(values, patentGrant!);
+    const normalizedValues = {
+      ...values,
+      actual_licensees: normalizeLicenseeEntriesForPayload(values.actual_licensees),
+    };
+    const normalizedInitial = {
+      ...patentGrant!,
+      actual_licensees: getPatentGrantActualLicensees(patentGrant),
+    };
+    const payload = getChangedFields(normalizedValues, normalizedInitial);
     if (payload.grant_date && dayjs.isDayjs(payload.grant_date)) {
       payload.grant_date = payload.grant_date.format('YYYY-MM-DD');
     }

@@ -20,8 +20,15 @@ import {
   patentGrantStatusTagInlineStyle,
   patentGrantStatusTagPreset,
 } from '../constants/patentGrantStatusStyles';
-import { getContractDisplayLabel, getPatentExpectedLicenseeIds, getPatentGrantActualLicenseeIds, hasActualLicensee } from '../utils/patentGrantCardHelpers';
-import { LicenseeLinks } from './PatentGrantLicenseeLinks';
+import { LicenseeEntriesDisplay } from '@/components/licensee/LicenseeEntriesDisplay';
+import {
+  getPatentExpectedLicensees,
+  getPatentGrantActualLicensees,
+  hasActualLicensee,
+} from '@/helpers/licenseeEntryHelpers';
+import {
+  getContractDisplayLabel,
+} from '../utils/patentGrantCardHelpers';
 import styles from './PatentGrantMainInfoTab.module.scss';
 
 const valueLink = `${styles.infoValue} ${styles.infoValueWide} ${styles.registryLink}`;
@@ -36,8 +43,8 @@ interface PatentGrantMainInfoProps {
 
 function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
   const patentId = patentGrant?.patent_id?.trim() ?? '';
-  const actualLicenseeIds = getPatentGrantActualLicenseeIds(patentGrant);
-  const hasActual = hasActualLicensee(actualLicenseeIds);
+  const actualLicensees = getPatentGrantActualLicensees(patentGrant);
+  const hasActual = hasActualLicensee(actualLicensees);
 
   const {
     data: referenceBooks,
@@ -59,7 +66,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
     return <NotFound errorMessage='Справочники не найдены' />;
   }
 
-  const expectedLicenseeIds = hasActual ? [] : getPatentExpectedLicenseeIds(linkedPatent);
+  const expectedLicensees = hasActual ? [] : getPatentExpectedLicensees(linkedPatent);
   const grantBackPath = `/patent-grants/${patentGrant.id}`;
   const ridName =
     linkedPatent?.name?.trim() ||
@@ -210,12 +217,12 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
               {!hasActual ? (
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Предполагаемый лицензиат</span>
-                  <LicenseeLinks partnerIds={expectedLicenseeIds} partners={referenceBooks.partners} backPath={grantBackPath} />
+                  <LicenseeEntriesDisplay entries={expectedLicensees} partners={referenceBooks.partners} backPath={grantBackPath} />
                 </div>
               ) : (
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Фактический лицензиат</span>
-                  <LicenseeLinks partnerIds={actualLicenseeIds} partners={referenceBooks.partners} backPath={grantBackPath} />
+                  <LicenseeEntriesDisplay entries={actualLicensees} partners={referenceBooks.partners} backPath={grantBackPath} />
                 </div>
               )}
             </div>

@@ -15,9 +15,10 @@ import { useReferenceData } from '@/api/hooks/useReferences';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import { getEntityById } from '@/helpers/getEntityById';
+import { getPatentExpectedLicensees } from '@/helpers/licenseeEntryHelpers';
 import { getNameById } from '@/helpers/getNameById';
 import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
-import { LicenseeLinks } from '@/pages/referenceBooks/patentGrants/detailsTabs/PatentGrantLicenseeLinks';
+import { LicenseeEntriesDisplay } from '@/components/licensee/LicenseeEntriesDisplay';
 import { Patent } from '@/types/patent';
 import {
   earliestPatentRequestsDeadlineFromFiles,
@@ -66,13 +67,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
   const { data: incomeContractFetched } = useContractById(
     fetchIncomeContractById ? patent.contract_id : '',
   );
-  const expectedLicenseeIds = (
-    patent.expected_licensee_partner_ids?.length
-      ? patent.expected_licensee_partner_ids
-      : patent.expected_licensee_partner_id?.trim()
-        ? [patent.expected_licensee_partner_id.trim()]
-        : []
-  ).filter(id => id.trim());
+  const expectedLicensees = getPatentExpectedLicensees(patent);
   if (isReferencesLoading) return <Loader />;
   if (isReferencesError || !referenceBooks) {
     return <NotFound errorMessage='Не подгрузились справочники' />;
@@ -187,8 +182,8 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               )}
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Предполагаемый лицензиат</span>
-                <LicenseeLinks
-                  partnerIds={expectedLicenseeIds}
+                <LicenseeEntriesDisplay
+                  entries={expectedLicensees}
                   partners={referenceBooks.partners}
                   backPath={patentBackPath}
                 />

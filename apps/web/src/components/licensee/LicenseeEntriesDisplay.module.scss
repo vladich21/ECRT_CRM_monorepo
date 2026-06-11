@@ -1,0 +1,40 @@
+.links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex: 1 1 75%;
+  max-width: 75%;
+  min-width: 0;
+  text-align: right;
+}
+
+.value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  text-align: right;
+  max-width: 70%;
+  word-break: break-word;
+}
+
+.valueMuted {
+  color: #bfbfbf;
+  font-weight: 400;
+  text-align: right;
+}
+
+.link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1677ff;
+  text-align: right;
+  max-width: 100%;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
