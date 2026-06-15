@@ -127,19 +127,21 @@ function LicenseeEntriesEditorForm({
 }: Required<Pick<Props, 'name' | 'label' | 'partnerOptions'>> & Pick<Props, 'disabled' | 'tooltip'>) {
   const form = Form.useFormInstance();
 
-  const applyPartnerSelection = (fieldIndex: number, partnerId?: string) => {
-    if (!partnerId) return;
+  const applyPartnerSelection = (fieldIndex: number, partnerId?: string | null) => {
+    if (!partnerId) {
+      form.setFields([
+        { name: [name, fieldIndex, 'name'], value: '' },
+        { name: [name, fieldIndex, 'inn'], value: '' },
+      ]);
+      return;
+    }
     const partner = partnerOptions.find(row => row.id === partnerId);
     if (!partner) return;
-    const entries = [...(form.getFieldValue(name) ?? [])];
-    const current = entries[fieldIndex] ?? {};
-    entries[fieldIndex] = {
-      ...current,
-      partner_id: partnerId,
-      name: partner.label,
-      inn: partner.inn || current.inn || '',
-    };
-    form.setFieldValue(name, entries);
+    form.setFields([
+      { name: [name, fieldIndex, 'partner_id'], value: partnerId },
+      { name: [name, fieldIndex, 'name'], value: partner.label },
+      { name: [name, fieldIndex, 'inn'], value: partner.inn },
+    ]);
   };
 
   return (
@@ -180,6 +182,20 @@ function LicenseeEntriesEditorForm({
                         disabled={disabled}
                         optionFilterProp='label'
                         optionLabelProp='label'
+                        options={partnerOptions.map(partner => ({
+                          value: partner.id,
+                          label: partner.label,
+                          searchLabel: partner.searchLabel,
+                          inn: partner.inn,
+                        }))}
+                        optionRender={option => (
+                          <div className={styles.partnerSelectOption}>
+                            <span>{option.label}</span>
+                            {option.data.inn ? (
+                              <span className={styles.partnerSelectOptionInn}>ИНН {option.data.inn}</span>
+                            ) : null}
+                          </div>
+                        )}
                         filterOption={(input, option) =>
                           String((option as { searchLabel?: string }).searchLabel ?? option?.label ?? '')
                             .includes(input.toLowerCase().trim())
