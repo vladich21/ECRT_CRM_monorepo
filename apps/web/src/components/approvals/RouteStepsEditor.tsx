@@ -1,6 +1,7 @@
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Card, Col, Input, InputNumber, Row, Select, Space, Switch, Typography } from 'antd';
 
+import { genId } from '@/helpers/uuid';
 import type {
   ApprovalAssignmentType,
   ApprovalStepRoleRef,
@@ -31,7 +32,7 @@ interface RouteStepsEditorProps {
 
 function newStep(): RouteStepFormValue {
   return {
-    key: crypto.randomUUID(),
+    key: genId(),
     name: '',
     step_type: 'all',
     assignment_type: 'employee',

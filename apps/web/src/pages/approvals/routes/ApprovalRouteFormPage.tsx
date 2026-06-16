@@ -10,14 +10,8 @@ import {
   useReplaceRouteSteps,
   useUpdateRoute,
 } from '@/api/approvals/approvalApiHooks';
-import { RouteActionsEditor } from '@/components/approvals/RouteActionsEditor';
 import { RouteStepsEditor } from '@/components/approvals/RouteStepsEditor';
-import type {
-  ApprovalEntityTypeRef,
-  ApprovalStepRoleRef,
-  PostApprovalActionForm,
-  RouteStepFormValue,
-} from '@/types/approval';
+import type { ApprovalEntityTypeRef, ApprovalStepRoleRef, RouteStepFormValue } from '@/types/approval';
 
 function extractError(e: unknown): string | undefined {
   const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
@@ -48,7 +42,6 @@ export default function ApprovalRouteFormPage() {
   const replaceSteps = useReplaceRouteSteps();
 
   const [steps, setSteps] = useState<RouteStepFormValue[]>([]);
-  const [actions, setActions] = useState<PostApprovalActionForm[]>([]);
 
   useEffect(() => {
     if (isEdit && detail.data) {
@@ -76,7 +69,6 @@ export default function ApprovalRouteFormPage() {
           time_limit_hours: s.timeLimitHours ?? null,
         })),
       );
-      setActions((r.onCompleteActions ?? []) as PostApprovalActionForm[]);
     }
   }, [isEdit, detail.data, form]);
 
@@ -112,7 +104,6 @@ export default function ApprovalRouteFormPage() {
       entity_type_id: meta.entity_type_id,
       is_default: meta.is_default ?? false,
       is_active: meta.is_active ?? true,
-      on_complete_actions: actions,
     };
     const stepsPayload = steps.map((s, i) => ({
       step_order: i + 1,
@@ -191,9 +182,6 @@ export default function ApprovalRouteFormPage() {
 
       <Divider orientation="left">Шаги маршрута</Divider>
       <RouteStepsEditor value={steps} onChange={setSteps} stepRoles={(stepRoles.data ?? []) as ApprovalStepRoleRef[]} />
-
-      <Divider orientation="left">Действия после согласования</Divider>
-      <RouteActionsEditor value={actions} onChange={setActions} />
     </Card>
   );
 }
