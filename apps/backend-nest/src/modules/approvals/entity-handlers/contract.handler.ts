@@ -1,23 +1,20 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DatabaseService } from '../../../database/database.service';
 import { SECTIONS } from '../../../shared/permissions';
 import { contracts, refContractStates } from '../../../database/schema';
-import type { DrizzleTx } from '../types/approval.types';
 import type { ApprovalEntity, EntityHandler } from './entity-handler.interface';
 
 /**
- * Договоры — единственная сущность с управляемым согласованием статусом.
- * Состояния (UPPERCASE-коды) уже есть в ref_contract_states.
- * DRAFT → IN_APPROVAL → APPROVED; reject → REJECTED; return/cancel → DRAFT.
- * APPROVED ≠ SIGNED, поэтому is_active всегда false на этих переходах.
+ * Договоры. Решение (2026-06-16): согласование — ОТДЕЛЬНЫЙ трек («согласован/
+ * не согласован»), статус договора НЕ меняет (как у партнёров/патентов).
+ * Запуск разрешён на любом статусе; результат живёт в approval_processes
+ * (approved/ratified vs rejected/cancelled) и показывается в панели.
  */
 @Injectable()
 export class ContractEntityHandler implements EntityHandler {
   readonly entityType = 'contract';
   readonly requiredSection = SECTIONS.CONTRACTS_LIST;
-
-  private stateIdByCode: Map<string, string> | null = null;
 
   constructor(private readonly db: DatabaseService) {}
 
@@ -27,7 +24,6 @@ export class ContractEntityHandler implements EntityHandler {
         id: contracts.id,
         number: contracts.number,
         name: contracts.name,
-        stateId: contracts.stateId,
         stateCode: refContractStates.code,
         responsibleId: contracts.responsibleId,
         supplierManagerId: contracts.supplierManagerId,
@@ -43,12 +39,8 @@ export class ContractEntityHandler implements EntityHandler {
     return row as ApprovalEntity;
   }
 
-  assertCanStartByStatus(entity: ApprovalEntity): void {
-    if (entity.stateCode !== 'DRAFT') {
-      throw new BadRequestException(
-        'Согласование можно запустить только для договора в статусе «Черновик»',
-      );
-    }
+  assertCanStartByStatus(): void {
+    // Согласование запускается на любом статусе — статус договора им не управляется.
   }
 
   resolveOwnerId(entity: ApprovalEntity): string | null {
@@ -68,41 +60,9 @@ export class ContractEntityHandler implements EntityHandler {
     };
   }
 
-  async onStart(tx: DrizzleTx, entity: ApprovalEntity): Promise<void> {
-    await this.setState(tx, entity, 'IN_APPROVAL');
-  }
-  async onApproveFinal(tx: DrizzleTx, entity: ApprovalEntity): Promise<void> {
-    await this.setState(tx, entity, 'APPROVED');
-  }
-  async onReject(tx: DrizzleTx, entity: ApprovalEntity): Promise<void> {
-    await this.setState(tx, entity, 'REJECTED');
-  }
-  async onReturnToInitiator(tx: DrizzleTx, entity: ApprovalEntity): Promise<void> {
-    await this.setState(tx, entity, 'DRAFT');
-  }
-  async onCancel(tx: DrizzleTx, entity: ApprovalEntity): Promise<void> {
-    await this.setState(tx, entity, 'DRAFT');
-  }
-
-  private async setState(tx: DrizzleTx, entity: ApprovalEntity, code: string): Promise<void> {
-    const stateId = await this.getStateId(code);
-    await tx
-      .update(contracts)
-      .set({ stateId, isActive: false, updatedAt: new Date() })
-      .where(eq(contracts.id, entity.id as string));
-  }
-
-  private async getStateId(code: string): Promise<string> {
-    if (!this.stateIdByCode) {
-      const rows = await this.db.db
-        .select({ id: refContractStates.id, code: refContractStates.code })
-        .from(refContractStates);
-      this.stateIdByCode = new Map(rows.map((r) => [r.code, r.id]));
-    }
-    const id = this.stateIdByCode.get(code);
-    if (!id) {
-      throw new BadRequestException(`Статус договора с кодом '${code}' не найден в ref_contract_states`);
-    }
-    return id;
-  }
+  async onStart(): Promise<void> {}
+  async onApproveFinal(): Promise<void> {}
+  async onReject(): Promise<void> {}
+  async onReturnToInitiator(): Promise<void> {}
+  async onCancel(): Promise<void> {}
 }
