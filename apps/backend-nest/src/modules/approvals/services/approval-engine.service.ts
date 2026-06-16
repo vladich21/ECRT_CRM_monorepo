@@ -34,6 +34,8 @@ import type { ApprovalRuntimeData, DrizzleTx, PostApprovalAction } from '../type
 interface NotifyIntent {
   assigned?: string[];
   finalInitiator?: string;
+  revisionInitiator?: { userId: string; comment: string | null };
+  rejectedInitiator?: { userId: string; comment: string | null };
 }
 
 interface ProcessRow {
@@ -83,6 +85,16 @@ export class ApprovalEngineService {
       void this.mail
         .notifyApproved(processId, intent.finalInitiator)
         .catch((e) => this.logger.error(`notifyApproved: ${e instanceof Error ? e.message : e}`));
+    }
+    if (intent.revisionInitiator) {
+      void this.mail
+        .notifyReturnedToInitiator(processId, intent.revisionInitiator.userId, intent.revisionInitiator.comment)
+        .catch((e) => this.logger.error(`notifyReturned: ${e instanceof Error ? e.message : e}`));
+    }
+    if (intent.rejectedInitiator) {
+      void this.mail
+        .notifyRejected(processId, intent.rejectedInitiator.userId, intent.rejectedInitiator.comment)
+        .catch((e) => this.logger.error(`notifyRejected: ${e instanceof Error ? e.message : e}`));
     }
   }
 
@@ -555,7 +567,7 @@ export class ApprovalEngineService {
         ),
       );
     await handler.onReject(tx, entity);
-    return {};
+    return { rejectedInitiator: { userId: process.initiatedBy, comment } };
   }
 
   private async handleReturnToStep(
@@ -612,7 +624,7 @@ export class ApprovalEngineService {
       .set({ isActive: false })
       .where(and(eq(approvalAssignments.processId, process.id), eq(approvalAssignments.isPending, true)));
     await handler.onReturnToInitiator(tx, entity);
-    return {};
+    return { revisionInitiator: { userId: process.initiatedBy, comment } };
   }
 
   private async handleDelegation(

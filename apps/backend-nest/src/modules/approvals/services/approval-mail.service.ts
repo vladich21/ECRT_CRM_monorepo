@@ -75,6 +75,32 @@ export class ApprovalMailService {
     );
   }
 
+  /** Возврат на доработку — инициатору (§5, по контексту). */
+  async notifyReturnedToInitiator(processId: string, initiatorId: string, comment: string | null): Promise<void> {
+    const ctx = await this.loadProcessContext(processId);
+    if (!ctx) return;
+    const [init] = await this.loadUsers([initiatorId]);
+    if (!init) return;
+    await this.send(
+      init.email,
+      `Документ возвращён на доработку: ${ctx.routeName}`,
+      this.buildReturnedHtml(ctx, init.name, comment),
+    );
+  }
+
+  /** Отклонение — инициатору. */
+  async notifyRejected(processId: string, initiatorId: string, comment: string | null): Promise<void> {
+    const ctx = await this.loadProcessContext(processId);
+    if (!ctx) return;
+    const [init] = await this.loadUsers([initiatorId]);
+    if (!init) return;
+    await this.send(
+      init.email,
+      `Согласование отклонено: ${ctx.routeName}`,
+      this.buildRejectedHtml(ctx, init.name, comment),
+    );
+  }
+
   /** Базовая отправка. Возвращает статус для идемпотентности SLA. */
   async send(to: string | null | undefined, subject: string, html: string): Promise<MailStatus> {
     if (!to) return 'skipped';
@@ -105,6 +131,27 @@ export class ApprovalMailService {
       'Согласование завершено',
       `<p>Здравствуйте, ${this.esc(recipientName)}!</p>
        <p>Согласование по маршруту <b>${this.esc(ctx.routeName)}</b> успешно завершено.</p>
+       <p>Объект: ${this.esc(ctx.entityType)} (${this.esc(ctx.entityId)})</p>`,
+    );
+  }
+
+  buildReturnedHtml(ctx: ApprovalMailContext, recipientName: string, comment: string | null): string {
+    return this.wrap(
+      'Документ возвращён на доработку',
+      `<p>Здравствуйте, ${this.esc(recipientName)}!</p>
+       <p>Ваш документ по маршруту <b>${this.esc(ctx.routeName)}</b> возвращён на доработку.</p>
+       ${comment ? `<p>Комментарий: ${this.esc(comment)}</p>` : ''}
+       <p>Объект: ${this.esc(ctx.entityType)} (${this.esc(ctx.entityId)})</p>
+       <p>Внесите правки и отправьте на согласование повторно в PMDB.</p>`,
+    );
+  }
+
+  buildRejectedHtml(ctx: ApprovalMailContext, recipientName: string, comment: string | null): string {
+    return this.wrap(
+      'Согласование отклонено',
+      `<p>Здравствуйте, ${this.esc(recipientName)}!</p>
+       <p>Согласование по маршруту <b>${this.esc(ctx.routeName)}</b> отклонено.</p>
+       ${comment ? `<p>Причина: ${this.esc(comment)}</p>` : ''}
        <p>Объект: ${this.esc(ctx.entityType)} (${this.esc(ctx.entityId)})</p>`,
     );
   }
