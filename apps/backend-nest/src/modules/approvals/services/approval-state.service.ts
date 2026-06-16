@@ -135,6 +135,11 @@ export class ApprovalStateService {
           .limit(10)
       : [];
 
+    // Нет активного, но есть завершённые → показываем последний (с историей/листом).
+    if (!active && !process && completed.length > 0) {
+      process = await this.getProcessWithDetails(completed[0].id);
+    }
+
     const isInitiator = active?.initiatedBy === userId;
 
     return {
@@ -208,9 +213,10 @@ export class ApprovalStateService {
     const stepsWithProgress = steps.map((s) => {
       const stepAssignments = assignments.filter((a) => a.stepOrder === s.stepOrder);
       const isCurrent = s.stepOrder === process.currentStepOrder && process.status === 'active';
+      const isFinalApproved = process.status === 'approved' || process.status === 'ratified';
 
       let state: 'completed' | 'current' | 'pending' = 'pending';
-      if (s.stepOrder < process.currentStepOrder) state = 'completed';
+      if (isFinalApproved || s.stepOrder < process.currentStepOrder) state = 'completed';
       else if (isCurrent) state = 'current';
 
       // SLA для текущего шага.

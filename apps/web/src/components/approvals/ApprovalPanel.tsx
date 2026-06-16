@@ -76,19 +76,6 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
 
   const content = (
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
-      {!process &&
-        (state.can_start_approval ? (
-          state.available_routes.length ? (
-            <Button type="primary" onClick={openStart}>
-              Отправить на согласование
-            </Button>
-          ) : (
-            <Typography.Text type="secondary">Нет доступных маршрутов согласования</Typography.Text>
-          )
-        ) : (
-          <Empty description="Согласование не запущено" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ))}
-
       {process && (
         <>
           <Space wrap>
@@ -96,8 +83,10 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
             {process.route_name ? <Typography.Text type="secondary">{process.route_name}</Typography.Text> : null}
           </Space>
 
-          {process.completion_comment && process.status === 'revision' ? (
-            <Typography.Text type="warning">Комментарий: {process.completion_comment}</Typography.Text>
+          {process.completion_comment && (process.status === 'revision' || process.status === 'rejected') ? (
+            <Typography.Text type={process.status === 'rejected' ? 'danger' : 'warning'}>
+              Комментарий: {process.completion_comment}
+            </Typography.Text>
           ) : null}
 
           <Steps direction="vertical" size="small" items={process.steps.map(stepToItem)} />
@@ -156,6 +145,20 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
           )}
         </>
       )}
+
+      {state.can_start_approval ? (
+        state.available_routes.length ? (
+          <Button type="primary" onClick={openStart}>
+            Отправить на согласование
+          </Button>
+        ) : (
+          <Typography.Text type="secondary">Нет доступных маршрутов согласования</Typography.Text>
+        )
+      ) : null}
+
+      {!process && !state.can_start_approval ? (
+        <Empty description="Согласование не запущено" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : null}
     </Space>
   );
 
