@@ -70,12 +70,16 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
     PartnerCategoriesModule,
     PartnerTypesModule,
     PartnerEconomicCategoriesModule,
+    // ВАЖНО: до FilesModule. У FilesController пустой префикс и жадный
+    // @Get(':entityType/:entityId/:filename') — он перехватывает любые
+    // 3-сегментные GET /api/X/Y/Z. Approvals (references/*, routes/:id,
+    // processes/:id) должен зарегистрировать роуты раньше files-catch-all.
+    ApprovalsModule,
     FilesModule,
     CommentsModule,
     SupplierEvaluationsModule,
     HrSyncModule,
     PartnerSyncModule,
-    ApprovalsModule,
   ],
   controllers: [AppController],
   providers: [
