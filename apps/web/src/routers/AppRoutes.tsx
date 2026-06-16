@@ -12,6 +12,12 @@ const CommentsList = lazy(() => import('../components/comments/CommentsList'));
 const EntityFilesTab = lazy(() =>
   import('../components/entityFiles/EntityFilesTab').then(m => ({ default: m.EntityFilesTab })),
 );
+const ApprovalPanel = lazy(() =>
+  import('../components/approvals/ApprovalPanel').then(m => ({ default: m.ApprovalPanel })),
+);
+const MyApprovalsPage = lazy(() => import('../pages/approvals/MyApprovalsPage'));
+const ApprovalRoutesListPage = lazy(() => import('../pages/approvals/routes/ApprovalRoutesListPage'));
+const ApprovalRouteFormPage = lazy(() => import('../pages/approvals/routes/ApprovalRouteFormPage'));
 
 const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const ProjectEditPage = lazy(() => import('../pages/referenceBooks/projects/ProjectEditPage'));
@@ -119,6 +125,7 @@ export default function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="home" element={<HomePage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="my-approvals" element={<MyApprovalsPage />} />
         <Route path="users">
           <Route index element={<Guarded section={SECTIONS.ADMIN_USERS}><UsersListPage /></Guarded>} />
           <Route path="create" element={<RedirectToUsersList />} />
@@ -159,6 +166,9 @@ export default function AppRoutes() {
 
         <Route path="admin">
           <Route path="roles" element={<Guarded section={SECTIONS.ADMIN_ROLES}><RolesListPage /></Guarded>} />
+          <Route path="approval-routes" element={<Guarded section={SECTIONS.ADMIN_APPROVAL_ROUTES}><ApprovalRoutesListPage /></Guarded>} />
+          <Route path="approval-routes/create" element={<Guarded section={SECTIONS.ADMIN_APPROVAL_ROUTES}><ApprovalRouteFormPage /></Guarded>} />
+          <Route path="approval-routes/:routeId/edit" element={<Guarded section={SECTIONS.ADMIN_APPROVAL_ROUTES}><ApprovalRouteFormPage /></Guarded>} />
           <Route path="partner-types" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_TYPES}><PartnerTypesListPage /></Guarded>} />
           <Route path="partner-statuses" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_STATUSES}><PartnerStatusesListPage /></Guarded>} />
           <Route path="partner-economic-categories" element={<Guarded section={SECTIONS.REFERENCES_PARTNER_ECONOMIC}><PartnerEconomicCategoriesListPage /></Guarded>} />
@@ -216,6 +226,7 @@ export default function AppRoutes() {
           <Route path=":contractId" element={<Guarded section={SECTIONS.CONTRACTS_LIST}><ContractDetailsPage /></Guarded>}>
             <Route index element={<ContractMainInfoTab />} />
             <Route path="additional-agreements" element={<ContractAdditionalAgreementsTab />} />
+            <Route path="approval" element={<ApprovalPanel entityType="contract" />} />
             <Route path="files" element={<EntityFilesTab entityType="contract" />} />
             <Route path="history" element={<ContractHistoryTab />} />
           </Route>

@@ -6,6 +6,8 @@ import { FileUploadModal } from './components/modals/currentModals/FileUploadMod
 import { PatentAreasFormModal } from './components/modals/currentModals/PatentAreasModal';
 import { PositionFormModal } from './components/modals/currentModals/PositionModal';
 import { WithDescriptionFormModal } from './components/modals/currentModals/WithDescriptionModal';
+import { ApprovalStartModal } from './components/modals/currentModals/ApprovalStartModal';
+import { ApprovalDecisionModal } from './components/modals/currentModals/ApprovalDecisionModal';
 import { AuthLoadingScreen } from './components/authLoadingScreen/AuthLoadingScreen';
 import AppRoutes from './routers/AppRoutes';
 import { useModalStore } from './store/ModalStore';
@@ -18,6 +20,8 @@ const MODAL_MAP = {
   fileForm: FileUploadModal,
   withDescription: WithDescriptionFormModal,
   patentAreaForm: PatentAreasFormModal,
+  approvalStart: ApprovalStartModal,
+  approvalDecision: ApprovalDecisionModal,
 };
 
 function App() {

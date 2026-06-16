@@ -35,6 +35,7 @@ import { PartnerSyncModule } from './modules/partner-sync/partner-sync.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { AdminRbacModule } from './modules/admin-rbac/admin-rbac.module';
 import { ImpersonationModule } from './modules/impersonation/impersonation.module';
+import { ApprovalsModule } from './modules/approvals/approvals.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { ImpersonationModule } from './modules/impersonation/impersonation.modul
     SupplierEvaluationsModule,
     HrSyncModule,
     PartnerSyncModule,
+    ApprovalsModule,
   ],
   controllers: [AppController],
   providers: [

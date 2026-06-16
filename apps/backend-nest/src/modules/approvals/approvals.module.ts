@@ -1,0 +1,41 @@
+import { Module } from '@nestjs/common';
+import { ApprovalRoutesController } from './controllers/approval-routes.controller';
+import { ApprovalProcessesController } from './controllers/approval-processes.controller';
+import { ApprovalTasksController } from './controllers/approval-tasks.controller';
+import { ApprovalRoutesService } from './services/approval-routes.service';
+import { ApprovalTasksService } from './services/approval-tasks.service';
+import { ApprovalEngineService } from './services/approval-engine.service';
+import { ApprovalSnapshotService } from './services/approval-snapshot.service';
+import { ApprovalStateService } from './services/approval-state.service';
+import { ApprovalMailService } from './services/approval-mail.service';
+import { ApprovalSlaSchedulerService } from './services/approval-sla-scheduler.service';
+import { AssigneeResolver } from './resolvers/assignee.resolver';
+import { EntityHandlerRegistry } from './entity-handlers/entity-handler.registry';
+import { ContractEntityHandler } from './entity-handlers/contract.handler';
+import { PartnerEntityHandler } from './entity-handlers/partner.handler';
+import { PatentEntityHandler } from './entity-handlers/patent.handler';
+import { ProjectEntityHandler } from './entity-handlers/project.handler';
+
+/**
+ * Модуль «Согласования документов». DatabaseModule и PermissionsModule — глобальные.
+ */
+@Module({
+  controllers: [ApprovalRoutesController, ApprovalProcessesController, ApprovalTasksController],
+  providers: [
+    ApprovalRoutesService,
+    ApprovalTasksService,
+    ApprovalEngineService,
+    ApprovalSnapshotService,
+    ApprovalStateService,
+    ApprovalMailService,
+    ApprovalSlaSchedulerService,
+    AssigneeResolver,
+    EntityHandlerRegistry,
+    ContractEntityHandler,
+    PartnerEntityHandler,
+    PatentEntityHandler,
+    ProjectEntityHandler,
+  ],
+  exports: [ApprovalEngineService, ApprovalStateService],
+})
+export class ApprovalsModule {}

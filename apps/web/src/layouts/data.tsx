@@ -1,4 +1,5 @@
 import {
+  AuditOutlined,
   CopyrightOutlined,
   HomeOutlined,
   ProjectOutlined,
@@ -33,6 +34,11 @@ const RAW_MENU: RawMenuItem[] = [
     key: '/',
     icon: <HomeOutlined />,
     label: <Link to='/'>Главная</Link>,
+  },
+  {
+    key: 'my-approvals',
+    icon: <AuditOutlined />,
+    label: <Link to='/my-approvals'>Мои согласования</Link>,
   },
   {
     key: 'supply_management',
@@ -146,6 +152,11 @@ const RAW_MENU: RawMenuItem[] = [
         key: 'roles_admin',
         label: <Link to='/admin/roles'>Роли и права</Link>,
         requiredSections: [SECTIONS.ADMIN_ROLES],
+      },
+      {
+        key: 'approval_routes',
+        label: <Link to='/admin/approval-routes'>Маршруты согласования</Link>,
+        requiredSections: [SECTIONS.ADMIN_APPROVAL_ROUTES],
       },
       {
         key: 'department',
