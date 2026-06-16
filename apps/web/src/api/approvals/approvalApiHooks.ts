@@ -12,6 +12,10 @@ import type {
 import { approvalApi } from './approvalApi';
 import { approvalQueryKeys, invalidateApprovalQueries } from './approvalQueryKeys';
 
+// Согласование меняют другие пользователи → глобальный staleTime 30мин здесь вреден.
+// Свежим должно быть всегда: refetch при фокусе/маунте + лёгкий поллинг панели.
+const FRESH = { staleTime: 0, refetchOnWindowFocus: true, refetchOnMount: 'always' as const };
+
 export const useApprovalState = (
   entityType: string,
   entityId?: string,
@@ -20,6 +24,8 @@ export const useApprovalState = (
     queryKey: approvalQueryKeys.state(entityType, entityId),
     queryFn: () => approvalApi.getState(entityType, entityId!),
     enabled: !!entityType && !!entityId,
+    ...FRESH,
+    refetchInterval: 30_000, // живое обновление статуса, пока открыта вкладка
   });
 
 export const useApprovalProcess = (processId?: string): UseQueryResult<ApprovalProcessView | null, Error> =>
@@ -27,6 +33,7 @@ export const useApprovalProcess = (processId?: string): UseQueryResult<ApprovalP
     queryKey: approvalQueryKeys.process(processId ?? ''),
     queryFn: () => approvalApi.getProcess(processId!),
     enabled: !!processId,
+    ...FRESH,
   });
 
 export const useApprovalStartInfo = (routeId?: string): UseQueryResult<ApprovalStartInfo, Error> =>
@@ -37,16 +44,16 @@ export const useApprovalStartInfo = (routeId?: string): UseQueryResult<ApprovalS
   });
 
 export const useMyTasks = (): UseQueryResult<MyTaskItem[], Error> =>
-  useQuery({ queryKey: approvalQueryKeys.myTasks(), queryFn: approvalApi.myTasks });
+  useQuery({ queryKey: approvalQueryKeys.myTasks(), queryFn: approvalApi.myTasks, ...FRESH });
 
 export const useMyTasksCount = (): UseQueryResult<{ count: number }, Error> =>
-  useQuery({ queryKey: approvalQueryKeys.myTasksCount(), queryFn: approvalApi.myTasksCount });
+  useQuery({ queryKey: approvalQueryKeys.myTasksCount(), queryFn: approvalApi.myTasksCount, ...FRESH });
 
 export const useMyInitiated = (): UseQueryResult<MyProcessItem[], Error> =>
-  useQuery({ queryKey: approvalQueryKeys.myInitiated(), queryFn: approvalApi.myInitiated });
+  useQuery({ queryKey: approvalQueryKeys.myInitiated(), queryFn: approvalApi.myInitiated, ...FRESH });
 
 export const useMyParticipated = (): UseQueryResult<MyProcessItem[], Error> =>
-  useQuery({ queryKey: approvalQueryKeys.myParticipated(), queryFn: approvalApi.myParticipated });
+  useQuery({ queryKey: approvalQueryKeys.myParticipated(), queryFn: approvalApi.myParticipated, ...FRESH });
 
 export const useStartProcess = () => {
   const qc = useQueryClient();
@@ -139,7 +146,7 @@ export const useReplaceRouteSteps = () => {
 
 // ── Задачи-последствия (F5) ──
 export const useMyTaskList = () =>
-  useQuery({ queryKey: approvalQueryKeys.tasks(), queryFn: approvalApi.tasksMy });
+  useQuery({ queryKey: approvalQueryKeys.tasks(), queryFn: approvalApi.tasksMy, ...FRESH });
 
 export const useCompleteTask = () => {
   const qc = useQueryClient();
