@@ -89,6 +89,7 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
               <Form.Item key={s.step_order} label={`Согласующие: ${s.name}`} required>
                 <EmployeeSelect
                   multiple
+                  ordered
                   value={stepAssignees[s.step_order]}
                   onChange={(v) => setStepAssignees((p) => ({ ...p, [s.step_order]: v as string[] }))}
                   placeholder="Выберите согласующих"

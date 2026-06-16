@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { App, Button, Card, Divider, Form, Input, Select, Space, Switch } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -18,6 +18,21 @@ function extractError(e: unknown): string | undefined {
   return Array.isArray(msg) ? msg.join(', ') : msg;
 }
 
+const RU_TRANSLIT: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
+  к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
+  х: 'h', ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+};
+
+/** Слаг из названия для машинного кода маршрита: транслит RU→EN, [a-z0-9_], ≤50. */
+function slugifyCode(name: string): string {
+  const lower = (name ?? '').toLowerCase();
+  let out = '';
+  for (const ch of lower) out += RU_TRANSLIT[ch] ?? ch;
+  out = out.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 50);
+  return out || 'route';
+}
+
 interface MetaForm {
   code: string;
   name: string;
@@ -33,6 +48,7 @@ export default function ApprovalRouteFormPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
   const [form] = Form.useForm<MetaForm>();
+  const codeTouched = useRef(false);
 
   const entityTypes = useApprovalEntityTypes();
   const stepRoles = useApprovalStepRoles();
@@ -98,7 +114,7 @@ export default function ApprovalRouteFormPage() {
     }
 
     const metaPayload = {
-      code: meta.code,
+      code: meta.code?.trim() || slugifyCode(meta.name),
       name: meta.name,
       description: meta.description ?? null,
       entity_type_id: meta.entity_type_id,
@@ -145,13 +161,29 @@ export default function ApprovalRouteFormPage() {
         </Space>
       }
     >
-      <Form form={form} layout="vertical" initialValues={{ is_active: true, is_default: false }}>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ is_active: true, is_default: false }}
+        onValuesChange={(changed: Partial<MetaForm>) => {
+          if ('code' in changed) codeTouched.current = true;
+          if ('name' in changed && !isEdit && !codeTouched.current) {
+            form.setFieldValue('code', slugifyCode(changed.name ?? ''));
+          }
+        }}
+      >
         <Space size="large" style={{ display: 'flex', flexWrap: 'wrap' }}>
           <Form.Item name="name" label="Название" rules={[{ required: true, message: 'Укажите название' }]} style={{ minWidth: 320 }}>
             <Input placeholder="Например, Согласование договора" />
           </Form.Item>
-          <Form.Item name="code" label="Код" rules={[{ required: true, min: 2, message: 'Минимум 2 символа' }]} style={{ minWidth: 240 }}>
-            <Input placeholder="contract_default" disabled={isEdit} />
+          <Form.Item
+            name="code"
+            label="Код"
+            tooltip="Машинный код. Генерируется из названия, при необходимости можно поправить."
+            rules={[{ max: 50, message: 'Не более 50 символов' }]}
+            style={{ minWidth: 240 }}
+          >
+            <Input placeholder="генерируется из названия" disabled={isEdit} />
           </Form.Item>
           <Form.Item
             name="entity_type_id"

@@ -128,6 +128,7 @@ export function RouteStepsEditor({ value, onChange, stepRoles }: RouteStepsEdito
                 <Typography.Text type="secondary">Согласующие (порядок важен для «По очереди»)</Typography.Text>
                 <EmployeeSelect
                   multiple
+                  ordered
                   value={step.assignee_ids}
                   onChange={(v) => patch(index, { assignee_ids: v as string[] })}
                   placeholder="Выберите сотрудников"
