@@ -36,8 +36,21 @@ export const approvalApi = {
     return res.data[0];
   },
 
-  resubmit: async (processId: string, comment?: string): Promise<{ id: string }> => {
-    const res = await apiClient.post(`/approvals/processes/${processId}/resubmit`, { comment });
+  /**
+   * Повторная отправка после доработки. Multipart: comment + keepFileIds (id текущих
+   * документов, переносимых в новую версию) + новые/заменяющие файлы версии N+1.
+   */
+  resubmit: async (
+    processId: string,
+    payload: { comment?: string; keepFileIds: string[]; files: File[] },
+  ): Promise<{ id: string }> => {
+    const fd = new FormData();
+    if (payload.comment) fd.append('comment', payload.comment);
+    fd.append('keepFileIds', JSON.stringify(payload.keepFileIds));
+    payload.files.forEach((file, i) => fd.append(`file${i + 1}`, file));
+    const res = await apiClient.post(`/approvals/processes/${processId}/resubmit`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return res.data[0];
   },
 

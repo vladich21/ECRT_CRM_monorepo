@@ -10,6 +10,7 @@ import type {
   StartProcessPayload,
 } from '../../types/approval';
 import { approvalApi } from './approvalApi';
+import { fileQueryKeys } from '../files/fileQueryKeys';
 import { approvalQueryKeys, invalidateApprovalQueries } from './approvalQueryKeys';
 
 // Согласование меняют другие пользователи → глобальный staleTime 30мин здесь вреден.
@@ -75,9 +76,26 @@ export const useMakeDecision = () => {
 export const useResubmitProcess = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ processId, comment }: { processId: string; comment?: string }) =>
-      approvalApi.resubmit(processId, comment),
-    onSuccess: () => void invalidateApprovalQueries(qc),
+    mutationFn: ({
+      processId,
+      comment,
+      keepFileIds,
+      files,
+    }: {
+      processId: string;
+      comment?: string;
+      keepFileIds: string[];
+      files: File[];
+      entityType?: string;
+      entityId?: string;
+    }) => approvalApi.resubmit(processId, { comment, keepFileIds, files }),
+    onSuccess: (_data, vars) => {
+      void invalidateApprovalQueries(qc);
+      // Документы версионируются — инвалидируем файлы сущности.
+      if (vars.entityType && vars.entityId) {
+        void qc.invalidateQueries({ queryKey: fileQueryKeys.byEntity(vars.entityType, vars.entityId) });
+      }
+    },
   });
 };
 

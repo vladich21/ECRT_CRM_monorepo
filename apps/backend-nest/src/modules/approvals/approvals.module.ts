@@ -5,6 +5,7 @@ import { ApprovalTasksController } from './controllers/approval-tasks.controller
 import { ApprovalRoutesService } from './services/approval-routes.service';
 import { ApprovalTasksService } from './services/approval-tasks.service';
 import { ApprovalEngineService } from './services/approval-engine.service';
+import { ApprovalFilesService } from './services/approval-files.service';
 import { ApprovalSnapshotService } from './services/approval-snapshot.service';
 import { ApprovalStateService } from './services/approval-state.service';
 import { ApprovalMailService } from './services/approval-mail.service';
@@ -25,6 +26,7 @@ import { ProjectEntityHandler } from './entity-handlers/project.handler';
     ApprovalRoutesService,
     ApprovalTasksService,
     ApprovalEngineService,
+    ApprovalFilesService,
     ApprovalSnapshotService,
     ApprovalStateService,
     ApprovalMailService,

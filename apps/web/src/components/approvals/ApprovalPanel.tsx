@@ -3,7 +3,7 @@ import { App, Badge, Button, Card, Col, Empty, Modal, Popconfirm, Row, Space, Sp
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { useApprovalState, useCancelProcess, useResubmitProcess } from '@/api/approvals/approvalApiHooks';
+import { useApprovalState, useCancelProcess } from '@/api/approvals/approvalApiHooks';
 import { useModalStore } from '@/store/ModalStore';
 import {
   APPROVAL_STATUS_LABELS,
@@ -72,7 +72,6 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
 
   const { data: state, isLoading } = useApprovalState(entityType, entityId);
   const cancel = useCancelProcess();
-  const resubmit = useResubmitProcess();
 
   if (!entityId) return null;
   if (isLoading || !state) return <Spin />;
@@ -91,6 +90,17 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
       onConfirm: () => {},
       onCancel: () => {},
     });
+
+  const openResubmit = () => {
+    if (!process) return;
+    openModal({
+      type: 'approvalResubmit',
+      title: 'Повторная отправка на согласование',
+      modalData: { processId: process.id, entityType, entityId },
+      onConfirm: () => {},
+      onCancel: () => {},
+    });
+  };
 
   const openDecision = () => {
     if (!process) return;
@@ -120,15 +130,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
         </Button>
       )}
       {state.can_resubmit && (
-        <Popconfirm
-          title="Отправить документ повторно на согласование?"
-          onConfirm={async () => {
-            await resubmit.mutateAsync({ processId: process.id });
-            message.success('Отправлено повторно');
-          }}
-        >
-          <Button loading={resubmit.isPending}>Отправить повторно</Button>
-        </Popconfirm>
+        <Button onClick={openResubmit}>Отправить повторно</Button>
       )}
       {process.decisions.length > 0 && (
         <Button icon={<PrinterOutlined />} onClick={() => setSheetOpen(true)}>
@@ -203,7 +205,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
           <Row gutter={16}>
             <Col xs={24} md={9}>
               <Card size="small" title="Документы на согласовании">
-                <ApprovalDocuments entityType={entityType} entityId={entityId} editable={state.can_resubmit} />
+                <ApprovalDocuments entityType={entityType} entityId={entityId} />
               </Card>
             </Col>
             <Col xs={24} md={15}>

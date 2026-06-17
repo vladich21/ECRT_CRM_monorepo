@@ -10,7 +10,8 @@ export type ModalType =
   | 'withDescription'
   | 'patentAreaForm'
   | 'approvalStart'
-  | 'approvalDecision';
+  | 'approvalDecision'
+  | 'approvalResubmit';
 
 export type ConfirmModalAppearance = 'delete' | 'warning' | 'info' | 'success';
 

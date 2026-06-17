@@ -7,6 +7,7 @@ import { DatabaseService } from '../../../database/database.service';
 import { files, partners } from '../../../database/schema';
 import { buildFileDownloadUrl } from '../file-download-url';
 import { getUploadPath } from '../files-config';
+import { resolveStoredFilePath, writeFileToIdStorage } from '../file-storage-path';
 import type { FileResponseDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
 import { syncPatentAutoStatus } from '../../patents/services/patent-auto-status';
 import { PartnersService } from '../../partners/services/partners.service';
@@ -140,9 +141,7 @@ export class FilesService {
 
       // Хранение по id: uploads/files/{fileId}/{originalName} — нет коллизий одноимённых
       // файлов (разные секции/версии), реальное имя сохраняется для отдачи.
-      const destDir = path.join(uploadPath, 'files', fileId);
-      fs.mkdirSync(destDir, { recursive: true });
-      fs.writeFileSync(path.join(destDir, file.originalname), file.buffer);
+      writeFileToIdStorage(uploadPath, fileId, file.originalname, file.buffer);
 
       result.push({
         name: file.originalname,
@@ -192,6 +191,9 @@ export class FilesService {
           responseRequired,
           responseDeadline,
           updatedAt: new Date(),
+          // Повторная загрузка того же файла снова делает его актуальным
+          // (на случай конфликта с архивной строкой версионирования).
+          isCurrent: true,
         },
       })
       .returning({ id: files.id });
@@ -324,38 +326,12 @@ export class FilesService {
     return fs.existsSync(filePath) ? filePath : null;
   }
 
-  /**
-   * Разрешение физического пути файла по строке БД.
-   * Новые файлы хранятся по id (`uploads/files/{id}/{name}`); старые — по
-   * legacy-пути (`uploads/{entityType}/{tableId}/{name}`). Пробуем id-путь,
-   * затем фолбэк на legacy — без принудительной миграции существующих файлов.
-   */
-  private resolveStoredPath(row: {
-    id: unknown;
-    entityType: string | null;
-    tableId: unknown;
-    name: string | null;
-  }): string | null {
-    if (!row.name) return null;
-    const uploadPath = getUploadPath(this.config);
-    const resolvedRoot = path.resolve(uploadPath);
-    const candidates: string[] = [path.join(uploadPath, 'files', String(row.id), row.name)];
-    if (row.entityType && row.tableId) {
-      candidates.push(path.join(uploadPath, row.entityType, String(row.tableId), row.name));
-    }
-    for (const candidate of candidates) {
-      if (!path.resolve(candidate).startsWith(resolvedRoot)) continue;
-      if (fs.existsSync(candidate)) return candidate;
-    }
-    return null;
-  }
-
   async resolvePublicFileDownload(
     fileId: string,
   ): Promise<{ filePath: string; filename: string; mimeType: string } | null> {
     const [row] = await this.db.db.select().from(files).where(eq(files.id, fileId)).limit(1);
     if (!row?.name) return null;
-    const filePath = this.resolveStoredPath(row);
+    const filePath = resolveStoredFilePath(getUploadPath(this.config), row);
     if (!filePath) return null;
     return {
       filePath,

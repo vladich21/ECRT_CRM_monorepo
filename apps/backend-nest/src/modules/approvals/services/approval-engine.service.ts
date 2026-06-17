@@ -27,6 +27,7 @@ import type { ApprovalEntity, EntityHandler } from '../entity-handlers/entity-ha
 import { AssigneeResolver } from '../resolvers/assignee.resolver';
 import { ApprovalSnapshotService, type RouteStepRow } from './approval-snapshot.service';
 import { ApprovalMailService } from './approval-mail.service';
+import { ApprovalFilesService } from './approval-files.service';
 import type { MakeDecisionDto, ResubmitDto } from '../dto/make-decision.dto';
 import type { StartProcessDto } from '../dto/start-process.dto';
 import type { ApprovalRuntimeData, DrizzleTx, PostApprovalAction } from '../types/approval.types';
@@ -73,6 +74,7 @@ export class ApprovalEngineService {
     private readonly snapshotService: ApprovalSnapshotService,
     private readonly perms: PermissionsService,
     private readonly mail: ApprovalMailService,
+    private readonly approvalFiles: ApprovalFilesService,
   ) {}
 
   /** Разослать уведомления после коммита (fire-and-forget). */
@@ -341,7 +343,12 @@ export class ApprovalEngineService {
   }
 
   // ── Повторная отправка после revision (§4.5) ────────────────
-  async resubmit(processId: string, dto: ResubmitDto, userId: string): Promise<{ id: string }> {
+  async resubmit(
+    processId: string,
+    dto: ResubmitDto,
+    userId: string,
+    attachments?: { keepFileIds: string[] | null; uploadedFiles: Express.Multer.File[] },
+  ): Promise<{ id: string }> {
     const result = await this.db.db.transaction(async (tx) => {
       const procRows = await tx
         .select()
@@ -383,6 +390,27 @@ export class ApprovalEngineService {
         step1,
       );
       await handler.onStart(tx, entity);
+
+      // Версионный снапшот документов: переносим/заменяем набор в версию N+1.
+      if (attachments) {
+        const snap = await this.approvalFiles.snapshotToNextVersion(
+          tx,
+          process.entityType,
+          process.entityId,
+          'approval',
+          attachments.keepFileIds,
+          attachments.uploadedFiles ?? [],
+          userId,
+        );
+        if (snap) {
+          await tx.insert(approvalEvents).values({
+            processId,
+            eventType: 'file_replaced',
+            actorId: userId,
+            payload: snap,
+          });
+        }
+      }
 
       // Событие для ленты: повторная отправка после доработки.
       await tx.insert(approvalEvents).values({ processId, eventType: 'resubmitted', actorId: userId });

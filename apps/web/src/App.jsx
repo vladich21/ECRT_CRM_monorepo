@@ -8,6 +8,7 @@ import { PositionFormModal } from './components/modals/currentModals/PositionMod
 import { WithDescriptionFormModal } from './components/modals/currentModals/WithDescriptionModal';
 import { ApprovalStartModal } from './components/modals/currentModals/ApprovalStartModal';
 import { ApprovalDecisionModal } from './components/modals/currentModals/ApprovalDecisionModal';
+import { ApprovalResubmitModal } from './components/modals/currentModals/ApprovalResubmitModal';
 import { AuthLoadingScreen } from './components/authLoadingScreen/AuthLoadingScreen';
 import AppRoutes from './routers/AppRoutes';
 import { useModalStore } from './store/ModalStore';
@@ -22,6 +23,7 @@ const MODAL_MAP = {
   patentAreaForm: PatentAreasFormModal,
   approvalStart: ApprovalStartModal,
   approvalDecision: ApprovalDecisionModal,
+  approvalResubmit: ApprovalResubmitModal,
 };
 
 function App() {

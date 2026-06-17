@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
 import type { SectionPermission } from '../../../shared/permissions';
 import { ApprovalEngineService } from '../services/approval-engine.service';
 import { ApprovalStateService } from '../services/approval-state.service';
 import { StartProcessDto } from '../dto/start-process.dto';
 import { MakeDecisionDto, ResubmitDto } from '../dto/make-decision.dto';
+import { ALLOWED_MIME_TYPES } from '../../files/constants/file-formats';
 
 type ReqUser = Request & {
   user?: { user_id?: string; sectionPermissions?: SectionPermission[] };
@@ -70,9 +83,58 @@ export class ApprovalProcessesController {
     return [await this.engine.makeDecision(id, dto, req.user!.user_id!)];
   }
 
+  /**
+   * Повторная отправка после доработки. Multipart: comment + keepFileIds (JSON-массив
+   * id переносимых текущих документов) + новые/заменяющие файлы версии N+1.
+   * keepFileIds отсутствует → переносим все текущие (безопасный дефолт).
+   */
   @Post('processes/:id/resubmit')
-  async resubmit(@Param('id') id: string, @Body('body') dto: ResubmitDto, @Req() req: ReqUser) {
-    return [await this.engine.resubmit(id, dto ?? {}, req.user!.user_id!)];
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      fileFilter: (_req, file, cb) => {
+        if (file.originalname && typeof file.originalname === 'string') {
+          try {
+            file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+          } catch {
+            // keep as-is on error
+          }
+        }
+        const mime = file.mimetype || 'application/octet-stream';
+        if (!ALLOWED_MIME_TYPES.has(mime)) {
+          return cb(
+            new Error(`Формат файла "${file.originalname}" не поддерживается.`),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async resubmit(
+    @Param('id') id: string,
+    @UploadedFiles() uploadedFiles: Express.Multer.File[],
+    @Req() req: ReqUser,
+  ) {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const comment = typeof body.comment === 'string' ? body.comment : undefined;
+
+    let keepFileIds: string[] | null = null;
+    if (typeof body.keepFileIds === 'string' && body.keepFileIds.trim() !== '') {
+      try {
+        const parsed: unknown = JSON.parse(body.keepFileIds);
+        if (Array.isArray(parsed)) keepFileIds = parsed.map((v) => String(v));
+      } catch {
+        // невалидный JSON → keepFileIds = null (перенести все текущие)
+      }
+    }
+
+    const dto: ResubmitDto = { comment };
+    return [
+      await this.engine.resubmit(id, dto, req.user!.user_id!, {
+        keepFileIds,
+        uploadedFiles: uploadedFiles ?? [],
+      }),
+    ];
   }
 
   @Delete('processes/:id')
