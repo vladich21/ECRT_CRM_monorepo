@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { and, eq } from 'drizzle-orm';
+import * as fs from 'fs';
 
 import { files } from '../../../database/schema';
 import { getUploadPath } from '../../files/files-config';
@@ -41,6 +42,47 @@ export class ApprovalFilesService {
    * @param uploadedFiles новые/заменяющие файлы версии N+1.
    * @returns описание снапшота или `null`, если версионировать нечего (нет ни текущих, ни новых).
    */
+  /**
+   * Удаляет ВСЕ документы секции (по умолчанию 'approval') сущности — строки в БД
+   * (внутри транзакции) + возвращает физические пути для удаления ПОСЛЕ коммита.
+   *
+   * Документы согласования привязаны к сущности (не к процессу), поэтому при старте
+   * НОВОГО согласования прежние документы (от уже терминальных отменён/отклонён
+   * процессов) обсолетны и должны быть убраны, иначе они накапливаются и попадают
+   * в новый процесс.
+   */
+  async clearEntityDocuments(
+    tx: DrizzleTx,
+    entityType: string,
+    entityId: string,
+    documentSection = 'approval',
+  ): Promise<string[]> {
+    const where = and(
+      eq(files.entityType, entityType),
+      eq(files.tableId, entityId),
+      eq(files.documentSection, documentSection),
+    );
+    const rows = await tx.select().from(files).where(where);
+    if (!rows.length) return [];
+    const uploadPath = getUploadPath(this.config);
+    const paths = rows
+      .map((r) => resolveStoredFilePath(uploadPath, r))
+      .filter((p): p is string => !!p);
+    await tx.delete(files).where(where);
+    return paths;
+  }
+
+  /** Физическое удаление файлов (best-effort, вызывать после коммита транзакции). */
+  removePhysicalFiles(paths: string[]): void {
+    for (const p of paths) {
+      try {
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      } catch {
+        // best-effort: осиротевший файл на диске безвреден
+      }
+    }
+  }
+
   async snapshotToNextVersion(
     tx: DrizzleTx,
     entityType: string,

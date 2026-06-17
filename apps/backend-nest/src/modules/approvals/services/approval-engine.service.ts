@@ -139,6 +139,15 @@ export class ApprovalEngineService {
         throw new ConflictException('По этой сущности уже идёт согласование');
       }
 
+      // Новый процесс начинается с чистого набора документов: убираем прежние
+      // документы согласования (от терминальных отменён/отклонён процессов), иначе
+      // они накапливаются и попадают в новый процесс. Физическое удаление — после коммита.
+      const clearedFilePaths = await this.approvalFiles.clearEntityDocuments(
+        tx,
+        dto.entity_type,
+        dto.entity_id,
+      );
+
       // Маршрут + шаги.
       const routeRows = await tx
         .select()
@@ -237,9 +246,11 @@ export class ApprovalEngineService {
       await handler.onStart(tx, entity);
 
       this.logger.log(`Запущен процесс ${processId} (${dto.entity_type}/${dto.entity_id})`);
-      return { id: processId, intent: { assigned } as NotifyIntent };
+      return { id: processId, intent: { assigned } as NotifyIntent, clearedFilePaths };
     });
 
+    // Физически удаляем прежние документы только после успешного коммита.
+    this.approvalFiles.removePhysicalFiles(result.clearedFilePaths);
     this.dispatchNotifications(result.id, result.intent);
     return { id: result.id };
   }
