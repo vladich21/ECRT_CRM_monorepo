@@ -120,16 +120,12 @@ export class FilesService {
     const responseDeadline = applyRequestsMeta ? requestsMeta.responseDeadline : null;
 
     const uploadPath = getUploadPath(this.config);
-    const basePath = path.join(uploadPath, entityType, entityId);
-    fs.mkdirSync(basePath, { recursive: true });
 
     const result: UploadItemDto[] = [];
 
     for (const file of uploadedFiles) {
-      const destPath = path.join(basePath, file.originalname);
-      fs.writeFileSync(destPath, file.buffer);
-
       const fileType = file.mimetype || 'application/octet-stream';
+      // Сначала upsert — получаем id, затем пишем физически по непрозрачному пути id.
       const fileId = await this.upsertFile(
         entityType,
         entityId,
@@ -141,6 +137,12 @@ export class FilesService {
         responseRequired,
         responseDeadline,
       );
+
+      // Хранение по id: uploads/files/{fileId}/{originalName} — нет коллизий одноимённых
+      // файлов (разные секции/версии), реальное имя сохраняется для отдачи.
+      const destDir = path.join(uploadPath, 'files', fileId);
+      fs.mkdirSync(destDir, { recursive: true });
+      fs.writeFileSync(path.join(destDir, file.originalname), file.buffer);
 
       result.push({
         name: file.originalname,
@@ -182,7 +184,7 @@ export class FilesService {
         responseDeadline,
       })
       .onConflictDoUpdate({
-        target: [files.entityType, files.tableId, files.documentSection, files.name],
+        target: [files.entityType, files.tableId, files.documentSection, files.name, files.version],
         set: {
           type: fileType,
           size,
@@ -322,12 +324,38 @@ export class FilesService {
     return fs.existsSync(filePath) ? filePath : null;
   }
 
+  /**
+   * Разрешение физического пути файла по строке БД.
+   * Новые файлы хранятся по id (`uploads/files/{id}/{name}`); старые — по
+   * legacy-пути (`uploads/{entityType}/{tableId}/{name}`). Пробуем id-путь,
+   * затем фолбэк на legacy — без принудительной миграции существующих файлов.
+   */
+  private resolveStoredPath(row: {
+    id: unknown;
+    entityType: string | null;
+    tableId: unknown;
+    name: string | null;
+  }): string | null {
+    if (!row.name) return null;
+    const uploadPath = getUploadPath(this.config);
+    const resolvedRoot = path.resolve(uploadPath);
+    const candidates: string[] = [path.join(uploadPath, 'files', String(row.id), row.name)];
+    if (row.entityType && row.tableId) {
+      candidates.push(path.join(uploadPath, row.entityType, String(row.tableId), row.name));
+    }
+    for (const candidate of candidates) {
+      if (!path.resolve(candidate).startsWith(resolvedRoot)) continue;
+      if (fs.existsSync(candidate)) return candidate;
+    }
+    return null;
+  }
+
   async resolvePublicFileDownload(
     fileId: string,
   ): Promise<{ filePath: string; filename: string; mimeType: string } | null> {
     const [row] = await this.db.db.select().from(files).where(eq(files.id, fileId)).limit(1);
-    if (!row?.entityType || !row.tableId || !row.name) return null;
-    const filePath = this.getFilePath(row.entityType, String(row.tableId), row.name);
+    if (!row?.name) return null;
+    const filePath = this.resolveStoredPath(row);
     if (!filePath) return null;
     return {
       filePath,
@@ -378,6 +406,8 @@ export class FilesService {
       uploaded_at: r.uploadedAt ? r.uploadedAt.toISOString() : null,
       response_required: Boolean(r.responseRequired),
       response_deadline: r.responseDeadline ? r.responseDeadline.toISOString() : null,
+      version: r.version ?? 1,
+      is_current: r.isCurrent ?? true,
     };
   }
 }

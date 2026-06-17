@@ -481,11 +481,12 @@ export const files = pgTable(
     isCurrent: boolean('is_current').notNull().default(true),
   },
   (table) => [
-    uniqueIndex('files_entity_section_name').on(
+    uniqueIndex('files_entity_section_name_version').on(
       table.entityType,
       table.tableId,
       table.documentSection,
       table.name,
+      table.version,
     ),
   ],
 );
