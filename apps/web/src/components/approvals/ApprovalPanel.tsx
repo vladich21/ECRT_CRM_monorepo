@@ -69,6 +69,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   const { message } = App.useApp();
   const openModal = useModalStore((s) => s.openModal);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const { data: state, isLoading } = useApprovalState(entityType, entityId);
   const cancel = useCancelProcess();
@@ -77,6 +78,10 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   if (isLoading || !state) return <Spin />;
 
   const process = state.process;
+  // Отменённый процесс свёрнут в строку (история сохраняется, разворачивается по клику);
+  // согласованные/текущие — на весь экран.
+  const isCancelled = process?.status === 'cancelled';
+  const collapsed = isCancelled && !expanded;
   // Документы и обсуждение редактируемы только пока согласование идёт; после финала — блокировка.
   const editable = process ? process.status === 'active' || process.status === 'revision' : false;
   const currentStep = process?.steps.find((s) => s.state === 'current');
@@ -161,7 +166,27 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
 
   const content = (
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
-      {process && (
+      {process && collapsed && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <Space wrap>
+            <Badge status="default" text={APPROVAL_STATUS_LABELS.cancelled} />
+            <Typography.Text type="secondary">
+              · Согласование отменено
+              {process.completed_at ? ` ${new Date(process.completed_at).toLocaleDateString('ru-RU')}` : ''}
+            </Typography.Text>
+            <Button type="link" size="small" onClick={() => setExpanded(true)}>
+              Подробнее
+            </Button>
+          </Space>
+          {state.can_start_approval && state.available_routes.length > 0 ? (
+            <Button type="primary" onClick={openStart}>
+              Новое согласование
+            </Button>
+          ) : null}
+        </div>
+      )}
+
+      {process && !collapsed && (
         <>
           {/* Сводка-бар */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -176,6 +201,11 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
                 </Tag>
               ) : null}
               {process.route_name ? <Typography.Text type="secondary">· {process.route_name}</Typography.Text> : null}
+              {isCancelled ? (
+                <Button type="link" size="small" onClick={() => setExpanded(false)}>
+                  Свернуть
+                </Button>
+              ) : null}
             </Space>
             {actions}
           </div>
