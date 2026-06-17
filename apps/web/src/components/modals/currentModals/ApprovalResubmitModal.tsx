@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FileOutlined, SwapOutlined, UndoOutlined, UploadOutlined } from '@ant-design/icons';
-import { App, Button, Checkbox, Form, Input, List, Space, Spin, Tag, Typography, Upload } from 'antd';
+import { App, Button, Checkbox, Form, Input, List, Space, Spin, Tooltip, Typography, Upload } from 'antd';
 
 import { useResubmitProcess } from '@/api/approvals/approvalApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
@@ -100,25 +100,28 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
                           return false;
                         }}
                       >
-                        <Button size="small" type="text" icon={<SwapOutlined />}>
-                          Заменить
-                        </Button>
+                        <Tooltip title="Заменить файл">
+                          <Button size="small" type="text" icon={<SwapOutlined />} />
+                        </Tooltip>
                       </Upload>,
-                      replaced ? (
-                        <Button
-                          key="undo"
-                          size="small"
-                          type="text"
-                          icon={<UndoOutlined />}
-                          onClick={() => setReplacements((p) => {
-                            const next = { ...p };
-                            delete next[f.id];
-                            return next;
-                          })}
-                        >
-                          Отменить
-                        </Button>
-                      ) : null,
+                      ...(replaced
+                        ? [
+                            <Tooltip key="undo" title="Отменить замену">
+                              <Button
+                                size="small"
+                                type="text"
+                                icon={<UndoOutlined />}
+                                onClick={() =>
+                                  setReplacements((p) => {
+                                    const next = { ...p };
+                                    delete next[f.id];
+                                    return next;
+                                  })
+                                }
+                              />
+                            </Tooltip>,
+                          ]
+                        : []),
                     ]}
                   >
                     <List.Item.Meta
@@ -134,8 +137,14 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
                           <span style={{ textDecoration: kept ? undefined : 'line-through', opacity: kept ? 1 : 0.5 }}>
                             {f.name}
                           </span>
-                          {replaced ? <Tag color="blue">→ {replaced.name}</Tag> : null}
                         </Space>
+                      }
+                      description={
+                        replaced ? (
+                          <Typography.Text type="success" style={{ fontSize: 12, wordBreak: 'break-word' }}>
+                            → заменить на «{replaced.name}»
+                          </Typography.Text>
+                        ) : null
                       }
                     />
                   </List.Item>
