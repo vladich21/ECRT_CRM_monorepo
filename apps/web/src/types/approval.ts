@@ -95,6 +95,15 @@ export interface ApprovalProcessView {
   events?: ApprovalEventView[];
 }
 
+/** Компактная карточка завершённого процесса для вкладки «Архив». */
+export interface ArchiveProcessSummary {
+  id: string;
+  status: ApprovalProcessStatus;
+  initiated_at: string;
+  completed_at: string | null;
+  completion_comment: string | null;
+}
+
 export interface DocumentApprovalState {
   has_active_process: boolean;
   process?: ApprovalProcessView;
@@ -103,7 +112,7 @@ export interface DocumentApprovalState {
   can_cancel: boolean;
   can_resubmit: boolean;
   available_routes: ApprovalRouteRef[];
-  completed_processes?: ApprovalProcessView[];
+  completed_processes?: ArchiveProcessSummary[];
   document_status?: string | null;
 }
 

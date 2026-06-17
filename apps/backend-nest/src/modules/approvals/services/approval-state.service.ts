@@ -167,7 +167,14 @@ export class ApprovalStateService {
       can_resubmit: !!active && isInitiator && active.status === 'revision',
       my_pending_assignment: myPending,
       available_routes: availableRoutes,
-      completed_processes: completed,
+      // Архив: компактные summary завершённых процессов (детали — по запросу GET /processes/:id).
+      completed_processes: completed.map((c) => ({
+        id: c.id,
+        status: c.status,
+        initiated_at: c.initiatedAt,
+        completed_at: c.completedAt,
+        completion_comment: c.completionComment ?? null,
+      })),
       document_status: documentStatus,
     };
   }

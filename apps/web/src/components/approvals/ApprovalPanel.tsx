@@ -1,9 +1,9 @@
 import { ClockCircleOutlined, PrinterOutlined } from '@ant-design/icons';
-import { App, Badge, Button, Card, Col, Empty, Modal, Popconfirm, Row, Space, Spin, Steps, Table, Tag, Typography } from 'antd';
+import { App, Badge, Button, Card, Col, Collapse, Empty, Modal, Popconfirm, Row, Space, Spin, Steps, Table, Tabs, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { useApprovalState, useCancelProcess } from '@/api/approvals/approvalApiHooks';
+import { useApprovalProcess, useApprovalState, useCancelProcess } from '@/api/approvals/approvalApiHooks';
 import { useModalStore } from '@/store/ModalStore';
 import {
   APPROVAL_STATUS_LABELS,
@@ -63,6 +63,47 @@ function StepAssignees({ step }: { step: ApprovalStepView }) {
   );
 }
 
+/** Детали архивного (завершённого) процесса — подгружаются по разворачиванию.
+ *  Документы не показываем: они привязаны к сущности и очищаются при старте нового
+ *  согласования. Архив хранит ход (шаги) и ленту (решения/комментарии). */
+function ArchiveProcessDetail({ processId, active }: { processId: string; active: boolean }) {
+  const { data: proc, isLoading } = useApprovalProcess(active ? processId : undefined);
+  if (!active) return null;
+  if (isLoading || !proc) return <Spin />;
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      {proc.completion_comment ? (
+        <Typography.Text type={proc.status === 'rejected' ? 'danger' : 'secondary'}>
+          Комментарий: {proc.completion_comment}
+        </Typography.Text>
+      ) : null}
+      <Steps
+        size="small"
+        items={proc.steps.map((s) => ({
+          status: stepStatus(s),
+          title: (
+            <Space size={4} wrap>
+              <span>{s.name}</span>
+              {s.step_role_name ? <Tag color={s.step_role_color ?? undefined}>{s.step_role_name}</Tag> : null}
+            </Space>
+          ),
+          description: <StepAssignees step={s} />,
+        }))}
+      />
+      <Card size="small" title="Лента согласования">
+        <ApprovalFeed
+          processId={proc.id}
+          decisions={proc.decisions}
+          events={proc.events}
+          initiatedAt={proc.initiated_at}
+          initiatorName={proc.initiator_name}
+          editable={false}
+        />
+      </Card>
+    </Space>
+  );
+}
+
 export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'card' }: ApprovalPanelProps) {
   const params = useParams();
   const entityId = entityIdProp ?? (params[`${entityType}Id`] as string | undefined);
@@ -70,6 +111,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   const openModal = useModalStore((s) => s.openModal);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [archiveKey, setArchiveKey] = useState<string | undefined>();
 
   const { data: state, isLoading } = useApprovalState(entityType, entityId);
   const cancel = useCancelProcess();
@@ -155,11 +197,6 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
             Отменить
           </Button>
         </Popconfirm>
-      )}
-      {state.can_start_approval && state.available_routes.length > 0 && (
-        <Button type="primary" onClick={openStart}>
-          Новое согласование
-        </Button>
       )}
     </Space>
   ) : null;
@@ -285,16 +322,57 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   );
 
   if (variant === 'compact') return content;
-  // В свёрнутом (отменённом) виде «Новое согласование» поднимаем в шапку карточки.
+
+  // Архив = завершённые процессы, кроме показанного в «Текущем».
+  const archive = (state.completed_processes ?? []).filter((p) => p.id !== process?.id);
+
+  // «Новое согласование» — в шапке карточки, когда есть процесс и можно запустить новый.
   const headerExtra =
-    process && collapsed && state.can_start_approval && state.available_routes.length > 0 ? (
+    process && state.can_start_approval && state.available_routes.length > 0 ? (
       <Button type="primary" onClick={openStart}>
         Новое согласование
       </Button>
     ) : undefined;
+
+  const archiveTab =
+    archive.length > 0 ? (
+      <Collapse
+        accordion
+        activeKey={archiveKey}
+        onChange={(k) => setArchiveKey(Array.isArray(k) ? k[0] : k)}
+        items={archive.map((p) => ({
+          key: p.id,
+          label: (
+            <Space wrap>
+              <Badge status={STATUS_BADGE[p.status] ?? 'default'} text={APPROVAL_STATUS_LABELS[p.status]} />
+              <Typography.Text type="secondary">
+                {p.completed_at
+                  ? new Date(p.completed_at).toLocaleString('ru-RU')
+                  : new Date(p.initiated_at).toLocaleDateString('ru-RU')}
+              </Typography.Text>
+            </Space>
+          ),
+          children: <ArchiveProcessDetail processId={p.id} active={archiveKey === p.id} />,
+        }))}
+      />
+    ) : (
+      <Empty description="Архив пуст" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    );
+
+  const showTabs = !!process || archive.length > 0;
+
   return (
     <Card title="Согласование" extra={headerExtra}>
-      {content}
+      {showTabs ? (
+        <Tabs
+          items={[
+            { key: 'current', label: 'Текущий процесс', children: content },
+            { key: 'archive', label: archive.length ? `Архив (${archive.length})` : 'Архив', children: archiveTab },
+          ]}
+        />
+      ) : (
+        content
+      )}
     </Card>
   );
 }
