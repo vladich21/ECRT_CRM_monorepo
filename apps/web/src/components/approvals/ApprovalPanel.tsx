@@ -167,23 +167,16 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   const content = (
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
       {process && collapsed && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <Space wrap>
-            <Badge status="default" text={APPROVAL_STATUS_LABELS.cancelled} />
-            <Typography.Text type="secondary">
-              · Согласование отменено
-              {process.completed_at ? ` ${new Date(process.completed_at).toLocaleDateString('ru-RU')}` : ''}
-            </Typography.Text>
-            <Button type="link" size="small" onClick={() => setExpanded(true)}>
-              Подробнее
-            </Button>
-          </Space>
-          {state.can_start_approval && state.available_routes.length > 0 ? (
-            <Button type="primary" onClick={openStart}>
-              Новое согласование
-            </Button>
-          ) : null}
-        </div>
+        <Space wrap>
+          <Badge status="default" text={APPROVAL_STATUS_LABELS.cancelled} />
+          <Typography.Text type="secondary">
+            · Согласование отменено
+            {process.completed_at ? ` ${new Date(process.completed_at).toLocaleDateString('ru-RU')}` : ''}
+          </Typography.Text>
+          <Button type="link" size="small" onClick={() => setExpanded(true)}>
+            Подробнее
+          </Button>
+        </Space>
       )}
 
       {process && !collapsed && (
@@ -292,5 +285,16 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   );
 
   if (variant === 'compact') return content;
-  return <Card title="Согласование">{content}</Card>;
+  // В свёрнутом (отменённом) виде «Новое согласование» поднимаем в шапку карточки.
+  const headerExtra =
+    process && collapsed && state.can_start_approval && state.available_routes.length > 0 ? (
+      <Button type="primary" onClick={openStart}>
+        Новое согласование
+      </Button>
+    ) : undefined;
+  return (
+    <Card title="Согласование" extra={headerExtra}>
+      {content}
+    </Card>
+  );
 }
