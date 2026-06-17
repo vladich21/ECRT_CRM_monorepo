@@ -476,6 +476,9 @@ export const files = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }),
     createdBy: uuid('created_by'),
     updatedBy: uuid('updated_by'),
+    /** Версионность (F-V0): version — номер версии/раунда; is_current — входит ли в последнюю версию набора. */
+    version: integer('version').notNull().default(1),
+    isCurrent: boolean('is_current').notNull().default(true),
   },
   (table) => [
     uniqueIndex('files_entity_section_name').on(
@@ -834,6 +837,20 @@ export const tasks = pgTable(
     index('tasks_source_idx').on(t.sourceType, t.sourceId),
     index('tasks_entity_idx').on(t.entityType, t.entityId),
   ],
+);
+
+/** Лог системных событий процесса (старт/повторная отправка/замена файла) для ленты. */
+export const approvalEvents = pgTable(
+  'approval_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    processId: uuid('process_id').notNull(),
+    eventType: varchar('event_type', { length: 30 }).notNull(),
+    actorId: uuid('actor_id'),
+    payload: jsonb('payload'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('appr_events_process_idx').on(t.processId)],
 );
 
 /** Журнал решений согласующих. */

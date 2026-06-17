@@ -1,7 +1,12 @@
 import { useState } from 'react';
-import { App, Button, Form, Select, Space, Spin } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import { App, Button, Form, Select, Space, Spin, Upload } from 'antd';
+import type { UploadFile } from 'antd';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useApprovalStartInfo, useStartProcess } from '@/api/approvals/approvalApiHooks';
+import { fileApi } from '@/api/files/fileApi';
+import { fileQueryKeys } from '@/api/files/fileQueryKeys';
 import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
 import { useModalStore, type ModalState } from '@/store/ModalStore';
 import type { ApprovalRouteRef } from '@/types/approval';
@@ -15,10 +20,12 @@ function extractError(e: unknown): string | undefined {
 
 export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalData }) => {
   const { message } = App.useApp();
+  const qc = useQueryClient();
   const closeModal = useModalStore((s) => s.closeModal);
   const [routeId, setRouteId] = useState<string | undefined>();
   const [stepAssignees, setStepAssignees] = useState<Record<number, string[]>>({});
   const [taskAssignees, setTaskAssignees] = useState<Record<string, string>>({});
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const { data: startInfo, isLoading } = useApprovalStartInfo(routeId);
   const start = useStartProcess();
@@ -31,7 +38,20 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
     setRouteId(undefined);
     setStepAssignees({});
     setTaskAssignees({});
+    setFileList([]);
     closeModal();
+  };
+
+  const uploadAttachedFiles = async () => {
+    const files = fileList.map((f) => f.originFileObj as File).filter(Boolean);
+    if (!files.length) return;
+    const fd = new FormData();
+    files.forEach((file, i) => fd.append(`file${i + 1}`, file));
+    fd.append('entityType', entityType);
+    fd.append('entityId', entityId);
+    fd.append('documentSection', 'approval');
+    await fileApi.uploadFiles(fd);
+    await qc.invalidateQueries({ queryKey: fileQueryKeys.byEntity(entityType, entityId) });
   };
 
   const requiredFilled =
@@ -55,6 +75,11 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
           employee_id,
         })),
       });
+      try {
+        await uploadAttachedFiles();
+      } catch {
+        message.warning('Согласование запущено, но часть файлов не загрузилась — приложите их в панели');
+      }
       message.success('Отправлено на согласование');
       handleClose();
     } catch (e) {
@@ -106,6 +131,17 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
             ))}
           </>
         ) : null}
+
+        <Form.Item label="Документы на согласование">
+          <Upload
+            multiple
+            beforeUpload={() => false}
+            fileList={fileList}
+            onChange={({ fileList: fl }) => setFileList(fl)}
+          >
+            <Button icon={<UploadOutlined />}>Выбрать файлы</Button>
+          </Upload>
+        </Form.Item>
 
         <Space style={{ width: '100%', justifyContent: 'flex-end', marginTop: 16 }}>
           <Button onClick={handleClose}>Отмена</Button>

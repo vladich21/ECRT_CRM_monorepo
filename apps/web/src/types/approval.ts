@@ -71,6 +71,14 @@ export interface ApprovalDecisionView {
   decided_at: string;
 }
 
+export interface ApprovalEventView {
+  id: string;
+  event_type: string;
+  actor_id?: string | null;
+  actor_name?: string | null;
+  created_at: string;
+}
+
 export interface ApprovalProcessView {
   id: string;
   route_name?: string | null;
@@ -84,6 +92,7 @@ export interface ApprovalProcessView {
   has_approver_final: boolean;
   steps: ApprovalStepView[];
   decisions: ApprovalDecisionView[];
+  events?: ApprovalEventView[];
 }
 
 export interface DocumentApprovalState {

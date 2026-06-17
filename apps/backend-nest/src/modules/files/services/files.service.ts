@@ -47,6 +47,8 @@ function normalizeDocumentSection(entityType: string, raw?: string | null): stri
     if (raw && PROJECT_DOCUMENT_SECTION_KEYS.has(raw)) return raw;
     return 'pm_plan';
   }
+  // Генерик-секция документов согласования (для любой сущности).
+  if (raw === 'approval') return 'approval';
   return 'default';
 }
 

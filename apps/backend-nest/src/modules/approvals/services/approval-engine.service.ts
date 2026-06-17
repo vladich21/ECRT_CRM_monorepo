@@ -13,6 +13,7 @@ import type { SectionPermission } from '../../../shared/permissions';
 import {
   approvalAssignments,
   approvalDecisions,
+  approvalEvents,
   approvalProcesses,
   approvalProcessSteps,
   approvalRouteSteps,
@@ -382,6 +383,9 @@ export class ApprovalEngineService {
         step1,
       );
       await handler.onStart(tx, entity);
+
+      // Событие для ленты: повторная отправка после доработки.
+      await tx.insert(approvalEvents).values({ processId, eventType: 'resubmitted', actorId: userId });
 
       return { id: processId, intent: { assigned } as NotifyIntent };
     });

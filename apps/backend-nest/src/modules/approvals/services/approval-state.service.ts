@@ -6,6 +6,7 @@ import type { SectionPermission } from '../../../shared/permissions';
 import {
   approvalAssignments,
   approvalDecisions,
+  approvalEvents,
   approvalProcesses,
   approvalProcessSteps,
   approvalRoutes,
@@ -73,7 +74,22 @@ export class ApprovalStateService {
         } catch {
           statusOk = false;
         }
-        canStart = !active && statusOk && (isOwner || canEdit);
+        // Повторный запуск разрешён только после отклонения/отмены: если последнее
+        // согласование завершилось успешно (approved/ratified) — карточка терминальна.
+        const lastDone = await this.db.db
+          .select({ status: approvalProcesses.status })
+          .from(approvalProcesses)
+          .where(
+            and(
+              eq(approvalProcesses.entityType, entityType),
+              eq(approvalProcesses.entityId, entityId),
+              inArray(approvalProcesses.status, COMPLETED_STATUSES),
+            ),
+          )
+          .orderBy(desc(approvalProcesses.completedAt))
+          .limit(1);
+        const lockedByApproved = lastDone[0]?.status === 'approved' || lastDone[0]?.status === 'ratified';
+        canStart = !active && statusOk && !lockedByApproved && (isOwner || canEdit);
       }
       availableRoutes = await this.routesService.availableRoutes(entityType);
     }
@@ -200,11 +216,20 @@ export class ApprovalStateService {
       .where(eq(approvalDecisions.processId, processId))
       .orderBy(approvalDecisions.decidedAt);
 
+    const events = await this.db.db
+      .select()
+      .from(approvalEvents)
+      .where(eq(approvalEvents.processId, processId))
+      .orderBy(approvalEvents.createdAt);
+
     const userIds = new Set<string>();
     assignments.forEach((a) => userIds.add(a.assigneeId));
     decisions.forEach((d) => {
       userIds.add(d.decidedBy);
       if (d.delegatedTo) userIds.add(d.delegatedTo);
+    });
+    events.forEach((e) => {
+      if (e.actorId) userIds.add(e.actorId);
     });
     userIds.add(process.initiatedBy);
     const names = await this.getUserNames([...userIds]);
@@ -272,8 +297,22 @@ export class ApprovalStateService {
     });
 
     return {
-      ...process,
+      id: process.id,
+      route_id: process.routeId,
+      route_code: process.routeCode,
+      route_name: process.routeName,
+      entity_type: process.entityType,
+      entity_id: process.entityId,
+      status: process.status,
+      current_step_order: process.currentStepOrder,
+      current_process_step_id: process.currentProcessStepId,
+      initiated_by: process.initiatedBy,
       initiator_name: names.get(process.initiatedBy) ?? null,
+      initiated_at: process.initiatedAt,
+      completed_at: process.completedAt,
+      completed_by: process.completedBy,
+      completion_comment: process.completionComment,
+      has_approver_final: process.hasApproverFinal,
       steps: stepsWithProgress,
       decisions: decisions.map((d) => ({
         id: d.id,
@@ -286,6 +325,13 @@ export class ApprovalStateService {
         return_to_step: d.returnToStep,
         comment: d.comment,
         decided_at: d.decidedAt,
+      })),
+      events: events.map((e) => ({
+        id: e.id,
+        event_type: e.eventType,
+        actor_id: e.actorId,
+        actor_name: e.actorId ? names.get(e.actorId) ?? e.actorId : null,
+        created_at: e.createdAt,
       })),
     };
   }
