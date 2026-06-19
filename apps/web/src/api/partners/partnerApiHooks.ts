@@ -9,6 +9,7 @@ import {
 import {
   partnerApi,
   PartnerListParams,
+  type PartnerScoringResponse,
   PartnersListResponse,
   type PartnerSyncRunResult,
   type PartnerSyncStatusResponse,
@@ -35,6 +36,19 @@ export const usePartnerById = (partnerId: string): UseQueryResult<Partner, Error
     queryFn: () => partnerApi.getPartnerById(partnerId),
     enabled: isValidUuid(partnerId),
     refetchOnWindowFocus: true,
+  });
+};
+
+export const usePartnerScoring = (
+  partnerId: string | undefined,
+  enabled = true,
+): UseQueryResult<PartnerScoringResponse, Error> => {
+  return useQuery<PartnerScoringResponse, Error>({
+    queryKey: partnerQueryKeys.scoring(partnerId ?? ''),
+    queryFn: () => partnerApi.getPartnerScoring(partnerId!),
+    enabled: enabled && isValidUuid(partnerId ?? ''),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
   });
 };
 

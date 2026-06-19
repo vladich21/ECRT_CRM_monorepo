@@ -36,6 +36,34 @@ export type PartnerSyncStatusResponse = {
   result: unknown;
 };
 
+export type ScoringMarkerImpact = 'Reliability' | 'Risk';
+export type ScoringMarkerWeight = 'Low' | 'Moderate' | 'Significant' | 'High';
+export type ScoringRatingLevel = 'High' | 'Middle' | 'Low';
+
+export interface ScoringMarker {
+  markerId: string;
+  impact: ScoringMarkerImpact;
+  weight: ScoringMarkerWeight;
+  name: string;
+  description?: string;
+}
+
+export interface ScoringModel {
+  modelId: string;
+  modelName: string;
+  modelUpdateDate: string;
+  rating: number;
+  ratingLevel: ScoringRatingLevel;
+  triggeredMarkers: ScoringMarker[];
+}
+
+export interface PartnerScoringResponse {
+  inn: string | null;
+  ogrn: string | null;
+  focusHref: string | null;
+  scoringData: ScoringModel[];
+}
+
 export type PartnerListTriStateParam = 'yes' | 'no';
 
 export type PartnerListSortBy =
@@ -149,6 +177,10 @@ export const partnerApi = {
   getPartnerById: async (partnerId: string): Promise<Partner> => {
     const response = await apiClient.get(`/partners/${partnerId}`);
     return response.data[0];
+  },
+  getPartnerScoring: async (partnerId: string): Promise<PartnerScoringResponse> => {
+    const response = await apiClient.get(`/partners/${partnerId}/scoring`);
+    return response.data;
   },
   getPartnerDataByInn: async (partnerInn: string): Promise<Partner> => {
     const response = await apiClient.get('/partners/inn-lookup', {

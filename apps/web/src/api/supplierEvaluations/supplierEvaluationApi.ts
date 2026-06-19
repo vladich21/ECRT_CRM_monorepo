@@ -7,6 +7,7 @@ import type {
   SupplierEvaluationContractProjectOption,
   SupplierEvaluationCriterion,
   SupplierEvaluationDetail,
+  PartnerEvaluationReport,
   InitialSupplierEvaluation,
   SupplierEvaluationListResponse,
   SupplierEvaluationTabCounts,
@@ -112,6 +113,17 @@ export const supplierEvaluationApi = {
     return {
       data: data?.data ?? [],
       total: data?.total ?? 0,
+    };
+  },
+
+  getPartnerReport: async (partnerId: string): Promise<PartnerEvaluationReport> => {
+    const { data } = await apiClient.get<PartnerEvaluationReport>('/supplier-evaluations/partner-report', {
+      params: { partner_id: partnerId },
+    });
+    return {
+      criteria: data?.criteria ?? [],
+      projects: data?.projects ?? [],
+      evaluations: data?.evaluations ?? [],
     };
   },
 

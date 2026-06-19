@@ -16,6 +16,8 @@ import { parsePagination } from '../../../common/pagination';
 import type { RequestWithUser } from '../../auth/types';
 import { SupplierEvaluationsCreateEnvelopeDto, SupplierEvaluationsCreateInitialEnvelopeDto } from '../dto';
 import { isSupplierEvaluationCategory } from '../domain/supplier-evaluation.enums';
+import { RequirePermission } from '../../permissions/decorators/permission-meta';
+import { SECTIONS } from '../../../shared/permissions';
 import {
   SupplierEvaluationsService,
   type SupplierEvaluationListStatusFilter,
@@ -138,6 +140,19 @@ export class SupplierEvaluationsController {
       throw new BadRequestException('Укажите partner_id');
     }
     return this.service.findPartnerEvalSummary(partnerId.trim());
+  }
+
+  @Get('partner-report')
+  @RequirePermission(SECTIONS.PARTNERS_LIST, 'read')
+  partnerReport(@Query('partner_id') partnerId?: string) {
+    const trimmed = partnerId?.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Укажите partner_id');
+    }
+    if (!UUID_PARAM_RE.test(trimmed)) {
+      throw new BadRequestException('Некорректный partner_id');
+    }
+    return this.service.findPartnerReport(trimmed);
   }
 
   @Get('initial')

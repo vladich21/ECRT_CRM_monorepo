@@ -103,6 +103,29 @@ export type SupplierEvaluationUiStatusParam =
   | 'overdue'
   | 'reeval_soon';
 
+export interface PartnerReportScore {
+  criterion_id: string;
+  criterion_code: string;
+  score: number;
+}
+
+export interface PartnerReportEvaluation {
+  id: string;
+  project_id: string | null;
+  project_label: string;
+  status: SupplierEvaluationStatus;
+  weighted_score: number;
+  category: SupplierEvaluationCategory;
+  evaluated_at: string;
+  scores: PartnerReportScore[];
+}
+
+export interface PartnerEvaluationReport {
+  criteria: SupplierEvaluationCriterion[];
+  projects: { id: string; label: string }[];
+  evaluations: PartnerReportEvaluation[];
+}
+
 export type SupplierEvaluationSortField = 'evaluated_at' | 'weighted_score';
 export type SupplierEvaluationSortDir = 'asc' | 'desc';
 

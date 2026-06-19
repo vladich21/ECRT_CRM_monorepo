@@ -23,6 +23,9 @@ import {
   type PartnerListTriState,
 } from '../services/partners.service';
 import { PartnerInnLookupService } from '../services/partner-inn-lookup.service';
+import { PartnerScoringService } from '../services/partner-scoring.service';
+import { RequirePermission } from '../../permissions/decorators/permission-meta';
+import { SECTIONS } from '../../../shared/permissions';
 import { parsePagination } from '../../../common/pagination';
 import { parseDeletedScope } from '../../../common/deleted-scope';
 import { getFileBaseUrl } from '../../files/files-config';
@@ -97,11 +100,15 @@ function parseCategoryIds(raw?: string): { ids?: string[]; includeNull?: boolean
   };
 }
 
+const PARTNER_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 @Controller('partners')
 export class PartnersController {
   constructor(
     private readonly service: PartnersService,
     private readonly innLookup: PartnerInnLookupService,
+    private readonly scoring: PartnerScoringService,
     private readonly config: ConfigService,
   ) {}
 
@@ -218,6 +225,15 @@ export class PartnersController {
       throw new BadRequestException('Укажите параметр inn');
     }
     return this.innLookup.lookupByInn(inn.trim());
+  }
+
+  @Get(':id/scoring')
+  @RequirePermission(SECTIONS.PARTNERS_LIST, 'read')
+  async getScoring(@Param('id') id: string) {
+    if (!PARTNER_UUID_RE.test(id)) throw new BadRequestException('Некорректный id контрагента');
+    const partner = await this.service.findOne(id);
+    if (!partner) throw new NotFoundException(`Партнер ${id} не найден`);
+    return this.scoring.getScoring({ inn: partner.inn, ogrn: partner.ogrn });
   }
 
   @Get(':id')

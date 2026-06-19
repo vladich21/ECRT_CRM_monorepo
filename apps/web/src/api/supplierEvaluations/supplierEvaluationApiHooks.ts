@@ -23,6 +23,15 @@ export {
   supplierEvaluationQueryKeys,
 } from './supplierEvaluationQueryKeys';
 
+export function usePartnerEvaluationReport(partnerId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: supplierEvaluationQueryKeys.partnerReport(partnerId ?? ''),
+    queryFn: () => supplierEvaluationApi.getPartnerReport(partnerId!),
+    enabled: Boolean(partnerId) && enabled,
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useSupplierEvaluationCriteria() {
   return useQuery({
     queryKey: supplierEvaluationQueryKeys.criteria,
