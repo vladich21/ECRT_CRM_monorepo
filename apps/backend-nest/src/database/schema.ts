@@ -337,6 +337,10 @@ export const patents = pgTable('patents', {
   transformedFromPatentId: uuid('transformed_from_patent_id'),
   transformationNotificationIcZht: varchar('transformation_notification_ic_zht', { length: 255 }),
   transformationNotificationCir: varchar('transformation_notification_cir', { length: 255 }),
+  /** Решение о выдаче отмечено без файла в разделе «Положительное». */
+  decisionPositiveMarked: boolean('decision_positive_marked').notNull().default(false),
+  /** Отказ в выдаче отмечен без файла в разделе «Отрицательное». */
+  decisionNegativeMarked: boolean('decision_negative_marked').notNull().default(false),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
   isDeleted: boolean('is_deleted').notNull().default(false),
@@ -510,7 +514,7 @@ export const partners = pgTable('partners', {
   thesisId: uuid('thesis_id'),
   name: varchar('name', { length: 255 }),
   shortName: varchar('short_name', { length: 255 }),
-  inn: varchar('inn', { length: 12 }),
+  inn: varchar('inn', { length: 32 }),
   kpp: varchar('kpp', { length: 9 }),
   ogrn: varchar('ogrn', { length: 15 }),
   legalAddress: text('legal_address'),

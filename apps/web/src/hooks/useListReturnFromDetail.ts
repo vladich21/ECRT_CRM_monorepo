@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type DependencyList, type MutableRefObject } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { Location, NavigateFunction } from 'react-router-dom';
 
 type NavigationStateRecord = Record<string, unknown>;
@@ -15,10 +15,8 @@ export function useListReturnFromDetail<RestoredListState extends ListRestoredSc
   applyParsed: (restoredListState: RestoredListState) => void;
   applyFallback?: (navigationState: NavigationStateRecord) => void;
 }): {
-  skipNextListResetRef: MutableRefObject<boolean>;
   pendingScrollY: number | undefined;
 } {
-  const skipNextListResetRef = useRef(false);
   const [pendingScrollY, setPendingScrollY] = useState<number | undefined>();
   const getRawSnapshotRef = useRef(options.getRawSnapshot);
   const parseRef = useRef(options.parse);
@@ -29,6 +27,7 @@ export function useListReturnFromDetail<RestoredListState extends ListRestoredSc
   applyParsedRef.current = options.applyParsed;
   applyFallbackRef.current = options.applyFallback;
   const { location, navigate } = options;
+
   useLayoutEffect(() => {
     const locationState = location.state;
     if (locationState == null || typeof locationState !== 'object') return;
@@ -36,7 +35,6 @@ export function useListReturnFromDetail<RestoredListState extends ListRestoredSc
     const rawSnapshot = getRawSnapshotRef.current(navigationState);
     const restoredListState = parseRef.current(rawSnapshot);
     if (restoredListState != null) {
-      skipNextListResetRef.current = true;
       setPendingScrollY(restoredListState.scrollY);
       applyParsedRef.current(restoredListState);
       navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: {} });
@@ -44,18 +42,6 @@ export function useListReturnFromDetail<RestoredListState extends ListRestoredSc
     }
     applyFallbackRef.current?.(navigationState);
   }, [location.state, location.pathname, location.search, navigate]);
-  return { skipNextListResetRef, pendingScrollY };
-}
-export function useResetServerPageUnlessSkipped(
-  skipNextPaginationResetRef: MutableRefObject<boolean>,
-  resetPage: () => void,
-  deps: DependencyList,
-) {
-  useEffect(() => {
-    if (skipNextPaginationResetRef.current) {
-      skipNextPaginationResetRef.current = false;
-      return;
-    }
-    resetPage();
-  }, deps);
+
+  return { pendingScrollY };
 }

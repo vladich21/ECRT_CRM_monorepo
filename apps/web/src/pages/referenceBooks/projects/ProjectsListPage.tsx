@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
-import type { TablePaginationConfig } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -11,17 +10,23 @@ import { BackButton } from '../../../components/backButton/BackButton';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { getNameById } from '../../../helpers/getNameById';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
-import { getListScrollY, useListScrollRestoration } from '../../../hooks/useListScrollRestoration';
-import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
+import {
+  useResetPageWhenListQueryChanges,
+  useServerPaginationClamp,
+  useServerTablePagination,
+} from '../../../hooks/useServerTablePagination';
 import type { Project } from '../../../types/referenceTypes';
 import { useProjectListFilters } from './hooks/useProjectListFilters';
+import { useProjectsListUiState } from './hooks/useProjectsListUiState';
 import { ProjectCard } from './ProjectCard';
 import { ProjectFiltersModal } from './ProjectFiltersModal';
 import styles from './ProjectsListPage.module.scss';
 import { PROJECT_FILTER_TABS, type ProjectFilterTab } from './ProjectsListPage.types';
-import { buildProjectsListNavSnapshot, parseProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
+import { buildProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
+import { buildProjectsListQueryResetKey } from './utils/projectsListQueryResetKey';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const EMPTY_TAB_COUNTS: Record<ProjectFilterTab, number> = {
@@ -33,6 +38,7 @@ const EMPTY_TAB_COUNTS: Record<ProjectFilterTab, number> = {
   cancelled: 0,
   deleted: 0,
 };
+
 export default function ProjectsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,38 +59,37 @@ export default function ProjectsListPage() {
     resetDraftFilters,
     activeFiltersCount,
   } = useProjectListFilters();
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  useEffect(() => {
-    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(debounceTimerId);
-  }, [searchQuery]);
+
+  const [debouncedSearch, flushDebouncedSearch] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
-  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
-    location,
-    navigate,
-    getRawSnapshot: navigationState => navigationState.projectsListReturn,
-    parse: parseProjectsListNavSnapshot,
-    applyParsed: restoredListState => {
-      setSearchQuery(restoredListState.searchQuery);
-      setDebouncedSearch(restoredListState.searchQuery.trim());
-      setActiveTab(restoredListState.activeTab);
-      setAppliedFilters(restoredListState.appliedFilters);
-      setDraftFilters(restoredListState.appliedFilters);
-      setPage(restoredListState.page);
-      setPageSize(restoredListState.pageSize);
-    },
-    applyFallback: navigationState => {
-      if (navigationState.listTab != null) {
-        setActiveTab(navigationState.listTab as ProjectFilterTab);
-        return;
-      }
-      if (navigationState.deletionScope === 'deleted') setActiveTab('deleted');
-    },
+
+  const { restoreToken, pendingScrollY } = useProjectsListUiState(location, navigate, {
+    setSearchQuery,
+    flushDebouncedSearch,
+    setActiveTab,
+    setAppliedFilters,
+    setDraftFilters,
+    setPage,
+    setPageSize,
   });
+
+  const queryResetKey = useMemo(
+    () =>
+      buildProjectsListQueryResetKey({
+        debouncedSearch,
+        activeTab,
+        appliedFilters,
+      }),
+    [debouncedSearch, activeTab, appliedFilters],
+  );
+
+  useResetPageWhenListQueryChanges(queryResetKey, resetPage, restoreToken);
+
   const apiFilters = useMemo((): ProjectsListParams => {
     const base: ProjectsListParams = {
-      search: debouncedSearch || undefined,
+      search: debouncedSearch.trim() || undefined,
       list_tab: activeTab === 'deleted' ? 'all' : activeTab,
       deleted_scope: activeTab === 'deleted' ? 'deleted' : 'active',
     };
@@ -115,25 +120,27 @@ export default function ProjectsListPage() {
     }
     return base;
   }, [debouncedSearch, activeTab, appliedFilters]);
+
   const { data, isLoading, isError, isFetching } = useProjectsList(apiFilters, page, pageSize);
   const { data: referenceBooks, isError: isRefsError, isLoading: isRefsLoading } = useReferenceData(['users']);
   const projects = data?.data ?? [];
   const total = data?.total ?? 0;
   const tabCounts = { ...EMPTY_TAB_COUNTS, ...(data?.tab_counts ?? {}) };
   const deletionTabCounts = data?.deletion_tab_counts ?? EMPTY_DELETION_TAB_COUNTS;
-  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
-  useEffect(() => {
-    if (isRefsError || isError) return;
-    const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
-    if (page > maxPage) {
-      const pagination: TablePaginationConfig = { current: maxPage, pageSize };
-      handleTableChange(pagination);
-    }
-  }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
+
+  useServerPaginationClamp({
+    total,
+    page,
+    pageSize,
+    disabled: isRefsError || isError,
+    handleTableChange,
+  });
+
   const selectOptions = useMemo(() => {
     const users = (referenceBooks?.users ?? []).map(user => ({ label: user.name, value: user.id }));
     return { managers: users };
   }, [referenceBooks]);
+
   const handleProjectClick = (project: Project) =>
     navigate(`/projects/${project.id}`, {
       state: {
@@ -149,20 +156,18 @@ export default function ProjectsListPage() {
         ),
       },
     });
-  const handlePageChange = (newPage: number, newPageSize?: number) =>
-    handleTableChange({
-      current: newPage,
-      pageSize: newPageSize ?? pageSize,
-    });
 
   const isInitialLoad = isRefsLoading || (isLoading && !data);
   const isListReady = !isInitialLoad && !isFetching;
   useListScrollRestoration({ pendingScrollY, isListReady });
+  useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
+
   const paginationConfig = getPaginationConfig(total);
+
   return (
     <div className={styles.wrap}>
       <BackButton path='/' />
@@ -235,10 +240,7 @@ export default function ProjectsListPage() {
         draftFilters={draftFilters}
         onUpdateDraftFilter={updateDraftFilter}
         onClose={closeFiltersModal}
-        onApply={() => {
-          applyFilters();
-          resetPage();
-        }}
+        onApply={applyFilters}
         onReset={resetDraftFilters}
         selectOptions={selectOptions}
       />
@@ -269,14 +271,14 @@ export default function ProjectsListPage() {
       {(paginationConfig.total ?? 0) > 0 && (
         <div className={styles.pagination}>
           <Pagination
-            current={paginationConfig.current}
-            pageSize={paginationConfig.pageSize}
-            total={paginationConfig.total}
-            showSizeChanger
-            pageSizeOptions={[20, 50, 100]}
-            showTotal={(t, range) => `${range[0]}-${range[1]} из ${t}`}
-            onChange={handlePageChange}
-            onShowSizeChange={(_, size) => handlePageChange(1, size)}
+            {...paginationConfig}
+            onChange={(newPage, newPageSize) =>
+              handleTableChange({
+                current: newPage,
+                pageSize: newPageSize ?? pageSize,
+              })
+            }
+            onShowSizeChange={(_, size) => handleTableChange({ current: 1, pageSize: size })}
           />
         </div>
       )}

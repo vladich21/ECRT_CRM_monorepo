@@ -13,6 +13,7 @@ import {
   ToolOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 import { Progress } from 'antd';
 
 import type { Partner } from '../../../types/partner';
@@ -37,7 +38,8 @@ interface SupplierCardProps {
   evaluationKpiDaysHint?: string;
   initialEvaluation?: InitialSupplierEvaluation | null;
   initialEvaluationLoading?: boolean;
-  onClick: (partner: Partner) => void;
+  detailTo: string;
+  detailState?: Record<string, unknown>;
 }
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -67,7 +69,8 @@ export default function SupplierCard({
   evaluationKpiDaysHint,
   initialEvaluation,
   initialEvaluationLoading,
-  onClick,
+  detailTo,
+  detailState,
 }: SupplierCardProps) {
   const statusName =
     references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
@@ -98,10 +101,11 @@ export default function SupplierCard({
   const progressPercent = avgScore == null ? 0 : Math.min(100, Math.round((avgScore / 5) * 100));
   const scoreStroke = avgScore == null ? '#d9d9d9' : scoreColor(avgScore);
   return (
-    <div
+    <Link
+      to={detailTo}
+      state={detailState}
       className={styles.card}
       {...(dangerStripe ? { 'data-danger-stripe': true as const } : {})}
-      onClick={() => onClick(partner)}
     >
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
@@ -233,6 +237,6 @@ export default function SupplierCard({
       <div className={styles.activityCol}>
         <RightOutlined className={styles.arrow} />
       </div>
-    </div>
+    </Link>
   );
 }

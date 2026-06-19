@@ -105,6 +105,7 @@ export function useSupplierEvaluationsList(
         offset,
       }),
     enabled,
+    placeholderData: previousData => previousData,
   });
 }
 

@@ -33,6 +33,11 @@ const PATENT_FILE_SECTIONS = new Set([
   'decision_negative',
 ]);
 const PROJECT_DOCUMENT_SECTION_KEYS = new Set(['pm_plan', 'milestones', 'risk_matrix']);
+const PARTNER_FILE_SECTION_KEYS = new Set([
+  'default',
+  'evaluation_corrective_actions',
+  'evaluation_corrective_result',
+]);
 
 export type PatentRequestsUploadMeta = {
   responseRequired: boolean;
@@ -47,6 +52,10 @@ function normalizeDocumentSection(entityType: string, raw?: string | null): stri
   if (entityType === 'project') {
     if (raw && PROJECT_DOCUMENT_SECTION_KEYS.has(raw)) return raw;
     return 'pm_plan';
+  }
+  if (entityType === 'partner') {
+    if (raw && PARTNER_FILE_SECTION_KEYS.has(raw)) return raw;
+    return 'default';
   }
   // Генерик-секция документов согласования (для любой сущности).
   if (raw === 'approval') return 'approval';

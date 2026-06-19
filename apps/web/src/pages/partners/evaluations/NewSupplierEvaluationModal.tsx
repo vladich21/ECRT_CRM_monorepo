@@ -27,6 +27,7 @@ import {
   weightPercent,
   weightedLineFromScoreAndWeight,
 } from './supplierEvaluationUi';
+import { getEvaluationCommentRules, requiresEvaluationComment } from './evaluationLowScore';
 import styles from './NewSupplierEvaluationModal.module.scss';
 
 const { Text } = Typography;
@@ -241,6 +242,11 @@ export default function NewSupplierEvaluationModal({
     projectOptions.length,
   );
 
+  const requiresComment = useMemo(
+    () => requiresEvaluationComment(Object.values(scores)),
+    [scores],
+  );
+
   const handleOk = () =>
     form.validateFields().then(values => {
       if (!criteriaOrdered.length) return;
@@ -419,8 +425,21 @@ export default function NewSupplierEvaluationModal({
           </Space>
         </div>
 
-        <Form.Item name='comment' label='Комментарий' className={styles.commentField}>
-          <Input.TextArea rows={2} placeholder='Дополнительные замечания…' />
+        <Form.Item
+          name='comment'
+          label='Комментарий'
+          className={styles.commentField}
+          rules={getEvaluationCommentRules(requiresComment)}
+          required={requiresComment}
+        >
+          <Input.TextArea
+            rows={2}
+            placeholder={
+              requiresComment
+                ? 'Укажите причину низкой оценки и принятые меры…'
+                : 'Дополнительные замечания…'
+            }
+          />
         </Form.Item>
       </Form>
     </Modal>

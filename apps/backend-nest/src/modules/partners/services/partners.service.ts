@@ -1334,12 +1334,8 @@ export class PartnersService {
 
   private validateInnKppRequired(data: Record<string, unknown>) {
     const inn = data.inn != null ? String(data.inn).trim() : '';
-    const kpp = data.kpp != null ? String(data.kpp).trim() : '';
     if (!inn) {
       throw new ConflictException('ИНН обязателен для заполнения');
-    }
-    if (!kpp) {
-      throw new ConflictException('КПП обязателен для заполнения');
     }
   }
 

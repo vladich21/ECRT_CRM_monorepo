@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Checkbox, DatePicker, Form, Input, Modal, Space, Typography } from 'antd';
+import { Button, Checkbox, DatePicker, Form, Input, Modal, Space, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import {
@@ -17,6 +17,7 @@ import {
   lineWeightedScore,
   weightPercent,
 } from './supplierEvaluationUi';
+import { getEvaluationCommentRules, requiresEvaluationComment } from './evaluationLowScore';
 import styles from './NewSupplierEvaluationModal.module.scss';
 
 const { Text } = Typography;
@@ -75,6 +76,14 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
   }, [includedCriteria, scores, sumWeights]);
 
   const previewCategory = categoryFromWeightedScore(weighted);
+
+  const requiresComment = useMemo(
+    () =>
+      requiresEvaluationComment(
+        includedCriteria.map(criterion => scores[criterion.id] ?? 4),
+      ),
+    [includedCriteria, scores],
+  );
 
   const handleOk = () =>
     form.validateFields().then(values => {
@@ -229,8 +238,21 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
           </Space>
         </div>
 
-        <Form.Item name='comment' label='Комментарий' className={styles.commentField}>
-          <Input.TextArea rows={2} placeholder='Дополнительные замечания…' />
+        <Form.Item
+          name='comment'
+          label='Комментарий'
+          className={styles.commentField}
+          rules={getEvaluationCommentRules(requiresComment)}
+          required={requiresComment}
+        >
+          <Input.TextArea
+            rows={2}
+            placeholder={
+              requiresComment
+                ? 'Укажите причину низкой оценки и принятые меры…'
+                : 'Дополнительные замечания…'
+            }
+          />
         </Form.Item>
       </Form>
     </Modal>

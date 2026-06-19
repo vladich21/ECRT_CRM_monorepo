@@ -9,7 +9,8 @@ export function listNavSnapshotFormatVersion(raw: unknown): number | undefined {
 export function asListNavSnapshotV1Record(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object') return null;
   const v = listNavSnapshotFormatVersion(raw);
-  if (v !== 1 && v !== 2) return null;
+  // v3 — реестр контрагентов: добавлены sortBy / sortOrder к формату v1–v2.
+  if (v !== 1 && v !== 2 && v !== 3) return null;
   return raw as Record<string, unknown>;
 }
 
@@ -76,7 +77,7 @@ export function readListReturnSnapshot<TTab extends string, TApplied>(
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   const ver = r.version;
-  if (ver !== 1 && ver !== 2) return null;
+  if (ver !== 1 && ver !== 2 && ver !== 3) return null;
 
   const searchQuery = typeof r.searchQuery === 'string' ? r.searchQuery : '';
   const page = typeof r.page === 'number' && Number.isInteger(r.page) && r.page >= 1 ? r.page : 1;

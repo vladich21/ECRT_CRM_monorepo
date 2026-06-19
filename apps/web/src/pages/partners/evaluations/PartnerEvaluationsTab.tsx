@@ -21,7 +21,8 @@ import {
 } from '../../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { useNotification } from '../../../customhooks/useNotification';
-import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { useServerTablePagination, useResetPageWhenListQueryChanges, useServerPaginationClamp } from '../../../hooks/useServerTablePagination';
+import { useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
 import { mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner } from '../../../types/partner';
 import type {
@@ -41,6 +42,7 @@ import {
   countActiveRegistryFilters,
   type EvaluationsRegistryAppliedFilters,
 } from '../../supplierEvaluations/SupplierEvaluationsRegistryFiltersModal';
+import { buildPartnerEvaluationsListQueryResetKey } from '../../supplierEvaluations/supplierEvaluationsRegistry.model';
 import EvaluationExpandedContent from './EvaluationExpandedContent';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
 import NewInitialSupplierEvaluationModal from './NewInitialSupplierEvaluationModal';
@@ -57,6 +59,24 @@ import {
 } from './supplierEvaluationUi';
 
 const { Text } = Typography;
+
+function initialEvaluationAsListRow(record: InitialSupplierEvaluation): SupplierEvaluationListItem {
+  return {
+    id: record.id,
+    partner_id: record.partner_id,
+    project_id: '',
+    status: record.status,
+    weighted_score: record.weighted_score,
+    category: record.category,
+    evaluated_at: record.evaluated_at,
+    next_reevaluation_date: record.next_reevaluation_date,
+    comment: record.comment,
+    created_by: '',
+    updated_by: '',
+    created_at: record.created_at,
+    updated_at: record.updated_at,
+  };
+}
 
 export default function PartnerEvaluationsTab() {
   const queryClient = useQueryClient();
@@ -213,9 +233,27 @@ export default function PartnerEvaluationsTab() {
 
   const activeFiltersCount = useMemo(() => countActiveRegistryFilters(appliedListFilters), [appliedListFilters]);
 
-  useEffect(() => {
-    resetPage();
-  }, [partner.id, rowStatusTab, appliedListFilters, resetPage]);
+  const listQueryResetKey = useMemo(
+    () =>
+      buildPartnerEvaluationsListQueryResetKey({
+        partnerId: partner.id,
+        rowStatusTab,
+        appliedListFilters,
+      }),
+    [partner.id, rowStatusTab, appliedListFilters],
+  );
+
+  useResetPageWhenListQueryChanges(listQueryResetKey, resetPage);
+
+  useScrollToTopOnPageChange(page);
+
+  useServerPaginationClamp({
+    total: data?.total ?? 0,
+    page,
+    pageSize,
+    disabled: isLoading && !listDataRaw,
+    handleTableChange,
+  });
 
   const columns: ColumnsType<SupplierEvaluationListItem> = [
     Table.EXPAND_COLUMN,
@@ -324,6 +362,7 @@ export default function PartnerEvaluationsTab() {
   ];
 
   const initialColumns: ColumnsType<InitialSupplierEvaluation> = [
+    Table.EXPAND_COLUMN,
     {
       title: 'Дата оценки',
       dataIndex: 'evaluated_at',
@@ -399,6 +438,16 @@ export default function PartnerEvaluationsTab() {
             dataSource={initialEvaluationData}
             pagination={false}
             size='small'
+            expandable={{
+              expandedRowRender: record => (
+                <EvaluationExpandedContent
+                  row={initialEvaluationAsListRow(record)}
+                  partnerId={partner.id}
+                  showProjectActions={false}
+                />
+              ),
+              rowExpandable: () => true,
+            }}
           />
         ) : null}
       </div>
@@ -523,13 +572,11 @@ export default function PartnerEvaluationsTab() {
         onApply={() => {
           setAppliedListFilters(draftListFilters);
           setFiltersModalOpen(false);
-          resetPage();
         }}
         onReset={() => {
           setDraftListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
           setAppliedListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
           setFiltersModalOpen(false);
-          resetPage();
         }}
         projectOptions={projectOptions}
         buyerOptions={buyerOptions}

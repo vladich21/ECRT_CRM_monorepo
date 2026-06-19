@@ -7,6 +7,7 @@ import MainLayout from '../layouts/MainLayout';
 import { SECTIONS, type SectionCode } from '../shared/permissions';
 
 import PrivateRoute from './PrivateRoute';
+import { PARTNER_FILE_SECTIONS } from '../pages/partners/partnerFileSections';
 
 const CommentsList = lazy(() => import('../components/comments/CommentsList'));
 const EntityFilesTab = lazy(() =>
@@ -212,7 +213,12 @@ export default function AppRoutes() {
             <Route path="contracts" element={<ContractsListPage />} />
             <Route path="evaluations" element={<PartnerEvaluationsTab />} />
             <Route path="comments" element={<CommentsList entityType="partner" />} />
-            <Route path="files" element={<EntityFilesTab entityType="partner" />} />
+            <Route
+              path="files"
+              element={
+                <EntityFilesTab entityType="partner" documentSections={PARTNER_FILE_SECTIONS} />
+              }
+            />
             <Route path="verification" element={<PartnerVerificationTab />} />
           </Route>
         </Route>

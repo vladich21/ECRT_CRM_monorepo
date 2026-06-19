@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
   CalendarOutlined,
   CloudUploadOutlined,
   DeleteOutlined,
@@ -43,6 +45,7 @@ import { commentApi } from '../../api/comments/commentApi';
 import { commentQueryKeys } from '../../api/comments/commentQueryKeys';
 import { patentApi } from '../../api/patents/patentApi';
 import { patentQueryKeys } from '../../api/patents/patentQueryKeys';
+import { usePatentById, useUpdatePatent } from '../../api/patents/patentApiHooks';
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useOpenAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { getApiErrorMessage } from '../../customhooks/confirmDelete/getApiErrorMessage';
@@ -138,6 +141,8 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
   const { contextHolder, showNotification } = useNotification();
   const currentSrmUserId = useCurrentSrmUserId();
   const { data: files = [], isLoading } = useFilesByEntity(entityType, entityId);
+  const { data: patent } = usePatentById(entityType === 'patent' ? entityId : '');
+  const updatePatentMutation = useUpdatePatent();
   const { data: referenceBooks } = useReferenceData(['users']);
   const deleteFileMutation = useDeleteFile();
   const patchMetaMutation = usePatchFileMeta();
@@ -157,6 +162,9 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
   const [copyPromptSubmitting, setCopyPromptSubmitting] = useState(false);
   const [copyPromptStayCurrent, setCopyPromptStayCurrent] = useState(false);
   const [copyPromptComment, setCopyPromptComment] = useState('');
+  const [decisionMarkerUpdating, setDecisionMarkerUpdating] = useState<'positive' | 'negative' | null>(
+    null,
+  );
   const patentTabsStorageKey = `entity-files:${entityType}:${entityId}:patent-active-tab`;
   const [activePatentTab, setActivePatentTab] = useState<PatentFilesTabKey>(() => {
     if (typeof window === 'undefined') return DEFAULT_PATENT_FILES_TAB;
@@ -323,6 +331,47 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
     setCopyPromptOpen(true);
   };
 
+  const handleDecisionMarkerChange = async (kind: 'positive' | 'negative', checked: boolean) => {
+    if (entityType !== 'patent') return;
+    setDecisionMarkerUpdating(kind);
+    try {
+      const payload =
+        kind === 'positive'
+          ? {
+              decision_positive_marked: checked,
+              ...(checked ? { decision_negative_marked: false } : {}),
+            }
+          : {
+              decision_negative_marked: checked,
+              ...(checked ? { decision_positive_marked: false } : {}),
+            };
+      await updatePatentMutation.mutateAsync({ id: entityId, data: payload });
+      showNotification(
+        'success',
+        'Готово',
+        checked
+          ? kind === 'positive'
+            ? 'Положительное решение отмечено'
+            : 'Отрицательное решение отмечено'
+          : 'Отметка решения снята',
+      );
+      if (checked) {
+        showNotification('info', 'Статус обновлен', 'Статус РИД пересчитан автоматически');
+        if (kind === 'negative') {
+          openCopyPromptFromRefusal();
+        }
+      }
+    } catch (e: unknown) {
+      showNotification(
+        'error',
+        'Ошибка',
+        getApiErrorMessage(e) ?? 'Не удалось сохранить отметку решения',
+      );
+    } finally {
+      setDecisionMarkerUpdating(null);
+    }
+  };
+
   const submitCopyFromRefusal = async () => {
     try {
       setCopyPromptSubmitting(true);
@@ -477,9 +526,19 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
 
   const renderSectionColumn = (section: EntityFileSectionDef) => {
     const isRequests = section.key === 'requests';
+    const isPositiveDecision = section.key === 'decision_positive';
     const isNegativeDecision = section.key === 'decision_negative';
+    const isDecisionSection = isPositiveDecision || isNegativeDecision;
     const sectionFiles = files.filter(f => sectionKeyForFile(f.document_section) === section.key);
     const sectionHasFiles = sectionFiles.length > 0;
+    const decisionMarked = isPositiveDecision
+      ? Boolean(patent?.decision_positive_marked)
+      : isNegativeDecision
+        ? Boolean(patent?.decision_negative_marked)
+        : false;
+    const hasNegativeDecisionSignal =
+      Boolean(patent?.decision_negative_marked) ||
+      files.some(f => sectionKeyForFile(f.document_section) === 'decision_negative');
     const headingId = `entity-files-${entityType}-${section.key}`;
 
     const withDeadlines = isRequests ? sectionFiles.filter(f => f.response_deadline) : [];
@@ -508,7 +567,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
             <Button
               size='small'
               onClick={openCopyPromptFromRefusal}
-              disabled={!sectionHasFiles || uploading}
+              disabled={!hasNegativeDecisionSignal || uploading || decisionMarkerUpdating !== null}
             >
               Создать копию РИД
             </Button>
@@ -536,6 +595,25 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
           </div>
         ) : null}
 
+        {entityType === 'patent' && isDecisionSection && decisionMarked ? (
+          <div
+            className={`${styles.requestStatusBanner} ${
+              isNegativeDecision ? styles.decisionMarkedBannerNegative : styles.decisionMarkedBannerPositive
+            }`}
+          >
+            {isNegativeDecision ? (
+              <CloseCircleOutlined className={styles.requestStatusIcon} />
+            ) : (
+              <CheckCircleOutlined className={styles.requestStatusIcon} />
+            )}
+            <Text className={styles.requestStatusText}>
+              {isNegativeDecision
+                ? 'Отказ в выдаче отмечен без прикреплённого документа'
+                : 'Положительное решение отмечено без прикреплённого документа'}
+            </Text>
+          </div>
+        ) : null}
+
         {isRequests ? (
           <div className={styles.requestUploadBar}>
             <Checkbox
@@ -555,6 +633,23 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                 className={styles.requestDeadlinePicker}
               />
             </div>
+          </div>
+        ) : null}
+
+        {entityType === 'patent' && isDecisionSection ? (
+          <div className={styles.decisionMarkerBar}>
+            <Checkbox
+              checked={decisionMarked}
+              disabled={uploading || decisionMarkerUpdating !== null}
+              onChange={e =>
+                void handleDecisionMarkerChange(
+                  isPositiveDecision ? 'positive' : 'negative',
+                  e.target.checked,
+                )
+              }
+            >
+              {isPositiveDecision ? 'Решение получено (без документа)' : 'Отказ в выдаче (без документа)'}
+            </Checkbox>
           </div>
         ) : null}
 
@@ -702,7 +797,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
           destroyOnHidden
         >
           <Text style={{ display: 'block', marginBottom: 10 }}>
-            Добавлено отрицательное решение. Можно создать новую карточку-копию и связать ее с текущей.
+            Отмечено отрицательное решение. Можно создать новую карточку-копию и связать её с текущей.
           </Text>
           <Checkbox
             checked={copyPromptStayCurrent}

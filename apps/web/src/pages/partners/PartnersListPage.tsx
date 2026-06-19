@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   CloudSyncOutlined,
   ExportOutlined,
@@ -8,16 +8,14 @@ import {
   SortAscendingOutlined,
 } from '@ant-design/icons';
 import { Button, Input, Pagination, Select, Spin } from 'antd';
-import type { TablePaginationConfig } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { BackButton } from '../../components/backButton/BackButton';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { getListScrollY, useListScrollRestoration } from '../../hooks/useListScrollRestoration';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
-import { useServerTablePagination } from '../../hooks/useServerTablePagination';
+import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
+import { useServerPaginationClamp, useResetPageWhenListQueryChanges, useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
 import type { PartnerListSortBy } from '../../api/partners/partnerApi';
 import { usePartnerSyncNow, usePartnerSyncStatus } from '../../api/partners/partnerApiHooks';
@@ -26,8 +24,8 @@ import { PartnerFiltersModal } from './PartnerFiltersModal';
 import { PartnerExportModal } from './components/export/PartnerExportModal';
 import { buildPartnersApiFilters } from './utils/buildPartnersApiFilters';
 import { toPartnerListDisplayPartner } from './utils/partnersListDisplayUtils';
-import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
-import { loadPartnersListPersistedUi, savePartnersListPersistedUi } from './utils/partnersListPersistedUi';
+import { buildPartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
+import { buildPartnersListQueryResetKey } from './utils/partnersListQueryResetKey';
 import {
   isPartnerCreateRestricted,
   PARTNER_CREATE_RESTRICTED_MESSAGE,
@@ -35,10 +33,10 @@ import {
 import styles from './PartnersListPage.module.scss';
 import { usePartnersListData } from './hooks/usePartnersListData';
 import { usePartnersListFilters } from './hooks/usePartnersListFilters';
+import { usePartnersListUiState } from './hooks/usePartnersListUiState';
 import SupplierCard from './registry/SupplierCard';
 
 const SEARCH_DEBOUNCE_MS = 350;
-const PERSIST_UI_DEBOUNCE_MS = 400;
 const PARTNERS_LIST_SCOPE_TAB_LABEL = 'Все контрагенты';
 
 const SORT_OPTIONS: { value: PartnerListSortBy; label: string }[] = [
@@ -78,76 +76,31 @@ export default function PartnersListPage() {
   const [debouncedSearch, flushDebouncedSearch] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const isCreateRestricted = isPartnerCreateRestricted();
+
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
-  const restoredFromNavigationRef = useRef(false);
-  const canPersistPartnersListUiRef = useRef(false);
-  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
+
+  const { restoreToken, pendingScrollY } = usePartnersListUiState(
     location,
     navigate,
-    getRawSnapshot: navigationState => navigationState.partnersListReturn,
-    parse: parsePartnersListNavSnapshot,
-    applyParsed: restoredListState => {
-      restoredFromNavigationRef.current = true;
-      setSearchQuery(restoredListState.searchQuery);
-      flushDebouncedSearch(restoredListState.searchQuery.trim());
-      setAppliedFilters(restoredListState.appliedFilters);
-      setDraftFilters(restoredListState.appliedFilters);
-      setPage(restoredListState.page);
-      setPageSize(restoredListState.pageSize);
-      restoreListSorting({ sortBy: restoredListState.sortBy, sortOrder: restoredListState.sortOrder });
-      savePartnersListPersistedUi({
-        searchQuery: restoredListState.searchQuery,
-        appliedFilters: restoredListState.appliedFilters,
-        page: restoredListState.page,
-        pageSize: restoredListState.pageSize,
-        sortBy: restoredListState.sortBy,
-        sortOrder: restoredListState.sortOrder,
-      });
-    },
-    applyFallback: navigationState => {
-      if (navigationState.listTab === 'deleted' || navigationState.deletionScope === 'deleted') {
-        restoredFromNavigationRef.current = true;
-        setAppliedFilters(prev => ({ ...prev, isDeleted: 'yes' }));
-        setDraftFilters(prev => ({ ...prev, isDeleted: 'yes' }));
-        return;
-      }
-      if (navigationState.listTab === 'ready') {
-        restoredFromNavigationRef.current = true;
-        setAppliedFilters(prev => ({ ...prev, isApproved: 'yes' }));
-        setDraftFilters(prev => ({ ...prev, isApproved: 'yes' }));
-        return;
-      }
-      if (navigationState.listTab === 'in_progress') {
-        restoredFromNavigationRef.current = true;
-        setAppliedFilters(prev => ({ ...prev, isApproved: 'no' }));
-        setDraftFilters(prev => ({ ...prev, isApproved: 'no' }));
-      }
-    },
-  });
-  useLayoutEffect(() => {
-    if (restoredFromNavigationRef.current) {
-      restoredFromNavigationRef.current = false;
-    } else {
-      const persisted = loadPartnersListPersistedUi();
-      if (persisted) {
-        skipNextListResetRef.current = true;
-        setSearchQuery(persisted.searchQuery);
-        flushDebouncedSearch(persisted.searchQuery.trim());
-        setAppliedFilters(persisted.appliedFilters);
-        setDraftFilters(persisted.appliedFilters);
-        setPage(persisted.page);
-        setPageSize(persisted.pageSize);
-        restoreListSorting({ sortBy: persisted.sortBy, sortOrder: persisted.sortOrder });
-      }
-    }
-    canPersistPartnersListUiRef.current = true;
-  }, []);
-  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, appliedFilters, resetPage]);
+    { setSearchQuery, flushDebouncedSearch },
+    { setAppliedFilters, setDraftFilters, restoreListSorting },
+    { setPage, setPageSize },
+    { searchQuery, appliedFilters, page, pageSize, sortBy, sortOrder },
+  );
+
+  const queryResetKey = useMemo(
+    () => buildPartnersListQueryResetKey({ debouncedSearch, appliedFilters, sortBy, sortOrder }),
+    [debouncedSearch, appliedFilters, sortBy, sortOrder],
+  );
+
+  useResetPageWhenListQueryChanges(queryResetKey, resetPage, restoreToken);
+
   const apiFilters = useMemo(
     () => buildPartnersApiFilters(debouncedSearch, appliedFilters, sortBy, sortOrder),
     [debouncedSearch, appliedFilters, sortBy, sortOrder],
   );
+
   const {
     partners,
     total,
@@ -162,68 +115,38 @@ export default function PartnersListPage() {
     filterOptions,
   } = usePartnersListData(apiFilters, page, pageSize);
 
-  useEffect(() => {
-    if (!canPersistPartnersListUiRef.current) return;
-    const timeoutId = window.setTimeout(() => {
-      savePartnersListPersistedUi({
-        searchQuery,
-        appliedFilters,
-        page,
-        pageSize,
-        sortBy,
-        sortOrder,
-      });
-    }, PERSIST_UI_DEBOUNCE_MS);
-    return () => window.clearTimeout(timeoutId);
-  }, [searchQuery, appliedFilters, page, pageSize, sortBy, sortOrder]);
+  useServerPaginationClamp({
+    total,
+    page,
+    pageSize,
+    disabled: isRefsError || isError,
+    handleTableChange,
+  });
 
-  const applyFilters = () => {
-    commitAppliedFilters();
-    resetPage();
-  };
-  const resetFilters = () => {
-    commitResetFilters();
-    resetPage();
-  };
+  const paginationConfig = getPaginationConfig(total);
 
-  useEffect(() => {
-    if (isRefsError || isError) return;
-    const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
-    if (page > maxPage) {
-      const pagination: TablePaginationConfig = { current: maxPage, pageSize };
-      handleTableChange(pagination);
-    }
-  }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
-  const handleCardClick = (partner: Partner) => {
-    navigate(`/partners/${partner.id}`, {
-      state: {
-        from: 'partners-list',
-        deletionScope: partner.is_deleted ? ('deleted' as const) : undefined,
-        partnersListReturn: buildPartnersListNavSnapshot(
-          searchQuery,
-          appliedFilters,
-          page,
-          pageSize,
-          sortBy,
-          sortOrder,
-          getListScrollY(),
-        ),
-      },
-    });
-  };
-  const handlePageChange = (newPage: number, newPageSize?: number) =>
-    handleTableChange({
-      current: newPage,
-      pageSize: newPageSize ?? pageSize,
-    });
+  const buildPartnerDetailLinkState = (partner: Partner) => ({
+    from: 'partners-list',
+    deletionScope: partner.is_deleted ? ('deleted' as const) : undefined,
+    partnersListReturn: buildPartnersListNavSnapshot(
+      searchQuery,
+      appliedFilters,
+      page,
+      pageSize,
+      sortBy,
+      sortOrder,
+      getListScrollY(),
+    ),
+  });
 
   const isListReady = !isInitialLoad && !isFetching;
   useListScrollRestoration({ pendingScrollY, isListReady });
+  useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
-  const paginationConfig = getPaginationConfig(total);
+
   return (
     <div className={styles.wrap}>
       {contextHolder}
@@ -317,20 +240,14 @@ export default function PartnersListPage() {
                     className={styles.sortSelect}
                     value={sortBy}
                     options={SORT_OPTIONS}
-                    onChange={value => {
-                      setSortField(value);
-                      resetPage();
-                    }}
+                    onChange={value => setSortField(value)}
                     popupMatchSelectWidth={false}
                   />
                   <Button
                     type='default'
                     icon={<SortAscendingOutlined />}
                     title={sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'}
-                    onClick={() => {
-                      toggleSortOrder();
-                      resetPage();
-                    }}
+                    onClick={() => toggleSortOrder()}
                     className={styles.sortDirBtn}
                   >
                     {sortOrder === 'asc' ? 'A→Я' : 'Я→A'}
@@ -379,7 +296,8 @@ export default function PartnersListPage() {
                 evaluationKpiLoading={Boolean(partnerEvalKpiQueries[index]?.isPending)}
                 initialEvaluation={partnerInitialEvalQueries[index]?.data}
                 initialEvaluationLoading={Boolean(partnerInitialEvalQueries[index]?.isPending)}
-                onClick={handleCardClick}
+                detailTo={`/partners/${partner.id}`}
+                detailState={buildPartnerDetailLinkState(partner)}
               />
             ))
           )}
@@ -389,14 +307,14 @@ export default function PartnersListPage() {
       {(paginationConfig.total ?? 0) > 0 && (
         <div className={styles.pagination}>
           <Pagination
-            current={paginationConfig.current}
-            pageSize={paginationConfig.pageSize}
-            total={paginationConfig.total}
-            showSizeChanger
-            pageSizeOptions={[20, 50, 100]}
-            showTotal={(t, range) => `${range[0]}-${range[1]} из ${t}`}
-            onChange={handlePageChange}
-            onShowSizeChange={(_, size) => handlePageChange(1, size)}
+            {...paginationConfig}
+            onChange={(newPage, newPageSize) =>
+              handleTableChange({
+                current: newPage,
+                pageSize: newPageSize ?? pageSize,
+              })
+            }
+            onShowSizeChange={(_, size) => handleTableChange({ current: 1, pageSize: size })}
           />
         </div>
       )}
@@ -406,8 +324,8 @@ export default function PartnersListPage() {
         draftFilters={draftFilters}
         onUpdateDraftFilter={updateDraftFilter}
         onClose={closeFiltersModal}
-        onApply={applyFilters}
-        onReset={resetFilters}
+        onApply={commitAppliedFilters}
+        onReset={commitResetFilters}
         selectOptions={filterOptions}
       />
 

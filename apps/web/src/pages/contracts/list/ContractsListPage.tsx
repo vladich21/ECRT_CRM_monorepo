@@ -1,31 +1,33 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import type { TablePaginationConfig } from 'antd/es/table';
 
 import { BackButton } from '@/components/backButton/BackButton';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useNotification } from '@/customhooks/useNotification';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '@/hooks/useListReturnFromDetail';
-import { getListScrollY, useListScrollRestoration } from '@/hooks/useListScrollRestoration';
-import { useServerTablePagination } from '@/hooks/useServerTablePagination';
+import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '@/hooks/useListScrollRestoration';
+import {
+  useResetPageWhenListQueryChanges,
+  useServerPaginationClamp,
+  useServerTablePagination,
+} from '@/hooks/useServerTablePagination';
 import { Contract } from '@/types/contract';
 import { useContractListFilters } from '../hooks/useContractListFilters';
-import { buildContractsListNavSnapshot, parseContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
+import { useContractsListUiState } from '../hooks/useContractsListUiState';
+import { buildContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 import { useContractsListData } from './hooks/useContractsListData';
 import { buildContractsApiFilters } from './utils/buildContractsApiFilters';
+import { buildContractsListQueryResetKey } from './utils/contractsListQueryResetKey';
 import { validateAmountFilters } from './utils/contractListFilterValidators';
 import { ContractCard } from './ContractCard';
 import { ContractFiltersModal } from './ContractFiltersModal';
 import styles from './ContractsListPage.module.scss';
-import { FILTER_TABS, type FilterTab } from './ContractsListPage.types';
+import { FILTER_TABS } from './ContractsListPage.types';
 
 const SEARCH_DEBOUNCE_MS = 350;
-function coerceFilterTab(rawTab: unknown): FilterTab | null {
-  return FILTER_TABS.some(tab => tab.key === rawTab) ? (rawTab as FilterTab) : null;
-}
 
 export default function ContractsListPage() {
   const navigate = useNavigate();
@@ -52,46 +54,41 @@ export default function ContractsListPage() {
     validateFilters: validateAmountFilters,
   });
 
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  useEffect(() => {
-    const debounceTimerId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(debounceTimerId);
-  }, [searchQuery]);
+  const [debouncedSearch, flushDebouncedSearch] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
 
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
-  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
-    location,
-    navigate,
-    getRawSnapshot: navigationState => navigationState.contractsListReturn,
-    parse: parseContractsListNavSnapshot,
-    applyParsed: restoredListState => {
-      setSearchQuery(restoredListState.searchQuery);
-      setDebouncedSearch(restoredListState.searchQuery.trim());
-      setActiveTab(restoredListState.activeTab);
-      setAppliedFilters(restoredListState.appliedFilters);
-      setDraftFilters(restoredListState.appliedFilters);
-      setPage(restoredListState.page);
-      setPageSize(restoredListState.pageSize);
-    },
-    applyFallback: navigationState => {
-      if (navigationState.listTab != null) {
-        const fallbackTab = coerceFilterTab(navigationState.listTab);
-        if (fallbackTab) {
-          setActiveTab(fallbackTab);
-        }
-        return;
-      }
-      if (navigationState.deletionScope === 'deleted') setActiveTab('deleted');
-    },
+  const { restoreToken, pendingScrollY } = useContractsListUiState(location, navigate, {
+    setSearchQuery,
+    flushDebouncedSearch,
+    setActiveTab,
+    setAppliedFilters,
+    setDraftFilters,
+    setPage,
+    setPageSize,
   });
 
   const effectivePartnerId = partnerIdFromRoute ?? appliedFilters.partnerId ?? undefined;
+
+  const queryResetKey = useMemo(
+    () =>
+      buildContractsListQueryResetKey({
+        debouncedSearch,
+        activeTab,
+        appliedFilters,
+        routePartnerId: partnerIdFromRoute,
+      }),
+    [debouncedSearch, activeTab, appliedFilters, partnerIdFromRoute],
+  );
+
+  useResetPageWhenListQueryChanges(queryResetKey, resetPage, restoreToken);
+
   const apiFilters = useMemo(
     () => buildContractsApiFilters({ effectivePartnerId, debouncedSearch, activeTab, appliedFilters }),
     [effectivePartnerId, debouncedSearch, activeTab, appliedFilters],
   );
+
   const {
     contracts,
     total,
@@ -105,23 +102,20 @@ export default function ContractsListPage() {
     isFetching,
     isRefsError,
   } = useContractsListData(apiFilters, page, pageSize);
-  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [debouncedSearch, activeTab, resetPage]);
-  useEffect(() => {
-    if (isRefsError || isError) return;
-    const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);
-    if (page > maxPage) {
-      const pagination: TablePaginationConfig = { current: maxPage, pageSize };
-      handleTableChange(pagination);
-    }
-  }, [total, pageSize, page, isRefsError, isError, handleTableChange]);
+
+  useServerPaginationClamp({
+    total,
+    page,
+    pageSize,
+    disabled: isRefsError || isError,
+    handleTableChange,
+  });
 
   const handleApplyFilters = () => {
     const result = applyFilters();
     if (!result.success && result.error) {
       showNotification('error', 'Ошибка', result.error);
-      return;
     }
-    resetPage();
   };
 
   const handleContractClick = (contract: Contract) =>
@@ -141,18 +135,14 @@ export default function ContractsListPage() {
       },
     });
 
-  const handlePageChange = (newPage: number, newPageSize?: number) =>
-    handleTableChange({
-      current: newPage,
-      pageSize: newPageSize ?? pageSize,
-    });
-
   const isListReady = !isInitialLoad && !isFetching;
   useListScrollRestoration({ pendingScrollY, isListReady });
+  useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
   }
+
   const paginationConfig = getPaginationConfig(total);
 
   return (
@@ -252,14 +242,14 @@ export default function ContractsListPage() {
       {(paginationConfig.total ?? 0) > 0 && (
         <div className={styles.pagination}>
           <Pagination
-            current={paginationConfig.current}
-            pageSize={paginationConfig.pageSize}
-            total={paginationConfig.total}
-            showSizeChanger
-            pageSizeOptions={[20, 50, 100]}
-            showTotal={(t, range) => `${range[0]}-${range[1]} из ${t}`}
-            onChange={handlePageChange}
-            onShowSizeChange={(_, size) => handlePageChange(1, size)}
+            {...paginationConfig}
+            onChange={(newPage, newPageSize) =>
+              handleTableChange({
+                current: newPage,
+                pageSize: newPageSize ?? pageSize,
+              })
+            }
+            onShowSizeChange={(_, size) => handleTableChange({ current: 1, pageSize: size })}
           />
         </div>
       )}
