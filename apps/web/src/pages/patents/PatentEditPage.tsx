@@ -188,8 +188,12 @@ export default function PatentEditPage() {
   const responsibleId = formReferenceId(watchResponsibleId, patent.responsible_for_patenting_id);
   const projectId = formReferenceId(watchProjectId, patent.project_id);
   const ipTypeName = getNameById(intellectpropId, referenceBooks.patentIntellectProps) || '';
-  const hasDecisionNegative = (patentFiles ?? []).some(f => f.document_section === 'decision_negative');
-  const hasDecisionPositive = (patentFiles ?? []).some(f => f.document_section === 'decision_positive');
+  const hasDecisionNegative =
+    Boolean(patent?.decision_negative_marked) ||
+    (patentFiles ?? []).some(f => f.document_section === 'decision_negative');
+  const hasDecisionPositive =
+    Boolean(patent?.decision_positive_marked) ||
+    (patentFiles ?? []).some(f => f.document_section === 'decision_positive');
   const hasRequestsRequired = (patentFiles ?? []).some(
     f => f.document_section === 'requests' && Boolean(f.response_required),
   );

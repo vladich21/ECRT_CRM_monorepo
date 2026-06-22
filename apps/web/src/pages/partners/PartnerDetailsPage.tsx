@@ -161,7 +161,11 @@ export default function PartnerDetailsPage() {
             type='primary'
             icon={<EditOutlined />}
             disabled={!!partner.is_deleted}
-            onClick={() => navigate(`/partners/${partnerId}/edit`)}
+            onClick={() =>
+              navigate(`/partners/${partnerId}/edit`, {
+                state: location.state ?? undefined,
+              })
+            }
           >
             Редактировать
           </Button>

@@ -35,6 +35,7 @@ import { PartnerSyncModule } from './modules/partner-sync/partner-sync.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { AdminRbacModule } from './modules/admin-rbac/admin-rbac.module';
 import { ImpersonationModule } from './modules/impersonation/impersonation.module';
+import { ApprovalsModule } from './modules/approvals/approvals.module';
 
 @Module({
   imports: [
@@ -69,6 +70,11 @@ import { ImpersonationModule } from './modules/impersonation/impersonation.modul
     PartnerCategoriesModule,
     PartnerTypesModule,
     PartnerEconomicCategoriesModule,
+    // ВАЖНО: до FilesModule. У FilesController пустой префикс и жадный
+    // @Get(':entityType/:entityId/:filename') — он перехватывает любые
+    // 3-сегментные GET /api/X/Y/Z. Approvals (references/*, routes/:id,
+    // processes/:id) должен зарегистрировать роуты раньше files-catch-all.
+    ApprovalsModule,
     FilesModule,
     CommentsModule,
     SupplierEvaluationsModule,

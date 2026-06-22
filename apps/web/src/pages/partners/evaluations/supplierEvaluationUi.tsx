@@ -135,7 +135,7 @@ export function computeWeightedPreview(
   for (const criterion of criteria) {
     const line = evaluationScoreLines?.find(l => l.criterion_id === criterion.id);
     const w = line?.criterion_weight != null ? line.criterion_weight : criterion.weight;
-    const s = Number(scores[criterion.id] ?? 0);
+    const s = Number(scores[criterion.id] ?? 4);
     sum += weightedLineFromScoreAndWeight(s, w);
   }
   return sum;

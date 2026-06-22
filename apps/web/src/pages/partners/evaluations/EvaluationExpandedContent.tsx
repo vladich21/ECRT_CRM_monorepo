@@ -19,8 +19,10 @@ import {
   formatEvaluationScoreDisplay,
   lineWeightedScore,
   scoreColor,
+  SUPPLIER_EVAL_WEIGHTED_MAX_D_EXCLUSIVE,
   weightPercent,
 } from './supplierEvaluationUi';
+import { EvaluationLowScoreFilesHint } from './EvaluationLowScoreFilesHint';
 import styles from './EvaluationExpandedContent.module.scss';
 
 const { Text } = Typography;
@@ -29,17 +31,30 @@ type Props = {
   row: SupplierEvaluationListItem;
   partnerId: string;
   projectLabel?: string;
-  onReevaluate: (projectId: string) => void;
+  onReevaluate?: (projectId: string) => void;
+  /** false — только матрица, комментарий и подсказки (первичная оценка). */
+  showProjectActions?: boolean;
 };
 
-export default function EvaluationExpandedContent({ row, partnerId, projectLabel, onReevaluate }: Props) {
+export default function EvaluationExpandedContent({
+  row,
+  partnerId,
+  projectLabel,
+  onReevaluate,
+  showProjectActions = true,
+}: Props) {
   const { data: detail, isLoading } = useSupplierEvaluationDetail(row.id, true);
-  const { data: block } = useSupplierEvaluationBlock(partnerId, row.project_id, row.status === 'active');
+  const { data: block } = useSupplierEvaluationBlock(
+    partnerId,
+    row.project_id,
+    showProjectActions && row.status === 'active' && Boolean(row.project_id),
+  );
   const projectBlockActive = Boolean(block?.is_active);
   const deactivateMut = useDeactivateSupplierEvaluationBlock();
   const archiveMut = useArchiveSupplierEvaluation();
   const rowPresentationState = getRowUiStatus(row);
-  const canArchiveEvaluation = row.status === 'active' && Boolean(row.project_id) && row.project_id !== 'null';
+  const canArchiveEvaluation =
+    showProjectActions && row.status === 'active' && Boolean(row.project_id) && row.project_id !== 'null';
 
   const handleDeactivateBlock = () => {
     if (!block?.id) return;
@@ -92,6 +107,9 @@ export default function EvaluationExpandedContent({ row, partnerId, projectLabel
   const sortedScores = detail?.scores
     ? [...detail.scores].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     : [];
+
+  const recommendCorrectiveFiles =
+    detail != null && Number(detail.weighted_score) < SUPPLIER_EVAL_WEIGHTED_MAX_D_EXCLUSIVE;
 
   const scoreColumns: ColumnsType<SupplierEvaluationScoreDetail> = [
     {
@@ -202,7 +220,11 @@ export default function EvaluationExpandedContent({ row, partnerId, projectLabel
             />
           ) : null}
 
-          {row.status === 'active' && block?.is_active && (
+          {recommendCorrectiveFiles ? (
+            <EvaluationLowScoreFilesHint partnerId={partnerId} className={styles.mt12} />
+          ) : null}
+
+          {showProjectActions && row.status === 'active' && block?.is_active && (
             <Alert
               type='error'
               showIcon
@@ -216,7 +238,7 @@ export default function EvaluationExpandedContent({ row, partnerId, projectLabel
             />
           )}
 
-          {row.status === 'active' && (
+          {showProjectActions && row.status === 'active' && (
             <div className={actionBarClass}>
               <div className={styles.actionCol}>
                 {rowPresentationState === 'blocked' && (
@@ -269,7 +291,7 @@ export default function EvaluationExpandedContent({ row, partnerId, projectLabel
                     ghost
                     icon={<ReloadOutlined />}
                     disabled={projectBlockActive}
-                    onClick={() => onReevaluate(row.project_id)}
+                    onClick={() => onReevaluate?.(row.project_id)}
                   >
                     Провести переоценку
                   </Button>

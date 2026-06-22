@@ -49,10 +49,7 @@ export function PartnerFormRequisitesFields({ getFieldStatus, onUploadByInn, isL
             label='КПП'
             name='kpp'
             validateStatus={getFieldStatus('kpp')}
-            rules={[
-              { required: true, message: 'Введите КПП' },
-              { pattern: /^\d{9}$/, message: 'КПП должен содержать 9 цифр' },
-            ]}
+            rules={[{ pattern: /^$|^\d{9}$/, message: 'КПП должен содержать 9 цифр' }]}
           >
             <Input placeholder='Введите КПП' prefix={<BankOutlined />} status={getFieldStatus('kpp')} />
           </Form.Item>

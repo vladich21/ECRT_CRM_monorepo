@@ -9,6 +9,8 @@ export interface FileResponseDto {
   uploaded_at: string | null;
   response_required: boolean;
   response_deadline: string | null;
+  version: number;
+  is_current: boolean;
 }
 
 export interface UploadItemDto {

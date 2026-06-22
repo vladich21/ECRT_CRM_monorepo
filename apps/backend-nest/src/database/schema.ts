@@ -337,6 +337,10 @@ export const patents = pgTable('patents', {
   transformedFromPatentId: uuid('transformed_from_patent_id'),
   transformationNotificationIcZht: varchar('transformation_notification_ic_zht', { length: 255 }),
   transformationNotificationCir: varchar('transformation_notification_cir', { length: 255 }),
+  /** Решение о выдаче отмечено без файла в разделе «Положительное». */
+  decisionPositiveMarked: boolean('decision_positive_marked').notNull().default(false),
+  /** Отказ в выдаче отмечен без файла в разделе «Отрицательное». */
+  decisionNegativeMarked: boolean('decision_negative_marked').notNull().default(false),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
   isDeleted: boolean('is_deleted').notNull().default(false),
@@ -476,13 +480,17 @@ export const files = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }),
     createdBy: uuid('created_by'),
     updatedBy: uuid('updated_by'),
+    /** Версионность (F-V0): version — номер версии/раунда; is_current — входит ли в последнюю версию набора. */
+    version: integer('version').notNull().default(1),
+    isCurrent: boolean('is_current').notNull().default(true),
   },
   (table) => [
-    uniqueIndex('files_entity_section_name').on(
+    uniqueIndex('files_entity_section_name_version').on(
       table.entityType,
       table.tableId,
       table.documentSection,
       table.name,
+      table.version,
     ),
   ],
 );
@@ -506,7 +514,7 @@ export const partners = pgTable('partners', {
   thesisId: uuid('thesis_id'),
   name: varchar('name', { length: 255 }),
   shortName: varchar('short_name', { length: 255 }),
-  inn: varchar('inn', { length: 12 }),
+  inn: varchar('inn', { length: 32 }),
   kpp: varchar('kpp', { length: 9 }),
   ogrn: varchar('ogrn', { length: 15 }),
   legalAddress: text('legal_address'),
@@ -614,3 +622,256 @@ export const syncMetadata = pgTable('sync_metadata', {
   result: jsonb('result'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
+
+// ============================================================
+// Согласования документов (approvals). FK и CHECK — в scripts/approvals/.
+// enum-подобные поля хранятся как varchar (в проекте pgEnum не используется).
+// ============================================================
+
+/** Типы сущностей, поддерживающие согласование (contract/partner/patent/project). */
+export const refApprovalEntityTypes = pgTable(
+  'ref_approval_entity_types',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: varchar('code', { length: 50 }).notNull(),
+    name: varchar('name', { length: 100 }).notNull(),
+    tableName: varchar('table_name', { length: 100 }).notNull(),
+    statusField: varchar('status_field', { length: 50 }).default('status_id'),
+    isActive: boolean('is_active').default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [uniqueIndex('appr_entity_types_code_uidx').on(t.code)],
+);
+
+/** Роли шагов: approver / approver_final (зашиты в логику). */
+export const refApprovalStepRoles = pgTable(
+  'ref_approval_step_roles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: varchar('code', { length: 50 }).notNull(),
+    name: varchar('name', { length: 100 }).notNull(),
+    description: text('description'),
+    color: varchar('color', { length: 20 }).default('#3b82f6'),
+    isActive: boolean('is_active').default(true),
+  },
+  (t) => [uniqueIndex('appr_step_roles_code_uidx').on(t.code)],
+);
+
+/** Маршрут согласования (шаблон процесса). */
+export const approvalRoutes = pgTable(
+  'approval_routes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: varchar('code', { length: 50 }).notNull(),
+    name: varchar('name', { length: 200 }).notNull(),
+    description: text('description'),
+    entityTypeId: uuid('entity_type_id').notNull(),
+    isDefault: boolean('is_default').default(false),
+    isActive: boolean('is_active').default(true),
+    onCompleteActions: jsonb('on_complete_actions').default([]),
+    createdBy: uuid('created_by'),
+    updatedBy: uuid('updated_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('appr_routes_code_uidx').on(t.code),
+    index('appr_routes_entity_type_idx').on(t.entityTypeId),
+  ],
+);
+
+/** Шаги маршрута (шаблон). step_type: any|all|sequential. */
+export const approvalRouteSteps = pgTable(
+  'approval_route_steps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    routeId: uuid('route_id').notNull(),
+    stepOrder: integer('step_order').notNull(),
+    name: varchar('name', { length: 200 }).notNull(),
+    description: text('description'),
+    stepType: varchar('step_type', { length: 20 }).notNull().default('any'),
+    assignmentType: varchar('assignment_type', { length: 20 }).notNull().default('employee'),
+    stepRoleId: uuid('step_role_id'),
+    isRequired: boolean('is_required').default(true),
+    canDelegate: boolean('can_delegate').default(false),
+    canReturnToPrevious: boolean('can_return_to_previous').default(true),
+    timeLimitHours: integer('time_limit_hours'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('appr_route_steps_route_order_uidx').on(t.routeId, t.stepOrder),
+    index('appr_route_steps_route_idx').on(t.routeId),
+  ],
+);
+
+/** Статичные согласующие шага (assignment_type='employee'). */
+export const relApprovalStepAssignees = pgTable(
+  'rel_approval_step_assignees',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    stepId: uuid('step_id').notNull(),
+    employeeId: uuid('employee_id').notNull(),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('appr_step_assignees_step_emp_uidx').on(t.stepId, t.employeeId),
+    index('appr_step_assignees_step_idx').on(t.stepId),
+  ],
+);
+
+/** Экземпляр согласования (рантайм). currentProcessStepId — FK добавляется в SQL (цикл). */
+export const approvalProcesses = pgTable(
+  'approval_processes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    routeId: uuid('route_id').notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(),
+    entityId: uuid('entity_id').notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('active'),
+    currentStepOrder: integer('current_step_order').notNull().default(1),
+    currentProcessStepId: uuid('current_process_step_id'),
+    initiatedBy: uuid('initiated_by').notNull(),
+    initiatedAt: timestamp('initiated_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    completedBy: uuid('completed_by'),
+    completionComment: text('completion_comment'),
+    runtimeData: jsonb('runtime_data').default({}),
+    routeCode: varchar('route_code', { length: 50 }),
+    hasApproverFinal: boolean('has_approver_final').notNull().default(false),
+    onCompleteActionsSnapshot: jsonb('on_complete_actions_snapshot'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    index('appr_processes_entity_idx').on(t.entityType, t.entityId),
+    index('appr_processes_initiated_by_idx').on(t.initiatedBy),
+    index('appr_processes_status_idx').on(t.status),
+  ],
+);
+
+/** СНАПШОТ шагов процесса (рантайм читает только его). */
+export const approvalProcessSteps = pgTable(
+  'approval_process_steps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    processId: uuid('process_id').notNull(),
+    stepOrder: integer('step_order').notNull(),
+    name: varchar('name', { length: 200 }).notNull(),
+    description: text('description'),
+    stepType: varchar('step_type', { length: 20 }).notNull().default('all'),
+    assignmentType: varchar('assignment_type', { length: 20 }).notNull().default('employee'),
+    stepRoleId: uuid('step_role_id'),
+    stepRoleCode: varchar('step_role_code', { length: 50 }),
+    stepRoleName: varchar('step_role_name', { length: 100 }),
+    stepRoleColor: varchar('step_role_color', { length: 20 }),
+    isRequired: boolean('is_required').notNull().default(true),
+    canDelegate: boolean('can_delegate').notNull().default(false),
+    canReturnToPrevious: boolean('can_return_to_previous').notNull().default(true),
+    timeLimitHours: integer('time_limit_hours'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('appr_process_steps_proc_order_uidx').on(t.processId, t.stepOrder),
+    index('appr_process_steps_process_idx').on(t.processId),
+  ],
+);
+
+/** СНАПШОТ назначенцев шага (только assignment_type='employee'). */
+export const relApprovalProcessStepAssignees = pgTable(
+  'rel_approval_process_step_assignees',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    processStepId: uuid('process_step_id').notNull(),
+    employeeId: uuid('employee_id').notNull(),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('appr_pss_assignees_step_emp_uidx').on(t.processStepId, t.employeeId),
+    index('appr_pss_assignees_step_idx').on(t.processStepId),
+  ],
+);
+
+/** Назначения согласующих на шаг (с историей флагов pending/active). */
+export const approvalAssignments = pgTable(
+  'approval_assignments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    processId: uuid('process_id').notNull(),
+    stepOrder: integer('step_order').notNull(),
+    processStepId: uuid('process_step_id'),
+    assigneeId: uuid('assignee_id').notNull(),
+    sourceType: varchar('source_type', { length: 30 }).notNull(),
+    sourceRoleId: uuid('source_role_id'),
+    isPending: boolean('is_pending').default(true),
+    isActive: boolean('is_active').default(true),
+    position: integer('position').notNull().default(0),
+    reminderSentAt: timestamp('reminder_sent_at', { withTimezone: true }),
+    overdueNotifiedAt: timestamp('overdue_notified_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('appr_assignments_proc_step_assignee_uidx').on(t.processId, t.stepOrder, t.assigneeId),
+    index('appr_assignments_process_idx').on(t.processId),
+    index('appr_assignments_assignee_idx').on(t.assigneeId),
+  ],
+);
+
+/** Задачи-последствия согласования (on_complete_actions, F5). Полиморфные. */
+export const tasks = pgTable(
+  'tasks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    entityType: varchar('entity_type', { length: 50 }),
+    entityId: uuid('entity_id'),
+    taskType: varchar('task_type', { length: 50 }).notNull().default('post_approval'),
+    sourceType: varchar('source_type', { length: 50 }),
+    sourceId: uuid('source_id'),
+    title: text('title').notNull(),
+    description: text('description'),
+    assigneeId: uuid('assignee_id'),
+    dueDate: timestamp('due_date', { withTimezone: true }),
+    priority: varchar('priority', { length: 20 }).default('normal'),
+    status: varchar('status', { length: 20 }).notNull().default('open'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    index('tasks_assignee_status_idx').on(t.assigneeId, t.status),
+    index('tasks_source_idx').on(t.sourceType, t.sourceId),
+    index('tasks_entity_idx').on(t.entityType, t.entityId),
+  ],
+);
+
+/** Лог системных событий процесса (старт/повторная отправка/замена файла) для ленты. */
+export const approvalEvents = pgTable(
+  'approval_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    processId: uuid('process_id').notNull(),
+    eventType: varchar('event_type', { length: 30 }).notNull(),
+    actorId: uuid('actor_id'),
+    payload: jsonb('payload'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('appr_events_process_idx').on(t.processId)],
+);
+
+/** Журнал решений согласующих. */
+export const approvalDecisions = pgTable(
+  'approval_decisions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    processId: uuid('process_id').notNull(),
+    stepOrder: integer('step_order').notNull(),
+    processStepId: uuid('process_step_id'),
+    decidedBy: uuid('decided_by').notNull(),
+    decisionType: varchar('decision_type', { length: 30 }).notNull(),
+    delegatedTo: uuid('delegated_to'),
+    returnToStep: integer('return_to_step'),
+    comment: text('comment'),
+    decidedAt: timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('appr_decisions_process_idx').on(t.processId)],
+);

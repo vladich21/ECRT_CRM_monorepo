@@ -35,3 +35,24 @@ export function useListScrollRestoration(options: {
     requestAnimationFrame(tryRestore);
   }, [options.isListReady, options.pendingScrollY]);
 }
+
+/**
+ * При смене page пользователем — прокрутка наверх (новый список с начала).
+ * После restore из карточки / localStorage — scroll не трогаем (его восстанавливает useListScrollRestoration).
+ */
+export function useScrollToTopOnPageChange(page: number, restoreToken = 0): void {
+  const prevPageRef = useRef(page);
+  const prevRestoreTokenRef = useRef(restoreToken);
+
+  useEffect(() => {
+    const pageChanged = page !== prevPageRef.current;
+    const restoreHappened = restoreToken !== prevRestoreTokenRef.current;
+
+    prevPageRef.current = page;
+    prevRestoreTokenRef.current = restoreToken;
+
+    if (!pageChanged || restoreHappened) return;
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [page, restoreToken]);
+}

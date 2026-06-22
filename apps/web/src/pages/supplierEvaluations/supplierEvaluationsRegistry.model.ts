@@ -83,3 +83,38 @@ export function saveSupplierEvaluationsRegistryPersistedUi(state: SupplierEvalua
   } catch {
   }
 }
+
+export function evaluationsRegistryFiltersResetKey(filters: EvaluationsRegistryAppliedFilters): string {
+  return JSON.stringify({
+    evaluatedYears: [...filters.evaluatedYears].sort(),
+    category: filters.category,
+    createdByUserIds: [...filters.createdByUserIds].sort(),
+    projectIds: [...filters.projectIds].sort(),
+    sortPreset: filters.sortPreset,
+  });
+}
+
+export function buildEvaluationsRegistryQueryResetKey(params: {
+  rowStatusTab: SupplierEvaluationUiStatusParam;
+  debouncedSearch: string;
+  appliedListFilters: EvaluationsRegistryAppliedFilters;
+}): string {
+  return JSON.stringify({
+    tab: params.rowStatusTab,
+    search: params.debouncedSearch.trim(),
+    filters: evaluationsRegistryFiltersResetKey(params.appliedListFilters),
+  });
+}
+
+/** Ключ запроса списка оценок на вкладке контрагента (без page). */
+export function buildPartnerEvaluationsListQueryResetKey(params: {
+  partnerId: string;
+  rowStatusTab: SupplierEvaluationUiStatusParam;
+  appliedListFilters: EvaluationsRegistryAppliedFilters;
+}): string {
+  return JSON.stringify({
+    partnerId: params.partnerId,
+    tab: params.rowStatusTab,
+    filters: evaluationsRegistryFiltersResetKey(params.appliedListFilters),
+  });
+}

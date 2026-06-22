@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 import type { SupplierEvaluationCategory } from './supplier-evaluation.enums';
 
 /** Окно «скоро переоценка» в фильтрах и UI (дней до срока включительно). Синхронно с фронтом supplierEvaluationUi. */
@@ -47,4 +49,20 @@ function addCalendarMonths(isoDate: string, months: number): string {
 
 function daysInMonth(year: number, month1Based: number): number {
   return new Date(Date.UTC(year, month1Based, 0)).getUTCDate();
+}
+
+/** Порог «низкого» балла по отдельному критерию (включительно). Синхронно с фронтом. */
+const LOW_CRITERION_SCORE_MAX = 2;
+
+export function assertCommentForLowCriterionScores(
+  scores: readonly { score: number }[],
+  comment: string | null | undefined,
+): void {
+  const hasLowScore = scores.some(row => Number(row.score) <= LOW_CRITERION_SCORE_MAX);
+  if (!hasLowScore) return;
+  if (!String(comment ?? '').trim()) {
+    throw new BadRequestException(
+      'При оценке 2 или ниже по одному из критериев необходимо заполнить комментарий',
+    );
+  }
 }

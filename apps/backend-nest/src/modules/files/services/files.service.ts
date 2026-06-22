@@ -7,6 +7,7 @@ import { DatabaseService } from '../../../database/database.service';
 import { files, partners } from '../../../database/schema';
 import { buildFileDownloadUrl } from '../file-download-url';
 import { getUploadPath } from '../files-config';
+import { resolveStoredFilePath, writeFileToIdStorage } from '../file-storage-path';
 import type { FileResponseDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
 import { syncPatentAutoStatus } from '../../patents/services/patent-auto-status';
 import { PartnersService } from '../../partners/services/partners.service';
@@ -32,6 +33,11 @@ const PATENT_FILE_SECTIONS = new Set([
   'decision_negative',
 ]);
 const PROJECT_DOCUMENT_SECTION_KEYS = new Set(['pm_plan', 'milestones', 'risk_matrix']);
+const PARTNER_FILE_SECTION_KEYS = new Set([
+  'default',
+  'evaluation_corrective_actions',
+  'evaluation_corrective_result',
+]);
 
 export type PatentRequestsUploadMeta = {
   responseRequired: boolean;
@@ -47,6 +53,12 @@ function normalizeDocumentSection(entityType: string, raw?: string | null): stri
     if (raw && PROJECT_DOCUMENT_SECTION_KEYS.has(raw)) return raw;
     return 'pm_plan';
   }
+  if (entityType === 'partner') {
+    if (raw && PARTNER_FILE_SECTION_KEYS.has(raw)) return raw;
+    return 'default';
+  }
+  // Генерик-секция документов согласования (для любой сущности).
+  if (raw === 'approval') return 'approval';
   return 'default';
 }
 
@@ -118,16 +130,12 @@ export class FilesService {
     const responseDeadline = applyRequestsMeta ? requestsMeta.responseDeadline : null;
 
     const uploadPath = getUploadPath(this.config);
-    const basePath = path.join(uploadPath, entityType, entityId);
-    fs.mkdirSync(basePath, { recursive: true });
 
     const result: UploadItemDto[] = [];
 
     for (const file of uploadedFiles) {
-      const destPath = path.join(basePath, file.originalname);
-      fs.writeFileSync(destPath, file.buffer);
-
       const fileType = file.mimetype || 'application/octet-stream';
+      // Сначала upsert — получаем id, затем пишем физически по непрозрачному пути id.
       const fileId = await this.upsertFile(
         entityType,
         entityId,
@@ -139,6 +147,10 @@ export class FilesService {
         responseRequired,
         responseDeadline,
       );
+
+      // Хранение по id: uploads/files/{fileId}/{originalName} — нет коллизий одноимённых
+      // файлов (разные секции/версии), реальное имя сохраняется для отдачи.
+      writeFileToIdStorage(uploadPath, fileId, file.originalname, file.buffer);
 
       result.push({
         name: file.originalname,
@@ -180,7 +192,7 @@ export class FilesService {
         responseDeadline,
       })
       .onConflictDoUpdate({
-        target: [files.entityType, files.tableId, files.documentSection, files.name],
+        target: [files.entityType, files.tableId, files.documentSection, files.name, files.version],
         set: {
           type: fileType,
           size,
@@ -188,6 +200,9 @@ export class FilesService {
           responseRequired,
           responseDeadline,
           updatedAt: new Date(),
+          // Повторная загрузка того же файла снова делает его актуальным
+          // (на случай конфликта с архивной строкой версионирования).
+          isCurrent: true,
         },
       })
       .returning({ id: files.id });
@@ -324,8 +339,8 @@ export class FilesService {
     fileId: string,
   ): Promise<{ filePath: string; filename: string; mimeType: string } | null> {
     const [row] = await this.db.db.select().from(files).where(eq(files.id, fileId)).limit(1);
-    if (!row?.entityType || !row.tableId || !row.name) return null;
-    const filePath = this.getFilePath(row.entityType, String(row.tableId), row.name);
+    if (!row?.name) return null;
+    const filePath = resolveStoredFilePath(getUploadPath(this.config), row);
     if (!filePath) return null;
     return {
       filePath,
@@ -376,6 +391,8 @@ export class FilesService {
       uploaded_at: r.uploadedAt ? r.uploadedAt.toISOString() : null,
       response_required: Boolean(r.responseRequired),
       response_deadline: r.responseDeadline ? r.responseDeadline.toISOString() : null,
+      version: r.version ?? 1,
+      is_current: r.isCurrent ?? true,
     };
   }
 }

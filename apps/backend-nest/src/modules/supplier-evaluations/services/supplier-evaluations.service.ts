@@ -27,6 +27,7 @@ import { SUPPLIER_BLOCK_REASONS } from '../domain/supplier-evaluation.enums';
 import type { SupplierEvaluationCategory } from '../domain/supplier-evaluation.enums';
 import {
   REEVALUATION_SOON_WINDOW_DAYS,
+  assertCommentForLowCriterionScores,
   categoryFromWeightedScore,
   nextReevaluationDateForCategory,
 } from '../domain/supplier-evaluation.rules';
@@ -518,6 +519,8 @@ export class SupplierEvaluationsService {
       );
     }
 
+    assertCommentForLowCriterionScores(dto.scores, dto.comment);
+
     const weightById = new Map(
       criteriaRows.map((criterionRow) => [String(criterionRow.id), Number(criterionRow.weight)]),
     );
@@ -716,6 +719,8 @@ export class SupplierEvaluationsService {
     if (!Number.isFinite(sumWeights) || sumWeights <= 0) {
       throw new BadRequestException('Сумма весов выбранных критериев должна быть больше 0');
     }
+
+    assertCommentForLowCriterionScores(dto.scores, dto.comment);
 
     let weighted = 0;
     for (const scoreLine of dto.scores) {

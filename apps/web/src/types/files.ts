@@ -9,4 +9,7 @@ export interface MyFile {
   uploaded_at: string | null;
   response_required?: boolean;
   response_deadline?: string | null;
+  /** Версионность (F-V0/F-V1): номер версии набора и принадлежность к текущей версии. */
+  version?: number;
+  is_current?: boolean;
 }

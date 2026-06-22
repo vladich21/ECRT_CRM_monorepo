@@ -1,0 +1,31 @@
+.body {
+  margin: 0;
+}
+
+.lead {
+  margin: 0 0 8px;
+}
+
+.steps {
+  margin: 0 0 10px;
+  padding-left: 20px;
+
+  li + li {
+    margin-top: 4px;
+  }
+}
+
+.links {
+  margin: 0;
+  padding-left: 18px;
+
+  li + li {
+    margin-top: 4px;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}

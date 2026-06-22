@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Modal, Table, Tag, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -17,9 +17,9 @@ import {
 import { invalidateSupplierEvaluationQueries } from '../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useListReturnFromDetail, useResetServerPageUnlessSkipped } from '../../hooks/useListReturnFromDetail';
-import { getListScrollY, useListScrollRestoration } from '../../hooks/useListScrollRestoration';
-import { useServerTablePagination } from '../../hooks/useServerTablePagination';
+import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useServerPaginationClamp, useResetPageWhenListQueryChanges, useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
 import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
 import type {
@@ -51,13 +51,14 @@ import {
 } from './supplierEvaluationsConstants';
 import {
   SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
+  buildEvaluationsRegistryQueryResetKey,
   loadSupplierEvaluationsRegistryPersistedUi,
   saveSupplierEvaluationsRegistryPersistedUi,
 } from './supplierEvaluationsRegistry.model';
+import { useEvaluationsRegistryUiState } from './hooks/useEvaluationsRegistryUiState';
 import {
   buildEvaluationsRegistryNavSnapshot,
   EVALUATIONS_REGISTRY_RETURN_STATE_KEY,
-  parseEvaluationsRegistryNavSnapshot,
 } from './supplierEvaluationsRegistryNavSnapshot';
 
 const { Text } = Typography;
@@ -69,7 +70,10 @@ export default function SupplierEvaluationsRegistryPage() {
   const { showNotification, contextHolder } = useNotification();
   const deleteMut = useDeleteSupplierEvaluation();
   const [searchInput, setSearchInput] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [debouncedSearch, flushDebouncedSearch] = useDebouncedValue(
+    searchInput,
+    SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
+  );
   const persistedUi = useMemo(() => loadSupplierEvaluationsRegistryPersistedUi(), []);
   const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>(
     () => persistedUi?.rowStatusTab ?? 'current',
@@ -87,39 +91,17 @@ export default function SupplierEvaluationsRegistryPage() {
   const [reevaluationProjectLabel, setReevaluationProjectLabel] = useState<string | undefined>();
 
   const { page, pageSize, setPage, setPageSize, handleTableChange, getPaginationConfig, resetPage } =
-    useServerTablePagination({
-      defaultPageSize: 20,
-    });
+    useServerTablePagination({ defaultPageSize: 20 });
 
-  const restoredFromNavigationRef = useRef(false);
-  const { skipNextListResetRef, pendingScrollY } = useListReturnFromDetail({
-    location,
-    navigate,
-    getRawSnapshot: navigationState => navigationState[EVALUATIONS_REGISTRY_RETURN_STATE_KEY],
-    parse: parseEvaluationsRegistryNavSnapshot,
-    applyParsed: restoredListState => {
-      restoredFromNavigationRef.current = true;
-      setSearchInput(restoredListState.searchQuery);
-      setDebouncedSearch(restoredListState.searchQuery.trim());
-      setRowStatusTab(restoredListState.rowStatusTab);
-      setAppliedListFilters(restoredListState.appliedListFilters);
-      setDraftListFilters(restoredListState.appliedListFilters);
-      setPage(restoredListState.page);
-      setPageSize(restoredListState.pageSize);
-      saveSupplierEvaluationsRegistryPersistedUi({
-        appliedListFilters: restoredListState.appliedListFilters,
-        rowStatusTab: restoredListState.rowStatusTab,
-      });
-    },
+  const { restoreToken, pendingScrollY } = useEvaluationsRegistryUiState(location, navigate, {
+    setSearchInput,
+    flushDebouncedSearch,
+    setRowStatusTab,
+    setAppliedListFilters,
+    setDraftListFilters,
+    setPage,
+    setPageSize,
   });
-
-  useEffect(() => {
-    const debounceTimeoutId = window.setTimeout(
-      () => setDebouncedSearch(searchInput.trim()),
-      SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
-    );
-    return () => window.clearTimeout(debounceTimeoutId);
-  }, [searchInput]);
 
   const { data: projects = [] } = useProjectsPreview();
   const projectNameById = useMemo(
@@ -171,13 +153,25 @@ export default function SupplierEvaluationsRegistryPage() {
           : undefined,
       project_id:
         appliedListFilters.projectIds.length > 0 ? appliedListFilters.projectIds.join(',') : undefined,
-      search: debouncedSearch || undefined,
+      search: debouncedSearch.trim() || undefined,
     }),
     [appliedListFilters, debouncedSearch],
   );
 
   const { data: tabCounts, isLoading: tabCountsLoading } =
     useSupplierEvaluationTabCounts(tabCountRequestParams);
+
+  const queryResetKey = useMemo(
+    () =>
+      buildEvaluationsRegistryQueryResetKey({
+        rowStatusTab,
+        debouncedSearch: debouncedSearch.trim(),
+        appliedListFilters,
+      }),
+    [rowStatusTab, debouncedSearch, appliedListFilters],
+  );
+
+  useResetPageWhenListQueryChanges(queryResetKey, resetPage, restoreToken);
 
   const listParams = useMemo(() => {
     const base = {
@@ -195,7 +189,7 @@ export default function SupplierEvaluationsRegistryPage() {
     return {
       ...base,
       ui_status: rowStatusTab === 'all' ? undefined : rowStatusTab,
-      search: debouncedSearch || undefined,
+      search: debouncedSearch.trim() || undefined,
       limit: pageSize,
       offset: (page - 1) * pageSize,
     };
@@ -217,33 +211,33 @@ export default function SupplierEvaluationsRegistryPage() {
   const applyFiltersFromModal = () => {
     setAppliedListFilters(draftListFilters);
     setIsFiltersModalOpen(false);
-    resetPage();
   };
 
   const resetFiltersFromModal = () => {
     setDraftListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
     setAppliedListFilters(EMPTY_EVALUATIONS_REGISTRY_FILTERS);
     setIsFiltersModalOpen(false);
-    resetPage();
   };
 
   const updateDraftListFilter = (patch: Partial<EvaluationsRegistryAppliedFilters>) => {
     setDraftListFilters(prev => ({ ...prev, ...patch }));
   };
 
-  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [
-    rowStatusTab,
-    appliedListFilters,
-    debouncedSearch,
-    resetPage,
-  ]);
+  const displayRows = data?.data ?? [];
+  const total = data?.total ?? 0;
+
+  useServerPaginationClamp({
+    total,
+    page,
+    pageSize,
+    disabled: isLoading && !data,
+    handleTableChange,
+  });
 
   useEffect(() => {
     saveSupplierEvaluationsRegistryPersistedUi({ appliedListFilters, rowStatusTab });
   }, [appliedListFilters, rowStatusTab]);
 
-  const displayRows = data?.data ?? [];
-  const total = data?.total ?? 0;
   const displayTabCounts = tabCounts;
 
   const openPartnerEvaluations = (partnerId: string) => {
@@ -266,6 +260,7 @@ export default function SupplierEvaluationsRegistryPage() {
     pendingScrollY,
     isListReady: !isLoading,
   });
+  useScrollToTopOnPageChange(page, restoreToken);
 
   const columns: ColumnsType<SupplierEvaluationListItem> = [
     Table.EXPAND_COLUMN,

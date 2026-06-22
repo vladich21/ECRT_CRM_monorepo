@@ -48,7 +48,7 @@ export function formatProjectChipLabel(project: ReferenceProjectPreview | undefi
   return name ? `${code} - ${name}` : code;
 }
 
-export type ContractDetailsTabKey = 'main' | 'additional-agreements' | 'files' | 'history';
+export type ContractDetailsTabKey = 'main' | 'additional-agreements' | 'approval' | 'files' | 'history';
 export type ContractDetailsTabItem = {
   key: ContractDetailsTabKey;
   label: string;
@@ -57,12 +57,14 @@ export type ContractDetailsTabItem = {
 export const CONTRACT_DETAILS_TABS: ContractDetailsTabItem[] = [
   { key: 'main', label: 'Основное' },
   { key: 'additional-agreements', label: 'Доп. соглашения' },
+  { key: 'approval', label: 'Согласование' },
   { key: 'files', label: 'Файлы', count: 0 },
   { key: 'history', label: 'История изменений' },
 ];
 export function getActiveContractDetailsTab(pathname: string): ContractDetailsTabKey {
   if (pathname.includes('/files')) return 'files';
   if (pathname.includes('/additional-agreements')) return 'additional-agreements';
+  if (pathname.includes('/approval')) return 'approval';
   if (pathname.includes('/history')) return 'history';
   return 'main';
 }

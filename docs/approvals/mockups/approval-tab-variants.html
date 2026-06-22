@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Согласование — варианты компоновки вкладки</title>
+<style>
+  :root{
+    --primary:#1677ff; --primary-hover:#4096ff;
+    --bg:#f4f6f9; --card:#fff; --border:#e8eaed; --line:#f0f0f0;
+    --text:#1f2937; --text2:#8c8c8c; --text3:#bfbfbf;
+    --navy1:#1c3a5e; --navy2:#0f2740;
+    --green:#52c41a; --green-bg:#f6ffed; --green-bd:#b7eb8f; --green-tx:#389e0d;
+    --blue-bg:#e6f4ff; --blue-bd:#91caff; --blue-tx:#1677ff;
+    --orange-tx:#d46b08; --red-tx:#cf1322; --red-bg:#fff1f0; --red-bd:#ffa39e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px}
+  .intro{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin-bottom:26px}
+  .intro h1{margin:0 0 6px;font-size:20px}
+  .intro p{margin:4px 0;color:var(--text2)}
+  .variant{margin-bottom:42px}
+  .variant > h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .badge-num{background:var(--primary);color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .prosc{display:flex;gap:22px;color:var(--text2);font-size:13px;margin:6px 0 14px;flex-wrap:wrap}
+  .prosc b{color:var(--text)}
+
+  /* ── app chrome ── */
+  .app{border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .hdr{background:linear-gradient(135deg,var(--navy1),var(--navy2));color:#fff;padding:16px 22px}
+  .hdr .crumb{opacity:.7;font-size:13px;margin-bottom:6px}
+  .hdr .title{font-size:17px;font-weight:700;margin-bottom:8px}
+  .hdr .pills{display:flex;gap:8px}
+  .pill{font-size:12px;border-radius:6px;padding:2px 10px;font-weight:600}
+  .pill.red{background:#ff4d4f;color:#fff}
+  .pill.draft{background:#eef1f4;color:#445}
+  .tabs{display:flex;gap:26px;background:var(--navy2);padding:0 22px}
+  .tabs span{color:#aab6c6;padding:12px 0;font-size:14px;border-bottom:2px solid transparent}
+  .tabs span.active{color:#fff;font-weight:600;border-bottom-color:var(--primary)}
+  .body{background:var(--bg);padding:22px}
+
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px}
+  .panel-h{padding:14px 20px;border-bottom:1px solid var(--line);font-weight:600;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+  .panel-b{padding:18px 20px}
+
+  /* buttons / tags */
+  .btn{border:1px solid var(--border);background:#fff;border-radius:7px;padding:6px 15px;font-size:14px;cursor:pointer;color:var(--text)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.sm{padding:4px 11px;font-size:13px}
+  .tag{display:inline-block;border-radius:4px;padding:1px 9px;font-size:12px;border:1px solid var(--border);background:#fafafa;line-height:20px}
+  .tag.role{background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue-tx)}
+  .tag.done{background:var(--green-bg);border-color:var(--green-bd);color:var(--green-tx)}
+  .tag.neutral{background:#fafafa}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .dot.green{background:var(--green)} .dot.blue{background:var(--primary)} .dot.gray{background:#bfbfbf}
+  .muted{color:var(--text2)} .small{font-size:12px} .right{ text-align:right }
+
+  /* stepper vertical */
+  .vstep{display:flex;gap:12px}
+  .vstep .ic{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+  .ic.fin{background:var(--green-bg);color:var(--green-tx);border:1px solid var(--green-bd)}
+  .ic.cur{background:var(--blue-bg);color:var(--blue-tx);border:1px solid var(--blue-bd)}
+  .ic.wait{background:#f5f5f5;color:#bbb;border:1px solid #eee}
+
+  /* two-col grid */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .sumbar{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;margin-bottom:16px}
+  .sumbar .lhs{display:flex;align-items:center;gap:12px;font-weight:600}
+
+  .decis{padding:10px 0;border-bottom:1px solid var(--line)}
+  .decis:last-child{border-bottom:none}
+  .decis .ln1{margin-bottom:2px}
+  .cmtbox{margin-top:8px;border:1px dashed #d9d9d9;border-radius:8px;padding:10px;color:var(--text3)}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .metric .k{color:var(--text2);font-size:12px;margin-bottom:6px}
+  .metric .v{font-size:18px;font-weight:700}
+
+  /* horizontal stepper */
+  .hstep{display:flex;align-items:center;gap:0;margin:6px 0 16px}
+  .hstep .node{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:120px}
+  .hstep .seg{height:2px;background:#e8e8e8;flex:1}
+  .hstep .seg.done{background:var(--green)}
+  .hstep .lbl{font-size:12px;color:var(--text2);text-align:center}
+
+  table.sheet{width:100%;border-collapse:collapse;font-size:13px}
+  table.sheet th{ text-align:left;color:var(--text2);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border);background:#fafafa}
+  table.sheet td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+
+  /* feed */
+  .feed .row{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .feed .row:last-child{border-bottom:none}
+  .feed .t{color:var(--text2);font-size:12px;min-width:54px}
+  .feed .ev .ic{margin-right:6px}
+  .stickybar{display:flex;justify-content:space-between;align-items:center;background:#f0f7ff;border:1px solid var(--blue-bd);border-radius:10px;padding:12px 18px;margin-bottom:14px}
+  .stickybar .lhs{font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pillT{background:#fff;border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:12px;color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="intro">
+    <h1>Вкладка «Согласование» — 4 варианта компоновки</h1>
+    <p>Один и тот же контекст (вкладка договора), разные раскладки одного функционала. Данные взяты из реального процесса (согласующий — Сараф Д. Я., история возвратов и согласования).</p>
+    <p class="small">Общие улучшения во всех вариантах: выделен «чей ход», действие поднято наверх, кнопка «Лист согласования» (печать/экспорт), обсуждение привязано к согласованию, и <b>документы на согласовании с версиями</b> — при доработке инициатор загружает новую версию (v1 → v2), прежняя остаётся в истории, видно какую версию согласовали.</p>
+  </div>
+
+  <!-- ============ VARIANT 1 ============ -->
+  <div class="variant">
+    <h2><span class="badge-num">1</span> Сводка + 2 колонки <span class="muted small">(рекомендую)</span></h2>
+    <div class="prosc">
+      <span><b>+</b> баланс, использует ширину, близко к текущему стилю</span>
+      <span><b>+</b> маршрут и история рядом</span>
+      <span><b>–</b> на узких экранах колонки сложатся</span>
+    </div>
+    <div class="app">
+      <div class="hdr">
+        <div class="crumb">← Договоры</div>
+        <div class="title">Договор №00904 от 15.02.2024 — АО «КЗСК»</div>
+        <div class="pills"><span class="pill red">Действует</span><span class="pill draft">Подписан</span></div>
+      </div>
+      <div class="tabs"><span>Основное</span><span>Доп. соглашения</span><span class="active">Согласование</span><span>Файлы (0)</span><span>История</span></div>
+      <div class="body">
+        <div class="sumbar">
+          <div class="lhs"><span class="dot green"></span>Согласован <span class="muted small" style="font-weight:400">· маршрут «Согласование договора»</span></div>
+          <div><button class="btn sm">⎙ Лист согласования</button> <button class="btn sm primary">▷ Новое согласование</button></div>
+        </div>
+        <div class="grid2">
+          <div>
+          <div class="panel">
+            <div class="panel-h">Маршрут</div>
+            <div class="panel-b">
+              <div class="vstep">
+                <div class="ic fin">✓</div>
+                <div>
+                  <div style="margin-bottom:6px"><b>1. Согласование</b> &nbsp;<span class="tag role">Согласующий</span></div>
+                  <span class="tag done">Сараф Дмитрий Ярославович ✓</span>
+                </div>
+              </div>
+              <div class="muted small" style="margin-top:14px">Тип шага: «Нужны все» · срок не задан</div>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:16px">
+            <div class="panel-h">Документы на согласовании</div>
+            <div class="panel-b">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>📄 <b>Договор_проект.docx</b> &nbsp;<span class="tag done">v2 · текущая</span></div>
+                <div><button class="btn sm">Скачать</button> <button class="btn sm">＋ Версия</button></div>
+              </div>
+              <div class="muted small" style="margin-top:10px">История версий:</div>
+              <div class="small" style="margin-top:4px;line-height:1.8">
+                • <b>v2</b> — 16.06.2026 16:05, Иванов <span class="muted">(заменён при доработке)</span><br>
+                • v1 — 16.06.2026 15:40, Иванов
+              </div>
+            </div>
+          </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h">Лист согласования</div>
+            <div class="panel-b">
+              <div class="decis"><div class="ln1"><b>Сараф Дмитрий Ярославович</b> — <span class="tag neutral">Возврат на доработку</span> <span class="muted small">· 16.06.2026 15:43</span></div><div class="muted small">переделать</div></div>
+              <div class="decis"><div class="ln1"><b>Сараф Дмитрий Ярославович</b> — <span class="tag neutral">Возврат на доработку</span> <span class="muted small">· 16.06.2026 16:09</span></div><div class="muted small">ты переделал не так, как надо</div></div>
+              <div class="decis"><div class="ln1"><b>Сараф Дмитрий Ярославович</b> — <span class="tag done">Согласовано</span> <span class="muted small">· 16.06.2026 16:10</span></div></div>
+              <div style="margin-top:14px;font-weight:600">Обсуждение</div>
+              <div class="cmtbox">Написать комментарий по согласованию…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VARIANT 2 ============ -->
+  <div class="variant">
+    <h2><span class="badge-num">2</span> Лента активности (feed)</h2>
+    <div class="prosc">
+      <span><b>+</b> сразу видно «чей ход» и срок, акцент на действии</span>
+      <span><b>+</b> решения и обсуждение в единой хронологии</span>
+      <span><b>–</b> маршрут показан компактно (меньше деталей шагов)</span>
+    </div>
+    <div class="app">
+      <div class="hdr">
+        <div class="crumb">← Договоры</div>
+        <div class="title">Договор №00904 от 15.02.2024 — АО «КЗСК»</div>
+        <div class="pills"><span class="pill red">Действует</span><span class="pill draft">Подписан</span></div>
+      </div>
+      <div class="tabs"><span>Основное</span><span>Доп. соглашения</span><span class="active">Согласование</span><span>Файлы (0)</span><span>История</span></div>
+      <div class="body">
+        <div class="panel"><div class="panel-b" style="padding-top:14px">
+          <div class="stickybar">
+            <div class="lhs"><span class="dot blue"></span>На согласовании · Ждём: <b>Сараф Дмитрий Ярославович</b> <span class="pillT">⏰ срок 18.06.2026</span></div>
+            <div><button class="btn primary">Принять решение</button> <button class="btn sm">Отменить</button></div>
+          </div>
+          <div class="hstep" style="margin:4px 0 18px">
+            <div class="node"><div class="ic fin">✓</div><div class="lbl">1. Согласование<br>Сараф</div></div>
+            <div class="seg done"></div>
+            <div class="node"><div class="ic cur">2</div><div class="lbl">2. Утверждение<br>Иванов</div></div>
+            <div class="seg"></div>
+            <div class="node"><div class="ic wait">3</div><div class="lbl">3. Регистрация</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:14px">
+            <span>📎 <b>Договор_проект.docx</b></span> <span class="tag done">v2</span>
+            <span class="muted small">текущая · v1 заменён при доработке</span>
+            <span style="flex:1"></span>
+            <button class="btn sm">Скачать</button> <button class="btn sm">Версии</button>
+          </div>
+          <div style="font-weight:600;margin-bottom:6px">Лента</div>
+          <div class="feed">
+            <div class="row"><div class="t">16:10</div><div class="ev"><span class="ic" style="color:var(--green-tx)">✓</span><b>Сараф</b> согласовал шаг «Согласование»</div></div>
+            <div class="row"><div class="t">16:09</div><div class="ev"><span class="ic" style="color:var(--orange-tx)">↩</span><b>Сараф</b> вернул на доработку: <span class="muted">«ты переделал не так, как надо»</span></div></div>
+            <div class="row"><div class="t">16:05</div><div class="ev"><span class="ic" style="color:var(--blue-tx)">📎</span><b>Инициатор</b> заменил документ: <span class="muted">v1 → v2 (Договор_проект.docx)</span></div></div>
+            <div class="row"><div class="t">15:43</div><div class="ev"><span class="ic" style="color:var(--orange-tx)">↩</span><b>Сараф</b> вернул на доработку: <span class="muted">«переделать»</span></div></div>
+            <div class="row"><div class="t">15:40</div><div class="ev"><span class="ic" style="color:var(--blue-tx)">▷</span><b>Инициатор</b> отправил на согласование</div></div>
+          </div>
+          <div class="cmtbox" style="margin-top:12px">Написать комментарий…</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VARIANT 3 ============ -->
+  <div class="variant">
+    <h2><span class="badge-num">3</span> Дашборд (метрики + степпер + таблица)</h2>
+    <div class="prosc">
+      <span><b>+</b> строго, официально, удобно печатать/экспортировать</span>
+      <span><b>+</b> ключевые факты сразу в карточках</span>
+      <span><b>–</b> меньше «живости», обсуждение уезжает вниз</span>
+    </div>
+    <div class="app">
+      <div class="hdr">
+        <div class="crumb">← Договоры</div>
+        <div class="title">Договор №00904 от 15.02.2024 — АО «КЗСК»</div>
+        <div class="pills"><span class="pill red">Действует</span><span class="pill draft">Подписан</span></div>
+      </div>
+      <div class="tabs"><span>Основное</span><span>Доп. соглашения</span><span class="active">Согласование</span><span>Файлы (0)</span><span>История</span></div>
+      <div class="body">
+        <div class="metrics">
+          <div class="metric"><div class="k">Статус</div><div class="v" style="color:var(--green-tx)">● Согласован</div></div>
+          <div class="metric"><div class="k">Шаги</div><div class="v">1 / 1 пройден</div></div>
+          <div class="metric"><div class="k">Срок</div><div class="v">—</div></div>
+          <div class="metric"><div class="k">Инициатор</div><div class="v" style="font-size:15px">Иванов И. И.</div></div>
+        </div>
+        <div class="panel" style="margin-bottom:16px"><div class="panel-b">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="hstep" style="margin:4px 0">
+              <div class="node"><div class="ic fin">✓</div><div class="lbl">Согласование<br><span class="muted">Сараф</span></div></div>
+            </div>
+            <div><button class="btn sm">⎙ Лист согласования</button> <button class="btn sm primary">▷ Новое согласование</button></div>
+          </div>
+        </div></div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-h">Документы на согласовании <button class="btn sm">＋ Загрузить версию</button></div>
+          <div class="panel-b" style="padding:0">
+            <table class="sheet">
+              <tr><th>Файл</th><th>Версия</th><th>Загрузил</th><th>Дата</th><th></th></tr>
+              <tr><td>Договор_проект.docx</td><td><span class="tag done">v2 · текущая</span></td><td>Иванов И. И.</td><td>16.06.2026 16:05</td><td><a href="#" style="color:var(--primary)">скачать</a></td></tr>
+              <tr><td class="muted">Договор_проект.docx</td><td class="muted">v1 <span class="small">(заменён при доработке)</span></td><td class="muted">Иванов И. И.</td><td class="muted">16.06.2026 15:40</td><td><a href="#" class="muted">скачать</a></td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-h">Лист согласования</div>
+          <div class="panel-b" style="padding:0">
+            <table class="sheet">
+              <tr><th>ФИО</th><th>Роль</th><th>Решение</th><th>Дата</th><th>Комментарий</th></tr>
+              <tr><td>Сараф Дмитрий Ярославович</td><td>Согласующий</td><td>Возврат на доработку</td><td>16.06.2026 15:43</td><td class="muted">переделать</td></tr>
+              <tr><td>Сараф Дмитрий Ярославович</td><td>Согласующий</td><td>Возврат на доработку</td><td>16.06.2026 16:09</td><td class="muted">ты переделал не так, как надо</td></tr>
+              <tr><td>Сараф Дмитрий Ярославович</td><td>Согласующий</td><td style="color:var(--green-tx)">Согласовано</td><td>16.06.2026 16:10</td><td class="muted">—</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-h">Обсуждение</div>
+          <div class="panel-b">
+            <div class="decis" style="border:none;padding-top:0">
+              <div class="ln1"><b>Иванов И. И.</b> <span class="muted small">· 16.06.2026 16:05</span></div>
+              <div class="muted small">Исправил пункт 3, загрузил v2 — посмотрите, пожалуйста.</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <div class="cmtbox" style="flex:1;margin:0">Написать комментарий…</div>
+              <button class="btn primary">Отправить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VARIANT 4 (1 + 2) ============ -->
+  <div class="variant">
+    <h2><span class="badge-num">4</span> Маршрут-степпер (из №2) + 2 колонки (из №1)</h2>
+    <div class="prosc">
+      <span><b>+</b> маршрут горизонтально на всю ширину, виден целиком и «чей ход»</span>
+      <span><b>+</b> ниже — факты (документы/лист) и обсуждение в колонках</span>
+      <span><b>–</b> при многих шагах степпер длинный (горизонтальный скролл)</span>
+    </div>
+    <div class="app">
+      <div class="hdr">
+        <div class="crumb">← Договоры</div>
+        <div class="title">Договор №00904 от 15.02.2024 — АО «КЗСК»</div>
+        <div class="pills"><span class="pill red">Действует</span><span class="pill draft">Подписан</span></div>
+      </div>
+      <div class="tabs"><span>Основное</span><span>Доп. соглашения</span><span class="active">Согласование</span><span>Файлы (0)</span><span>История</span></div>
+      <div class="body">
+        <!-- summary / действия (из №2) -->
+        <div class="stickybar">
+          <div class="lhs"><span class="dot blue"></span>На согласовании · Ждём: <b>Иванов И. И.</b> <span class="pillT">⏰ срок 18.06.2026</span></div>
+          <div><button class="btn primary">Принять решение</button> <button class="btn sm">⎙ Лист</button> <button class="btn sm">Отменить</button></div>
+        </div>
+        <!-- маршрут горизонтально (из №2), на всю ширину -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-h">Маршрут <span class="muted small" style="font-weight:400">· «Согласование договора»</span></div>
+          <div class="panel-b">
+            <div class="hstep" style="margin:4px 0">
+              <div class="node"><div class="ic fin">✓</div><div class="lbl">1. Согласование<br><span class="muted">Сараф ✓</span></div></div>
+              <div class="seg done"></div>
+              <div class="node"><div class="ic cur">2</div><div class="lbl">2. Утверждение<br><span class="muted">Иванов</span></div></div>
+              <div class="seg"></div>
+              <div class="node"><div class="ic wait">3</div><div class="lbl">3. Регистрация<br><span class="muted">Петров</span></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- 2 колонки (из №1): слева документы+лист, справа обсуждение -->
+        <div class="grid2" style="grid-template-columns:1fr 1.4fr">
+          <div class="panel" style="align-self:start">
+            <div class="panel-h">Документы на согласовании</div>
+            <div class="panel-b">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>📄 <b>Договор_проект.docx</b> &nbsp;<span class="tag done">v2 · текущая</span></div>
+                <button class="btn sm">Скачать</button>
+              </div>
+              <div class="muted small" style="margin-top:10px;line-height:1.8">• <b>v2</b> — 16:05 <span class="muted">(заменён при доработке)</span><br>• v1 — 15:40</div>
+              <button class="btn sm" style="margin-top:12px">＋ Загрузить версию</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h">Лента согласования <span class="muted small" style="font-weight:400">· решения + обсуждение</span></div>
+            <div class="panel-b">
+              <div class="feed">
+                <div class="row"><div class="t">16:10</div><div class="ev"><span class="ic" style="color:var(--green-tx)">✓</span><b>Сараф</b> — <span class="tag done">Согласовано</span></div></div>
+                <div class="row"><div class="t">16:09</div><div class="ev"><span class="ic" style="color:var(--orange-tx)">↩</span><b>Сараф</b> — Возврат на доработку: <span class="muted">«ты переделал не так, как надо»</span></div></div>
+                <div class="row"><div class="t">16:05</div><div class="ev"><span class="ic" style="color:var(--blue-tx)">📎</span><b>Иванов</b> заменил документ <span class="muted">v1 → v2</span> · <span class="muted">«исправил пункт 3, посмотрите»</span></div></div>
+                <div class="row"><div class="t">15:43</div><div class="ev"><span class="ic" style="color:var(--orange-tx)">↩</span><b>Сараф</b> — Возврат на доработку: <span class="muted">«переделать»</span></div></div>
+                <div class="row"><div class="t">15:40</div><div class="ev"><span class="ic" style="color:var(--blue-tx)">▷</span><b>Инициатор</b> отправил на согласование</div></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <div class="cmtbox" style="flex:1;margin:0">Написать комментарий…</div>
+                <button class="btn primary">Отправить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="intro" style="margin-top:8px">
+    <p class="small"><b>Замечание:</b> варианты 2 и 4 показаны в состоянии «идёт согласование» (раскрывают «чей ход + действие» и горизонтальный маршрут), варианты 1 и 3 — в состоянии «Согласован». Любой вариант умеет оба состояния.</p>
+  </div>
+
+</div>
+</body>
+</html>

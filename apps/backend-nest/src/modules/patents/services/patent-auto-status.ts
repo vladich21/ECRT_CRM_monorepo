@@ -35,7 +35,12 @@ async function resolveStatusIdByNames(
 
 export async function syncPatentAutoStatus(db: DatabaseService, patentId: string): Promise<void> {
   const [patentRow] = await db.db
-    .select({ registrationNumberCir: patents.registrationNumberCir, applicationNumber: patents.applicationNumber })
+    .select({
+      registrationNumberCir: patents.registrationNumberCir,
+      applicationNumber: patents.applicationNumber,
+      decisionPositiveMarked: patents.decisionPositiveMarked,
+      decisionNegativeMarked: patents.decisionNegativeMarked,
+    })
     .from(patents)
     .where(eq(patents.id, patentId))
     .limit(1);
@@ -56,8 +61,10 @@ export async function syncPatentAutoStatus(db: DatabaseService, patentId: string
     .where(eq(patentGrants.patentId, patentId));
 
   const hasGrant = Boolean(grantAgg?.hasGrant);
-  const hasDecisionNegative = Boolean(filesAgg?.hasDecisionNegative);
-  const hasDecisionPositive = Boolean(filesAgg?.hasDecisionPositive);
+  const hasDecisionNegative =
+    Boolean(filesAgg?.hasDecisionNegative) || Boolean(patentRow.decisionNegativeMarked);
+  const hasDecisionPositive =
+    Boolean(filesAgg?.hasDecisionPositive) || Boolean(patentRow.decisionPositiveMarked);
   const hasRequestsRequired = Boolean(filesAgg?.hasRequestsRequired);
 
   const statusCandidates = hasGrant

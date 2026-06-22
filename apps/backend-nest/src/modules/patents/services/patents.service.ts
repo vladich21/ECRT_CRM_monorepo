@@ -800,6 +800,8 @@ export class PatentsService {
       transformed_from_patent_id: row.transformedFromPatentId ? String(row.transformedFromPatentId) : '',
       transformation_notification_ic_zht: row.transformationNotificationIcZht ?? '',
       transformation_notification_cir: row.transformationNotificationCir ?? '',
+      decision_positive_marked: row.decisionPositiveMarked ?? false,
+      decision_negative_marked: row.decisionNegativeMarked ?? false,
     };
   }
 
@@ -979,6 +981,25 @@ export class PatentsService {
         }
       }
     }
+
+    if (data.decision_positive_marked !== undefined || data.decision_negative_marked !== undefined) {
+      const positive =
+        data.decision_positive_marked !== undefined
+          ? Boolean(data.decision_positive_marked)
+          : Boolean(currentRow.decisionPositiveMarked);
+      const negative =
+        data.decision_negative_marked !== undefined
+          ? Boolean(data.decision_negative_marked)
+          : Boolean(currentRow.decisionNegativeMarked);
+      if (positive && negative) {
+        throw new BadRequestException(
+          'Нельзя одновременно отметить положительное и отрицательное решение',
+        );
+      }
+      updateObj.decisionPositiveMarked = positive;
+      updateObj.decisionNegativeMarked = negative;
+    }
+
     await this.db.db.update(patents).set(updateObj).where(eq(patents.id, id));
 
     await this.syncAreaIds(id, data);
@@ -995,7 +1016,7 @@ export class PatentsService {
     const source = await this.getPatentRow(sourcePatentId);
     if (!source || source.isDeleted) return null;
 
-    const hasNegativeDecision = await this.db.db
+    const hasNegativeDecisionFile = await this.db.db
       .select({ id: files.id })
       .from(files)
       .where(
@@ -1006,9 +1027,11 @@ export class PatentsService {
         ),
       )
       .limit(1);
-    if (!hasNegativeDecision[0]) {
+    const hasNegativeDecision =
+      Boolean(hasNegativeDecisionFile[0]) || Boolean(source.decisionNegativeMarked);
+    if (!hasNegativeDecision) {
       throw new BadRequestException(
-        'Копию можно создать только после добавления файла в «Решение → Отрицательное».',
+        'Копию можно создать только после отметки или добавления файла в «Решение → Отрицательное».',
       );
     }
 

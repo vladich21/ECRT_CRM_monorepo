@@ -2,7 +2,16 @@ import type { ReactNode } from 'react';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-export type ModalType = 'fileForm' | 'positionForm' | 'contactForm' | 'confirm' | 'withDescription' | 'patentAreaForm';
+export type ModalType =
+  | 'fileForm'
+  | 'positionForm'
+  | 'contactForm'
+  | 'confirm'
+  | 'withDescription'
+  | 'patentAreaForm'
+  | 'approvalStart'
+  | 'approvalDecision'
+  | 'approvalResubmit';
 
 export type ConfirmModalAppearance = 'delete' | 'warning' | 'info' | 'success';
 

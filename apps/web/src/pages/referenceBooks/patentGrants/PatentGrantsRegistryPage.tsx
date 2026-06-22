@@ -1,6 +1,6 @@
 import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Pagination, Spin } from 'antd';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '../../../api/hooks/useReferences';
@@ -11,34 +11,28 @@ import { BackButton } from '../../../components/backButton/BackButton';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { useResetServerPageUnlessSkipped } from '../../../hooks/useListReturnFromDetail';
-import { getListScrollY, useListScrollRestoration } from '../../../hooks/useListScrollRestoration';
-import { useServerTablePagination } from '../../../hooks/useServerTablePagination';
+import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
+import {
+  useResetPageWhenListQueryChanges,
+  useServerPaginationClamp,
+  useServerTablePagination,
+} from '../../../hooks/useServerTablePagination';
 import type { PatentGrant } from '../../../types/patent';
 import { usePatentsListContractIdsForFilter } from '../../patents/hooks/usePatentsListContractIdsForFilter';
-import { usePatentsListPaginationClamp } from '../../patents/hooks/usePatentsListPaginationClamp';
 import { usePatentsListSearchDebounce } from '../../patents/hooks/usePatentsListSearchDebounce';
 import { usePatentsListSelectOptions } from '../../patents/hooks/usePatentsListSelectOptions';
 import type { ReferenceDataForPatents } from '../../patents/types/data';
 import patentListStyles from '../../patents/PatentsListPage.module.scss';
-import {
-  PATENT_GRANT_NAV_FROM_REGISTRY,
-  PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY,
-} from './navigation/patentGrantListNavigation';
+import { PATENT_GRANT_NAV_FROM_REGISTRY, PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY } from './navigation/patentGrantListNavigation';
 import { PatentGrantListCard } from './components/PatentGrantListCard';
 import { PatentGrantsRegistryFiltersBar } from './components/PatentGrantsRegistryFiltersBar';
 import { PatentGrantsRegistryFiltersModal } from './components/PatentGrantsRegistryFiltersModal';
 import { usePatentGrantsRegistryFilters } from './hooks/usePatentGrantsRegistryFilters';
-import { usePatentGrantsRegistryRestoreFromDetail } from './hooks/usePatentGrantsRegistryRestoreFromDetail';
 import { usePatentGrantsRegistryServerFilters } from './hooks/usePatentGrantsRegistryServerFilters';
-import {
-  loadPatentGrantsRegistryPersistedUi,
-  savePatentGrantsRegistryPersistedUi,
-} from './utils/patentGrantsRegistryPersistedUi';
+import { usePatentGrantsRegistryUiState } from './hooks/usePatentGrantsRegistryUiState';
 import { buildPatentGrantsRegistryListSnapshot } from './utils/patentGrantsRegistryNavSnapshot';
+import { buildPatentGrantsRegistryQueryResetKey } from './utils/patentGrantsRegistryQueryResetKey';
 import styles from './PatentGrantsListPage.module.scss';
-
-const PERSIST_UI_DEBOUNCE_MS = 400;
 
 const EMPTY_TAB_COUNTS: Record<PatentGrantRegistryListScope, number> = {
   all: 0,
@@ -77,37 +71,28 @@ export default function PatentGrantsRegistryPage() {
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
-  const restoredFromNavigationRef = useRef(false);
-  const { skipNextListResetRef, pendingScrollY } = usePatentGrantsRegistryRestoreFromDetail(
+  const { restoreToken, pendingScrollY } = usePatentGrantsRegistryUiState(
     location,
     navigate,
     { setSearchQuery, alignDebouncedWithQuery },
     { setGrantScopeTab, setAppliedFilters, setDraftFilters, restoreListSorting },
     { setPage, setPageSize },
-    { restoredFromNavigationRef },
+    { searchQuery, grantScopeTab, appliedFilters, page, pageSize, sortBy, sortOrder },
   );
 
-  const canPersistRegistryUiRef = useRef(false);
+  const queryResetKey = useMemo(
+    () =>
+      buildPatentGrantsRegistryQueryResetKey({
+        debouncedSearch,
+        grantScopeTab,
+        appliedFilters,
+        sortBy,
+        sortOrder,
+      }),
+    [debouncedSearch, grantScopeTab, appliedFilters, sortBy, sortOrder],
+  );
 
-  useLayoutEffect(() => {
-    if (restoredFromNavigationRef.current) {
-      restoredFromNavigationRef.current = false;
-    } else {
-      const persisted = loadPatentGrantsRegistryPersistedUi();
-      if (persisted) {
-        skipNextListResetRef.current = true;
-        setSearchQuery(persisted.searchQuery);
-        alignDebouncedWithQuery(persisted.searchQuery.trim());
-        setGrantScopeTab(persisted.grantScopeTab);
-        setAppliedFilters(persisted.appliedFilters);
-        setDraftFilters(persisted.appliedFilters);
-        setPage(persisted.page);
-        setPageSize(persisted.pageSize);
-        restoreListSorting({ sortBy: persisted.sortBy, sortOrder: persisted.sortOrder });
-      }
-    }
-    canPersistRegistryUiRef.current = true;
-  }, []);
+  useResetPageWhenListQueryChanges(queryResetKey, resetPage, restoreToken);
 
   const serverFilters = usePatentGrantsRegistryServerFilters(
     debouncedSearch,
@@ -115,51 +100,6 @@ export default function PatentGrantsRegistryPage() {
     sortBy,
     sortOrder,
   );
-
-  const appliedFiltersResetKey = useMemo(
-    () =>
-      JSON.stringify({
-        departmentId: appliedFilters.departmentId,
-        projectId: appliedFilters.projectId,
-        contractId: appliedFilters.contractId,
-        statusId: appliedFilters.statusId,
-        responsibleId: appliedFilters.responsibleId,
-        authorIds: [...appliedFilters.authorIds].sort(),
-        areaIds: [...appliedFilters.areaIds].sort(),
-        registrationYears: [...appliedFilters.registrationYears].sort((a, b) => a - b),
-        registrationCirYears: [...appliedFilters.registrationCirYears].sort((a, b) => a - b),
-        grantStatuses: [...appliedFilters.grantStatuses].sort(),
-        grantRegionKeys: [...appliedFilters.grantRegionKeys].sort(),
-        grantIssueYears: [...appliedFilters.grantIssueYears].sort((a, b) => a - b),
-        grantRenewalYears: [...appliedFilters.grantRenewalYears].sort((a, b) => a - b),
-      }),
-    [appliedFilters],
-  );
-
-  useResetServerPageUnlessSkipped(skipNextListResetRef, resetPage, [
-    debouncedSearch,
-    grantScopeTab,
-    appliedFiltersResetKey,
-    sortBy,
-    sortOrder,
-    resetPage,
-  ]);
-
-  useEffect(() => {
-    if (!canPersistRegistryUiRef.current) return;
-    const timeoutId = window.setTimeout(() => {
-      savePatentGrantsRegistryPersistedUi({
-        searchQuery,
-        grantScopeTab,
-        appliedFilters,
-        page,
-        pageSize,
-        sortBy,
-        sortOrder,
-      });
-    }, PERSIST_UI_DEBOUNCE_MS);
-    return () => window.clearTimeout(timeoutId);
-  }, [searchQuery, grantScopeTab, appliedFilters, page, pageSize, sortBy, sortOrder]);
 
   const listQuery = useMemo(
     () => ({
@@ -198,11 +138,11 @@ export default function PatentGrantsRegistryPage() {
 
   const refs = referenceBooks as ReferenceDataForPatents;
 
-  usePatentsListPaginationClamp({
+  useServerPaginationClamp({
     total,
     page,
     pageSize,
-    isError: isRefsError || isError,
+    disabled: isRefsError || isError,
     handleTableChange,
   });
 
@@ -232,20 +172,14 @@ export default function PatentGrantsRegistryPage() {
     });
   };
 
-  const handlePageChange = (newPage: number, newPageSize?: number) =>
-    handleTableChange({
-      current: newPage,
-      pageSize: newPageSize ?? pageSize,
-    });
-
   const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
-  const showPagination = total > 0;
 
   useListScrollRestoration({
     pendingScrollY,
     isListReady: !isInitialLoad && !isFetching,
   });
+  useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось загрузить реестр охранных документов' />;
@@ -293,14 +227,8 @@ export default function PatentGrantsRegistryPage() {
               totalCount={total}
               sortBy={sortBy}
               sortOrder={sortOrder}
-              onSortFieldChange={field => {
-                setSortField(field);
-                resetPage();
-              }}
-              onToggleSortOrder={() => {
-                toggleSortOrder();
-                resetPage();
-              }}
+              onSortFieldChange={setSortField}
+              onToggleSortOrder={toggleSortOrder}
             />
           ) : undefined
         }
@@ -311,10 +239,7 @@ export default function PatentGrantsRegistryPage() {
         draftFilters={draftFilters}
         onUpdateDraftFilter={updateDraftFilter}
         onClose={closeFiltersModal}
-        onApply={() => {
-          applyFilters();
-          resetPage();
-        }}
+        onApply={applyFilters}
         onReset={resetDraftFilters}
         selectOptions={selectOptions}
       />
@@ -336,20 +261,20 @@ export default function PatentGrantsRegistryPage() {
               ))}
             </ReferenceBookCardList>
           </div>
-          {showPagination ? (
+          {total > 0 && (
             <div className={patentListStyles.pagination}>
               <Pagination
-                current={paginationConfig.current}
-                pageSize={paginationConfig.pageSize}
-                total={paginationConfig.total}
-                showSizeChanger
-                pageSizeOptions={['20', '50', '100']}
-                showTotal={(itemTotal, range) => `${range[0]}-${range[1]} из ${itemTotal}`}
-                onChange={handlePageChange}
-                onShowSizeChange={(_, nextSize) => handlePageChange(1, nextSize)}
+                {...paginationConfig}
+                onChange={(newPage, newPageSize) =>
+                  handleTableChange({
+                    current: newPage,
+                    pageSize: newPageSize ?? pageSize,
+                  })
+                }
+                onShowSizeChange={(_, nextSize) => handleTableChange({ current: 1, pageSize: nextSize })}
               />
             </div>
-          ) : null}
+          )}
         </>
       )}
     </div>
