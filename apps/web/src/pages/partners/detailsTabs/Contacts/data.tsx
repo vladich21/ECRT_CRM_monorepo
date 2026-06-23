@@ -4,6 +4,7 @@ export const initialPartnerContactValues = {
   full_name: '',
   position: '',
   phone: '',
+  phone_ext: '',
   email: '',
   is_primary: false,
 };
@@ -25,7 +26,8 @@ export const getColumnsData = () => [
     title: 'Телефон',
     dataIndex: 'phone',
     key: 'phone',
-    render: (phone: string) => phone || '-',
+    render: (phone: string, record: { phone_ext?: string }) =>
+      phone ? `${phone}${record.phone_ext ? ` доб. ${record.phone_ext}` : ''}` : '-',
   },
   {
     title: 'Email',

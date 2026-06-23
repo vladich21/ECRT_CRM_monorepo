@@ -73,6 +73,7 @@ export interface PartnerContact {
   full_name: string;
   position: string;
   phone: string;
+  phone_ext: string;
   email: string;
   is_primary: boolean;
   created_at: string;

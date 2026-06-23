@@ -126,6 +126,7 @@ function ContactInfoClassificationRows({
   extraCount: number;
 }) {
   const phone = contact.phone?.trim();
+  const phoneExt = contact.phone_ext?.trim();
   const email = contact.email?.trim();
   const name = contact.full_name?.trim() || '—';
   const position = contact.position?.trim();
@@ -143,7 +144,10 @@ function ContactInfoClassificationRows({
       <div className={styles.classRowBorder}>
         <span className={styles.classLabel}>Телефон</span>
         {phone ? (
-          <span className={styles.classValue}>{phone}</span>
+          <span className={styles.classValue}>
+            {phone}
+            {phoneExt ? ` доб. ${phoneExt}` : ''}
+          </span>
         ) : (
           <span className={styles.classValue}>—</span>
         )}

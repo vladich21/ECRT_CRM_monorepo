@@ -31,6 +31,7 @@ export default function ContactCard({ contact, onEdit, onDelete }: ContactCardPr
             <span className={styles.contactItem}>
               <PhoneOutlined />
               {contact.phone}
+              {contact.phone_ext && ` доб. ${contact.phone_ext}`}
             </span>
           )}
           {contact.email && (

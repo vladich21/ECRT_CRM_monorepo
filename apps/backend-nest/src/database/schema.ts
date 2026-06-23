@@ -451,6 +451,7 @@ export const partnerContacts = pgTable('partner_contacts', {
   fullName: varchar('full_name', { length: 255 }),
   position: varchar('position', { length: 255 }),
   phone: varchar('phone', { length: 255 }),
+  phoneExt: varchar('phone_ext', { length: 16 }),
   email: varchar('email', { length: 255 }),
   isPrimary: boolean('is_primary').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

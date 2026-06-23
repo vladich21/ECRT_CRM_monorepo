@@ -15,6 +15,7 @@ export interface PartnerContactFormModalProps extends Omit<BaseModalProps, 'foot
     full_name: string;
     position: string;
     phone: string;
+    phone_ext: string;
     email: string;
     is_primary: boolean;
   }) => void | Promise<void>;
@@ -43,6 +44,7 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
     full_name: string;
     position: string;
     phone: string;
+    phone_ext: string;
     email: string;
     is_primary: boolean;
   }) => {
@@ -101,26 +103,6 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
           </Col>
           <Col span={12}>
             <Form.Item
-              name='phone'
-              label='Телефон'
-              normalize={v => (typeof v === 'string' ? v.trim() : v)}
-              rules={[{ max: 255, message: 'Телефон не должен превышать 255 символов' }]}
-            >
-              <Input
-                placeholder='Введите телефон'
-                allowClear
-                count={{
-                  show: true,
-                  max: 255,
-                }}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
               name='email'
               label='Email'
               rules={[
@@ -139,6 +121,51 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
               />
             </Form.Item>
           </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={16}>
+            <Form.Item
+              name='phone'
+              label='Телефон'
+              normalize={v => (typeof v === 'string' ? v.trim() : v)}
+              rules={[{ max: 255, message: 'Телефон не должен превышать 255 символов' }]}
+            >
+              <Input
+                placeholder='Введите телефон'
+                allowClear
+                count={{
+                  show: true,
+                  max: 255,
+                }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name='phone_ext'
+              label='Добавочный'
+              normalize={v => (typeof v === 'string' ? v.trim() : v)}
+              rules={[
+                {
+                  pattern: /^\d{1,6}$/,
+                  message: 'Только цифры, до 6 знаков',
+                },
+              ]}
+            >
+              <Input
+                placeholder='Напр. 123'
+                allowClear
+                count={{
+                  show: true,
+                  max: 6,
+                }}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               name='is_primary'
