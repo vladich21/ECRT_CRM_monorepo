@@ -33,6 +33,7 @@ const PartnerContactsListPage: React.FC = () => {
     mutation: editContactMutation,
     successMessage: 'Контакт успешно изменен',
     errorMessage: 'Не удалось изменить контакт',
+    modalTitle: 'Редактирование контакта',
     modalType: 'contactForm',
     getModalData: () => {
       const existing = getEntityById<PartnerContact>(editIdRef.current, data);
@@ -49,6 +50,7 @@ const PartnerContactsListPage: React.FC = () => {
     mutation: addContactMutation,
     successMessage: 'Контакт успешно добавлен',
     errorMessage: 'Не удалось добавить контакт',
+    modalTitle: 'Создание контакта',
     modalType: 'contactForm',
     getModalData: () => ({
       ...initialPartnerContactValues,

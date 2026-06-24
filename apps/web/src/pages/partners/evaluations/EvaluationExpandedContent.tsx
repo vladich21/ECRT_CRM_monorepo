@@ -23,6 +23,7 @@ import {
   weightPercent,
 } from './supplierEvaluationUi';
 import { EvaluationLowScoreFilesHint } from './EvaluationLowScoreFilesHint';
+import { formatSupplierEvaluationCommentForDisplay } from './supplierEvaluationCommentDisplay';
 import styles from './EvaluationExpandedContent.module.scss';
 
 const { Text } = Typography;
@@ -160,6 +161,8 @@ export default function EvaluationExpandedContent({
       ? `${styles.actionBar} ${styles.actionBarSoon}`
       : `${styles.actionBar} ${styles.actionBarNeutral}`;
 
+  const displayComment = formatSupplierEvaluationCommentForDisplay(detail?.comment);
+
   return (
     <div className={styles.root}>
       {isLoading || !detail ? (
@@ -210,12 +213,12 @@ export default function EvaluationExpandedContent({
               </Table.Summary>
             )}
           />
-          {detail.comment ? (
+          {displayComment ? (
             <Alert
               type='warning'
               showIcon
               message='Комментарий'
-              description={detail.comment}
+              description={displayComment}
               className={styles.mt12}
             />
           ) : null}
