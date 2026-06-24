@@ -104,28 +104,14 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
               name='phone'
               label='Телефон'
               normalize={v => (typeof v === 'string' ? v.trim() : v)}
-              rules={[
-                {
-                  validator: (_, value) => {
-                    if (!value || !value.trim()) return Promise.resolve();
-                    const digits = value.replace(/\D/g, '');
-                    const valid =
-                      (digits.length === 10 && digits.startsWith('9')) ||
-                      (digits.length === 11 && (digits.startsWith('79') || digits.startsWith('89')));
-                    return valid
-                      ? Promise.resolve()
-                      : Promise.reject(new Error('Введите корректный номер, например: +7 (999) 999-99-99'));
-                  },
-                },
-                { max: 25, message: 'Телефон не должен превышать 25 символов' },
-              ]}
+              rules={[{ max: 255, message: 'Телефон не должен превышать 255 символов' }]}
             >
               <Input
                 placeholder='Введите телефон'
                 allowClear
                 count={{
                   show: true,
-                  max: 25,
+                  max: 255,
                 }}
               />
             </Form.Item>

@@ -34,6 +34,7 @@ type ContractCreateLocationState = {
   partnerId?: string;
   createdPartnerId?: string;
   restoreContractDraft?: boolean;
+  returnPath?: string;
 };
 
 export default function ContractCreatePage() {
@@ -45,6 +46,12 @@ export default function ContractCreatePage() {
   const locationState = location.state as ContractCreateLocationState | null;
   const partnerIdFromState = locationState?.partnerId;
   const restoredPartnerId = locationState?.createdPartnerId;
+  const returnPath = locationState?.returnPath?.trim();
+  const partnerContractsPath = partnerIdFromState
+    ? `/partners/${partnerIdFromState}/contracts`
+    : undefined;
+  const backPath = returnPath || partnerContractsPath || CONTRACTS_REGISTRY_PATH;
+  const backLabel = partnerContractsPath && backPath === partnerContractsPath ? 'Договоры контрагента' : 'Договоры';
   const {
     data: referenceBooks,
     isLoading: isReferencesLoading,
@@ -164,8 +171,8 @@ export default function ContractCreatePage() {
       <DetailPageHeader
         title='Создание нового договора'
         titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные для создания договора</span>}
-        backLabel='Договоры'
-        onBack={() => navigate(CONTRACTS_REGISTRY_PATH)}
+        backLabel={backLabel}
+        onBack={() => navigate(backPath)}
         actions={
           <>
             <Button onClick={() => form.resetFields()} disabled={isCreateLoading}>

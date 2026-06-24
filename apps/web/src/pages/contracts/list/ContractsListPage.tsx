@@ -168,7 +168,16 @@ export default function ContractsListPage() {
             <Button
               type='primary'
               disabled={activeTab === 'deleted'}
-              onClick={() => navigate('/contracts/create', { state: { partnerId: partnerIdFromRoute } })}
+              onClick={() =>
+                navigate('/contracts/create', {
+                  state: {
+                    partnerId: partnerIdFromRoute,
+                    returnPath: partnerIdFromRoute
+                      ? `/partners/${partnerIdFromRoute}/contracts`
+                      : undefined,
+                  },
+                })
+              }
             >
               Новый договор
             </Button>

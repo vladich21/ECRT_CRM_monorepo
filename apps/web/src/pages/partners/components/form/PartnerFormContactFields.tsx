@@ -14,12 +14,7 @@ export function PartnerFormContactFields() {
           <Form.Item
             label='Телефон'
             name='phone'
-            rules={[
-              {
-                pattern: /^(\+7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/,
-                message: 'Введите корректный номер телефона',
-              },
-            ]}
+            rules={[{ max: 255, message: 'Телефон не должен превышать 255 символов' }]}
           >
             <Input placeholder='Введите телефон' prefix={<PhoneOutlined />} />
           </Form.Item>
