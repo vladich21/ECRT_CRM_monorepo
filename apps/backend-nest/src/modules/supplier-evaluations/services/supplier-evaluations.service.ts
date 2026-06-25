@@ -221,6 +221,89 @@ export class SupplierEvaluationsService {
     };
   }
 
+  /**
+   * Агрегированный отчёт по оценкам контрагента для визуализации «Результаты поставщика».
+   * Возвращает активные критерии, список проектов (для переключателя) и все проектные
+   * оценки (active+archived) по возрастанию даты, каждая со скорами по критериям.
+   */
+  async findPartnerReport(partnerId: string) {
+    const [criteria, evalRows] = await Promise.all([
+      this.findCriteriaCatalog(),
+      this.db.db
+        .select({
+          id: supplierEvaluations.id,
+          projectId: supplierEvaluations.projectId,
+          projectName: projects.name,
+          projectCode: projects.code,
+          status: supplierEvaluations.status,
+          weightedScore: supplierEvaluations.weightedScore,
+          category: supplierEvaluations.category,
+          evaluatedAt: supplierEvaluations.evaluatedAt,
+        })
+        .from(supplierEvaluations)
+        .leftJoin(projects, eq(supplierEvaluations.projectId, projects.id))
+        .where(
+          and(
+            eq(supplierEvaluations.partnerId, partnerId),
+            eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT),
+          )!,
+        )
+        .orderBy(asc(supplierEvaluations.evaluatedAt), asc(supplierEvaluations.createdAt)),
+    ]);
+
+    const ids = evalRows.map((row) => String(row.id));
+    const scoreRows = ids.length
+      ? await this.db.db
+          .select({
+            evaluationId: supplierEvaluationCriterionScores.evaluationId,
+            criterionId: supplierEvaluationCriterionScores.criterionId,
+            criterionCode: refSupplierEvaluationCriteria.code,
+            score: supplierEvaluationCriterionScores.score,
+          })
+          .from(supplierEvaluationCriterionScores)
+          .innerJoin(
+            refSupplierEvaluationCriteria,
+            eq(supplierEvaluationCriterionScores.criterionId, refSupplierEvaluationCriteria.id),
+          )
+          .where(inArray(supplierEvaluationCriterionScores.evaluationId, ids))
+      : [];
+
+    const scoresByEval = new Map<string, Array<{ criterion_id: string; criterion_code: string; score: number }>>();
+    for (const scoreRow of scoreRows) {
+      const key = String(scoreRow.evaluationId);
+      const arr = scoresByEval.get(key) ?? [];
+      arr.push({
+        criterion_id: String(scoreRow.criterionId),
+        criterion_code: scoreRow.criterionCode ?? '',
+        score: this.roundScore(Number(scoreRow.score)),
+      });
+      scoresByEval.set(key, arr);
+    }
+
+    const projectsMap = new Map<string, string>();
+    const evaluations = evalRows.map((row) => {
+      const pid = row.projectId ? String(row.projectId) : null;
+      const label = (row.projectName ?? row.projectCode ?? '').trim() || '—';
+      if (pid) projectsMap.set(pid, label);
+      return {
+        id: String(row.id),
+        project_id: pid,
+        project_label: label,
+        status: row.status,
+        weighted_score: this.roundScore(Number(row.weightedScore)),
+        category: row.category,
+        evaluated_at: this.isoDateOnly(row.evaluatedAt),
+        scores: scoresByEval.get(String(row.id)) ?? [],
+      };
+    });
+
+    const projectList = [...projectsMap.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+
+    return { criteria, projects: projectList, evaluations };
+  }
+
   private calendarTodayIso(): string {
     const today = new Date();
     const year = today.getFullYear();

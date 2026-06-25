@@ -1,10 +1,93 @@
-import { Tag } from 'antd';
+import { CheckCircleFilled, ExclamationCircleFilled } from '@ant-design/icons';
+import { Skeleton, Tag, Tooltip } from 'antd';
 import { Link } from 'react-router-dom';
 
+import { usePartnerScoring } from '../../../api/partners/partnerApiHooks';
+import type { ScoringModel } from '../../../api/partners/partnerApi';
 import { SURFACE_ACTIVE, SURFACE_BLOCKED, getPartnerStatusSurface, mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner, PartnerContact } from '../../../types/partner';
 import { inferPartnerCategoryKind } from '../../../utils/partnerApproval';
 import styles from './DetailSidebar.module.scss';
+
+/** Уровень скоринга Контура → русская подпись и цвет (Фокус отдаёт High/Middle/Low). */
+function scoringLevelMeta(level: string): { label: string; color: string } {
+  switch ((level ?? '').toLowerCase()) {
+    case 'high':
+      return { label: 'Высокий', color: '#52c41a' };
+    case 'middle':
+    case 'medium':
+      return { label: 'Средний', color: '#faad14' };
+    case 'low':
+      return { label: 'Низкий', color: '#ff4d4f' };
+    default:
+      return { label: '—', color: '#bfbfbf' };
+  }
+}
+
+/** Длинные названия моделей Фокуса сокращаем под узкую колонку сайдбара. */
+function shortScoringModelName(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('налогов')) return 'Налоговая проверка';
+  if (lower.includes('благонад')) return 'Благонадёжность';
+  if (lower.includes('финанс')) return 'Фин. состояние';
+  return name;
+}
+
+function ScoringMarkersTooltip({ model }: { model: ScoringModel }) {
+  if (model.triggeredMarkers.length === 0) return <span>Маркеры не сработали</span>;
+  return (
+    <div className={styles.scoreTipList}>
+      {model.triggeredMarkers.map((marker) => (
+        <div key={marker.markerId} className={styles.scoreTipRow}>
+          {marker.impact === 'Risk' ? (
+            <ExclamationCircleFilled style={{ color: '#faad14' }} />
+          ) : (
+            <CheckCircleFilled style={{ color: '#52c41a' }} />
+          )}
+          <span>{marker.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PartnerScoringSidebarCard({ partnerId }: { partnerId: string }) {
+  const { data, isLoading, isError } = usePartnerScoring(partnerId);
+  const models = data?.scoringData ?? [];
+
+  // Прячем карточку, когда скоринг недоступен/пуст — чтобы не засорять сайдбар.
+  if (isError || (!isLoading && models.length === 0)) return null;
+
+  return (
+    <div className={styles.card}>
+      <h3 className={styles.cardTitle}>Скоринг Контур.Фокуса</h3>
+      {isLoading ? (
+        <Skeleton active paragraph={{ rows: 2 }} title={false} />
+      ) : (
+        <div className={styles.classItems}>
+          {models.map((model, index) => {
+            const level = scoringLevelMeta(model.ratingLevel);
+            const rowClass = index === models.length - 1 ? styles.classRow : styles.classRowBorder;
+            return (
+              <Tooltip key={model.modelId} title={<ScoringMarkersTooltip model={model} />} placement='left'>
+                <div className={rowClass}>
+                  <span className={styles.classLabel}>{shortScoringModelName(model.modelName)}</span>
+                  <span className={styles.scoreValue}>
+                    <span className={styles.scoreDot} style={{ background: level.color }} />
+                    <span className={styles.scoreRating}>{model.rating}</span>
+                    <span className={styles.scoreLevel} style={{ color: level.color }}>
+                      {level.label}
+                    </span>
+                  </span>
+                </div>
+              </Tooltip>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function pickFeaturedContact(contacts: PartnerContact[]): PartnerContact {
   return contacts.find(contact => contact.is_primary) ?? contacts[0];
@@ -43,6 +126,7 @@ function ContactInfoClassificationRows({
   extraCount: number;
 }) {
   const phone = contact.phone?.trim();
+  const phoneExt = contact.phone_ext?.trim();
   const email = contact.email?.trim();
   const name = contact.full_name?.trim() || '—';
   const position = contact.position?.trim();
@@ -60,7 +144,10 @@ function ContactInfoClassificationRows({
       <div className={styles.classRowBorder}>
         <span className={styles.classLabel}>Телефон</span>
         {phone ? (
-          <span className={styles.classValue}>{phone}</span>
+          <span className={styles.classValue}>
+            {phone}
+            {phoneExt ? ` доб. ${phoneExt}` : ''}
+          </span>
         ) : (
           <span className={styles.classValue}>—</span>
         )}
@@ -145,6 +232,8 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
 
   return (
     <div className={styles.sidebar}>
+      <PartnerScoringSidebarCard partnerId={partner.id} />
+
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>Контакты контрагента</h3>
         <div className={styles.classItems}>

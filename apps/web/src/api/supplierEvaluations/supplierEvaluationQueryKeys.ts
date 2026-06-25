@@ -46,6 +46,7 @@ export const supplierEvaluationQueryKeys = {
     ['supplier-evaluations', 'block', partnerId, projectId] as const,
   partnerKpi: (partnerId: string) => ['supplier-evaluations', 'partner-kpi', partnerId] as const,
   partnerInitial: (partnerId: string) => ['supplier-evaluations', 'partner-initial', partnerId] as const,
+  partnerReport: (partnerId: string) => ['supplier-evaluations', 'partner-report', partnerId] as const,
 } as const;
 
 export function invalidateSupplierEvaluationQueries(queryClient: QueryClient) {

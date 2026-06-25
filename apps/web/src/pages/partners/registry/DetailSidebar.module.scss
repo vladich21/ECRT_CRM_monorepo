@@ -143,6 +143,48 @@
   min-width: 0;
 }
 
+.scoreValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.scoreDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.scoreRating {
+  font-size: 16px;
+  font-weight: 800;
+  color: #141414;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.scoreLevel {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.scoreTipList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 280px;
+}
+
+.scoreTipRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .contactInfoRows .classValue {
   max-width: 62%;
   text-align: right;

@@ -31,6 +31,7 @@ const PartnerContactsListPage = lazy(() => import('../pages/partners/detailsTabs
 const PartnerMainInfoTab = lazy(() => import('../pages/partners/registry/PartnerOverviewTab'));
 const PartnerVerificationTab = lazy(() => import('../pages/partners/detailsTabs/PartnerVerificationTab'));
 const PartnerEvaluationsTab = lazy(() => import('../pages/partners/evaluations/PartnerEvaluationsTab'));
+const PartnerEvaluationReportPage = lazy(() => import('../pages/partners/evaluations/PartnerEvaluationReportPage'));
 const SupplierEvaluationsRegistryPage = lazy(() => import('../pages/supplierEvaluations/SupplierEvaluationsRegistryPage'));
 const PartnerTypesListPage = lazy(() => import('../pages/referenceBooks/partnerTypes/PartnerTypesListPage'));
 const PartnerStatusesListPage = lazy(() => import('../pages/referenceBooks/partnerStatuses/PartnerStatusesListPage'));
@@ -112,6 +113,19 @@ export default function AppRoutes() {
           <Suspense fallback={suspenseFallback}>
             <LoginPage />
           </Suspense>
+        }
+      />
+
+      <Route
+        path="/partners/:partnerId/evaluation-report"
+        element={
+          <Private>
+            <Guarded section={SECTIONS.PARTNERS_LIST}>
+              <Suspense fallback={suspenseFallback}>
+                <PartnerEvaluationReportPage />
+              </Suspense>
+            </Guarded>
+          </Private>
         }
       />
 

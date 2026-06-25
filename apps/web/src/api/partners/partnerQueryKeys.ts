@@ -10,6 +10,8 @@ export const partnerQueryKeys = {
 
   detail: (partnerId: string) => [...partnerQueryKeys.all, partnerId] as const,
 
+  scoring: (partnerId: string) => [...partnerQueryKeys.all, partnerId, 'scoring'] as const,
+
   contacts: (partnerId?: string) =>
     [...partnerQueryKeys.all, partnerId?.toString() as string | undefined, 'contacts'] as const,
 

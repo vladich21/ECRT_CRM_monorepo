@@ -42,6 +42,7 @@ export class PartnerContactsService {
       fullName: data.full_name != null ? String(data.full_name) : null,
       position: data.position != null ? String(data.position) : null,
       phone: data.phone != null ? String(data.phone) : null,
+      phoneExt: data.phone_ext != null ? String(data.phone_ext) : null,
       email: data.email != null ? String(data.email) : null,
       isPrimary,
       ...(userId ? { createdBy: userId, updatedBy: userId } : {}),
@@ -62,6 +63,7 @@ export class PartnerContactsService {
       full_name: 'fullName',
       position: 'position',
       phone: 'phone',
+      phone_ext: 'phoneExt',
       email: 'email',
       is_primary: 'isPrimary',
     };
@@ -96,6 +98,7 @@ export class PartnerContactsService {
       full_name: row.fullName ?? '',
       position: row.position ?? '',
       phone: row.phone ?? '',
+      phone_ext: row.phoneExt ?? '',
       email: row.email ?? '',
       is_primary: row.isPrimary ?? false,
       created_at: row.createdAt ? row.createdAt.toISOString() : '',

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Modal, Table, Tag, Tooltip, Typography } from 'antd';
-import { DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
+import { BarChartOutlined, DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -463,6 +463,12 @@ export default function PartnerEvaluationsTab() {
         title='Оценки по проектам'
         actions={
           <>
+            <Button
+              icon={<BarChartOutlined />}
+              onClick={() => navigate(`/partners/${partner.id}/evaluation-report`)}
+            >
+              Отчёт
+            </Button>
             <Button
               icon={<FilterOutlined />}
               className={activeFiltersCount > 0 ? listStyles.filtersBtnActive : undefined}
