@@ -148,8 +148,8 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
               normalize={v => (typeof v === 'string' ? v.trim() : v)}
               rules={[
                 {
-                  pattern: /^\d{1,6}$/,
-                  message: 'Только цифры, до 6 знаков',
+                  pattern: /^[\d\s-]{1,12}$/,
+                  message: 'Цифры, пробелы и дефис, до 12 символов',
                 },
               ]}
             >
@@ -158,7 +158,7 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
                 allowClear
                 count={{
                   show: true,
-                  max: 6,
+                  max: 12,
                 }}
               />
             </Form.Item>
