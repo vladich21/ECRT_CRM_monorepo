@@ -1,19 +1,15 @@
 import { ClockCircleOutlined, PrinterOutlined } from '@ant-design/icons';
-import { App, Badge, Button, Card, Col, Collapse, Empty, Modal, Popconfirm, Row, Space, Spin, Steps, Table, Tabs, Tag, Typography } from 'antd';
+import { App, Badge, Button, Card, Col, Collapse, Empty, Modal, Popconfirm, Row, Space, Spin, Table, Tabs, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useApprovalProcess, useApprovalState, useCancelProcess } from '@/api/approvals/approvalApiHooks';
 import { useModalStore } from '@/store/ModalStore';
-import {
-  APPROVAL_STATUS_LABELS,
-  DECISION_LABELS,
-  type ApprovalProcessStatus,
-  type ApprovalStepView,
-} from '@/types/approval';
+import { APPROVAL_STATUS_LABELS, DECISION_LABELS, type ApprovalProcessStatus } from '@/types/approval';
 
 import { ApprovalDocuments } from './ApprovalDocuments';
 import { ApprovalFeed } from './ApprovalFeed';
+import { ApprovalStepsBoard } from './ApprovalStepsBoard';
 
 type BadgeStatus = 'success' | 'processing' | 'error' | 'warning' | 'default';
 
@@ -33,36 +29,6 @@ interface ApprovalPanelProps {
   variant?: 'card' | 'compact';
 }
 
-function stepStatus(s: ApprovalStepView): 'finish' | 'process' | 'wait' | 'error' {
-  if (s.state === 'completed') return 'finish';
-  if (s.state === 'current') return s.is_overdue ? 'error' : 'process';
-  return 'wait';
-}
-
-function StepAssignees({ step }: { step: ApprovalStepView }) {
-  if (step.step_type === 'sequential' && step.sequential_queue?.length) {
-    return (
-      <div>
-        {step.sequential_queue.map((q, i) => (
-          <Tag key={q.id} color={q.state === 'done' ? 'green' : q.state === 'active' ? 'blue' : 'default'}>
-            {i + 1}. {q.name}
-          </Tag>
-        ))}
-      </div>
-    );
-  }
-  return (
-    <div>
-      {step.assignees.map((a) => (
-        <Tag key={a.assignee_id} color={!a.is_pending ? 'green' : a.is_active ? 'blue' : 'default'}>
-          {a.name}
-          {!a.is_pending ? ' ✓' : ''}
-        </Tag>
-      ))}
-    </div>
-  );
-}
-
 /** Детали архивного (завершённого) процесса — подгружаются по разворачиванию.
  *  Документы не показываем: они привязаны к сущности и очищаются при старте нового
  *  согласования. Архив хранит ход (шаги) и ленту (решения/комментарии). */
@@ -77,19 +43,7 @@ function ArchiveProcessDetail({ processId, active }: { processId: string; active
           Комментарий: {proc.completion_comment}
         </Typography.Text>
       ) : null}
-      <Steps
-        size="small"
-        items={proc.steps.map((s) => ({
-          status: stepStatus(s),
-          title: (
-            <Space size={4} wrap>
-              <span>{s.name}</span>
-              {s.step_role_name ? <Tag color={s.step_role_color ?? undefined}>{s.step_role_name}</Tag> : null}
-            </Space>
-          ),
-          description: <StepAssignees step={s} />,
-        }))}
-      />
+      <ApprovalStepsBoard steps={proc.steps} decisions={proc.decisions} />
       <Card size="small" title="Лента согласования">
         <ApprovalFeed
           processId={proc.id}
@@ -171,11 +125,6 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
 
   const actions = process ? (
     <Space wrap>
-      {state.can_approve && (
-        <Button type="primary" onClick={openDecision}>
-          Принять решение
-        </Button>
-      )}
       {state.can_resubmit && (
         <Button onClick={openResubmit}>Отправить повторно</Button>
       )}
@@ -246,19 +195,12 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
             </Typography.Text>
           ) : null}
 
-          {/* Маршрут — горизонтальный степпер */}
-          <Steps
-            size="small"
-            items={process.steps.map((s) => ({
-              status: stepStatus(s),
-              title: (
-                <Space size={4} wrap>
-                  <span>{s.name}</span>
-                  {s.step_role_name ? <Tag color={s.step_role_color ?? undefined}>{s.step_role_name}</Tag> : null}
-                </Space>
-              ),
-              description: <StepAssignees step={s} />,
-            }))}
+          {/* Маршрут — доска компактных карточек */}
+          <ApprovalStepsBoard
+            steps={process.steps}
+            decisions={process.decisions}
+            canApprove={state.can_approve}
+            onDecide={openDecision}
           />
 
           {/* 2 колонки: документы / лента */}

@@ -1,0 +1,221 @@
+@use '../../styles/variables' as v;
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.card {
+  position: relative;
+  border: 1px solid v.$border-tertiary;
+  border-radius: 10px;
+  background: v.$bg-primary;
+  padding: 10px 11px;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
+    border-color: #d8dbe0;
+  }
+
+  &.current {
+    border-color: v.$primary-color;
+    box-shadow: 0 2px 10px rgba(22, 119, 255, 0.1);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex: none;
+  background: #eef0f3;
+  color: v.$text-quaternary;
+
+  &.done {
+    background: v.$success;
+    color: #fff;
+  }
+  &.current {
+    background: v.$primary-color;
+    color: #fff;
+  }
+}
+
+.name {
+  font-weight: 700;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  margin-left: auto;
+  background: #d2d6dd;
+
+  &.done {
+    background: v.$success;
+  }
+  &.current {
+    background: v.$primary-color;
+    box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.18);
+  }
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  min-height: 24px;
+  font-size: 12.5px;
+
+  .nm {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+  }
+
+  &.idle .nm {
+    color: v.$text-quaternary;
+    font-weight: 500;
+  }
+
+  .more {
+    margin-left: auto;
+    font-size: 11px;
+    color: v.$text-quaternary;
+    background: v.$bg-tertiary;
+    padding: 1px 6px;
+    border-radius: 5px;
+    flex: none;
+  }
+}
+
+.counter {
+  flex: none;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: v.$primary-dark;
+}
+
+.rolePill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: v.$bg-active;
+  color: v.$primary-dark;
+}
+
+.av {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  flex: none;
+
+  &.sm {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+  &.done {
+    background: v.$success;
+  }
+  &.wait {
+    background: v.$primary-light;
+  }
+  &.idle {
+    background: #b6bcc8;
+  }
+}
+
+.tick {
+  color: v.$success;
+}
+
+.cardAction {
+  margin-top: 9px;
+}
+
+/* popover content */
+.pop {
+  min-width: 200px;
+  max-width: 280px;
+}
+
+.popTitle {
+  font-size: 10.5px;
+  color: v.$text-quaternary;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.popRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12.5px;
+
+  .nm {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &.wait .nm {
+    font-weight: 700;
+  }
+  &.idle .nm {
+    color: v.$text-quaternary;
+  }
+
+  .meta {
+    margin-left: auto;
+    font-size: 11px;
+    color: v.$text-quaternary;
+    flex: none;
+  }
+}
+
+.popEmpty {
+  font-size: 12.5px;
+  color: v.$text-quaternary;
+}
