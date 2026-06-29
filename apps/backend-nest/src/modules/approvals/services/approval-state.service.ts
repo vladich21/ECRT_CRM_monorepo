@@ -10,6 +10,7 @@ import {
   approvalProcesses,
   approvalProcessSteps,
   approvalRoutes,
+  relApprovalProcessStepAssignees,
   users,
 } from '../../../database/schema';
 import { EntityHandlerRegistry } from '../entity-handlers/entity-handler.registry';
@@ -217,6 +218,17 @@ export class ApprovalStateService {
       .from(approvalAssignments)
       .where(eq(approvalAssignments.processId, processId));
 
+    // Снапшот плановых назначенцев шагов: для будущих (pending) шагов строк в
+    // approval_assignments ещё нет (создаются при переходе на шаг), поэтому
+    // участников показываем из снапшота маршрута.
+    const stepIds = steps.map((s) => s.id);
+    const snapshotAssignees = stepIds.length
+      ? await this.db.db
+          .select()
+          .from(relApprovalProcessStepAssignees)
+          .where(inArray(relApprovalProcessStepAssignees.processStepId, stepIds))
+      : [];
+
     const decisions = await this.db.db
       .select()
       .from(approvalDecisions)
@@ -231,6 +243,7 @@ export class ApprovalStateService {
 
     const userIds = new Set<string>();
     assignments.forEach((a) => userIds.add(a.assigneeId));
+    snapshotAssignees.forEach((a) => userIds.add(a.employeeId));
     decisions.forEach((d) => {
       userIds.add(d.decidedBy);
       if (d.delegatedTo) userIds.add(d.delegatedTo);
@@ -251,6 +264,13 @@ export class ApprovalStateService {
       if (isFinalApproved || s.stepOrder < process.currentStepOrder) state = 'completed';
       else if (isCurrent) state = 'current';
 
+      // Плановые назначенцы из снапшота (используются, когда боевых назначений
+      // ещё нет — т.е. для будущих шагов).
+      const snap = snapshotAssignees
+        .filter((a) => a.processStepId === s.id)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      const usePlanned = stepAssignments.length === 0 && snap.length > 0;
+
       // SLA для текущего шага.
       let isOverdue = false;
       let deadlineAt: string | null = null;
@@ -269,13 +289,19 @@ export class ApprovalStateService {
       // Очередь sequential.
       let sequentialQueue: { id: string; name: string; state: 'done' | 'active' | 'waiting' }[] | undefined;
       if (s.stepType === 'sequential') {
-        sequentialQueue = [...stepAssignments]
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-          .map((a) => ({
-            id: a.assigneeId,
-            name: names.get(a.assigneeId) ?? a.assigneeId,
-            state: !a.isPending ? 'done' : a.isActive ? 'active' : 'waiting',
-          }));
+        sequentialQueue = usePlanned
+          ? snap.map((a) => ({
+              id: a.employeeId,
+              name: names.get(a.employeeId) ?? a.employeeId,
+              state: 'waiting' as const,
+            }))
+          : [...stepAssignments]
+              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+              .map((a) => ({
+                id: a.assigneeId,
+                name: names.get(a.assigneeId) ?? a.assigneeId,
+                state: !a.isPending ? 'done' : a.isActive ? 'active' : 'waiting',
+              }));
       }
 
       return {
@@ -293,13 +319,21 @@ export class ApprovalStateService {
         is_overdue: isOverdue,
         deadline_at: deadlineAt,
         sequential_queue: sequentialQueue,
-        assignees: stepAssignments.map((a) => ({
-          assignee_id: a.assigneeId,
-          name: names.get(a.assigneeId) ?? a.assigneeId,
-          is_pending: a.isPending,
-          is_active: a.isActive,
-          source_type: a.sourceType,
-        })),
+        assignees: usePlanned
+          ? snap.map((a) => ({
+              assignee_id: a.employeeId,
+              name: names.get(a.employeeId) ?? a.employeeId,
+              is_pending: true,
+              is_active: false,
+              source_type: 'planned',
+            }))
+          : stepAssignments.map((a) => ({
+              assignee_id: a.assigneeId,
+              name: names.get(a.assigneeId) ?? a.assigneeId,
+              is_pending: a.isPending,
+              is_active: a.isActive,
+              source_type: a.sourceType,
+            })),
       };
     });
 

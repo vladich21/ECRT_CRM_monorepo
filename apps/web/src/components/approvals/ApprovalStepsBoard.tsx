@@ -110,17 +110,21 @@ function CardLine({ step, decisions }: { step: ApprovalStepView; decisions: Appr
     );
   }
 
-  // pending
-  if (step.step_role_name) {
+  // pending — плановые назначенцы из снапшота
+  const planned = step.assignees[0];
+  if (planned) {
+    const extra = step.assignees.length - 1;
     return (
       <div className={`${styles.line} ${styles.idle}`}>
-        <span className={styles.rolePill}>{step.step_role_name}</span>
+        <Av name={planned.name} kind="idle" />
+        <span className={styles.nm}>{planned.name}</span>
+        {extra > 0 ? <span className={styles.more}>+{extra}</span> : null}
       </div>
     );
   }
   return (
     <div className={`${styles.line} ${styles.idle}`}>
-      <span className={styles.nm}>{step.assignees.length ? `${step.assignees.length} согласующих` : 'Назначается на шаге'}</span>
+      <span className={styles.nm}>Назначается на шаге</span>
     </div>
   );
 }
@@ -208,7 +212,14 @@ function StepCard({
 
   const popContent = (
     <div className={styles.pop}>
-      <div className={styles.popTitle}>{title}</div>
+      <div className={styles.popHead}>
+        <span className={styles.popTitle}>{title}</span>
+        {step.step_role_name ? (
+          <Tag color={step.step_role_color ?? undefined} style={{ margin: 0 }}>
+            {step.step_role_name}
+          </Tag>
+        ) : null}
+      </div>
       {rows.length === 0 ? (
         <div className={styles.popEmpty}>Согласующие будут назначены при переходе на шаг.</div>
       ) : (
@@ -228,16 +239,8 @@ function StepCard({
       <div className={`${styles.card} ${isCurrent ? styles.current : ''}`}>
         <div className={styles.head}>
           <span className={`${styles.num} ${numCls}`}>{isDone ? <CheckOutlined /> : step.step_order}</span>
-          <span className={styles.name} title={step.name}>
-            {step.name}
-          </span>
-          {step.step_role_name && step.step_role_color ? (
-            <Tag color={step.step_role_color} style={{ margin: 0, fontSize: 10, lineHeight: '16px', padding: '0 5px' }}>
-              {step.step_role_name}
-            </Tag>
-          ) : (
-            <span className={`${styles.dot} ${dotCls}`} />
-          )}
+          <span className={styles.name}>{step.name}</span>
+          <span className={`${styles.dot} ${dotCls}`} />
         </div>
         <CardLine step={step} decisions={decisions} />
         {isCurrent && canApprove && onDecide ? (
