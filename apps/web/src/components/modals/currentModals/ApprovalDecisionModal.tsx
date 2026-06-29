@@ -53,7 +53,7 @@ export const ApprovalDecisionModal: React.FC<ModalState> = ({ open, title, modal
         processId,
         payload: {
           decision_type: decisionType,
-          comment: needComment ? comment.trim() : undefined,
+          comment: comment.trim() || undefined,
           return_to_step: decisionType === 'returned_to_step' ? returnToStep : undefined,
           delegated_to: decisionType === 'delegated' ? delegatedTo : undefined,
           delegation_mode: decisionType === 'delegated' ? delegationMode : undefined,
