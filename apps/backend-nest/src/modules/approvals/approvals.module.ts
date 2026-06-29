@@ -9,6 +9,7 @@ import { ApprovalFilesService } from './services/approval-files.service';
 import { ApprovalSnapshotService } from './services/approval-snapshot.service';
 import { ApprovalStateService } from './services/approval-state.service';
 import { ApprovalMailService } from './services/approval-mail.service';
+import { ApprovalCommentNotificationService } from './services/approval-comment-notification.service';
 import { ApprovalSlaSchedulerService } from './services/approval-sla-scheduler.service';
 import { AssigneeResolver } from './resolvers/assignee.resolver';
 import { EntityHandlerRegistry } from './entity-handlers/entity-handler.registry';
@@ -30,6 +31,7 @@ import { ProjectEntityHandler } from './entity-handlers/project.handler';
     ApprovalSnapshotService,
     ApprovalStateService,
     ApprovalMailService,
+    ApprovalCommentNotificationService,
     ApprovalSlaSchedulerService,
     AssigneeResolver,
     EntityHandlerRegistry,

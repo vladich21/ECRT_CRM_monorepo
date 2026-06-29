@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtGuard } from './modules/auth/jwt.guard';
 import { PermissionsGuard } from './modules/permissions/guards/permissions.guard';
@@ -45,6 +46,7 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
       // при совпадении ключей побеждает .env (см. merge в @nestjs/config loadEnvFile).
       envFilePath: ['.env', '.env.development'],
     }),
+    EventEmitterModule.forRoot(),
     PermissionsModule,
     AdminRbacModule,
     ImpersonationModule,
