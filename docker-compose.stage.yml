@@ -28,12 +28,13 @@ services:
       - FRONTEND_URL=${FRONTEND_URL}
       - UPLOAD_PATH=/app/apps/backend-nest/uploads
       - FILE_UPLOAD_URL=${FILE_UPLOAD_URL}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_SECURE=${SMTP_SECURE:-true}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - SMTP_FROM=${SMTP_FROM}
+      # По умолчанию — MailHog (стейдж не шлёт в боевой SMTP).
+      - SMTP_HOST=${SMTP_HOST:-192.0.2.12}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-pmdb-stage@test.local}
       - EXTERNAL_HR_USERS_URL=${EXTERNAL_HR_USERS_URL:-}
       - EXTERNAL_HR_API_TOKEN=${EXTERNAL_HR_API_TOKEN:-}
       - EXTERNAL_HR_ASSET_BASE_URL=${EXTERNAL_HR_ASSET_BASE_URL:-}
