@@ -6,8 +6,8 @@ import {
   SendOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
-import { App, Avatar, Empty, Space, Spin, Tag, Typography } from 'antd';
-import type { ReactNode } from 'react';
+import { App, Avatar, Button, Empty, Space, Spin, Tag, Typography } from 'antd';
+import { useMemo, useState, type ReactNode } from 'react';
 
 import { useComments, useCreateComment } from '@/api/comments/commentApiHooks';
 import CommentInput from '@/components/comments/CommentInput/CommentInput';
@@ -75,6 +75,24 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
   const { data: comments = [], isLoading } = useComments(ENTITY, processId);
   const create = useCreateComment();
 
+  const [action, setAction] = useState<'reply' | ''>('');
+  const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
+
+  const commentById = useMemo(() => {
+    const m = new Map<string, Comment>();
+    (comments as Comment[]).forEach((c) => m.set(c.id, c));
+    return m;
+  }, [comments]);
+
+  const startReply = (c: Comment) => {
+    setAction('reply');
+    setReplyingTo(c);
+  };
+  const cancelReply = () => {
+    setAction('');
+    setReplyingTo(null);
+  };
+
   const items: { ts: number; node: ReactNode }[] = [];
 
   items.push({
@@ -131,7 +149,17 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
             <Typography.Text strong>{c.created_by_fio ?? 'Пользователь'}</Typography.Text>{' '}
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(c.created_at)}</Typography.Text>
           </div>
+          {c.parent_id ? (
+            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+              ↳ в ответ {commentById.get(c.parent_id)?.created_by_fio ?? 'комментарию'}
+            </Typography.Text>
+          ) : null}
           <div dangerouslySetInnerHTML={{ __html: c.html || c.message }} />
+          {editable ? (
+            <Button type="link" size="small" style={{ padding: 0, height: 'auto', fontSize: 12 }} onClick={() => startReply(c)}>
+              Ответить
+            </Button>
+          ) : null}
         </FeedRow>
       ),
     }),
@@ -150,9 +178,13 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
         html: partial.html ?? '',
         mention_ids: partial.mention_ids ?? [],
         created_by: userId ?? '',
+        ...(replyingTo ? { parent_id: replyingTo.id } : {}),
       },
       {
-        onSuccess: () => message.success('Комментарий добавлен'),
+        onSuccess: () => {
+          message.success(replyingTo ? 'Ответ добавлен' : 'Комментарий добавлен');
+          cancelReply();
+        },
         onError: () => message.error('Не удалось добавить комментарий'),
       },
     );
@@ -172,7 +204,13 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
         </div>
       )}
       {editable ? (
-        <CommentInput onSubmit={onSubmit} action="" placeholder="Написать комментарий…" />
+        <CommentInput
+          onSubmit={onSubmit}
+          action={action}
+          replyingToComment={replyingTo}
+          onCancel={cancelReply}
+          placeholder="Написать комментарий…"
+        />
       ) : (
         <Typography.Text type="secondary">Согласование завершено — обсуждение закрыто.</Typography.Text>
       )}
