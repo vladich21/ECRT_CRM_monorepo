@@ -1,5 +1,5 @@
-import { ClockCircleOutlined, PrinterOutlined } from '@ant-design/icons';
-import { App, Badge, Button, Card, Col, Collapse, Empty, Modal, Popconfirm, Row, Space, Spin, Table, Tabs, Tag, Typography } from 'antd';
+import { PrinterOutlined } from '@ant-design/icons';
+import { App, Badge, Button, Card, Col, Collapse, Empty, Modal, Popconfirm, Row, Space, Spin, Table, Tabs, Typography } from 'antd';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -81,7 +81,6 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   // Документы и обсуждение редактируемы только пока согласование идёт; после финала — блокировка.
   const editable = process ? process.status === 'active' || process.status === 'revision' : false;
   const currentStep = process?.steps.find((s) => s.state === 'current');
-  const waiting = currentStep?.assignees.filter((a) => a.is_pending && a.is_active).map((a) => a.name).join(', ');
 
   const openStart = () =>
     openModal({
@@ -171,14 +170,6 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <Space wrap>
               <Badge status={STATUS_BADGE[process.status] ?? 'default'} text={APPROVAL_STATUS_LABELS[process.status]} />
-              {process.status === 'active' && waiting ? (
-                <Typography.Text type="secondary">· Ждём: {waiting}</Typography.Text>
-              ) : null}
-              {currentStep?.deadline_at && process.status === 'active' ? (
-                <Tag icon={<ClockCircleOutlined />} color={currentStep.is_overdue ? 'red' : 'default'}>
-                  {currentStep.is_overdue ? 'Просрочено' : `Срок: ${new Date(currentStep.deadline_at).toLocaleDateString('ru-RU')}`}
-                </Tag>
-              ) : null}
               {process.route_name ? <Typography.Text type="secondary">· {process.route_name}</Typography.Text> : null}
               {isCancelled ? (
                 <Button type="link" size="small" onClick={() => setExpanded(false)}>
