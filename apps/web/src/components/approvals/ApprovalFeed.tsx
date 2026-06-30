@@ -32,6 +32,17 @@ const fmt = (iso: string) =>
     minute: '2-digit',
   });
 
+/** Текст комментария без html-разметки для цитаты ответа. */
+function plainText(html: string | undefined, message: string): string {
+  const raw = (html && html.trim()) || message || '';
+  return raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function decisionIcon(t: ApprovalDecisionType): ReactNode {
   switch (t) {
     case 'approved':
@@ -149,11 +160,24 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
             <Typography.Text strong>{c.created_by_fio ?? 'Пользователь'}</Typography.Text>{' '}
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(c.created_at)}</Typography.Text>
           </div>
-          {c.parent_id ? (
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-              ↳ в ответ {commentById.get(c.parent_id)?.created_by_fio ?? 'комментарию'}
-            </Typography.Text>
-          ) : null}
+          {c.parent_id
+            ? (() => {
+                const parent = commentById.get(c.parent_id);
+                const quoted = parent ? plainText(parent.html, parent.message) : '';
+                return (
+                  <div style={{ margin: '2px 0 6px', paddingLeft: 8, borderLeft: '2px solid #d9d9d9' }}>
+                    <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                      ↳ в ответ {parent?.created_by_fio ?? 'комментарию'}
+                    </Typography.Text>
+                    {quoted ? (
+                      <Typography.Text type="secondary" italic style={{ fontSize: 12 }}>
+                        {quoted.length > 140 ? `${quoted.slice(0, 140)}…` : quoted}
+                      </Typography.Text>
+                    ) : null}
+                  </div>
+                );
+              })()
+            : null}
           <div dangerouslySetInnerHTML={{ __html: c.html || c.message }} />
           {editable ? (
             <Button type="link" size="small" style={{ padding: 0, height: 'auto', fontSize: 12 }} onClick={() => startReply(c)}>
