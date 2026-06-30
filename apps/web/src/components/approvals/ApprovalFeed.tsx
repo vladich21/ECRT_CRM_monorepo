@@ -6,8 +6,8 @@ import {
   SendOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
-import { App, Avatar, Empty, Space, Spin, Tag, Typography } from 'antd';
-import type { ReactNode } from 'react';
+import { App, Avatar, Button, Empty, Space, Spin, Tag, Typography } from 'antd';
+import { useMemo, useState, type ReactNode } from 'react';
 
 import { useComments, useCreateComment } from '@/api/comments/commentApiHooks';
 import CommentInput from '@/components/comments/CommentInput/CommentInput';
@@ -31,6 +31,17 @@ const fmt = (iso: string) =>
     hour: '2-digit',
     minute: '2-digit',
   });
+
+/** Текст комментария без html-разметки для цитаты ответа. */
+function plainText(html: string | undefined, message: string): string {
+  const raw = (html && html.trim()) || message || '';
+  return raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function decisionIcon(t: ApprovalDecisionType): ReactNode {
   switch (t) {
@@ -74,6 +85,33 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
   const userId = useCurrentSrmUserId();
   const { data: comments = [], isLoading } = useComments(ENTITY, processId);
   const create = useCreateComment();
+
+  const [action, setAction] = useState<'reply' | ''>('');
+  const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
+
+  const commentById = useMemo(() => {
+    const m = new Map<string, Comment>();
+    (comments as Comment[]).forEach((c) => m.set(c.id, c));
+    return m;
+  }, [comments]);
+
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  const startReply = (c: Comment) => {
+    setAction('reply');
+    setReplyingTo(c);
+  };
+  const cancelReply = () => {
+    setAction('');
+    setReplyingTo(null);
+  };
+  const scrollToComment = (id: string) => {
+    const el = document.getElementById(`appr-cmt-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightId(id);
+    window.setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 2000);
+  };
 
   const items: { ts: number; node: ReactNode }[] = [];
 
@@ -120,19 +158,60 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
     items.push({
       ts: new Date(c.created_at).getTime(),
       node: (
-        <FeedRow
-          icon={
-            <Avatar size={22} src={c.created_by_avatar}>
-              {(c.created_by_fio ?? '?').slice(0, 1)}
-            </Avatar>
-          }
+        <div
+          id={`appr-cmt-${c.id}`}
+          style={{
+            borderRadius: 6,
+            transition: 'background 0.4s ease',
+            background: highlightId === c.id ? '#fffbe6' : undefined,
+          }}
         >
-          <div>
-            <Typography.Text strong>{c.created_by_fio ?? 'Пользователь'}</Typography.Text>{' '}
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(c.created_at)}</Typography.Text>
-          </div>
-          <div dangerouslySetInnerHTML={{ __html: c.html || c.message }} />
-        </FeedRow>
+          <FeedRow
+            icon={
+              <Avatar size={22} src={c.created_by_avatar}>
+                {(c.created_by_fio ?? '?').slice(0, 1)}
+              </Avatar>
+            }
+          >
+            <div>
+              <Typography.Text strong>{c.created_by_fio ?? 'Пользователь'}</Typography.Text>{' '}
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(c.created_at)}</Typography.Text>
+            </div>
+            {c.parent_id
+              ? (() => {
+                  const parent = commentById.get(c.parent_id);
+                  const quoted = parent ? plainText(parent.html, parent.message) : '';
+                  return (
+                    <div
+                      onClick={() => scrollToComment(c.parent_id as string)}
+                      title="Перейти к комментарию"
+                      style={{
+                        margin: '2px 0 6px',
+                        paddingLeft: 8,
+                        borderLeft: '2px solid #d9d9d9',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                        ↳ в ответ {parent?.created_by_fio ?? 'комментарию'}
+                      </Typography.Text>
+                      {quoted ? (
+                        <Typography.Text type="secondary" italic style={{ fontSize: 12 }}>
+                          {quoted.length > 140 ? `${quoted.slice(0, 140)}…` : quoted}
+                        </Typography.Text>
+                      ) : null}
+                    </div>
+                  );
+                })()
+              : null}
+            <div dangerouslySetInnerHTML={{ __html: c.html || c.message }} />
+            {editable ? (
+              <Button type="link" size="small" style={{ padding: 0, height: 'auto', fontSize: 12 }} onClick={() => startReply(c)}>
+                Ответить
+              </Button>
+            ) : null}
+          </FeedRow>
+        </div>
       ),
     }),
   );
@@ -150,9 +229,13 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
         html: partial.html ?? '',
         mention_ids: partial.mention_ids ?? [],
         created_by: userId ?? '',
+        ...(replyingTo ? { parent_id: replyingTo.id } : {}),
       },
       {
-        onSuccess: () => message.success('Комментарий добавлен'),
+        onSuccess: () => {
+          message.success(replyingTo ? 'Ответ добавлен' : 'Комментарий добавлен');
+          cancelReply();
+        },
         onError: () => message.error('Не удалось добавить комментарий'),
       },
     );
@@ -172,7 +255,13 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
         </div>
       )}
       {editable ? (
-        <CommentInput onSubmit={onSubmit} action="" placeholder="Написать комментарий…" />
+        <CommentInput
+          onSubmit={onSubmit}
+          action={action}
+          replyingToComment={replyingTo}
+          onCancel={cancelReply}
+          placeholder="Написать комментарий…"
+        />
       ) : (
         <Typography.Text type="secondary">Согласование завершено — обсуждение закрыто.</Typography.Text>
       )}

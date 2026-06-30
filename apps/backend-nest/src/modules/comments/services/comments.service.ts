@@ -1,8 +1,10 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DatabaseService } from '../../../database/database.service';
 import { comments, files, users } from '../../../database/schema';
+import { COMMENT_CREATED_EVENT, type CommentCreatedEvent } from '../events/comment-events';
 
 @Injectable()
 export class CommentsService {
@@ -12,6 +14,7 @@ export class CommentsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly config: ConfigService,
+    private readonly events: EventEmitter2,
   ) {
     this.hrAssetBaseUrl = (this.config.get<string>('EXTERNAL_HR_ASSET_BASE_URL') ?? '').replace(/\/$/, '');
   }
@@ -102,6 +105,23 @@ export class CommentsService {
     };
     const [row] = await this.db.db.insert(comments).values(insertData).returning();
     if (!row) return null;
+
+    // Уведомления (email и т.п.) разбираются подписчиками — comments-модуль про них не знает.
+    const mentionIds = Array.isArray(data.mention_ids)
+      ? (data.mention_ids.filter((x) => typeof x === 'string') as string[])
+      : [];
+    const event: CommentCreatedEvent = {
+      id: String(row.id),
+      entityType: insertData.entityType,
+      entityId: insertData.entityId,
+      parentId: insertData.parentId,
+      createdBy: insertData.createdBy,
+      mentionIds,
+      message: insertData.message,
+      html: insertData.html,
+    };
+    this.events.emit(COMMENT_CREATED_EVENT, event);
+
     return this.findOne(String(row.id));
   }
 

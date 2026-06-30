@@ -1,0 +1,398 @@
+@use '../../styles/variables' as v;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== мини-рельс ===== */
+.railRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.node {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eef0f3;
+  color: v.$text-quaternary;
+  border: 2px solid #fff;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+  &.done {
+    background: v.$success;
+    color: #fff;
+  }
+  &.current {
+    width: 34px;
+    height: 34px;
+    background: v.$primary-color;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.18);
+  }
+}
+
+.conn {
+  width: 24px;
+  height: 2px;
+  background: v.$border-tertiary;
+  flex: none;
+
+  &.connDone {
+    background: v.$success;
+  }
+}
+
+.counter {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: v.$text-tertiary;
+}
+
+/* ===== спотлайт текущего шага ===== */
+.spot {
+  border: 1.5px solid v.$primary-color;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f3f8ff, #fff);
+  padding: 18px;
+}
+
+.kicker {
+  font-size: 11px;
+  font-weight: 700;
+  color: v.$primary-color;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.spotTitle {
+  margin: 4px 0 14px;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.spotRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.whoWait {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.whoName {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.whoRole {
+  font-size: 12.5px;
+  color: v.$text-tertiary;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  font-size: 12px;
+  color: v.$text-tertiary;
+  background: #fff;
+  border: 1px solid v.$border-tertiary;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  &.chipOver {
+    color: v.$error;
+    border-color: #ffccc7;
+    background: #fff1f0;
+  }
+}
+
+.acts {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.counterLg {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: v.$primary-dark;
+  flex: none;
+}
+
+/* ===== аватары ===== */
+.av {
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  flex: none;
+
+  &.sm {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+  &.md {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+  &.lg {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+  &.done {
+    background: v.$success;
+  }
+  &.wait {
+    background: v.$primary-light;
+  }
+  &.idle {
+    background: #b6bcc8;
+  }
+}
+
+/* ===== список участников (поповер + деталка) ===== */
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+
+  &.idle .rnm {
+    color: v.$text-quaternary;
+  }
+}
+
+.rnm {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.rst {
+  margin-left: auto;
+  flex: none;
+  font-size: 12px;
+  color: v.$text-quaternary;
+
+  &.done {
+    color: v.$success;
+    font-weight: 600;
+  }
+  &.wait {
+    color: v.$primary-color;
+    font-weight: 600;
+  }
+}
+
+/* ===== поповер рельса ===== */
+.pop {
+  min-width: 210px;
+  max-width: 300px;
+}
+
+.popTitle {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.popMeta {
+  font-size: 11px;
+  color: v.$text-quaternary;
+  margin-bottom: 8px;
+}
+
+.popMore {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: v.$text-quaternary;
+}
+
+.popEmpty {
+  font-size: 12.5px;
+  color: v.$text-quaternary;
+}
+
+/* ===== детальный маршрут (Drawer) ===== */
+.dlist {
+  display: flex;
+  flex-direction: column;
+}
+
+.dstep {
+  position: relative;
+  padding: 14px 0 8px 34px;
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 34px;
+    bottom: -2px;
+    width: 2px;
+    background: v.$border-tertiary;
+  }
+  &:not(:last-child).done::before {
+    background: v.$success;
+  }
+}
+
+.dnode {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eef0f3;
+  color: v.$text-quaternary;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px v.$border-tertiary;
+
+  &.done {
+    background: v.$success;
+    color: #fff;
+    box-shadow: 0 0 0 1px v.$success;
+  }
+  &.current {
+    background: v.$primary-color;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.18);
+  }
+}
+
+.dtop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dname {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.sbadge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &.bDone {
+    background: v.$success-surface-bg;
+    color: #3a8a14;
+  }
+  &.bCur {
+    background: v.$bg-active;
+    color: v.$primary-dark;
+  }
+  &.bIdle {
+    background: #f0f1f3;
+    color: v.$text-quaternary;
+  }
+}
+
+.dmeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 7px 0 9px;
+}
+
+.mchip {
+  font-size: 11px;
+  color: v.$text-tertiary;
+  background: v.$bg-secondary;
+  border: 1px solid v.$border-tertiary;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &.mchipOver {
+    color: v.$error;
+    border-color: #ffccc7;
+    background: #fff1f0;
+  }
+}
+
+.dcmt {
+  margin-top: 8px;
+  background: #f8fafc;
+  border: 1px solid v.$border-tertiary;
+  border-left: 3px solid v.$success;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: v.$text-tertiary;
+
+  b {
+    color: v.$text-secondary;
+    font-weight: 600;
+  }
+}

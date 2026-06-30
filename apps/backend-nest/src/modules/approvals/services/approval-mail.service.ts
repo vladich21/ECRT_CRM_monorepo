@@ -156,6 +156,33 @@ export class ApprovalMailService {
     );
   }
 
+  /** Письмо о комментарии в ленте согласования (упоминание / ответ / новый). */
+  buildCommentHtml(
+    reason: 'mention' | 'reply' | 'new',
+    opts: { recipientName: string; commenterName: string; routeName: string; preview: string; link?: string },
+  ): string {
+    const title = reason === 'mention' ? 'Вас упомянули' : reason === 'reply' ? 'Вам ответили' : 'Новый комментарий';
+    const lead =
+      reason === 'mention'
+        ? `<b>${this.esc(opts.commenterName)}</b> упомянул вас в комментарии`
+        : reason === 'reply'
+          ? `<b>${this.esc(opts.commenterName)}</b> ответил на ваш комментарий`
+          : `<b>${this.esc(opts.commenterName)}</b> оставил комментарий`;
+    return this.wrap(
+      title,
+      `<p>Здравствуйте, ${this.esc(opts.recipientName)}!</p>
+       <p>${lead} в согласовании <b>${this.esc(opts.routeName)}</b>:</p>
+       <blockquote style="border-left:3px solid #1C3A5E;margin:0 0 12px;padding:8px 12px;background:#f8fafc;color:#374151">
+         ${this.esc(opts.preview)}
+       </blockquote>
+       ${
+         opts.link
+           ? `<p><a href="${this.esc(opts.link)}" style="color:#1C3A5E;font-weight:600">Открыть в PMDB</a></p>`
+           : '<p>Откройте PMDB, чтобы ответить.</p>'
+       }`,
+    );
+  }
+
   buildReminderHtml(ctx: ApprovalMailContext, recipientName: string, deadlineLabel: string): string {
     return this.wrap(
       'Напоминание о согласовании',
