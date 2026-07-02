@@ -2,6 +2,13 @@ import { and, asc, eq } from 'drizzle-orm';
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
 import { partnerContacts } from '../../../database/schema';
+import {
+  legacyPhoneFieldsFromPhones,
+  loadContactPhonesByContactIds,
+  parseContactPhonesFromBody,
+  syncContactPhonesForContact,
+  type PartnerContactPhoneDto,
+} from '../partner-contact-phones';
 
 @Injectable()
 export class PartnerContactsService {
@@ -15,7 +22,11 @@ export class PartnerContactsService {
       .from(partnerContacts)
       .where(eq(partnerContacts.partnerId, partnerId))
       .orderBy(asc(partnerContacts.fullName));
-    return rows.map((row) => this.toResponse(row));
+    const phonesByContactId = await loadContactPhonesByContactIds(
+      this.db,
+      rows.map(row => String(row.id)),
+    );
+    return rows.map(row => this.toResponse(row, phonesByContactId.get(String(row.id))));
   }
 
   async findOne(partnerId: string, contactId: string) {
@@ -26,7 +37,8 @@ export class PartnerContactsService {
       .limit(1);
     const row = rows[0];
     if (!row) return null;
-    return this.toResponse(row);
+    const phonesByContactId = await loadContactPhonesByContactIds(this.db, [String(row.id)]);
+    return this.toResponse(row, phonesByContactId.get(String(row.id)));
   }
 
   async create(partnerId: string, data: Record<string, unknown>, userId?: string) {
@@ -37,18 +49,24 @@ export class PartnerContactsService {
         .set({ isPrimary: false, updatedAt: new Date() })
         .where(eq(partnerContacts.partnerId, partnerId));
     }
+
+    const phones = this.resolvePhones(data);
+    const legacy = legacyPhoneFieldsFromPhones(phones);
     const insertData = {
       partnerId,
       fullName: data.full_name != null ? String(data.full_name) : null,
       position: data.position != null ? String(data.position) : null,
-      phone: data.phone != null ? String(data.phone) : null,
-      phoneExt: data.phone_ext != null ? String(data.phone_ext) : null,
+      phone: legacy.phone,
+      phoneExt: legacy.phoneExt,
       email: data.email != null ? String(data.email) : null,
       isPrimary,
       ...(userId ? { createdBy: userId, updatedBy: userId } : {}),
     };
     const [row] = await this.db.db.insert(partnerContacts).values(insertData).returning();
-    return row ? this.toResponse(row) : null;
+    if (!row) return null;
+
+    await syncContactPhonesForContact(this.db, String(row.id), phones);
+    return this.findOne(partnerId, String(row.id));
   }
 
   async update(partnerId: string, contactId: string, data: Record<string, unknown>, userId?: string) {
@@ -75,10 +93,23 @@ export class PartnerContactsService {
         else updateObj[camel] = data[snake];
       }
     }
+
+    const phonesFromBody = parseContactPhonesFromBody(data);
+    if (phonesFromBody !== undefined) {
+      const legacy = legacyPhoneFieldsFromPhones(phonesFromBody);
+      updateObj.phone = legacy.phone;
+      updateObj.phoneExt = legacy.phoneExt;
+    }
+
     await this.db.db
       .update(partnerContacts)
       .set(updateObj)
       .where(and(eq(partnerContacts.partnerId, partnerId), eq(partnerContacts.id, contactId)));
+
+    if (phonesFromBody !== undefined) {
+      await syncContactPhonesForContact(this.db, contactId, phonesFromBody);
+    }
+
     return this.findOne(partnerId, contactId);
   }
 
@@ -91,18 +122,50 @@ export class PartnerContactsService {
     return row;
   }
 
-  private toResponse(row: (typeof partnerContacts.$inferSelect)) {
+  private resolvePhones(data: Record<string, unknown>): PartnerContactPhoneDto[] {
+    const parsed = parseContactPhonesFromBody(data);
+    return parsed ?? [];
+  }
+
+  private toResponse(
+    row: typeof partnerContacts.$inferSelect,
+    phonesFromRel?: PartnerContactPhoneDto[],
+  ) {
+    const phones =
+      phonesFromRel ??
+      legacyPhonesFromRow(row.phone, row.phoneExt);
+    const legacy = legacyPhoneFieldsFromPhones(phones);
+
     return {
       id: String(row.id),
       partner_id: row.partnerId ? String(row.partnerId) : '',
       full_name: row.fullName ?? '',
       position: row.position ?? '',
-      phone: row.phone ?? '',
-      phone_ext: row.phoneExt ?? '',
+      phone: legacy.phone ?? '',
+      phone_ext: legacy.phoneExt ?? '',
+      phones,
       email: row.email ?? '',
       is_primary: row.isPrimary ?? false,
       created_at: row.createdAt ? row.createdAt.toISOString() : '',
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',
     };
   }
+}
+
+function legacyPhonesFromRow(phone: string | null, phoneExt: string | null): PartnerContactPhoneDto[] {
+  const normalized = normalizeLegacyPhoneRow(phone, phoneExt);
+  return normalized ? [normalized] : [];
+}
+
+function normalizeLegacyPhoneRow(
+  phone: string | null,
+  phoneExt: string | null,
+): PartnerContactPhoneDto | null {
+  const phoneValue = String(phone ?? '').trim();
+  const phoneExtValue = String(phoneExt ?? '').trim();
+  if (!phoneValue && !phoneExtValue) return null;
+  return {
+    phone: phoneValue,
+    ...(phoneExtValue ? { phone_ext: phoneExtValue } : {}),
+  };
 }

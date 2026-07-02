@@ -5,6 +5,10 @@ import { Link } from 'react-router-dom';
 import { usePartnerScoring } from '../../../api/partners/partnerApiHooks';
 import type { ScoringModel } from '../../../api/partners/partnerApi';
 import { SURFACE_ACTIVE, SURFACE_BLOCKED, getPartnerStatusSurface, mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
+import {
+  formatContactPhoneLabel,
+  getContactPhonesForDisplay,
+} from '../../../helpers/partnerContactPhoneHelpers';
 import type { Partner, PartnerContact } from '../../../types/partner';
 import { inferPartnerCategoryKind } from '../../../utils/partnerApproval';
 import styles from './DetailSidebar.module.scss';
@@ -125,8 +129,7 @@ function ContactInfoClassificationRows({
   contact: PartnerContact;
   extraCount: number;
 }) {
-  const phone = contact.phone?.trim();
-  const phoneExt = contact.phone_ext?.trim();
+  const phoneLabels = getContactPhonesForDisplay(contact).map(formatContactPhoneLabel).filter(Boolean);
   const email = contact.email?.trim();
   const name = contact.full_name?.trim() || '—';
   const position = contact.position?.trim();
@@ -143,10 +146,9 @@ function ContactInfoClassificationRows({
       </div>
       <div className={styles.classRowBorder}>
         <span className={styles.classLabel}>Телефон</span>
-        {phone ? (
-          <span className={styles.classValue}>
-            {phone}
-            {phoneExt ? ` доб. ${phoneExt}` : ''}
+        {phoneLabels.length ? (
+          <span className={`${styles.classValue} ${styles.classValueMultiline}`}>
+            {phoneLabels.join('; ')}
           </span>
         ) : (
           <span className={styles.classValue}>—</span>

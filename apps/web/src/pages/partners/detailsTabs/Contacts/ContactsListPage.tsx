@@ -11,6 +11,7 @@ import {
 import { useOpenAntdDeleteConfirm } from '../../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../../customhooks/useMutateByModal';
 import { useNotification } from '../../../../customhooks/useNotification';
+import { buildContactFormModalData } from '../../../../helpers/partnerContactPhoneHelpers';
 import { getEntityById } from '../../../../helpers/getEntityById';
 import type { PartnerContact } from '../../../../types/partner';
 import ContactCard from './ContactCard';
@@ -37,10 +38,9 @@ const PartnerContactsListPage: React.FC = () => {
     modalType: 'contactForm',
     getModalData: () => {
       const existing = getEntityById<PartnerContact>(editIdRef.current, data);
-      return {
-        ...existing,
+      return buildContactFormModalData(existing ?? {}, {
         hasPrimaryContact: data.some((c: PartnerContact) => c.is_primary),
-      };
+      });
     },
     getMutationProps: () => ({ partnerId: partnerId!, contactId: editIdRef.current }),
     showNotification,
