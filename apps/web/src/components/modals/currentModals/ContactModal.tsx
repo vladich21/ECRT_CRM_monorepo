@@ -1,9 +1,17 @@
 import { useEffect } from 'react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Col, Form, FormInstance, Input, Row, Space, Switch } from 'antd';
 
+import {
+  buildContactFormPayload,
+  defaultContactPhoneFormRows,
+  EMPTY_PARTNER_CONTACT_PHONE,
+} from '@/helpers/partnerContactPhoneHelpers';
 import { getChangedFields } from '../../../helpers/getChangedFields';
 import { ModalState } from '../../../store/ModalStore';
 import { BaseModal, BaseModalProps } from '../BaseModal';
+
+import styles from './ContactModal.module.scss';
 
 export interface PartnerContactFormModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
   type: 'edit' | 'add';
@@ -11,14 +19,7 @@ export interface PartnerContactFormModalProps extends Omit<BaseModalProps, 'foot
   submitText?: string;
   cancelText?: string;
   form: FormInstance<any>;
-  onConfirm: (values: {
-    full_name: string;
-    position: string;
-    phone: string;
-    phone_ext: string;
-    email: string;
-    is_primary: boolean;
-  }) => void | Promise<void>;
+  onConfirm: (values: Record<string, unknown>) => void | Promise<void>;
 }
 
 export const PartnerContactFormModal: React.FC<ModalState> = ({
@@ -34,21 +35,21 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
   useEffect(() => {
     if (layoutProps.open && modalData) {
       const { hasPrimaryContact: _, ...values } = modalData;
-      form.setFieldsValue(values);
+      form.setFieldsValue({
+        ...values,
+        phones: defaultContactPhoneFormRows(values.phones, values),
+      });
     } else {
       form.resetFields();
     }
-  }, [layoutProps.open, modalData]);
+  }, [layoutProps.open, modalData, form]);
 
-  const handleFinish = async (values: {
-    full_name: string;
-    position: string;
-    phone: string;
-    phone_ext: string;
-    email: string;
-    is_primary: boolean;
-  }) => {
-    await onConfirm(modalData ? getChangedFields(values, modalData) : values);
+  const handleFinish = async (values: Record<string, unknown>) => {
+    const payload = buildContactFormPayload(values);
+    const initialPayload = modalData
+      ? buildContactFormPayload({ ...modalData, hasPrimaryContact: undefined })
+      : null;
+    await onConfirm(initialPayload ? getChangedFields(payload, initialPayload) : payload);
   };
 
   return (
@@ -123,47 +124,60 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
           </Col>
         </Row>
 
-        <Row gutter={16}>
-          <Col span={16}>
-            <Form.Item
-              name='phone'
-              label='Телефон'
-              normalize={v => (typeof v === 'string' ? v.trim() : v)}
-              rules={[{ max: 255, message: 'Телефон не должен превышать 255 символов' }]}
-            >
-              <Input
-                placeholder='Введите телефон'
-                allowClear
-                count={{
-                  show: true,
-                  max: 255,
-                }}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name='phone_ext'
-              label='Добавочный'
-              normalize={v => (typeof v === 'string' ? v.trim() : v)}
-              rules={[
-                {
-                  pattern: /^[\d\s-]{1,12}$/,
-                  message: 'Цифры, пробелы и дефис, до 12 символов',
-                },
-              ]}
-            >
-              <Input
-                placeholder='Напр. 123'
-                allowClear
-                count={{
-                  show: true,
-                  max: 12,
-                }}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
+        <Form.List name='phones' initialValue={[EMPTY_PARTNER_CONTACT_PHONE]}>
+          {(fields, { add, remove }) => (
+            <div className={styles.phonesBlock}>
+              <div className={styles.phonesHeader}>
+                <Button
+                  type='dashed'
+                  htmlType='button'
+                  icon={<PlusOutlined />}
+                  className={styles.addPhoneButton}
+                  onClick={() => add({ ...EMPTY_PARTNER_CONTACT_PHONE })}
+                >
+                  Добавить номер
+                </Button>
+              </div>
+              <div className={styles.phoneRows}>
+                {fields.map(field => (
+                  <Row key={field.key} gutter={16} align='middle' wrap={false}>
+                    <Col flex='auto'>
+                      <Form.Item
+                        name={[field.name, 'phone']}
+                        label={field.name === 0 ? 'Телефон' : undefined}
+                        normalize={value => (typeof value === 'string' ? value.trim() : value)}
+                        rules={[{ max: 255, message: 'Телефон не должен превышать 255 символов' }]}
+                      >
+                        <Input placeholder='Введите телефон' allowClear maxLength={255} />
+                      </Form.Item>
+                    </Col>
+                    <Col flex='140px'>
+                      <Form.Item
+                        name={[field.name, 'phone_ext']}
+                        label={field.name === 0 ? 'Добавочный' : undefined}
+                        normalize={value => (typeof value === 'string' ? value.trim() : value)}
+                        rules={[{ max: 12, message: 'Добавочный не должен превышать 12 символов' }]}
+                      >
+                        <Input placeholder='Напр. 123' allowClear maxLength={12} />
+                      </Form.Item>
+                    </Col>
+                    {fields.length > 1 ? (
+                      <Col flex='none'>
+                        <Button
+                          type='text'
+                          danger
+                          icon={<DeleteOutlined />}
+                          aria-label='Удалить номер'
+                          onClick={() => remove(field.name)}
+                        />
+                      </Col>
+                    ) : null}
+                  </Row>
+                ))}
+              </div>
+            </div>
+          )}
+        </Form.List>
 
         <Row gutter={16}>
           <Col span={12}>

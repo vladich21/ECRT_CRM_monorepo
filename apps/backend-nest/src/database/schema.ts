@@ -460,6 +460,15 @@ export const partnerContacts = pgTable('partner_contacts', {
   updatedBy: uuid('updated_by'),
 });
 
+export const partnerContactPhones = pgTable('partner_contact_phones', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  contactId: uuid('contact_id'),
+  phone: varchar('phone', { length: 255 }),
+  phoneExt: varchar('phone_ext', { length: 12 }),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export const files = pgTable(
   'files',
   {

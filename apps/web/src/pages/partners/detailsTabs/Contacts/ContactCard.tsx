@@ -1,6 +1,10 @@
 import { DeleteOutlined, EditOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 
+import {
+  formatContactPhoneLabel,
+  getContactPhonesForDisplay,
+} from '../../../../helpers/partnerContactPhoneHelpers';
 import type { PartnerContact } from '../../../../types/partner';
 import styles from './ContactCard.module.scss';
 
@@ -10,6 +14,8 @@ interface ContactCardProps {
   onDelete: (contact: PartnerContact) => void;
 }
 export default function ContactCard({ contact, onEdit, onDelete }: ContactCardProps) {
+  const phoneLabels = getContactPhonesForDisplay(contact).map(formatContactPhoneLabel).filter(Boolean);
+
   return (
     <div className={styles.card}>
       <div className={styles.mainInfo}>
@@ -27,20 +33,21 @@ export default function ContactCard({ contact, onEdit, onDelete }: ContactCardPr
           </div>
         )}
         <div className={styles.contactRow}>
-          {contact.phone && (
-            <span className={styles.contactItem}>
+          {phoneLabels.map(label => (
+            <span key={label} className={styles.contactItem}>
               <PhoneOutlined />
-              {contact.phone}
-              {contact.phone_ext && ` доб. ${contact.phone_ext}`}
+              {label}
             </span>
-          )}
+          ))}
           {contact.email && (
             <span className={styles.contactItem}>
               <MailOutlined />
               {contact.email}
             </span>
           )}
-          {!contact.phone && !contact.email && <span className={styles.contactItem}>Контакты не указаны</span>}
+          {phoneLabels.length === 0 && !contact.email && (
+            <span className={styles.contactItem}>Контакты не указаны</span>
+          )}
         </div>
       </div>
 

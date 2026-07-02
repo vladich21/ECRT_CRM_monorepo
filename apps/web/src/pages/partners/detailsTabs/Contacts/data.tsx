@@ -1,10 +1,17 @@
 import { Tag } from 'antd';
 
+import {
+  EMPTY_PARTNER_CONTACT_PHONE,
+  formatContactPhoneLabel,
+  getContactPhonesForDisplay,
+} from '@/helpers/partnerContactPhoneHelpers';
+
 export const initialPartnerContactValues = {
   full_name: '',
   position: '',
   phone: '',
   phone_ext: '',
+  phones: [{ ...EMPTY_PARTNER_CONTACT_PHONE }],
   email: '',
   is_primary: false,
 };
@@ -24,10 +31,12 @@ export const getColumnsData = () => [
   },
   {
     title: 'Телефон',
-    dataIndex: 'phone',
+    dataIndex: 'phones',
     key: 'phone',
-    render: (phone: string, record: { phone_ext?: string }) =>
-      phone ? `${phone}${record.phone_ext ? ` доб. ${record.phone_ext}` : ''}` : '-',
+    render: (_phones: unknown, record: Parameters<typeof getContactPhonesForDisplay>[0]) => {
+      const labels = getContactPhonesForDisplay(record).map(formatContactPhoneLabel).filter(Boolean);
+      return labels.length ? labels.join('; ') : '-';
+    },
   },
   {
     title: 'Email',

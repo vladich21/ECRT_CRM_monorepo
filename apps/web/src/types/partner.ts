@@ -67,18 +67,26 @@ export interface PartnerCategory {
   created_at: string;
   updated_at: string;
 }
+export type PartnerContactPhone = {
+  phone: string;
+  phone_ext?: string;
+};
+
 export interface PartnerContact {
   id: string;
   partner_id: string;
   full_name: string;
   position: string;
+  /** Первый телефон (legacy, для совместимости). */
   phone: string;
   phone_ext: string;
+  phones: PartnerContactPhone[];
   email: string;
   is_primary: boolean;
   created_at: string;
   updated_at: string;
 }
+
 export interface PartnerType {
   id: string;
   name: string;
