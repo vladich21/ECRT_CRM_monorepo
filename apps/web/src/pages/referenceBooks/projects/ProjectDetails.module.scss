@@ -1,7 +1,3 @@
-// ── Project Details — page-specific content styles ──
-// Header styles are in DetailPageHeader shared component
-
-// ─── Main info layout (2-column) ────────────────────────────────────────────
 .layout {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -103,9 +99,12 @@
 }
 
 .infoValueMuted {
-  composes: infoValue;
-  color: #bfbfbf;
+  font-size: 14px;
   font-weight: 400;
+  color: #bfbfbf;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
 }
 
 .descriptionText {

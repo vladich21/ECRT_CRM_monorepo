@@ -12,7 +12,7 @@ import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { getNameById } from '../../../helpers/getNameById';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
+import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
 import {
   useResetPageWhenListQueryChanges,
   useServerPaginationClamp,
@@ -159,7 +159,8 @@ export default function ProjectsListPage() {
 
   const isInitialLoad = isRefsLoading || (isLoading && !data);
   const isListReady = !isInitialLoad && !isFetching;
-  useListScrollRestoration({ pendingScrollY, isListReady });
+  usePersistListScrollY(location.pathname);
+  useListScrollRestoration({ pendingScrollY, isListReady, listKey: location.pathname });
   useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {

@@ -1,0 +1,27 @@
+.section + .section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sectionTitle {
+  margin: 0 0 8px !important;
+}
+
+.criterionDescription {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.scaleList {
+  margin: 0;
+  padding-left: 18px;
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  li :global(.ant-typography) + :global(.ant-typography) {
+    margin-left: 6px;
+  }
+}

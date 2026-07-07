@@ -8,7 +8,7 @@ import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useNotification } from '@/customhooks/useNotification';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '@/hooks/useListScrollRestoration';
+import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '@/hooks/useListScrollRestoration';
 import {
   useResetPageWhenListQueryChanges,
   useServerPaginationClamp,
@@ -136,7 +136,8 @@ export default function ContractsListPage() {
     });
 
   const isListReady = !isInitialLoad && !isFetching;
-  useListScrollRestoration({ pendingScrollY, isListReady });
+  usePersistListScrollY(location.pathname);
+  useListScrollRestoration({ pendingScrollY, isListReady, listKey: location.pathname });
   useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {

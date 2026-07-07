@@ -1,7 +1,7 @@
 @use '../../../styles/variables' as v;
 
 .page {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 16px;
 }
@@ -23,7 +23,10 @@
 .tabExtra {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
 }
 
 .sheet {
@@ -59,10 +62,8 @@
 }
 
 .fieldLabel {
-  font-size: v.$font-sm;
+  font-size: v.$font-base;
   color: v.$text-quaternary;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
 
 .fieldValue {
@@ -142,6 +143,39 @@
   font-variant-numeric: tabular-nums;
 }
 
+.gaugeSubtitle {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: v.$text-quaternary;
+  text-align: center;
+}
+
+.criterionGuideIcon {
+  margin-right: 6px;
+  color: v.$text-quaternary;
+  cursor: help;
+}
+
+.criterionNameCell {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 2px;
+  align-items: center;
+}
+
+.scoreGuideTooltip {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  max-width: 320px;
+}
+
+.matrixComment {
+  margin-top: 16px;
+}
+
 .gaugeTrack {
   position: relative;
   width: 100%;
@@ -197,6 +231,16 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.screenTabs {
+  :global(.ant-tabs-nav-wrap) {
+    align-items: flex-end;
+  }
+
+  :global(.ant-tabs-content) {
+    padding-top: 12px;
+  }
 }
 
 .matrixToolbar {
@@ -271,6 +315,15 @@
   [data-print-hide] {
     display: none !important;
   }
+
+  .screenTabs :global(.ant-tabs-nav) {
+    display: none !important;
+  }
+
+  .screenTabs :global(.ant-tabs-tabpane-hidden) {
+    display: none !important;
+  }
+
   .page {
     max-width: none;
     padding: 0;

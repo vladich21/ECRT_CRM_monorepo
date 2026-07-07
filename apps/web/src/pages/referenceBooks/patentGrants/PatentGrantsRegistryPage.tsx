@@ -11,7 +11,7 @@ import { BackButton } from '../../../components/backButton/BackButton';
 import { NotFound } from '../../../components/notFound/NotFound';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
 import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
+import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
 import {
   useResetPageWhenListQueryChanges,
   useServerPaginationClamp,
@@ -175,9 +175,11 @@ export default function PatentGrantsRegistryPage() {
   const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
 
+  usePersistListScrollY(location.pathname);
   useListScrollRestoration({
     pendingScrollY,
     isListReady: !isInitialLoad && !isFetching,
+    listKey: location.pathname,
   });
   useScrollToTopOnPageChange(page, restoreToken);
 

@@ -270,7 +270,7 @@ export default function PartnerEvaluationsTab() {
       title: 'Дата оценки',
       dataIndex: 'evaluated_at',
       width: 120,
-      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '—'}</Text>,
+      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '-'}</Text>,
     },
     {
       title: 'Закупщик',
@@ -278,7 +278,7 @@ export default function PartnerEvaluationsTab() {
       width: 160,
       ellipsis: true,
       render: (_, row) => (
-        <Text type='secondary'>{row.created_by_name?.trim() ? row.created_by_name : '—'}</Text>
+        <Text type='secondary'>{row.created_by_name?.trim() ? row.created_by_name : '-'}</Text>
       ),
     },
     {
@@ -367,7 +367,7 @@ export default function PartnerEvaluationsTab() {
       title: 'Дата оценки',
       dataIndex: 'evaluated_at',
       width: 120,
-      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '—'}</Text>,
+      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '-'}</Text>,
     },
     {
       title: 'Категория',

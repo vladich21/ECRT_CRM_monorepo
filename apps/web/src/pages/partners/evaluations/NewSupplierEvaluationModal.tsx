@@ -46,7 +46,7 @@ function defaultScores(criteria: SupplierEvaluationCriterion[]): Record<string, 
   return Object.fromEntries(criteria.map(criterion => [criterion.id, 4]));
 }
 
-/** Строки оценки из API — только если деталь относится к выбранному контрагенту и проекту. */
+/** Строки оценки из API - только если деталь относится к выбранному контрагенту и проекту. */
 function pickFrozenScoreLines(
   seedDetail: SupplierEvaluationDetail | null | undefined,
   partnerId: string,
@@ -316,7 +316,7 @@ export default function NewSupplierEvaluationModal({
             type='info'
             showIcon
             className={styles.alertMb}
-            message='Подставлена текущая оценка по проекту — измените баллы или дату и сохраните как новую версию.'
+            message='Подставлена текущая оценка по проекту - измените баллы или дату и сохраните как новую версию.'
           />
         ) : null}
         <Row gutter={[16, 8]}>
@@ -420,7 +420,7 @@ export default function NewSupplierEvaluationModal({
           <Space align='center'>
             <CategoryTag category={summaryCategory} weightedScore={summaryWeighted} />
             <Text strong className={styles.summaryScore}>
-              {criteriaOrdered.length ? formatEvaluationScoreDisplay(summaryWeighted) : '—'}
+              {criteriaOrdered.length ? formatEvaluationScoreDisplay(summaryWeighted) : '-'}
             </Text>
           </Space>
         </div>

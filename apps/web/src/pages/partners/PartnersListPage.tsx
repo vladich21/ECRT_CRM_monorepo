@@ -14,7 +14,7 @@ import { BackButton } from '../../components/backButton/BackButton';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
+import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
 import { useServerPaginationClamp, useResetPageWhenListQueryChanges, useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
 import type { PartnerListSortBy } from '../../api/partners/partnerApi';
@@ -139,8 +139,10 @@ export default function PartnersListPage() {
     ),
   });
 
-  const isListReady = !isInitialLoad && !isFetching;
-  useListScrollRestoration({ pendingScrollY, isListReady });
+  const kpiStillLoading = partnerEvalKpiQueries.some(query => query.isFetching || query.isPending);
+  const isListReady = !isInitialLoad && !isFetching && !kpiStillLoading;
+  usePersistListScrollY(location.pathname);
+  useListScrollRestoration({ pendingScrollY, isListReady, listKey: location.pathname });
   useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {

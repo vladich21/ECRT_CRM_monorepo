@@ -17,7 +17,7 @@ import {
 import { invalidateSupplierEvaluationQueries } from '../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
+import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useServerPaginationClamp, useResetPageWhenListQueryChanges, useServerTablePagination } from '../../hooks/useServerTablePagination';
 import { useNotification } from '../../customhooks/useNotification';
@@ -256,9 +256,11 @@ export default function SupplierEvaluationsRegistryPage() {
     });
   };
 
+  usePersistListScrollY(location.pathname);
   useListScrollRestoration({
     pendingScrollY,
     isListReady: !isLoading,
+    listKey: location.pathname,
   });
   useScrollToTopOnPageChange(page, restoreToken);
 
@@ -298,7 +300,7 @@ export default function SupplierEvaluationsRegistryPage() {
       width: 118,
       align: 'left',
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
-      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '—'}</Text>,
+      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '-'}</Text>,
     },
     {
       title: 'Закупщик',
@@ -308,7 +310,7 @@ export default function SupplierEvaluationsRegistryPage() {
       ellipsis: true,
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       render: (_, row) => (
-        <Text type='secondary'>{row.created_by_name?.trim() ? row.created_by_name : '—'}</Text>
+        <Text type='secondary'>{row.created_by_name?.trim() ? row.created_by_name : '-'}</Text>
       ),
     },
     {
@@ -342,13 +344,18 @@ export default function SupplierEvaluationsRegistryPage() {
     {
       title: 'Статус',
       key: 'st',
-      width: 132,
+      width: 158,
       align: 'left',
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
+      onCell: () => ({ style: { verticalAlign: 'top' } }),
       render: (_, row) => {
         const rowPresentationState = getRowUiStatus(row);
         const { text, surface } = statusBadgeLabel(rowPresentationState);
-        return <Tag bordered={false} style={mutedTagStyle(surface)}>{text}</Tag>;
+        return (
+          <Tag bordered={false} className={registryStyles.statusTag} style={mutedTagStyle(surface)}>
+            {text}
+          </Tag>
+        );
       },
     },
     {
@@ -467,7 +474,7 @@ export default function SupplierEvaluationsRegistryPage() {
           columns={columns}
           dataSource={displayRows}
           tableLayout='fixed'
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1240 }}
           pagination={{
             ...getPaginationConfig(total),
             className: listStyles.evaluationsTablePagination,

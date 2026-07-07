@@ -33,7 +33,7 @@ type Props = {
   partnerId: string;
   projectLabel?: string;
   onReevaluate?: (projectId: string) => void;
-  /** false — только матрица, комментарий и подсказки (первичная оценка). */
+  /** false - только матрица, комментарий и подсказки (первичная оценка). */
   showProjectActions?: boolean;
 };
 
@@ -284,7 +284,7 @@ export default function EvaluationExpandedContent({
               <Tooltip
                 title={
                   projectBlockActive
-                    ? 'Сначала снимите блокировку по этому проекту — затем можно провести переоценку'
+                    ? 'Сначала снимите блокировку по этому проекту - затем можно провести переоценку'
                     : undefined
                 }
               >
