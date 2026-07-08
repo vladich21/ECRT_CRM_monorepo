@@ -47,7 +47,7 @@ export type ApprovalProcessStatus =
 /** Коды ролей шага, влияющие на логику. */
 export const STEP_ROLE_APPROVER_FINAL = 'approver_final';
 
-/** Действие после согласования (выполнение — фаза F5). */
+/** Действие после согласования (выполнение - фаза F5). */
 export interface PostApprovalAction {
   id: string;
   action_type: 'create_task';
@@ -66,7 +66,7 @@ export interface PostApprovalAction {
   };
 }
 
-/** runtime_data процесса — выбор инициатора при запуске. */
+/** runtime_data процесса - выбор инициатора при запуске. */
 export interface ApprovalRuntimeData {
   step_assignees?: { step_order: number; employee_ids: string[] }[];
   task_assignees?: { action_id: string; employee_id: string }[];

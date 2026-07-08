@@ -6,7 +6,7 @@ export function getPartnerListDisplayName(partner: Pick<Partner, 'short_name' | 
   if (shortName) return shortName;
   const fullName = partner.name?.trim();
   if (fullName) return fullName;
-  return '—';
+  return '-';
 }
 
 export function toPartnerListDisplayPartner(

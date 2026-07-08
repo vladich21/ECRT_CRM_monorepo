@@ -11,26 +11,19 @@ export interface ImpersonationContext {
   adminEmail: string;
 }
 
-/** Колбэк markAuthHydrated вызывается из persist после merge — до этого PrivateRoute не редиректит на /auth */
 let markAuthHydrated = () => {};
-/** Сброс прав после merge из storage — через `set` из замыкания persist (нельзя вызывать `useAuthStore` до завершения `create`). */
 let resetPermissionsAfterPersistRehydrate = () => {};
 
-/** Загрузка snapshot прав с бэка (/auth/me). Пустой sectionPermissions при pending ≠ «нет прав». */
 export type PermissionsBootstrapStatus = 'idle' | 'pending' | 'ready' | 'error';
 
 interface IAuthStore {
-  /** true после чтения persist из storage — до этого PrivateRoute не редиректит на /auth */
   hasHydrated: boolean;
   user: User | null;
   isAuth: boolean;
   sectionPermissions: SectionPermission[];
   impersonation: ImpersonationContext | null;
-  /** idle — не авторизован; pending/error/ready — жизненный цикл загрузки snapshot через /auth/me (обрабатывает PrivateRoute) */
   permissionsBootstrapStatus: PermissionsBootstrapStatus;
-  /** После verify-password / verify-2fa / set-password: пользователь есть, права подтянет PrivateRoute через /auth/me */
   setUserAfterCredentialLogin: (user: User) => void;
-  /** После успешного GET /auth/me — полный снимок сессии */
   applySessionSnapshot: (
     user: User,
     sectionPermissions: SectionPermission[],
@@ -103,9 +96,6 @@ export const useAuthStore = create<IAuthStore>()(
     },
     {
       name: 'auth-storage',
-      // Не персистим snapshot прав — он живет в JWT и подгружается через /auth/me.
-      // Также не персистим impersonation: контекст приходит из /auth/me, актуален
-      // только пока валиден токен.
       partialize: (state) => ({ user: state.user, isAuth: state.isAuth }),
       onRehydrateStorage: () => (_state, error) => {
         if (error) console.warn('auth-storage rehydrate failed', error);

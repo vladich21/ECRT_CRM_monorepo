@@ -23,7 +23,7 @@ export function useAdminSections() {
   return useQuery({
     queryKey: adminRbacQueryKeys.sections(),
     queryFn: adminRbacApi.listSections,
-    staleTime: 30 * 60 * 1000, // 30 мин — справочник меняется редко
+    staleTime: 30 * 60 * 1000, // 30 мин - справочник меняется редко
   });
 }
 
@@ -86,7 +86,7 @@ export function useAssignUserRoles() {
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: adminRbacQueryKeys.userRoles(vars.userId) });
       queryClient.invalidateQueries({ queryKey: adminRbacQueryKeys.rolesList() });
-      // Список и карточка пользователя содержат role_name'ы — после смены
+      // Список и карточка пользователя содержат role_name'ы - после смены
       // ролей нужно обновить отображение
       queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
     },

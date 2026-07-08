@@ -8,7 +8,7 @@ import { useComments, useCreateComment, useUpdateComment } from '../../api/comme
 import { commentQueryKeys } from '../../api/comments/commentQueryKeys';
 import { fileApi } from '../../api/files/fileApi';
 import { useReferenceData } from '../../api/hooks/useReferences';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { useCurrentSrmUserId } from '../../hooks/useCurrentSrmUserId';
 import { useAuthStore } from '../../store/AuthStore';
 import { useModalStore } from '../../store/ModalStore';
@@ -33,7 +33,8 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const currentSrmUserId = useCurrentSrmUserId();
-  const { openModal, closeModal } = useModalStore();
+  const openModal = useModalStore(s => s.openModal);
+  const closeModal = useModalStore(s => s.closeModal);
   const [currentCommentId, setCurrentCommentId] = useState<string | null>(null);
   const [action, setAction] = useState<'edit' | 'reply' | ''>('');
   const [editingComment, setEditingComment] = useState<Comment | null>(null);

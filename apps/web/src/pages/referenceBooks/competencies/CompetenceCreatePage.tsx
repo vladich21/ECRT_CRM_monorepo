@@ -2,8 +2,8 @@ import { SaveOutlined, TagOutlined } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Modal, Row } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-import { useCreatePartnerCompetence } from '../../../api/partners/partnerCompetenceApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useCreatePartnerCompetence } from '@/api/partners/partnerCompetenceApiHooks';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import styles from './CompetencyFormPage.module.scss';
 
 export default function PartnerCompetenceCreatePage() {

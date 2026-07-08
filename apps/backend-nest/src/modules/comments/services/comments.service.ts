@@ -106,7 +106,7 @@ export class CommentsService {
     const [row] = await this.db.db.insert(comments).values(insertData).returning();
     if (!row) return null;
 
-    // Уведомления (email и т.п.) разбираются подписчиками — comments-модуль про них не знает.
+    // Уведомления (email и т.п.) разбираются подписчиками - comments-модуль про них не знает.
     const mentionIds = Array.isArray(data.mention_ids)
       ? (data.mention_ids.filter((x) => typeof x === 'string') as string[])
       : [];

@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input, Spin } from 'antd';
 
-import { usePositions } from '../../../api/positions/positionApiHooks';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
+import { usePositions } from '@/api/positions/positionApiHooks';
+import { BackButton } from '@/components/backButton/BackButton';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { PositionCard } from './PositionCard';
 import styles from './PositionsListPage.module.scss';
 

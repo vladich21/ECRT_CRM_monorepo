@@ -59,7 +59,7 @@ export function ContractDetailsHeader({
                     {contractState.name}
                   </span>
                 ) : (
-                  <span>—</span>
+                  <span>-</span>
                 )}
 
                 <span className={detailsStyles.phSubSeparator}>·</span>
@@ -67,11 +67,11 @@ export function ContractDetailsHeader({
                 {contractCategoryName ? (
                   <span className={tagStyles.cardCategory}>{contractCategoryName}</span>
                 ) : (
-                  <span>—</span>
+                  <span>-</span>
                 )}
 
                 <span className={detailsStyles.phSubSeparator}>·</span>
-                <span>{partnerName || '—'}</span>
+                <span>{partnerName || '-'}</span>
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@ export function ContractDetailsHeader({
 
       {shouldShowDeadlineBanner && (
         <div className={detailsStyles.deadlineBanner}>
-          Срок действия договора истекает через <strong>{daysUntilEnd} дн.</strong> — до{' '}
+          Срок действия договора истекает через <strong>{daysUntilEnd} дн.</strong> - до{' '}
           <strong>{formattedEndDate}</strong>
         </div>
       )}

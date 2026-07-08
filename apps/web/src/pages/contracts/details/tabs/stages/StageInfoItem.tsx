@@ -43,7 +43,7 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
               План:{' '}
             </Text>
             <Text className={styles.stageInfoText}>
-              {formatDate(stage.planned_start_date)} — {formatDate(stage.planned_end_date)}
+              {formatDate(stage.planned_start_date)} - {formatDate(stage.planned_end_date)}
             </Text>
           </div>
           {(stage.actual_start_date || stage.actual_end_date) && (
@@ -52,7 +52,7 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
                 Факт:{' '}
               </Text>
               <Text className={styles.stageInfoText}>
-                {formatDateValue(stage.actual_start_date)} — {formatDateValue(stage.actual_end_date)}
+                {formatDateValue(stage.actual_start_date)} - {formatDateValue(stage.actual_end_date)}
               </Text>
             </div>
           )}

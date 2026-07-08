@@ -101,7 +101,7 @@ export function getPatentRecordSurface(isDeleted: boolean): StatusBadgeSurface {
 
 /**
  * Цвета РИД: один базовый RGB → полупрозрачный фон/бордер (см. `semantic-tinted-badge` в variables.scss).
- * Отказ — тот же красный тон, что и `.danger` в шапке.
+ * Отказ - тот же красный тон, что и `.danger` в шапке.
  */
 export const SURFACE_RID_SUBMITTED_CIR = semanticStatusTintFromRgb(22, 119, 255, '#1677ff');
 export const SURFACE_RID_OFFICE_REVIEW = semanticStatusTintFromRgb(250, 173, 20, '#d48806');

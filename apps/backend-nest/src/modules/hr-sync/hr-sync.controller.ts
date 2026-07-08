@@ -39,7 +39,7 @@ export class HrSyncController {
   /**
    * Запуск синхронизации пользователей из внешнего HR API в PMDB.
    * Защита: заголовок X-HR-Sync-Secret должен совпадать с HR_USERS_SYNC_SECRET в .env
-   * (не путать с вкладкой Authorization Bearer — нужен отдельный заголовок в Headers).
+   * (не путать с вкладкой Authorization Bearer - нужен отдельный заголовок в Headers).
    */
   @Public()
   @Post('users')

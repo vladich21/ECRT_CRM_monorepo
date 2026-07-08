@@ -6,7 +6,7 @@ import { contracts, refContractStates } from '../../../database/schema';
 import type { ApprovalEntity, EntityHandler } from './entity-handler.interface';
 
 /**
- * Договоры. Решение (2026-06-16): согласование — ОТДЕЛЬНЫЙ трек («согласован/
+ * Договоры. Решение (2026-06-16): согласование - ОТДЕЛЬНЫЙ трек («согласован/
  * не согласован»), статус договора НЕ меняет (как у партнёров/патентов).
  * Запуск разрешён на любом статусе; результат живёт в approval_processes
  * (approved/ratified vs rejected/cancelled) и показывается в панели.
@@ -40,7 +40,7 @@ export class ContractEntityHandler implements EntityHandler {
   }
 
   assertCanStartByStatus(): void {
-    // Согласование запускается на любом статусе — статус договора им не управляется.
+    // Согласование запускается на любом статусе - статус договора им не управляется.
   }
 
   resolveOwnerId(entity: ApprovalEntity): string | null {

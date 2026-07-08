@@ -20,7 +20,7 @@ export default function ContactCard({ contact, onEdit, onDelete }: ContactCardPr
     <div className={styles.card}>
       <div className={styles.mainInfo}>
         <div className={styles.nameRow}>
-          <span className={styles.name}>{contact.full_name || '—'}</span>
+          <span className={styles.name}>{contact.full_name || '-'}</span>
           {contact.is_primary && (
             <Tag color='success' className={styles.primaryTag}>
               Основной

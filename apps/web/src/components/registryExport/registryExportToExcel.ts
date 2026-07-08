@@ -1,6 +1,9 @@
-import * as XLSX from 'xlsx-js-style';
+import type * as XLSX from 'xlsx-js-style';
 
 import type { RegistryExportCellAlignment, RegistryExportExcelOptions, RegistryExportCellValue, RegistryExportFileLink } from './registryExportTypes';
+import { loadXlsxStyle } from '@/utils/loadXlsxStyle';
+
+type XlsxModule = typeof import('xlsx-js-style');
 
 const HEADER_ROW_HEIGHT_PT = 28;
 const DATA_ROW_HEIGHT_PT = 15;
@@ -153,9 +156,9 @@ function buildHyperlinkCell(
   };
 }
 
-function applyHeaderStyles(worksheet: XLSX.WorkSheet, headers: string[]): void {
+function applyHeaderStyles(xlsx: XlsxModule, worksheet: XLSX.WorkSheet, headers: string[]): void {
   headers.forEach((header, colIndex) => {
-    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: colIndex });
+    const cellAddress = xlsx.utils.encode_cell({ r: 0, c: colIndex });
     const existingCell = worksheet[cellAddress];
     worksheet[cellAddress] = {
       ...(existingCell ?? { t: 's', v: header }),
@@ -185,17 +188,18 @@ function estimateColumnWidth<TKey extends string>(
 }
 
 function applyWorksheetEnhancements<TKey extends string>(
+  xlsx: XlsxModule,
   worksheet: XLSX.WorkSheet,
   headers: string[],
   rows: RegistryExportCellValue[][],
   columnKeys: TKey[],
   options: RegistryExportExcelOptions<TKey>,
 ): void {
-  applyHeaderStyles(worksheet, headers);
+  applyHeaderStyles(xlsx, worksheet, headers);
 
   rows.forEach((row, rowIndex) => {
     columnKeys.forEach((key, colIndex) => {
-      const cellAddress = XLSX.utils.encode_cell({ r: rowIndex + 1, c: colIndex });
+      const cellAddress = xlsx.utils.encode_cell({ r: rowIndex + 1, c: colIndex });
       const existingCell = worksheet[cellAddress];
       if (!existingCell) return;
 
@@ -242,26 +246,28 @@ function applyWorksheetEnhancements<TKey extends string>(
   worksheet['!rows'] = [{ hpt: HEADER_ROW_HEIGHT_PT }, ...rows.map(() => ({ hpt: DATA_ROW_HEIGHT_PT }))];
 }
 
-export function exportRegistryToExcel<TKey extends string>(
+export async function exportRegistryToExcel<TKey extends string>(
   options: RegistryExportExcelOptions<TKey>,
   headers: string[],
   rows: RegistryExportCellValue[][],
   columnKeys: TKey[],
-): void {
+): Promise<void> {
+  const xlsx = await loadXlsxStyle();
+
   const { rows: exportRows, merges } =
     options.hyperlinkKeys?.size ?
       expandRowsWithHyperlinks(rows, columnKeys, options.hyperlinkKeys)
     : { rows, merges: [] as XLSX.Range[] };
 
   const plainRows = exportRows.map(row => row.map(cell => getExportCellPlainText(cell)));
-  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...plainRows]);
+  const worksheet = xlsx.utils.aoa_to_sheet([headers, ...plainRows]);
   if (merges.length > 0) {
     worksheet['!merges'] = merges;
   }
-  applyWorksheetEnhancements(worksheet, headers, exportRows, columnKeys, options);
+  applyWorksheetEnhancements(xlsx, worksheet, headers, exportRows, columnKeys, options);
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, options.sheetName);
+  const workbook = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(workbook, worksheet, options.sheetName);
   const fileName = `${options.fileNamePrefix}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
+  xlsx.writeFile(workbook, fileName);
 }

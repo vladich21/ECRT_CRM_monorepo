@@ -100,7 +100,7 @@ export function RoleEditDrawer({ open, role, onClose, onSubmit, isSubmitting }: 
           type='warning'
           showIcon
           message='Системная роль'
-          description='Эта роль защищена системой. Удалить и деактивировать ее нельзя — изменения возможны только для названия и описания.'
+          description='Эта роль защищена системой. Удалить и деактивировать ее нельзя - изменения возможны только для названия и описания.'
           style={{ marginBottom: 16 }}
         />
       )}

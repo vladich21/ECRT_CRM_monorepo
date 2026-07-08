@@ -69,7 +69,7 @@ function LicenseeReadonlyRows({
   const options = resolveReadonlyPartnerOptions(entries, partnerOptions);
 
   if (entries.length === 0) {
-    return <Input disabled readOnly value='—' placeholder='Не указан' />;
+    return <Input disabled readOnly value='-' placeholder='Не указан' />;
   }
 
   return (
@@ -81,14 +81,14 @@ function LicenseeReadonlyRows({
               disabled
               style={{ width: '100%' }}
               value={entry.partner_id || undefined}
-              placeholder='—'
+              placeholder='-'
               optionLabelProp='label'
               options={options.map(partner => ({ value: partner.id, label: partner.label }))}
               suffixIcon={<TeamOutlined />}
             />
           </Col>
           <Col flex='auto'>
-            <Input disabled readOnly value={entry.name || '—'} placeholder='Название' />
+            <Input disabled readOnly value={entry.name || '-'} placeholder='Название' />
           </Col>
           <Col flex='140px'>
             <Input disabled readOnly value={entry.inn || ''} placeholder='ИНН' />

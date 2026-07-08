@@ -32,7 +32,7 @@ export type PartnerDetailHeaderBadgeOptions = {
   };
 };
 
-/** Для страницы редактирования: превью бейджа по форме; блок по оценке — из последнего ответа API. */
+/** Для страницы редактирования: превью бейджа по форме; блок по оценке - из последнего ответа API. */
 export function partnerEditBadgeOptions(
   displayPartner: Partner,
   savedPartner: Partner,
@@ -234,7 +234,7 @@ export function partnerDetailHeaderMetaItems(
         <PartnerNextEvalDateTags nextIso={partnerEvalKpi.nextReevaluationIso} forDarkHeader />
       ) : (
         <Tag bordered className={chipStyles.metaPlaceholderTag}>
-          —
+          -
         </Tag>
       )}
     </span>,

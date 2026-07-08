@@ -11,7 +11,7 @@ import styles from './PatentRidFinanceCard.module.scss';
 const { Text } = Typography;
 
 function formatAmount(amount: number | null | undefined): string {
-  if (amount == null) return '—';
+  if (amount == null) return '-';
   return `${amount.toLocaleString('ru-RU')} ₽`;
 }
 

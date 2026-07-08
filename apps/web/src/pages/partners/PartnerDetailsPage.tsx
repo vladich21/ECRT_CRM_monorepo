@@ -1,28 +1,23 @@
-import { useLayoutEffect } from 'react';
 import { DeleteOutlined, EditOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useDeletePartner, useRestorePartner } from '../../api/partners/partnerApiHooks';
-import { APP_COLOR_SUCCESS } from '../../constants/appColors';
-import { Loader } from '../../components/loader/Loader';
-import { NotFound } from '../../components/notFound/NotFound';
-import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../../components/pageLayout/DetailPageHeader';
-import type { DeletionScope } from '../../constants/deletionScope';
-import { useConfirmByModal } from '../../customhooks/useConfirmByModal';
-import { useNotification } from '../../customhooks/useNotification';
+import { useDeletePartner, useRestorePartner } from '@/api/partners/partnerApiHooks';
+import { APP_COLOR_SUCCESS } from '@/constants/appColors';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '@/components/pageLayout/DetailPageHeader';
+import type { DeletionScope } from '@/constants/deletionScope';
+import { useConfirmByModal } from '@/hooks/modals/useConfirmByModal';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { isSafeInternalReturnPath } from '@/helpers/internalReturnNavigation';
+import type { Partner } from '@/types/partner';
 import { usePartnerDetailsData } from './details/hooks/usePartnerDetailsData';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
 import {
   partnerDetailHeaderBadges,
   partnerDetailHeaderMetaItems,
 } from './partnerDetailHeaderContent';
-import type { PartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
-
-function isSafeInternalReturnPath(raw: string): boolean {
-  const trimmedPath = raw.trim();
-  return trimmedPath.startsWith('/') && !trimmedPath.startsWith('//') && !trimmedPath.includes('://');
-}
 
 export default function PartnerDetailsPage() {
   const { partnerId } = useParams();
@@ -32,14 +27,13 @@ export default function PartnerDetailsPage() {
   const mutation = useDeletePartner();
   const restoreMutation = useRestorePartner();
   const navState = location.state as {
+    partner?: Partner;
     deletionScope?: DeletionScope;
-    partnersListReturn?: PartnersListNavSnapshot;
     returnToAfterPartner?: string;
-    evaluationsRegistryReturn?: unknown;
   } | null;
+  const initialPartner =
+    navState?.partner != null && navState.partner.id === partnerId ? navState.partner : undefined;
   const listDeletionScope = navState?.deletionScope ?? 'active';
-  const partnersListReturn = navState?.partnersListReturn;
-  const evaluationsRegistryReturn = navState?.evaluationsRegistryReturn;
   const returnToAfterPartnerRaw = navState?.returnToAfterPartner?.trim();
   const returnToAfterPartner =
     returnToAfterPartnerRaw && isSafeInternalReturnPath(returnToAfterPartnerRaw)
@@ -59,7 +53,7 @@ export default function PartnerDetailsPage() {
     partnerEvalKpiLoading,
     initialEval,
     initialEvalLoading,
-  } = usePartnerDetailsData(partnerId, location.pathname);
+  } = usePartnerDetailsData(partnerId, location.pathname, initialPartner);
 
   const { handleOpenModal } = useConfirmByModal({
     mutation,
@@ -100,11 +94,7 @@ export default function PartnerDetailsPage() {
     navigate(tabPathByKey[key] ?? basePath, tabNavigateOpts);
   };
 
-  useLayoutEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [location.pathname, partnerId]);
-
-  if (isLoading) return <Loader />;
+  if (isLoading && !partner) return <Loader />;
   if (isError || !partner) return <NotFound errorMessage='Контрагент не найден' />;
 
   const backLabel =
@@ -120,16 +110,11 @@ export default function PartnerDetailsPage() {
 
   const handleBack = () => {
     if (returnToAfterPartner) {
-      navigate(returnToAfterPartner, {
-        state: evaluationsRegistryReturn ? { evaluationsRegistryReturn } : undefined,
-      });
+      navigate(returnToAfterPartner);
       return;
     }
     navigate(PARTNERS_REGISTRY_PATH, {
-      state: {
-        deletionScope: listDeletionScope,
-        ...(partnersListReturn ? { partnersListReturn } : {}),
-      },
+      state: { deletionScope: listDeletionScope },
     });
   };
 

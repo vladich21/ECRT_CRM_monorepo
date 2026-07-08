@@ -7,7 +7,7 @@ import { useReferenceData } from '../../api/hooks/useReferences';
 import { useCreatePartner, usePartnerByInn } from '../../api/partners/partnerApiHooks';
 import { AsyncBoundary } from '../../components/async/AsyncBoundary';
 import DetailPageHeader from '../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
 import { initialFormValues } from './data';
 import type { PartnerFormRefs, PartnerFormSubmitValues } from './components/form';

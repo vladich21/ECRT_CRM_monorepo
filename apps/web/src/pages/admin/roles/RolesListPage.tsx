@@ -56,7 +56,7 @@ export default function RolesListPage() {
         <Space>
           <strong>{name}</strong>
           {role.is_system && (
-            <Tooltip title='Системная роль — защищена от удаления'>
+            <Tooltip title='Системная роль - защищена от удаления'>
               <Tag icon={<LockOutlined />} color='gold'>системная</Tag>
             </Tooltip>
           )}

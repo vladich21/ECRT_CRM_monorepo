@@ -2,7 +2,7 @@ export type RegistryExportColumn<TKey extends string = string> = {
   key: TKey;
   /** Подпись в модалке выбора полей */
   label: string;
-  /** Заголовок колонки в Excel; если не задан — используется label */
+  /** Заголовок колонки в Excel; если не задан - используется label */
   exportLabel?: string;
   defaultSelected: boolean;
 };
@@ -20,7 +20,7 @@ export type RegistryExportExtraGroup<TKey extends string = string> = {
   title: string;
   keys?: TKey[];
   sections?: RegistryExportExtraSection<TKey>[];
-  /** Колонка в блоке «Дополнительные поля»: 0 — слева, 1 — справа */
+  /** Колонка в блоке «Дополнительные поля»: 0 - слева, 1 - справа */
   column?: 0 | 1;
 };
 
@@ -32,7 +32,7 @@ export type RegistryExportExcelStyleConfig<TKey extends string = string> = {
   moneyKeys?: ReadonlySet<TKey>;
   integerKeys?: ReadonlySet<TKey>;
   longTextKeys?: ReadonlySet<TKey>;
-  /** Колонки с файлами: при нескольких файлах — отдельная строка на каждый, с объединением остальных ячеек */
+  /** Колонки с файлами: при нескольких файлах - отдельная строка на каждый, с объединением остальных ячеек */
   hyperlinkKeys?: ReadonlySet<TKey>;
   getAlignment?: (key: TKey) => RegistryExportCellAlignment;
   getNumericFormat?: (key: TKey) => string | undefined;

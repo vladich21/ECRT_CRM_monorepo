@@ -1,4 +1,4 @@
-import type { Project } from '../../../../types/referenceTypes';
+import type { Project } from '@/types/referenceTypes';
 import type { ProjectAdvancedFilters, ProjectFilterTab } from '../ProjectsListPage.types';
 
 const PROJECT_NON_ACTIVE_STATUSES = new Set(['completed', 'pending', 'paused', 'cancelled']);

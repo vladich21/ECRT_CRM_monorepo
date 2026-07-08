@@ -6,8 +6,8 @@ import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import type { MyFile } from '@/types/files';
 
 /** Документы согласования = файлы сущности в секции 'approval', сгруппированные по версии.
- *  Панель только для чтения: загрузка/замена/удаление — в модалке повторной отправки.
- *  Текущая версия (is_current) — сверху как «текущая», прошлые — архив (только скачивание). */
+ *  Панель только для чтения: загрузка/замена/удаление - в модалке повторной отправки.
+ *  Текущая версия (is_current) - сверху как «текущая», прошлые - архив (только скачивание). */
 const SECTION = 'approval';
 
 function formatSize(size: string | null): string {
@@ -39,7 +39,7 @@ export function ApprovalDocuments({ entityType, entityId }: ApprovalDocumentsPro
   const versions = Array.from(byVersion.keys()).sort((a, b) => b - a);
   const hasMultiple = versions.length > 1;
 
-  // Скачивание через авторизованный apiClient (blob) — корректное имя + same-origin.
+  // Скачивание через авторизованный apiClient (blob) - корректное имя + same-origin.
   const handleDownload = async (file: MyFile) => {
     try {
       const res = await apiClient.get(`/files/${file.id}`, { responseType: 'blob' });

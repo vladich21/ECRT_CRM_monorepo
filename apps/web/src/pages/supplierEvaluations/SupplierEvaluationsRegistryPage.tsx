@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, Input, Modal, Table, Tag, Typography } from 'antd';
 import { DeleteOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -17,10 +17,10 @@ import {
 import { invalidateSupplierEvaluationQueries } from '../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { BackButton } from '../../components/backButton/BackButton';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
+import { openFromRegistry, useRegistryScroll } from '../../hooks/registryScroll';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useServerPaginationClamp, useResetPageWhenListQueryChanges, useServerTablePagination } from '../../hooks/useServerTablePagination';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { mutedTagStyle } from '../../constants/statusBadgeSurfaces';
 import type {
   SupplierEvaluationListItem,
@@ -52,14 +52,8 @@ import {
 import {
   SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
   buildEvaluationsRegistryQueryResetKey,
-  loadSupplierEvaluationsRegistryPersistedUi,
-  saveSupplierEvaluationsRegistryPersistedUi,
 } from './supplierEvaluationsRegistry.model';
 import { useEvaluationsRegistryUiState } from './hooks/useEvaluationsRegistryUiState';
-import {
-  buildEvaluationsRegistryNavSnapshot,
-  EVALUATIONS_REGISTRY_RETURN_STATE_KEY,
-} from './supplierEvaluationsRegistryNavSnapshot';
 
 const { Text } = Typography;
 
@@ -74,15 +68,12 @@ export default function SupplierEvaluationsRegistryPage() {
     searchInput,
     SUPPLIER_EVALUATIONS_REGISTRY_SEARCH_DEBOUNCE_MS,
   );
-  const persistedUi = useMemo(() => loadSupplierEvaluationsRegistryPersistedUi(), []);
-  const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>(
-    () => persistedUi?.rowStatusTab ?? 'current',
-  );
+  const [rowStatusTab, setRowStatusTab] = useState<SupplierEvaluationUiStatusParam>('current');
   const [appliedListFilters, setAppliedListFilters] = useState<EvaluationsRegistryAppliedFilters>(
-    () => persistedUi?.appliedListFilters ?? EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
   );
   const [draftListFilters, setDraftListFilters] = useState<EvaluationsRegistryAppliedFilters>(
-    () => persistedUi?.appliedListFilters ?? EMPTY_EVALUATIONS_REGISTRY_FILTERS,
+    EMPTY_EVALUATIONS_REGISTRY_FILTERS,
   );
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [reevaluationModalOpen, setReevaluationModalOpen] = useState(false);
@@ -93,15 +84,31 @@ export default function SupplierEvaluationsRegistryPage() {
   const { page, pageSize, setPage, setPageSize, handleTableChange, getPaginationConfig, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
 
-  const { restoreToken, pendingScrollY } = useEvaluationsRegistryUiState(location, navigate, {
-    setSearchInput,
-    flushDebouncedSearch,
-    setRowStatusTab,
-    setAppliedListFilters,
-    setDraftListFilters,
-    setPage,
-    setPageSize,
-  });
+  const persistedUi = useMemo(
+    () => ({
+      searchQuery: searchInput,
+      rowStatusTab,
+      appliedListFilters,
+      page,
+      pageSize,
+    }),
+    [searchInput, rowStatusTab, appliedListFilters, page, pageSize],
+  );
+
+  const { restoreToken, flushPersist } = useEvaluationsRegistryUiState(
+    location,
+    navigate,
+    {
+      setSearchInput,
+      flushDebouncedSearch,
+      setRowStatusTab,
+      setAppliedListFilters,
+      setDraftListFilters,
+      setPage,
+      setPageSize,
+    },
+    persistedUi,
+  );
 
   const { data: projects = [] } = useProjectsPreview();
   const projectNameById = useMemo(
@@ -225,6 +232,7 @@ export default function SupplierEvaluationsRegistryPage() {
 
   const displayRows = data?.data ?? [];
   const total = data?.total ?? 0;
+  const displayTabCounts = tabCounts;
 
   useServerPaginationClamp({
     total,
@@ -234,33 +242,20 @@ export default function SupplierEvaluationsRegistryPage() {
     handleTableChange,
   });
 
-  useEffect(() => {
-    saveSupplierEvaluationsRegistryPersistedUi({ appliedListFilters, rowStatusTab });
-  }, [appliedListFilters, rowStatusTab]);
-
-  const displayTabCounts = tabCounts;
-
   const openPartnerEvaluations = (partnerId: string) => {
-    navigate(`/partners/${partnerId}/evaluations`, {
+    flushPersist();
+    openFromRegistry(location, navigate, `/partners/${partnerId}/evaluations`, {
       state: {
         returnToAfterPartner: '/supplier-evaluations',
-        [EVALUATIONS_REGISTRY_RETURN_STATE_KEY]: buildEvaluationsRegistryNavSnapshot(
-          searchInput,
-          rowStatusTab,
-          appliedListFilters,
-          page,
-          pageSize,
-          getListScrollY(),
-        ),
       },
     });
   };
 
-  useListScrollRestoration({
-    pendingScrollY,
-    isListReady: !isLoading,
+  useRegistryScroll({
+    isListReady: !(isLoading && !data),
+    page,
+    restoreToken,
   });
-  useScrollToTopOnPageChange(page, restoreToken);
 
   const columns: ColumnsType<SupplierEvaluationListItem> = [
     Table.EXPAND_COLUMN,
@@ -298,7 +293,7 @@ export default function SupplierEvaluationsRegistryPage() {
       width: 118,
       align: 'left',
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
-      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '—'}</Text>,
+      render: (v: string) => <Text type='secondary'>{v ? v.split('-').reverse().join('.') : '-'}</Text>,
     },
     {
       title: 'Закупщик',
@@ -308,7 +303,7 @@ export default function SupplierEvaluationsRegistryPage() {
       ellipsis: true,
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
       render: (_, row) => (
-        <Text type='secondary'>{row.created_by_name?.trim() ? row.created_by_name : '—'}</Text>
+        <Text type='secondary'>{row.created_by_name?.trim() ? row.created_by_name : '-'}</Text>
       ),
     },
     {
@@ -342,13 +337,18 @@ export default function SupplierEvaluationsRegistryPage() {
     {
       title: 'Статус',
       key: 'st',
-      width: 132,
+      width: 158,
       align: 'left',
       onHeaderCell: () => ({ style: { textAlign: 'left' } }),
+      onCell: () => ({ style: { verticalAlign: 'top' } }),
       render: (_, row) => {
         const rowPresentationState = getRowUiStatus(row);
         const { text, surface } = statusBadgeLabel(rowPresentationState);
-        return <Tag bordered={false} style={mutedTagStyle(surface)}>{text}</Tag>;
+        return (
+          <Tag bordered={false} className={registryStyles.statusTag} style={mutedTagStyle(surface)}>
+            {text}
+          </Tag>
+        );
       },
     },
     {
@@ -467,7 +467,7 @@ export default function SupplierEvaluationsRegistryPage() {
           columns={columns}
           dataSource={displayRows}
           tableLayout='fixed'
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1240 }}
           pagination={{
             ...getPaginationConfig(total),
             className: listStyles.evaluationsTablePagination,

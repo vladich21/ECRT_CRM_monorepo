@@ -3,15 +3,15 @@ import { Button, Space } from 'antd';
 import { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useFilesByEntity } from '../../../api/files/fileApiHooks';
-import { useDeletePatentGrant, usePatentGrantById } from '../../../api/patents/patentGrantsApiHooks';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
+import { useFilesByEntity } from '@/api/files/fileApiHooks';
+import { useDeletePatentGrant, usePatentGrantById } from '@/api/patents/patentGrantsApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
+import { useConfirmByModal } from '@/hooks/modals/useConfirmByModal';
 import { patentGrantDetailHeaderBadgeVariant } from './constants/patentGrantStatusStyles';
 import { resolvePatentGrantBackTarget, stateWithoutGrantNavFrom } from './navigation/patentGrantListNavigation';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 
 export default function PatentGrantDetailsPage() {
   const { grantId } = useParams();

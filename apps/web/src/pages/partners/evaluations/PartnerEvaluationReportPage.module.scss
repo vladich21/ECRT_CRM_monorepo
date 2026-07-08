@@ -1,286 +1,84 @@
-@use '../../../styles/variables' as v;
-
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
+.contentWrapWide {
+  padding: 24px 130px;
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+.screenOnly {
+  display: block;
 }
 
-.toolbarRight {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.printDocument {
+  display: none;
 }
 
-.tabExtra {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sheet {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  background: v.$bg-primary;
-}
-
-.reportHeader {
-  border: 1px solid v.$border-tertiary;
-  border-radius: 10px;
-  padding: 16px 20px;
-}
-
-.reportTitle {
+.printSectionTitle {
   margin: 0 0 12px;
-  font-size: 22px;
-  font-weight: 800;
-  color: v.$text-primary;
-}
-
-.headerGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.fieldLabel {
-  font-size: v.$font-sm;
-  color: v.$text-quaternary;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.fieldValue {
-  font-weight: 600;
-  color: v.$text-secondary;
-  word-break: break-word;
-}
-
-.row2 {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 16px;
-  align-items: stretch;
-}
-
-.card {
-  border: 1px solid v.$border-tertiary;
-  border-radius: 10px;
-  padding: 16px;
-  background: v.$bg-primary;
-}
-
-.cardTitle {
-  margin: 0 0 12px;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
-  color: v.$text-secondary;
+  color: #1e293b;
 }
 
-.sectionTitle {
-  margin: 4px 0 8px;
-  font-size: 16px;
-  font-weight: 700;
-  color: v.$text-secondary;
-}
-
-.trendGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.trendCard {
-  border: 1px solid v.$border-tertiary;
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-
-.trendTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: v.$text-secondary;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.trendWeight {
-  color: v.$text-quaternary;
-  font-weight: 500;
-}
-
-/* Gauge */
-.gauge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding-top: 12px;
-}
-
-.gaugeValue {
-  font-size: 44px;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.gaugeTrack {
-  position: relative;
-  width: 100%;
-  height: 22px;
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
+.printSection + .printSection {
   margin-top: 8px;
 }
 
-.gaugeZoneD,
-.gaugeZoneC,
-.gaugeZoneB,
-.gaugeZoneA {
-  height: 100%;
-}
-
-.gaugeZoneD {
-  width: 40%;
-  background: #ffd6d6;
-}
-.gaugeZoneC {
-  width: 20%;
-  background: #fff0c2;
-}
-.gaugeZoneB {
-  width: 20%;
-  background: #d9f5cf;
-}
-.gaugeZoneA {
-  width: 20%;
-  background: #c2ecc8;
-}
-
-.gaugeFill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  opacity: 0.85;
-  border-radius: 6px 0 0 6px;
-}
-
-.gaugeScale {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  font-size: 11px;
-  color: v.$text-quaternary;
-}
-
-.tabBody {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.matrixToolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.matrixPickLabel {
-  font-weight: 600;
-  color: v.$text-tertiary;
-}
-
-.matrixHead {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-@media (max-width: 768px) {
-  .matrixHead {
-    grid-template-columns: 1fr;
+@media (max-width: 1200px) {
+  .contentWrapWide {
+    padding: 24px 32px;
   }
 }
 
-/* Матрица */
-.matrix {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-
-  th,
-  td {
-    padding: 8px 12px;
-    border-bottom: 1px solid v.$border-tertiary;
-    text-align: left;
-  }
-
-  thead th {
-    background: v.$bg-secondary;
-    font-weight: 700;
-    color: v.$text-tertiary;
-    font-size: v.$font-sm;
-  }
-}
-
-.matrixNum {
-  text-align: right !important;
-  font-variant-numeric: tabular-nums;
-  width: 90px;
-}
-
-.matrixTotal td {
-  font-weight: 800;
-  background: v.$bg-secondary;
-  border-bottom: 0;
-}
-
-@media (max-width: 768px) {
-  .headerGrid,
-  .trendGrid {
-    grid-template-columns: 1fr;
-  }
-  .row2 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Печать / PDF */
 @media print {
-  [data-print-hide] {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  :global(body.partnerEvaluationReportPrint) {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+
+    :global(.ant-layout-header) {
+      display: none !important;
+    }
+
+    :global(.ant-layout-content) {
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #fff !important;
+      border-radius: 0 !important;
+    }
+
+    :global(.ant-layout) {
+      background: #fff !important;
+    }
+  }
+
+  .contentWrapWide {
+    padding: 12mm 10mm !important;
+    background: #fff !important;
+  }
+
+  .screenOnly {
     display: none !important;
   }
-  .page {
-    max-width: none;
-    padding: 0;
+
+  .printDocument {
+    display: block !important;
   }
-  .card,
-  .trendCard,
-  .reportHeader {
-    break-inside: avoid;
+
+  .printSectionBreak {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 0;
   }
-  .row2 {
-    grid-template-columns: 1.4fr 1fr;
+
+  .printSection:only-child,
+  .printSection:first-child:last-child {
+    break-after: auto;
+  }
+
+  .printSectionTitle {
+    margin-bottom: 10px;
+    font-size: 16px;
   }
 }

@@ -4,18 +4,18 @@ import { Button, Form } from 'antd';
 import dayjs from 'dayjs';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { usePatentGrantById, useUpdatePatentGrant } from '../../../api/patents/patentGrantsApiHooks';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getChangedFields } from '../../../helpers/getChangedFields';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { usePatentGrantById, useUpdatePatentGrant } from '@/api/patents/patentGrantsApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { getChangedFields } from '@/helpers/getChangedFields';
 import {
   defaultLicenseeFormRows,
   getPatentGrantActualLicensees,
   normalizeLicenseeEntriesForPayload,
-} from '../../../helpers/licenseeEntryHelpers';
+} from '@/helpers/licenseeEntryHelpers';
 import { PatentGrantFormFields } from './components/PatentGrantFormFields';
 import styles from './PatentGrantFormPage.module.scss';
 import { buildPatentGrantRidSelectLabel } from './utils/patentGrantCardHelpers';

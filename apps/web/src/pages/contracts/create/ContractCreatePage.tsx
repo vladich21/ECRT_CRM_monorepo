@@ -7,7 +7,7 @@ import { useCreateContract } from '@/api/contracts/contractApiHooks';
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { AsyncBoundary } from '@/components/async/AsyncBoundary';
 import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
-import { useNotification } from '@/customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { CONTRACTS_REGISTRY_PATH } from '../constants/routes';
 import {
   ContractFormClassificationFields,

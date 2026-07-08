@@ -4,11 +4,11 @@ import { useMemo } from 'react';
 
 import { buildLicenseePartnerOptions, LicenseeEntriesEditor } from '@/components/licensee/LicenseeEntriesEditor';
 import { getPatentExpectedLicensees, hasActualLicensee } from '@/helpers/licenseeEntryHelpers';
-import { useContractById } from '../../../../api/contracts/contractApiHooks';
-import { usePatentById } from '../../../../api/patents/patentApiHooks';
-import { PATENT_GRANT_OFFICE_OPTIONS } from '../../../../api/patents/patentGrantRegions';
-import { getNameById } from '../../../../helpers/getNameById';
-import { Reference } from '../../../../types/referenceTypes';
+import { useContractById } from '@/api/contracts/contractApiHooks';
+import { usePatentById } from '@/api/patents/patentApiHooks';
+import { PATENT_GRANT_OFFICE_OPTIONS } from '@/api/patents/patentGrantRegions';
+import { getNameById } from '@/helpers/getNameById';
+import { Reference } from '@/types/referenceTypes';
 import { usePatentGrantRidLink } from '../hooks/usePatentGrantRidLink';
 import {
   buildPatentSelectLabel,
@@ -134,13 +134,13 @@ export function PatentGrantFormFields({
               <>
                 <Col xs={24}>
                   <Form.Item label='Рег. номер РИД'>
-                    <Input value={linkedRidRegNumber || '—'} readOnly disabled prefix={<NumberOutlined />} />
+                    <Input value={linkedRidRegNumber || '-'} readOnly disabled prefix={<NumberOutlined />} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item label='Проект'>
                     <Input
-                      value={getNameById(selectedPatent?.project_id, referenceBooks.projects) || '—'}
+                      value={getNameById(selectedPatent?.project_id, referenceBooks.projects) || '-'}
                       readOnly
                       disabled
                     />
@@ -148,7 +148,7 @@ export function PatentGrantFormFields({
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item label='Договор (доходный)'>
-                    <Input value={getContractDisplayLabel(linkedContract) || '—'} readOnly disabled />
+                    <Input value={getContractDisplayLabel(linkedContract) || '-'} readOnly disabled />
                   </Form.Item>
                 </Col>
                 <Col xs={24}>

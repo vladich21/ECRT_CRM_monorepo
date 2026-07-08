@@ -54,11 +54,25 @@
 
   :global(.ant-descriptions-item-content) {
     color: v.$text-secondary;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   :global(.ant-descriptions-row > th),
   :global(.ant-descriptions-row > td) {
     padding: 12px 14px;
+  }
+}
+
+.competencies {
+  max-width: 100%;
+
+  :global(.ant-space) {
+    max-width: 100%;
+  }
+
+  :global(.ant-space-item) {
+    max-width: 100%;
   }
 }
 

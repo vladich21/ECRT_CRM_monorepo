@@ -50,12 +50,12 @@ export function usePatentsListSelectOptions(
         value: user.id,
       })),
       projects: (refs?.projects ?? []).map(project => ({
-        label: project.code ? `${project.code} — ${project.name}` : project.name,
+        label: project.code ? `${project.code} - ${project.name}` : project.name,
         value: project.id,
       })),
       contracts,
       applicationAreas: (refs?.patentAreas ?? []).map(area => ({
-        label: area.code ? `${area.code} — ${area.name}` : area.name,
+        label: area.code ? `${area.code} - ${area.name}` : area.name,
         value: area.id,
       })),
       calendarYears,

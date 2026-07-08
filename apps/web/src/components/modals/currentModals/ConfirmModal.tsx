@@ -1,23 +1,13 @@
-import { ReactNode } from 'react';
 import { Button, Space } from 'antd';
 
-import type { ConfirmModalAppearance } from '../../../store/ModalStore';
-import { BaseModal, BaseModalProps } from '../BaseModal';
+import type { ConfirmModalAppearance, ModalShellProps } from '@/store/ModalStore';
 
-export interface ConfirmModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
-  content?: ReactNode;
-  type?: 'delete' | 'warning' | 'info' | 'success' | 'confirm';
-  confirmAppearance?: ConfirmModalAppearance;
-  okText?: string;
-  cancelText?: string;
-  onConfirm: () => void | Promise<void>;
-  loading?: boolean;
-  modalData?: unknown;
-}
+import { BaseModal } from '../BaseModal';
 
-export const ConfirmModal: React.FC<ConfirmModalProps> = ({
+export type ConfirmModalProps = ModalShellProps;
+
+export const ConfirmModal: React.FC<ModalShellProps> = ({
   content,
-  type: typeProp = 'info',
   confirmAppearance,
   okText,
   cancelText = 'Отмена',
@@ -26,13 +16,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   open,
   title,
   onCancel,
-  modalData: _modalData,
-  ..._rest
 }) => {
-  const type: ConfirmModalProps['type'] =
-    confirmAppearance ?? (typeProp === 'confirm' || !typeProp ? 'info' : typeProp);
+  const appearance: ConfirmModalAppearance = confirmAppearance ?? 'info';
+
   const getButtonProps = () => {
-    switch (type) {
+    switch (appearance) {
       case 'delete':
         return {
           type: 'primary' as const,
@@ -62,7 +50,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       <Button onClick={onCancel} disabled={loading}>
         {cancelText}
       </Button>
-      <Button {...getButtonProps()} onClick={onConfirm} loading={loading} />
+      <Button {...getButtonProps()} onClick={() => void onConfirm()} loading={loading} />
     </Space>
   );
 

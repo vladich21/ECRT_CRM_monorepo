@@ -3,34 +3,33 @@ import { Button, Pagination, Spin } from 'antd';
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { usePatentsLinkedContractIds } from '../../../api/patents/patentApiHooks';
-import { usePatentGrantsRegistry } from '../../../api/patents/patentGrantsApiHooks';
-import type { PatentGrantRegistryListScope } from '../../../api/patents/patentGrantsApi';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { usePatentsLinkedContractIds } from '@/api/patents/patentApiHooks';
+import { usePatentGrantsRegistry } from '@/api/patents/patentGrantsApiHooks';
+import type { PatentGrantRegistryListScope } from '@/api/patents/patentGrantsApi';
+import { BackButton } from '@/components/backButton/BackButton';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { ReferenceBookCardList } from '@/components/referenceBooks/ReferenceBookCardList';
+import { openFromRegistry, useRegistryScroll } from '@/hooks/registryScroll';
 import {
   useResetPageWhenListQueryChanges,
   useServerPaginationClamp,
   useServerTablePagination,
-} from '../../../hooks/useServerTablePagination';
-import type { PatentGrant } from '../../../types/patent';
+} from '@/hooks/useServerTablePagination';
+import type { PatentGrant } from '@/types/patent';
 import { usePatentsListContractIdsForFilter } from '../../patents/hooks/usePatentsListContractIdsForFilter';
-import { usePatentsListSearchDebounce } from '../../patents/hooks/usePatentsListSearchDebounce';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { usePatentsListSelectOptions } from '../../patents/hooks/usePatentsListSelectOptions';
 import type { ReferenceDataForPatents } from '../../patents/types/data';
 import patentListStyles from '../../patents/PatentsListPage.module.scss';
-import { PATENT_GRANT_NAV_FROM_REGISTRY, PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY } from './navigation/patentGrantListNavigation';
+import { PATENT_GRANT_NAV_FROM_REGISTRY } from './navigation/patentGrantListNavigation';
 import { PatentGrantListCard } from './components/PatentGrantListCard';
 import { PatentGrantsRegistryFiltersBar } from './components/PatentGrantsRegistryFiltersBar';
 import { PatentGrantsRegistryFiltersModal } from './components/PatentGrantsRegistryFiltersModal';
 import { usePatentGrantsRegistryFilters } from './hooks/usePatentGrantsRegistryFilters';
 import { usePatentGrantsRegistryServerFilters } from './hooks/usePatentGrantsRegistryServerFilters';
 import { usePatentGrantsRegistryUiState } from './hooks/usePatentGrantsRegistryUiState';
-import { buildPatentGrantsRegistryListSnapshot } from './utils/patentGrantsRegistryNavSnapshot';
 import { buildPatentGrantsRegistryQueryResetKey } from './utils/patentGrantsRegistryQueryResetKey';
 import styles from './PatentGrantsListPage.module.scss';
 
@@ -39,6 +38,8 @@ const EMPTY_TAB_COUNTS: Record<PatentGrantRegistryListScope, number> = {
   active: 0,
   other: 0,
 };
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 export default function PatentGrantsRegistryPage() {
   const navigate = useNavigate();
@@ -66,12 +67,12 @@ export default function PatentGrantsRegistryPage() {
     restoreListSorting,
   } = usePatentGrantsRegistryFilters();
 
-  const { debouncedSearch, alignDebouncedWithQuery } = usePatentsListSearchDebounce(searchQuery);
+  const [debouncedSearch, alignDebouncedWithQuery] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
 
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
-  const { restoreToken, pendingScrollY } = usePatentGrantsRegistryUiState(
+  const { restoreToken, flushPersist } = usePatentGrantsRegistryUiState(
     location,
     navigate,
     { setSearchQuery, alignDebouncedWithQuery },
@@ -155,19 +156,10 @@ export default function PatentGrantsRegistryPage() {
   const selectOptions = usePatentsListSelectOptions(refs, contractIdsForPatentFilter);
 
   const handleOpenGrant = (grant: PatentGrant) => {
-    navigate(`/patent-grants/${grant.id}`, {
+    flushPersist();
+    openFromRegistry(location, navigate, `/patent-grants/${grant.id}`, {
       state: {
         from: PATENT_GRANT_NAV_FROM_REGISTRY,
-        [PATENT_GRANTS_REGISTRY_RETURN_STATE_KEY]: buildPatentGrantsRegistryListSnapshot(
-          searchQuery,
-          grantScopeTab,
-          appliedFilters,
-          page,
-          pageSize,
-          sortBy,
-          sortOrder,
-          getListScrollY(),
-        ),
       },
     });
   };
@@ -175,11 +167,11 @@ export default function PatentGrantsRegistryPage() {
   const isInitialLoad = isRefsLoading || (isLoading && !data);
   const paginationConfig = getPaginationConfig(total);
 
-  useListScrollRestoration({
-    pendingScrollY,
+  useRegistryScroll({
     isListReady: !isInitialLoad && !isFetching,
+    page,
+    restoreToken,
   });
-  useScrollToTopOnPageChange(page, restoreToken);
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось загрузить реестр охранных документов' />;

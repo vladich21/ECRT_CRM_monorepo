@@ -5,9 +5,9 @@ import { PermissionsGuard } from './guards/permissions.guard';
 
 /**
  * Глобальный модуль RBAC. Экспортирует:
- *  - PermissionsService — снимок прав, проверки
- *  - PermissionsVersionService — версия для инвалидации snapshot'ов в JWT
- *  - PermissionsGuard — гард для @RequirePermission декораторов
+ *  - PermissionsService - снимок прав, проверки
+ *  - PermissionsVersionService - версия для инвалидации snapshot'ов в JWT
+ *  - PermissionsGuard - гард для @RequirePermission декораторов
  */
 @Global()
 @Module({

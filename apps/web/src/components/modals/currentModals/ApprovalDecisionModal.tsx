@@ -3,7 +3,7 @@ import { App, Button, Form, Input, Radio, Select, Space } from 'antd';
 
 import { useMakeDecision } from '@/api/approvals/approvalApiHooks';
 import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
-import { useModalStore, type ModalState } from '@/store/ModalStore';
+import { useModalStore, type ModalShellProps } from '@/store/ModalStore';
 import type { ApprovalDecisionType, DelegationMode } from '@/types/approval';
 
 import { BaseModal } from '../BaseModal';
@@ -15,9 +15,17 @@ function extractError(e: unknown): string | undefined {
 
 const COMMENT_REQUIRED: ApprovalDecisionType[] = ['rejected', 'returned_to_initiator', 'returned_to_step'];
 
-export const ApprovalDecisionModal: React.FC<ModalState> = ({ open, title, modalData }) => {
+type ApprovalDecisionModalData = {
+  processId: string;
+  canDelegate?: boolean;
+  canReturnToPrevious?: boolean;
+  previousSteps?: { step_order: number; name: string }[];
+};
+
+export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, modalData: rawModalData }) => {
+  const modalData = (rawModalData ?? {}) as ApprovalDecisionModalData;
   const { message } = App.useApp();
-  const closeModal = useModalStore((s) => s.closeModal);
+  const closeModal = useModalStore(s => s.closeModal);
   const decide = useMakeDecision();
 
   const [decisionType, setDecisionType] = useState<ApprovalDecisionType>('approved');
@@ -68,46 +76,46 @@ export const ApprovalDecisionModal: React.FC<ModalState> = ({ open, title, modal
 
   return (
     <BaseModal open={open} title={title} onCancel={handleClose} footer={null} width={520}>
-      <Form layout="vertical">
-        <Form.Item label="Решение">
+      <Form layout='vertical'>
+        <Form.Item label='Решение'>
           <Radio.Group
-            optionType="button"
-            buttonStyle="solid"
+            optionType='button'
+            buttonStyle='solid'
             value={decisionType}
-            onChange={(e) => setDecisionType(e.target.value as ApprovalDecisionType)}
+            onChange={e => setDecisionType(e.target.value as ApprovalDecisionType)}
             options={options}
           />
         </Form.Item>
 
         {decisionType === 'returned_to_step' ? (
-          <Form.Item label="Вернуть на шаг" required>
+          <Form.Item label='Вернуть на шаг' required>
             <Select
               value={returnToStep}
               onChange={setReturnToStep}
-              placeholder="Выберите шаг"
-              options={previousSteps.map((s) => ({ value: s.step_order, label: `${s.step_order}. ${s.name}` }))}
+              placeholder='Выберите шаг'
+              options={previousSteps.map(s => ({ value: s.step_order, label: `${s.step_order}. ${s.name}` }))}
             />
           </Form.Item>
         ) : null}
 
         {decisionType === 'delegated' ? (
           <>
-            <Form.Item label="Делегировать" required>
-              <EmployeeSelect value={delegatedTo} onChange={(v) => setDelegatedTo(v as string)} />
+            <Form.Item label='Делегировать' required>
+              <EmployeeSelect value={delegatedTo} onChange={v => setDelegatedTo(v as string)} />
             </Form.Item>
-            <Form.Item label="Режим">
-              <Radio.Group value={delegationMode} onChange={(e) => setDelegationMode(e.target.value as DelegationMode)}>
-                <Radio value="transfer">Передать</Radio>
-                <Radio value="add">Добавить соисполнителя</Radio>
+            <Form.Item label='Режим'>
+              <Radio.Group value={delegationMode} onChange={e => setDelegationMode(e.target.value as DelegationMode)}>
+                <Radio value='transfer'>Передать</Radio>
+                <Radio value='add'>Добавить соисполнителя</Radio>
               </Radio.Group>
             </Form.Item>
           </>
         ) : null}
 
-        <Form.Item label="Комментарий" required={needComment}>
+        <Form.Item label='Комментарий' required={needComment}>
           <Input.TextArea
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            onChange={e => setComment(e.target.value)}
             rows={3}
             placeholder={needComment ? 'Обязательный комментарий' : 'Необязательно'}
           />
@@ -115,7 +123,7 @@ export const ApprovalDecisionModal: React.FC<ModalState> = ({ open, title, modal
 
         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
           <Button onClick={handleClose}>Отмена</Button>
-          <Button type="primary" disabled={!valid} loading={decide.isPending} onClick={submit}>
+          <Button type='primary' disabled={!valid} loading={decide.isPending} onClick={submit}>
             Подтвердить
           </Button>
         </Space>

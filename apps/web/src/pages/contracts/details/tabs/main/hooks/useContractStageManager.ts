@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useState } from 'react';
 import { Form } from 'antd';
 import dayjs from 'dayjs';
 
-import { useNotification } from '@/customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 
 import {
   useCreateContractStage,

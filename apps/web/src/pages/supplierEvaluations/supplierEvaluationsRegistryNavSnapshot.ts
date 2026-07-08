@@ -20,7 +20,6 @@ export type EvaluationsRegistryNavSnapshot = {
   applied: EvaluationsRegistryAppliedFilters;
   page: number;
   pageSize: number;
-  scrollY?: number;
 };
 
 function normalizeAppliedFilters(raw: unknown): EvaluationsRegistryAppliedFilters {
@@ -48,13 +47,12 @@ function normalizeAppliedFilters(raw: unknown): EvaluationsRegistryAppliedFilter
   return { evaluatedYears: years, category, createdByUserIds, projectIds, sortPreset };
 }
 
-export function buildEvaluationsRegistryNavSnapshot(
+export function serializeEvaluationsRegistryPersistedUi(
   searchQuery: string,
   rowStatusTab: SupplierEvaluationUiStatusParam,
   applied: EvaluationsRegistryAppliedFilters,
   page: number,
   pageSize: number,
-  scrollY?: number,
 ): EvaluationsRegistryNavSnapshot {
   return {
     version: 1,
@@ -63,21 +61,19 @@ export function buildEvaluationsRegistryNavSnapshot(
     applied: { ...applied },
     page,
     pageSize,
-    scrollY,
   };
 }
 
-export function parseEvaluationsRegistryNavSnapshot(raw: unknown): {
+export function parseEvaluationsRegistryPersistedUi(raw: unknown): {
   searchQuery: string;
   rowStatusTab: SupplierEvaluationUiStatusParam;
   appliedListFilters: EvaluationsRegistryAppliedFilters;
   page: number;
   pageSize: number;
-  scrollY?: number;
 } | null {
   const body = asListNavSnapshotV1Record(raw);
   if (!body) return null;
-  const { searchQuery, page, pageSize, scrollY } = parseListNavSnapshotBase(body, 20);
+  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 20);
   const snapshot = body as unknown as EvaluationsRegistryNavSnapshot;
   const tabRaw = snapshot.rowStatusTab;
   const rowStatusTab =
@@ -90,6 +86,5 @@ export function parseEvaluationsRegistryNavSnapshot(raw: unknown): {
     appliedListFilters: normalizeAppliedFilters(snapshot.applied),
     page,
     pageSize,
-    scrollY,
   };
 }

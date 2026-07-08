@@ -9,7 +9,7 @@ import { useReferenceData } from '@/api/hooks/useReferences';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
-import { useNotification } from '@/customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { getChangedFields } from '@/helpers/getChangedFields';
 import { getEntityById } from '@/helpers/getEntityById';
 import { formReferenceId } from '@/helpers/formReferenceId';
@@ -319,7 +319,7 @@ export default function ContractEditPage() {
       extraContent={
         showDeadlineBanner ? (
           <div className={detailsStyles.deadlineBanner}>
-            Срок действия договора истекает через <strong>{daysUntilEnd} дн.</strong> — до{' '}
+            Срок действия договора истекает через <strong>{daysUntilEnd} дн.</strong> - до{' '}
             <strong>{formattedEndDate}</strong>
           </div>
         ) : undefined

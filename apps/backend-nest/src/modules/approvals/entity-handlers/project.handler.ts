@@ -6,8 +6,8 @@ import { projects } from '../../../database/schema';
 import type { ApprovalEntity, EntityHandler } from './entity-handler.interface';
 
 /**
- * Проекты. Статус — свободный varchar без конвенции, в v1 согласование его НЕ меняет.
- * Владелец — менеджер → created_by.
+ * Проекты. Статус - свободный varchar без конвенции, в v1 согласование его НЕ меняет.
+ * Владелец - менеджер → created_by.
  */
 @Injectable()
 export class ProjectEntityHandler implements EntityHandler {

@@ -4,11 +4,14 @@
   "version": "1.0.0",
   "workspaces": ["apps/*"],
   "scripts": {
-    "dev": "concurrently \"npm run dev:web\" \"npm run dev:backend\"",
-    "dev:web": "npm run dev --workspace=apps/web",
+    "dev": "concurrently -n backend,web -c blue,green \"npm run dev:backend\" \"npm run dev:web\"",
+    "dev:web": "npx --yes wait-on http://127.0.0.1:9001/api/health -t 120000 && npm run dev --workspace=apps/web",
     "dev:backend": "npm run dev --workspace=apps/backend-nest",
     "dev:api": "npm run dev --workspace=apps/backend-nest",
-    "install:all": "npm install"
+    "install:all": "npm install",
+    "check:web": "npm run format:check --workspace=apps/web && npm run build --workspace=apps/web",
+    "format:web": "npm run format --workspace=apps/web",
+    "check:backend": "npm run build --workspace=apps/backend-nest && npm run test:pagination --workspace=apps/backend-nest"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",

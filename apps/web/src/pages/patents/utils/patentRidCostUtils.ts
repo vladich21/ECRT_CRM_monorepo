@@ -16,7 +16,7 @@ export function applyPatentRidVatAmounts(
 }
 
 export function formatPatentMoney(amount: number | null | undefined): string {
-  if (amount == null || Number.isNaN(Number(amount))) return '—';
+  if (amount == null || Number.isNaN(Number(amount))) return '-';
   return `${Number(amount).toLocaleString('ru-RU')} ₽`;
 }
 

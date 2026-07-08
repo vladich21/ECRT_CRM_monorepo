@@ -3,29 +3,28 @@ import { FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import type { ProjectsListParams } from '../../../api/projects/projectApi';
-import { useProjectsList } from '../../../api/projects/projectApiHooks';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { EMPTY_DELETION_TAB_COUNTS } from '../../../constants/deletionScope';
-import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
-import { getNameById } from '../../../helpers/getNameById';
-import { getListScrollY, useListScrollRestoration, useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import type { ProjectsListParams } from '@/api/projects/projectApi';
+import { useProjectsList } from '@/api/projects/projectApiHooks';
+import { BackButton } from '@/components/backButton/BackButton';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { EMPTY_DELETION_TAB_COUNTS } from '@/constants/deletionScope';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { getNameById } from '@/helpers/getNameById';
+import { openFromRegistry, useRegistryScroll } from '@/hooks/registryScroll';
 import {
   useResetPageWhenListQueryChanges,
   useServerPaginationClamp,
   useServerTablePagination,
-} from '../../../hooks/useServerTablePagination';
-import type { Project } from '../../../types/referenceTypes';
+} from '@/hooks/useServerTablePagination';
+import type { Project } from '@/types/referenceTypes';
 import { useProjectListFilters } from './hooks/useProjectListFilters';
 import { useProjectsListUiState } from './hooks/useProjectsListUiState';
 import { ProjectCard } from './ProjectCard';
 import { ProjectFiltersModal } from './ProjectFiltersModal';
 import styles from './ProjectsListPage.module.scss';
 import { PROJECT_FILTER_TABS, type ProjectFilterTab } from './ProjectsListPage.types';
-import { buildProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
 import { buildProjectsListQueryResetKey } from './utils/projectsListQueryResetKey';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -65,15 +64,31 @@ export default function ProjectsListPage() {
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
 
-  const { restoreToken, pendingScrollY } = useProjectsListUiState(location, navigate, {
-    setSearchQuery,
-    flushDebouncedSearch,
-    setActiveTab,
-    setAppliedFilters,
-    setDraftFilters,
-    setPage,
-    setPageSize,
-  });
+  const persistedUi = useMemo(
+    () => ({
+      searchQuery,
+      activeTab,
+      appliedFilters,
+      page,
+      pageSize,
+    }),
+    [searchQuery, activeTab, appliedFilters, page, pageSize],
+  );
+
+  const { restoreToken, flushPersist } = useProjectsListUiState(
+    location,
+    navigate,
+    {
+      setSearchQuery,
+      flushDebouncedSearch,
+      setActiveTab,
+      setAppliedFilters,
+      setDraftFilters,
+      setPage,
+      setPageSize,
+    },
+    persistedUi,
+  );
 
   const queryResetKey = useMemo(
     () =>
@@ -141,26 +156,22 @@ export default function ProjectsListPage() {
     return { managers: users };
   }, [referenceBooks]);
 
-  const handleProjectClick = (project: Project) =>
-    navigate(`/projects/${project.id}`, {
+  const handleProjectClick = (project: Project) => {
+    flushPersist();
+    openFromRegistry(location, navigate, `/projects/${project.id}`, {
       state: {
         from: 'projects-list',
         deletionScope: activeTab === 'deleted' ? ('deleted' as const) : undefined,
-        projectsListReturn: buildProjectsListNavSnapshot(
-          searchQuery,
-          activeTab,
-          appliedFilters,
-          page,
-          pageSize,
-          getListScrollY(),
-        ),
       },
     });
+  };
 
   const isInitialLoad = isRefsLoading || (isLoading && !data);
-  const isListReady = !isInitialLoad && !isFetching;
-  useListScrollRestoration({ pendingScrollY, isListReady });
-  useScrollToTopOnPageChange(page, restoreToken);
+  useRegistryScroll({
+    isListReady: !isInitialLoad && !isFetching,
+    page,
+    restoreToken,
+  });
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;

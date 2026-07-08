@@ -67,7 +67,7 @@ export class PatentApplicationAreasService {
     } catch (err) {
       if ((err as { cause?: { code?: string } })?.cause?.code === '23503') {
         throw new ConflictException(
-          'Нельзя удалить область применения — она привязана к РИД (патентам).',
+          'Нельзя удалить область применения - она привязана к РИД (патентам).',
         );
       }
       throw err;

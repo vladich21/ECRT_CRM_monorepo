@@ -11,17 +11,17 @@ import { Button, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd
 import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { useProjectById, useUpdateProject } from '../../../api/projects/projectApiHooks';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { useProjectById, useUpdateProject } from '@/api/projects/projectApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader, {
   detailHeaderVariantForProjectStatus,
   detailPageHeaderStyles as hStyles,
-} from '../../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { projectUpdateFormMapper } from '../../../helpers/mappers/projectUpdateFormMapper';
+} from '@/components/pageLayout/DetailPageHeader';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { getChangedFields } from '@/helpers/getChangedFields';
+import { projectUpdateFormMapper } from '@/helpers/mappers/projectUpdateFormMapper';
 import styles from './ProjectFormPage.module.scss';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 
@@ -87,7 +87,7 @@ export default function ProjectEditPage() {
     };
   })();
   const headerName = (wName ?? project.name ?? '').trim();
-  const headerTitle = headerName || '—';
+  const headerTitle = headerName || '-';
   const headerCode = (wCode ?? (project as any)?.code) ? String(wCode ?? (project as any)?.code) : '';
   const headerShortRaw =
     (wShortName ?? (project as any)?.short_name) ? String(wShortName ?? (project as any)?.short_name) : '';

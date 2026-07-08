@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
 
-import type { NotificationType } from '../useNotification';
+import type { NotificationType } from '@/hooks/notifications/useNotification';
 import type { DeleteMutationFeedbackConfig } from './deleteMutationFeedback.types';
 import { runDeleteMutationWithFeedbackAsync } from './runDeleteMutationWithFeedback';
 

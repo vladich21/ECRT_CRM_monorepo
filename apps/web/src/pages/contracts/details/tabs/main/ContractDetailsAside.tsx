@@ -16,7 +16,7 @@ type ContractDetailsAsideProps = {
   references?: AsideReferences | null;
 };
 function formatAmount(amount: number | null | undefined): string {
-  if (amount == null) return '—';
+  if (amount == null) return '-';
   return `${amount.toLocaleString('ru-RU')} ₽`;
 }
 function roundMoney(value: number): number {

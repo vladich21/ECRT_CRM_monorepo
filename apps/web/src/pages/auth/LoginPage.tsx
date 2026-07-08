@@ -53,7 +53,7 @@ function LoginPage() {
     set({ loading: true, error: '' });
     // На финальных шагах (после success → navigate) loading НЕ сбрасываем,
     // иначе кнопка успеет стать активной за 1с до перехода и пользователь
-    // успеет нажать повторно — backend получит пачку дубликатов set-password.
+    // успеет нажать повторно - backend получит пачку дубликатов set-password.
     let keepLoading = false;
     try {
       switch (state.step) {

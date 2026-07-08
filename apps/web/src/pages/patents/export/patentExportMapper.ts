@@ -76,7 +76,7 @@ function formatAreasExportLabel(areaIds: string[] | undefined, refs: ReferenceDa
     .map(areaId => {
       const area = getEntityById(areaId, refs.patentAreas ?? []);
       if (!area) return '';
-      return area.code ? `${area.code} — ${area.name}` : area.name;
+      return area.code ? `${area.code} - ${area.name}` : area.name;
     })
     .filter(Boolean)
     .join('; ');

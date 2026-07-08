@@ -55,7 +55,7 @@ export function isNextReevaluationInSoonWindow(nextIso: string | null | undefine
 }
 
 export function formatEvaluatedAtRu(isoDate: string): string {
-  if (!isoDate) return '—';
+  if (!isoDate) return '-';
   const parts = isoDate.split('-');
   if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
   return isoDate;
@@ -63,7 +63,7 @@ export function formatEvaluatedAtRu(isoDate: string): string {
 
 export function formatCriterionScoreLabel(value: number): string {
   const n = Number(value);
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '-';
   const stepped = Math.round(n * 10) / 10;
   if (Number.isInteger(stepped)) {
     return String(stepped);
@@ -108,7 +108,7 @@ export function ScoreDots({ value, dotsRowClassName }: { value: number; dotsRowC
 }
 
 export function weightPercent(weight: number): string {
-  if (!Number.isFinite(weight)) return '—';
+  if (!Number.isFinite(weight)) return '-';
   return `${String(parseFloat((weight * 100).toFixed(2)))}%`;
 }
 
@@ -117,12 +117,12 @@ export function weightedLineFromScoreAndWeight(score: number, weight: number): n
 }
 
 export function formatEvaluationScoreDisplay(value: number): string {
-  if (!Number.isFinite(value)) return '—';
+  if (!Number.isFinite(value)) return '-';
   return value.toFixed(2);
 }
 
 export function formatWeightedLineCell(value: number): string {
-  if (!Number.isFinite(value)) return '—';
+  if (!Number.isFinite(value)) return '-';
   return value.toFixed(2);
 }
 
@@ -221,7 +221,7 @@ function nextReevaluationDisplay(nextIso: string) {
 }
 
 export function formatNextReevaluationInline(nextIso: string | null): ReactNode {
-  if (!nextIso) return '—';
+  if (!nextIso) return '-';
   const { dateStr, days, overdue, soon } = nextReevaluationDisplay(nextIso);
   if (overdue) {
     return (
@@ -243,7 +243,7 @@ export function formatNextReevaluationInline(nextIso: string | null): ReactNode 
 }
 
 export function formatNextReevaluationKpiValue(nextIso: string | null): ReactNode {
-  if (!nextIso) return '—';
+  if (!nextIso) return '-';
   const { dateStr, days, overdue, soon } = nextReevaluationDisplay(nextIso);
   if (overdue) {
     return (
@@ -265,7 +265,7 @@ export function formatNextReevaluationKpiValue(nextIso: string | null): ReactNod
 }
 
 export function formatReevaluationCell(row: SupplierEvaluationListItem, ui: UiEvalRowStatus): ReactNode {
-  if (ui === 'blocked') return '—';
+  if (ui === 'blocked') return '-';
   if (ui === 'archived') {
     const evalRu = formatEvaluatedAtRu(row.evaluated_at);
     return (
@@ -275,6 +275,6 @@ export function formatReevaluationCell(row: SupplierEvaluationListItem, ui: UiEv
       </span>
     );
   }
-  if (!row.next_reevaluation_date) return '—';
+  if (!row.next_reevaluation_date) return '-';
   return formatNextReevaluationInline(row.next_reevaluation_date);
 }

@@ -38,7 +38,7 @@ export class PartnerSyncSchedulerService implements OnModuleInit, OnModuleDestro
         .then((out) => {
           if (out.skipped) {
             this.logger.debug(
-              'Partner sync (планировщик): пропуск — синхронизация уже выполняется',
+              'Partner sync (планировщик): пропуск - синхронизация уже выполняется',
             );
             return;
           }

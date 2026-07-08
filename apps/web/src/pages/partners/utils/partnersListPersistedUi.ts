@@ -1,18 +1,18 @@
-import type { PartnerListSortBy } from '../../../api/partners/partnerApi';
+import type { PartnerListSortBy } from '@/api/partners/partnerApi';
 
 import type { PartnerFilters } from '../PartnerFiltersModal';
 
-import { buildPartnersListNavSnapshot, parsePartnersListNavSnapshot } from './partnersListNavSnapshot';
+import { parsePartnersListPersistedUi, serializePartnersListPersistedUi } from './partnersListNavSnapshot';
 
 const PARTNERS_LIST_UI_STORAGE_KEY = 'srn.partnersList.ui.v1';
 
-export type PartnersListPersistedUi = NonNullable<ReturnType<typeof parsePartnersListNavSnapshot>>;
+export type PartnersListPersistedUi = NonNullable<ReturnType<typeof parsePartnersListPersistedUi>>;
 
 export function loadPartnersListPersistedUi(): PartnersListPersistedUi | null {
   try {
     const raw = localStorage.getItem(PARTNERS_LIST_UI_STORAGE_KEY);
     if (!raw) return null;
-    return parsePartnersListNavSnapshot(JSON.parse(raw) as unknown);
+    return parsePartnersListPersistedUi(JSON.parse(raw) as unknown);
   } catch {
     return null;
   }
@@ -27,7 +27,7 @@ export function savePartnersListPersistedUi(params: {
   sortOrder: 'asc' | 'desc';
 }): void {
   try {
-    const snapshot = buildPartnersListNavSnapshot(
+    const snapshot = serializePartnersListPersistedUi(
       params.searchQuery,
       params.appliedFilters,
       params.page,

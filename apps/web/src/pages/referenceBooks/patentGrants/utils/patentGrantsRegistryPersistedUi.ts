@@ -5,21 +5,21 @@ import type {
 } from '@/api/patents/patentGrantsRegistryFilters.types';
 
 import {
-  buildPatentGrantsRegistryListSnapshot,
-  parsePatentGrantsRegistryListSnapshot,
+  parsePatentGrantsRegistryPersistedUi,
+  serializePatentGrantsRegistryPersistedUi,
 } from './patentGrantsRegistryNavSnapshot';
 
 const STORAGE_KEY = 'srn.patentGrantsRegistry.ui.v1';
 
 export type PatentGrantsRegistryPersistedUi = NonNullable<
-  ReturnType<typeof parsePatentGrantsRegistryListSnapshot>
+  ReturnType<typeof parsePatentGrantsRegistryPersistedUi>
 >;
 
 export function loadPatentGrantsRegistryPersistedUi(): PatentGrantsRegistryPersistedUi | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return parsePatentGrantsRegistryListSnapshot(JSON.parse(raw) as unknown);
+    return parsePatentGrantsRegistryPersistedUi(JSON.parse(raw) as unknown);
   } catch {
     return null;
   }
@@ -35,7 +35,7 @@ export function savePatentGrantsRegistryPersistedUi(params: {
   sortOrder: 'asc' | 'desc';
 }): void {
   try {
-    const snapshot = buildPatentGrantsRegistryListSnapshot(
+    const snapshot = serializePatentGrantsRegistryPersistedUi(
       params.searchQuery,
       params.grantScopeTab,
       params.appliedFilters,

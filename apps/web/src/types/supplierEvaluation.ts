@@ -117,6 +117,7 @@ export interface PartnerReportEvaluation {
   weighted_score: number;
   category: SupplierEvaluationCategory;
   evaluated_at: string;
+  comment?: string | null;
   scores: PartnerReportScore[];
 }
 

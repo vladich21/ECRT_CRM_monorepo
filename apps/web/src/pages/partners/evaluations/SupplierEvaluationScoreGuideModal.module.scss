@@ -1,0 +1,16 @@
+.sectionTitle {
+  margin: 0 0 8px !important;
+}
+
+.scaleList {
+  margin: 0;
+  padding-left: 18px;
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  li :global(.ant-typography) + :global(.ant-typography) {
+    margin-left: 6px;
+  }
+}

@@ -41,6 +41,11 @@ interface DetailPageHeaderProps {
   onTabChange: (key: string) => void;
   extraContent?: ReactNode;
   stickyHeader?: boolean;
+  /** Скрывает кнопку «Назад», вкладки и actions при window.print(). */
+  hideNavigationOnPrint?: boolean;
+  /** Атрибут data-print-scope на корне — для точечных @media print стилей страницы. */
+  printScope?: string;
+  contentClassName?: string;
   children?: ReactNode;
   contextHolder?: ReactNode;
   titleWeight?: 'default' | 'medium';
@@ -62,6 +67,9 @@ export default function DetailPageHeader({
   onTabChange,
   extraContent,
   stickyHeader,
+  hideNavigationOnPrint,
+  printScope,
+  contentClassName,
   children,
   contextHolder,
   titleWeight = 'default',
@@ -71,11 +79,17 @@ export default function DetailPageHeader({
     titleWeight === 'medium' ? `${styles.companyName} ${styles.companyNameMedium}` : styles.companyName;
 
   return (
-    <div className={styles.pageRoot}>
+    <div className={styles.pageRoot} {...(printScope ? { 'data-print-scope': printScope } : {})}>
       {contextHolder}
 
       <div className={headerClassName}>
-        <Button type='text' icon={<ArrowLeftOutlined />} onClick={onBack} className={styles.backBtn}>
+        <Button
+          type='text'
+          icon={<ArrowLeftOutlined />}
+          onClick={onBack}
+          className={styles.backBtn}
+          {...(hideNavigationOnPrint ? { 'data-print-hide': true } : {})}
+        >
           {backLabel}
         </Button>
 
@@ -101,12 +115,16 @@ export default function DetailPageHeader({
             </div>
           </div>
 
-          {actions && <div className={styles.actions}>{actions}</div>}
+          {actions && (
+            <div className={styles.actions} {...(hideNavigationOnPrint ? { 'data-print-hide': true } : {})}>
+              {actions}
+            </div>
+          )}
         </div>
 
         {extraContent}
 
-        <div className={styles.tabs}>
+        <div className={styles.tabs} {...(hideNavigationOnPrint ? { 'data-print-hide': true } : {})}>
           {tabs.map(tab => (
             <div
               key={tab.key}
@@ -119,7 +137,7 @@ export default function DetailPageHeader({
         </div>
       </div>
 
-      <div className={styles.contentWrap}>{children}</div>
+      <div className={[styles.contentWrap, contentClassName].filter(Boolean).join(' ')}>{children}</div>
     </div>
   );
 }

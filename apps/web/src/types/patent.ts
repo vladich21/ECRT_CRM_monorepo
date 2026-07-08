@@ -69,9 +69,7 @@ export interface Patent {
   transformation_notification_cir?: string;
   transformation_target_registration_number?: string;
   transformation_source_registration_number?: string;
-  /** Положительное решение отмечено без файла. */
   decision_positive_marked?: boolean;
-  /** Отрицательное решение отмечено без файла. */
   decision_negative_marked?: boolean;
   export_extras?: PatentExportExtras;
 }

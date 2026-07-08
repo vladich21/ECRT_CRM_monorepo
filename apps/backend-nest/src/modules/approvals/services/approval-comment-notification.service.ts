@@ -24,9 +24,9 @@ const ROUTE_SEGMENT: Record<string, string> = {
 
 /**
  * Email-уведомления о комментариях в ленте согласования (решение 2026-06-29):
- *  — @упоминание → упомянутым (приоритет высший);
- *  — ответ → автору родительского комментария;
- *  — обычный коммент (без упоминания и без ответа) → инициатору согласования.
+ *  - @упоминание → упомянутым (приоритет высший);
+ *  - ответ → автору родительского комментария;
+ *  - обычный коммент (без упоминания и без ответа) → инициатору согласования.
  * Автор всегда исключается; одно письмо на получателя (побеждает макс. приоритет).
  */
 @Injectable()
@@ -66,10 +66,10 @@ export class ApprovalCommentNotificationService {
         if (!cur || PRIORITY[reason] > PRIORITY[cur]) recipients.set(userId, reason);
       };
 
-      // 1) Упоминания — приоритет высший.
+      // 1) Упоминания - приоритет высший.
       for (const m of event.mentionIds) consider(m, 'mention');
 
-      // 2) Ответ — автору родительского комментария.
+      // 2) Ответ - автору родительского комментария.
       if (event.parentId) {
         const [parent] = await this.db.db
           .select({ createdBy: comments.createdBy })
@@ -79,7 +79,7 @@ export class ApprovalCommentNotificationService {
         consider(parent?.createdBy, 'reply');
       }
 
-      // 3) Обычный коммент (без упоминаний и без ответа) — инициатору.
+      // 3) Обычный коммент (без упоминаний и без ответа) - инициатору.
       if (event.mentionIds.length === 0 && !event.parentId) {
         consider(proc.initiatedBy, 'new');
       }
@@ -87,8 +87,8 @@ export class ApprovalCommentNotificationService {
       if (recipients.size === 0) return;
 
       const [commenter] = author ? await this.mail.loadUsers([author]) : [];
-      const commenterName = commenter?.name ?? '—';
-      const routeName = proc.routeName ?? '—';
+      const commenterName = commenter?.name ?? '-';
+      const routeName = proc.routeName ?? '-';
       const preview = this.preview(event.html, event.message);
       const link = this.buildLink(proc.entityType, proc.entityId);
 

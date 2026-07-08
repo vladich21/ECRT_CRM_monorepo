@@ -6,7 +6,7 @@ import {
   useCreateInitialSupplierEvaluation,
   useSupplierEvaluationCriteria,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { readAxiosLikeError } from '../../../utils/readAxiosLikeError';
 import type { SupplierEvaluationCriterion } from '../../../types/supplierEvaluation';
 import {
@@ -150,7 +150,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
               Матрица оценки
             </Text>
             <Text type='secondary' className={styles.matrixHeaderMeta}>
-              {includedCriteria.length === 0 ? 'Сумма весов: —' : 'Сумма весов: 100%'}
+              {includedCriteria.length === 0 ? 'Сумма весов: -' : 'Сумма весов: 100%'}
             </Text>
           </div>
           <div className={styles.matrixBody}>
@@ -207,10 +207,10 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
                         ))}
                       </Space>
                       <Text strong className={styles.scoreAccent}>
-                        {isExcluded ? '—' : score}
+                        {isExcluded ? '-' : score}
                       </Text>
                       <Text strong className={styles.weightedAccent}>
-                        {isExcluded ? '—' : formatEvaluationScoreDisplay(weightedContribution)}
+                        {isExcluded ? '-' : formatEvaluationScoreDisplay(weightedContribution)}
                       </Text>
                       <div className={styles.colNa}>
                         <Checkbox
@@ -233,7 +233,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
           <Space align='center'>
             <CategoryTag category={previewCategory} weightedScore={weighted} />
             <Text strong className={styles.summaryScore}>
-              {includedCriteria.length ? formatEvaluationScoreDisplay(weighted) : '—'}
+              {includedCriteria.length ? formatEvaluationScoreDisplay(weighted) : '-'}
             </Text>
           </Space>
         </div>

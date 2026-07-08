@@ -33,6 +33,18 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('xlsx-js-style') || id.includes('node_modules/xlsx')) {
+            return 'xlsx';
+          }
+        },
+      },
+    },
+  },
+  test: {
+    environment: 'node',
   },
   resolve: {
     alias: {

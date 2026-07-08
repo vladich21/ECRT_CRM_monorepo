@@ -1,25 +1,30 @@
 import { useEffect, useMemo } from 'react';
 
-import { useContracts } from '../../../../api/contracts/contractApiHooks';
-import { useFilesByEntity } from '../../../../api/files/fileApiHooks';
-import { useReferenceData } from '../../../../api/hooks/useReferences';
-import { usePartnerById } from '../../../../api/partners/partnerApiHooks';
-import { usePartnerContacts } from '../../../../api/partners/partnerContactApiHooks';
+import { useContracts } from '@/api/contracts/contractApiHooks';
+import { useFilesByEntity } from '@/api/files/fileApiHooks';
+import { usePartnerReferenceData } from '@/api/hooks/usePartnerReferenceData';
+import { usePartnerById } from '@/api/partners/partnerApiHooks';
+import { usePartnerContacts } from '@/api/partners/partnerContactApiHooks';
 import {
   usePartnerInitialSupplierEval,
   usePartnerSupplierEvalKpi,
   useSupplierEvaluationsList,
-} from '../../../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { getPartnerDetailsActiveTab } from '../../utils/partnerDetailsRouteUtils';
+} from '@/api/supplierEvaluations/supplierEvaluationApiHooks';
+import type { Partner } from '@/types/partner';
+import { getPartnerDetailsActiveTab } from '@/pages/partners/utils/partnerDetailsRouteUtils';
 
-export function usePartnerDetailsData(partnerId: string | undefined, pathname: string) {
+export function usePartnerDetailsData(
+  partnerId: string | undefined,
+  pathname: string,
+  initialPartner?: Partner,
+) {
   const {
     data: partner,
     isLoading,
     isError: isPartnerError,
     refetch: refetchPartner,
-  } = usePartnerById(partnerId ?? '');
-  const { data: references } = useReferenceData(['partnerStatuses', 'partnerTypes', 'partnerCategories']);
+  } = usePartnerById(partnerId ?? '', initialPartner);
+  const { data: references } = usePartnerReferenceData();
   const { data: contacts = [] } = usePartnerContacts(partnerId);
   const { data: files = [] } = useFilesByEntity('partner', partnerId ?? '');
   const { data: contractsList } = useContracts(partnerId ? { partner_id: partnerId } : undefined, 1, 1, {

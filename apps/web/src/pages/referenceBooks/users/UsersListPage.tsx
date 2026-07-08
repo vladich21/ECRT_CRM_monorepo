@@ -3,23 +3,23 @@ import { CloudSyncOutlined, FilterOutlined, SearchOutlined } from '@ant-design/i
 import { Button, Input, Modal, Pagination, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-import { useHrSyncNow } from '../../../api/hr/useHrSyncNow';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { useUsers } from '../../../api/users/userApiHooks';
-import { impersonationApi } from '../../../api/impersonation/impersonationApi';
-import { refreshSessionUser } from '../../../api/auth/refreshSessionUser';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
-import useAuthStore from '../../../store/AuthStore';
-import { User } from '../../../types/user';
+import { useHrSyncNow } from '@/api/hr/useHrSyncNow';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { useUsers } from '@/api/users/userApiHooks';
+import { impersonationApi } from '@/api/impersonation/impersonationApi';
+import { refreshSessionUser } from '@/api/auth/refreshSessionUser';
+import { BackButton } from '@/components/backButton/BackButton';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import useAuthStore from '@/store/AuthStore';
+import { User } from '@/types/user';
 import { useFilteredUsers } from './hooks/useFilteredUsers';
 import UserCard from './registry/UserCard';
 import { EMPTY_USER_FILTERS, UserFiltersModal, type UserFilters } from './UserFiltersModal';
 import styles from './UsersListPage.module.scss';
-import { usePermissions } from '../../../hooks/usePermissions';
-import { SECTIONS } from '../../../shared/permissions';
+import { usePermissions } from '@/hooks/usePermissions';
+import { SECTIONS } from '@/shared/permissions';
 import { UserRolesModal } from '../../admin/roles/UserRolesModal';
 
 const DEFAULT_PAGE_SIZE = 20;

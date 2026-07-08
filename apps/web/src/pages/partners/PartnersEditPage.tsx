@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
 import { AsyncBoundary } from '../../components/async/AsyncBoundary';
 import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { getChangedFields } from '../../helpers/getChangedFields';
 import { partnerUpdateFormMapper } from '../../helpers/mappers/partnerUpdateFormMapper';
 import { partnerUploadFormMapper, type CompanyApiResponse } from '../../helpers/mappers/partnerUploadFormMapper';
@@ -187,7 +187,7 @@ export default function PartnerEditPage() {
                 onUploadByInn={handleUploadByInn}
                 isLoadingInn={isLoadingInn}
                 formMode='edit'
-                statusDisplayName={headerLabels.statusName ?? '—'}
+                statusDisplayName={headerLabels.statusName ?? '-'}
               />
             </Form>
           </div>
@@ -226,7 +226,7 @@ export default function PartnerEditPage() {
           </Button>,
         ]}
       >
-        Контрагент восстановлен из архива. У него нет активных оценок поставщика — для включения в процесс
+        Контрагент восстановлен из архива. У него нет активных оценок поставщика - для включения в процесс
         оценки необходимо создать первичную оценку.
       </Modal>
     </AsyncBoundary>

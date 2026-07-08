@@ -239,6 +239,7 @@ export class SupplierEvaluationsService {
           weightedScore: supplierEvaluations.weightedScore,
           category: supplierEvaluations.category,
           evaluatedAt: supplierEvaluations.evaluatedAt,
+          comment: supplierEvaluations.comment,
         })
         .from(supplierEvaluations)
         .leftJoin(projects, eq(supplierEvaluations.projectId, projects.id))
@@ -283,7 +284,7 @@ export class SupplierEvaluationsService {
     const projectsMap = new Map<string, string>();
     const evaluations = evalRows.map((row) => {
       const pid = row.projectId ? String(row.projectId) : null;
-      const label = (row.projectName ?? row.projectCode ?? '').trim() || '—';
+      const label = (row.projectName ?? row.projectCode ?? '').trim() || '-';
       if (pid) projectsMap.set(pid, label);
       return {
         id: String(row.id),
@@ -293,6 +294,7 @@ export class SupplierEvaluationsService {
         weighted_score: this.roundScore(Number(row.weightedScore)),
         category: row.category,
         evaluated_at: this.isoDateOnly(row.evaluatedAt),
+        comment: row.comment?.trim() || null,
         scores: scoresByEval.get(String(row.id)) ?? [],
       };
     });

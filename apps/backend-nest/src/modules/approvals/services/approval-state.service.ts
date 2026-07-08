@@ -76,7 +76,7 @@ export class ApprovalStateService {
           statusOk = false;
         }
         // Повторный запуск разрешён только после отклонения/отмены: если последнее
-        // согласование завершилось успешно (approved/ratified) — карточка терминальна.
+        // согласование завершилось успешно (approved/ratified) - карточка терминальна.
         const lastDone = await this.db.db
           .select({ status: approvalProcesses.status })
           .from(approvalProcesses)
@@ -168,7 +168,7 @@ export class ApprovalStateService {
       can_resubmit: !!active && isInitiator && active.status === 'revision',
       my_pending_assignment: myPending,
       available_routes: availableRoutes,
-      // Архив: компактные summary завершённых процессов (детали — по запросу GET /processes/:id).
+      // Архив: компактные summary завершённых процессов (детали - по запросу GET /processes/:id).
       completed_processes: completed.map((c) => ({
         id: c.id,
         status: c.status,
@@ -265,7 +265,7 @@ export class ApprovalStateService {
       else if (isCurrent) state = 'current';
 
       // Плановые назначенцы из снапшота (используются, когда боевых назначений
-      // ещё нет — т.е. для будущих шагов).
+      // ещё нет - т.е. для будущих шагов).
       const snap = snapshotAssignees
         .filter((a) => a.processStepId === s.id)
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));

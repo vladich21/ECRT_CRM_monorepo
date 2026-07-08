@@ -6,7 +6,7 @@ import { RoleResponseDto } from '../dto/role-response.dto';
 
 /**
  * Read-only справочник ролей для use-case'ов «выбрать роль» (фильтр в списке
- * пользователей, мульти-селект и т.п.). CRUD ролей — в AdminRbacController.
+ * пользователей, мульти-селект и т.п.). CRUD ролей - в AdminRbacController.
  */
 @Injectable()
 export class RolesService {

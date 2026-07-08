@@ -2,17 +2,17 @@ import type { PatentListSortBy } from '@/api/patents/patentApi';
 
 import type { PatentAdvancedFilters, PatentFilterTab } from '../types/PatentsListPage.types';
 
-import { buildPatentsListNavSnapshot, parsePatentsListNavSnapshot } from './patentsListNavSnapshot';
+import { parsePatentsListPersistedUi, serializePatentsListPersistedUi } from './patentsListNavSnapshot';
 
 const PATENTS_LIST_UI_STORAGE_KEY = 'srn.patentsList.ui.v1';
 
-export type PatentsListPersistedUi = NonNullable<ReturnType<typeof parsePatentsListNavSnapshot>>;
+export type PatentsListPersistedUi = NonNullable<ReturnType<typeof parsePatentsListPersistedUi>>;
 
 export function loadPatentsListPersistedUi(): PatentsListPersistedUi | null {
   try {
     const raw = localStorage.getItem(PATENTS_LIST_UI_STORAGE_KEY);
     if (!raw) return null;
-    return parsePatentsListNavSnapshot(JSON.parse(raw) as unknown);
+    return parsePatentsListPersistedUi(JSON.parse(raw) as unknown);
   } catch {
     return null;
   }
@@ -28,7 +28,7 @@ export function savePatentsListPersistedUi(params: {
   sortOrder: 'asc' | 'desc';
 }): void {
   try {
-    const snapshot = buildPatentsListNavSnapshot(
+    const snapshot = serializePatentsListPersistedUi(
       params.searchQuery,
       params.activeTab,
       params.appliedFilters,

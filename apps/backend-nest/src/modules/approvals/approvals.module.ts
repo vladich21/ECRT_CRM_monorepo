@@ -19,7 +19,7 @@ import { PatentEntityHandler } from './entity-handlers/patent.handler';
 import { ProjectEntityHandler } from './entity-handlers/project.handler';
 
 /**
- * Модуль «Согласования документов». DatabaseModule и PermissionsModule — глобальные.
+ * Модуль «Согласования документов». DatabaseModule и PermissionsModule - глобальные.
  */
 @Module({
   controllers: [ApprovalRoutesController, ApprovalProcessesController, ApprovalTasksController],

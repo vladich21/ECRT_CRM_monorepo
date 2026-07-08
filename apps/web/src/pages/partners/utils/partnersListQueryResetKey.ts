@@ -2,7 +2,7 @@ import type { PartnerListSortBy } from '../../../api/partners/partnerApi';
 
 import type { PartnerFilters } from '../PartnerFiltersModal';
 
-/** Ключ параметров серверного запроса (без page). При изменении — сброс на 1-ю страницу. */
+/** Ключ параметров серверного запроса (без page). При изменении - сброс на 1-ю страницу. */
 export function buildPartnersListQueryResetKey(params: {
   debouncedSearch: string;
   appliedFilters: PartnerFilters;

@@ -39,7 +39,7 @@ interface SupplierCardProps {
   initialEvaluation?: InitialSupplierEvaluation | null;
   initialEvaluationLoading?: boolean;
   detailTo: string;
-  detailState?: Record<string, unknown>;
+  onOpenDetail: () => void;
 }
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -70,10 +70,10 @@ export default function SupplierCard({
   initialEvaluation,
   initialEvaluationLoading,
   detailTo,
-  detailState,
+  onOpenDetail,
 }: SupplierCardProps) {
   const statusName =
-    references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
+    references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '-';
   const listStatusName = partner.is_deleted ? 'Удален' : statusName;
   const listStatusClass = partner.is_deleted ? styles.tagDeleted : statusBadgeClass(statusName);
   const categoryName =
@@ -103,7 +103,10 @@ export default function SupplierCard({
   return (
     <Link
       to={detailTo}
-      state={detailState}
+      onClick={event => {
+        event.preventDefault();
+        onOpenDetail();
+      }}
       className={styles.card}
       {...(dangerStripe ? { 'data-danger-stripe': true as const } : {})}
     >
@@ -167,12 +170,12 @@ export default function SupplierCard({
           ) : null}
           <span className={styles.metaInn}>
             <BankOutlined style={{ fontSize: 11, marginRight: 4 }} />
-            ИНН {partner.inn || '—'}
+            ИНН {partner.inn || '-'}
           </span>
         </div>
         {typeNames.length > 0 && (
           <div className={`${styles.metaRow} ${styles.metaSubRow}`}>
-            <span>{typeNames.join(', ')}</span>
+            <span className={styles.metaTypeNames}>{typeNames.join(', ')}</span>
           </div>
         )}
         {partner.actual_address && (
@@ -200,7 +203,7 @@ export default function SupplierCard({
               {evaluationKpiLoading || (!hasProjectAvg && initialEvaluationLoading)
                 ? '…'
                 : avgScore == null
-                  ? '—'
+                  ? '-'
                   : formatEvaluationScoreDisplay(avgScore)}
             </span>
           </div>
@@ -223,7 +226,7 @@ export default function SupplierCard({
                 ) : evaluationKpi?.nextReevaluationIso ? (
                   <PartnerNextEvalDateTags nextIso={evaluationKpi.nextReevaluationIso} layout='registry' />
                 ) : (
-                  <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>—</span>
+                  <span className={`${styles.mutedTag} ${styles.tagNeutral}`}>-</span>
                 )}
               </span>
               {evaluationKpiDaysHint ? (

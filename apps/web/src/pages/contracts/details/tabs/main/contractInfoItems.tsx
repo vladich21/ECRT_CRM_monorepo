@@ -47,22 +47,22 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
     {
       key: 'number',
       label: 'Номер',
-      children: `№${contract.number || '—'}`,
+      children: `№${contract.number || '-'}`,
     },
     {
       key: 'cipher',
       label: 'Шифр',
-      children: <Text>{contract.cipher || '—'}</Text>,
+      children: <Text>{contract.cipher || '-'}</Text>,
     },
     {
       key: 'type',
       label: 'Тип',
-      children: typeName ? <span className={listStyles.cardCategory}>{typeName}</span> : '—',
+      children: typeName ? <span className={listStyles.cardCategory}>{typeName}</span> : '-',
     },
     {
       key: 'category',
       label: 'Категория',
-      children: categoryName ? <span className={listStyles.cardCategory}>{categoryName}</span> : '—',
+      children: categoryName ? <span className={listStyles.cardCategory}>{categoryName}</span> : '-',
     },
     {
       key: 'status',
@@ -81,7 +81,7 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
           {state.name}
         </span>
       ) : (
-        '—'
+        '-'
       ),
     },
     { key: 'signed', label: 'Подписан', children: formatDate(contract.date_signed) },

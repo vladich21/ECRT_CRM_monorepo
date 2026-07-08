@@ -3,13 +3,13 @@ import type { RegistryExportCellValue } from '../../../components/registryExport
 
 import { PARTNER_EXPORT_EXCEL_OPTIONS, type PartnerExportColumnKey } from './partnerExportColumns';
 
-export function exportPartnersToExcel(
+export async function exportPartnersToExcel(
   headers: string[],
   rows: RegistryExportCellValue[][],
   columnKeys: PartnerExportColumnKey[],
   fileNamePrefix = 'reestr_kontragentov',
-): void {
-  exportRegistryToExcel(
+): Promise<void> {
+  await exportRegistryToExcel(
     { ...PARTNER_EXPORT_EXCEL_OPTIONS, fileNamePrefix },
     headers,
     rows,

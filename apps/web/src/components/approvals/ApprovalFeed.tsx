@@ -131,7 +131,7 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
       node: (
         <FeedRow icon={decisionIcon(d.decision_type)}>
           <div>
-            <Typography.Text strong>{d.decided_by_name}</Typography.Text> — <Tag>{DECISION_LABELS[d.decision_type]}</Tag>
+            <Typography.Text strong>{d.decided_by_name}</Typography.Text> - <Tag>{DECISION_LABELS[d.decision_type]}</Tag>
             {d.delegated_to_name ? <Typography.Text> → {d.delegated_to_name}</Typography.Text> : null}{' '}
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(d.decided_at)}</Typography.Text>
           </div>
@@ -263,7 +263,7 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
           placeholder="Написать комментарий…"
         />
       ) : (
-        <Typography.Text type="secondary">Согласование завершено — обсуждение закрыто.</Typography.Text>
+        <Typography.Text type="secondary">Согласование завершено - обсуждение закрыто.</Typography.Text>
       )}
     </Space>
   );

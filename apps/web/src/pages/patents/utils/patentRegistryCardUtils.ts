@@ -21,7 +21,7 @@ function registrationDateToIso(value: string | Dayjs | null | undefined): string
 }
 
 export function formatPatentRegistryCardHeading(patent: PatentRegistryHeadingFields): string {
-  const num = (patent.registration_number ?? '').trim() || '—';
+  const num = (patent.registration_number ?? '').trim() || '-';
   const iso = registrationDateToIso(patent.registration_date ?? null);
   const date = formatContractSignedDateRu(iso);
   const name = (patent.name ?? '').trim();

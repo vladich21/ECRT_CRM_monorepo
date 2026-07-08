@@ -5,7 +5,7 @@ import { useContractRevisions } from '@/api/contractRevisions/contractRevisionsA
 import { useReferenceData } from '@/api/hooks/useReferences';
 import BasicTable from '@/components/basicTable/BasicTable';
 import { NotFound } from '@/components/notFound/NotFound';
-import { useNotification } from '@/customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { formatDate } from '@/helpers/formatDate';
 import { ContractRevision } from '@/types/contract';
 import { getRevisionColumnsData } from '../stages/data';

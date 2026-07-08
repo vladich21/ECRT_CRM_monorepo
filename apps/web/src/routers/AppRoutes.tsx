@@ -79,7 +79,7 @@ const HomePage = lazy(() => import('../pages/home/HomePage'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 const PatentsListPage = lazy(() => import('../pages/patents/PatentsListPage'));
 const ProfilePage = lazy(() => import('../pages/profile/Profile'));
-const DepartmentsListPage = lazy(() => import('../pages/referenceBooks/departaments/DepartmentsListPage'));
+const DepartmentsListPage = lazy(() => import('../pages/referenceBooks/departments/DepartmentsListPage'));
 const PositionsListPage = lazy(() => import('../pages/referenceBooks/positions/PositionsListPage'));
 const ProjectDetailsPage = lazy(() => import('../pages/referenceBooks/projects/ProjectDetailsPage'));
 const ProjectDetailsMainTab = lazy(() => import('../pages/referenceBooks/projects/tabs/ProjectDetailsMainTab'));

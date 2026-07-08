@@ -50,11 +50,15 @@ export const useContractsCategories = (): UseQueryResult<Reference[], Error> => 
   });
 };
 
-export const useContractById = (contractId: string): UseQueryResult<Contract, Error> => {
+export const useContractById = (
+  contractId: string,
+  initialData?: Contract,
+): UseQueryResult<Contract, Error> => {
   return useQuery<Contract, Error>({
     queryKey: contractQueryKeys.detail(contractId),
     queryFn: () => contractApi.getContractById(contractId),
     enabled: !!contractId,
+    initialData: initialData?.id === contractId ? initialData : undefined,
   });
 };
 

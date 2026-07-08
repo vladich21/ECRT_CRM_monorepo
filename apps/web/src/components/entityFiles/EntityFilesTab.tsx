@@ -49,7 +49,7 @@ import { usePatentById, useUpdatePatent } from '../../api/patents/patentApiHooks
 import { useReferenceData } from '../../api/hooks/useReferences';
 import { useOpenAntdDeleteConfirm } from '../../customhooks/confirmDelete';
 import { getApiErrorMessage } from '../../customhooks/confirmDelete/getApiErrorMessage';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { getNameById } from '../../helpers/getNameById';
 import { useCurrentSrmUserId } from '../../hooks/useCurrentSrmUserId';
 import type { MyFile } from '../../types/files';
@@ -99,7 +99,7 @@ function getFileIcon(filename: string): React.ReactNode {
 }
 
 function formatFileDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
+  if (!dateStr) return '-';
   return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
@@ -471,7 +471,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                 </>
               ) : (
                 <Text type='secondary' className={styles.requestParamsHint}>
-                  Параметры запроса не заданы — укажите через{' '}
+                  Параметры запроса не заданы - укажите через{' '}
                   <EditOutlined style={{ marginInline: 2 }} />
                 </Text>
               )}
@@ -492,7 +492,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
             {file.uploadedby_id && (
               <span className={styles.fileMetaRow}>
                 <UserOutlined style={{ fontSize: 12 }} />
-                {getNameById(file.uploadedby_id, referenceBooks?.users ?? []) || '—'}
+                {getNameById(file.uploadedby_id, referenceBooks?.users ?? []) || '-'}
               </span>
             )}
           </div>
@@ -589,7 +589,7 @@ export function EntityFilesTab({ entityType, patentFileSections, documentSection
                   <strong>{new Date(earliestMs).toLocaleDateString('ru-RU')}</strong>
                 </>
               ) : (
-                <>По запросам отмечено «требуется ответ» — при необходимости укажите срок</>
+                <>По запросам отмечено «требуется ответ» - при необходимости укажите срок</>
               )}
             </Text>
           </div>

@@ -192,7 +192,6 @@ export interface ApprovalRouteListItem {
   stepCount: number;
 }
 
-/** Локальное значение шага в конструкторе (key — для React-списка). */
 export interface RouteStepFormValue {
   key: string;
   name: string;

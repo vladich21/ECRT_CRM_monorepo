@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input, Spin } from 'antd';
 
-import { useDepartments } from '../../../api/departments/departmentsApiHooks';
-import { NotFound } from '../../../components/notFound/NotFound';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
+import { useDepartments } from '@/api/departments/departmentsApiHooks';
+import { NotFound } from '@/components/notFound/NotFound';
+import ReferenceBookListPage from '@/components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '@/components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '@/components/referenceBooks/ReferenceBookItemCard';
 import styles from './DepartmentsListPage.module.scss';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -84,7 +84,7 @@ export default function DepartmentsListPage() {
       ) : (
         <ReferenceBookCardList>
           {filtered.map(department => (
-            <ReferenceBookItemCard key={department.id} title={department.name || '—'} />
+            <ReferenceBookItemCard key={department.id} title={department.name || '-'} />
           ))}
         </ReferenceBookCardList>
       )}

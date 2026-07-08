@@ -1,12 +1,12 @@
 import { Button, Modal, Select } from 'antd';
 
-import { PATENT_GRANT_REGION_OPTIONS } from '../../../../api/patents/patentGrantRegions';
+import { PATENT_GRANT_REGION_OPTIONS } from '@/api/patents/patentGrantRegions';
 import {
   PATENT_GRANT_STATUS_FILTER_OPTIONS,
   type PatentGrantsRegistryAdvancedFilters,
-} from '../../../../api/patents/patentGrantsRegistryFilters.types';
-import type { PatentListFiltersSelectOptions } from '../../../patents/types/PatentsListPage.types';
-import patentListStyles from '../../../patents/PatentsListPage.module.scss';
+} from '@/api/patents/patentGrantsRegistryFilters.types';
+import type { PatentListFiltersSelectOptions } from '@/pages/patents/types/PatentsListPage.types';
+import patentListStyles from '@/pages/patents/PatentsListPage.module.scss';
 
 type Props = {
   open: boolean;

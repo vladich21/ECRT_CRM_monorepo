@@ -1,88 +1,67 @@
 import { DeleteOutlined, EditOutlined, UndoOutlined, UserOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useFilesByEntity } from '@/api/files/fileApiHooks';
-import { useReferenceData } from '@/api/hooks/useReferences';
-import { useComments } from '@/api/comments/commentApiHooks';
-import { useDeletePatent, usePatentById, useRestorePatent } from '@/api/patents/patentApiHooks';
-import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '@/components/pageLayout/DetailPageHeader';
-import { useConfirmByModal } from '@/customhooks/useConfirmByModal';
-import { useNotification } from '@/customhooks/useNotification';
-import { getEntityById } from '@/helpers/getEntityById';
 import {
   getInternalReturnBackLabel,
   resolveInternalReturnPath,
 } from '@/helpers/internalReturnNavigation';
-import { getNameById } from '@/helpers/getNameById';
-import { formatProjectChipLabel } from '@/pages/contracts/utils/contractDetailsUtils';
-import { formatPatentRegistryCardHeading } from '@/pages/patents/utils/patentRegistryCardUtils';
-import {
-  earliestPatentRequestsDeadlineFromFiles,
-  formatPatentStatusDisplayName,
-} from '@/pages/patents/utils/patentStatusDisplay';
 import listCardStyles from '@/pages/patents/PatentsListPage.module.scss';
-import styles from './PatentDetails.module.scss';
+import type { Patent } from '@/types/patent';
 import type { ActionType } from './types/PatentsListPage.types';
-import type { PatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
+import styles from './PatentDetails.module.scss';
+import { usePatentDetailsActions } from './details/hooks/usePatentDetailsActions';
+import { usePatentDetailsData } from './details/hooks/usePatentDetailsData';
 
 type PatentTab = 'main' | 'files' | 'comments' | 'grants';
+
 function getActiveTabFromPath(pathname: string): PatentTab {
   if (pathname.includes('/files')) return 'files';
   if (pathname.includes('/comments')) return 'comments';
   if (pathname.includes('/grants')) return 'grants';
   return 'main';
 }
+
 export default function PatentDetailsPage() {
   const { patentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const navState = location.state as {
     tab?: ActionType;
-    patentsListReturn?: PatentsListNavSnapshot;
+    patent?: Patent;
     from?: string;
   } | null;
   const returnTab = navState?.tab === 'deleted' ? 'deleted' : 'all';
-  const patentsListReturn = navState?.patentsListReturn;
   const from = navState?.from?.trim();
   const backPath = resolveInternalReturnPath(from, '/patents');
   const backLabel = getInternalReturnBackLabel(backPath, 'Реестр РИД');
-  const { contextHolder, showNotification } = useNotification();
-  const { data: patent, isLoading, isError } = usePatentById(patentId!);
-  const { data: patentFiles, isLoading: isPatentFilesLoading } = useFilesByEntity('patent', patentId!);
-  const { data: patentComments = [] } = useComments('patent', patentId);
-  const { data: patentGrants = [] } = usePatentGrants(patentId!);
-  const { data: referenceBooks } = useReferenceData([
-    'patentStatuses',
-    'patentIntellectProps',
-    'departments',
-    'users',
-    'projects',
-  ]);
-  const deleteMutation = useDeletePatent();
-  const restoreMutation = useRestorePatent();
+  const initialPatent =
+    navState?.patent != null && navState.patent.id === patentId ? navState.patent : undefined;
+
+  const {
+    patent,
+    patentComments,
+    patentGrants,
+    earliestRequestDeadline,
+    ipTypeName,
+    statusName,
+    responsibleName,
+    projectChipLabel,
+    headerStatusLabel,
+    title,
+    filesTabLabel,
+    isLoading,
+    isError,
+  } = usePatentDetailsData(patentId!, initialPatent);
+
+  const { contextHolder, handleEdit, handleBack, openDeleteModal, openRestoreModal } =
+    usePatentDetailsActions(patentId!, returnTab);
+
   const activeTab = getActiveTabFromPath(location.pathname);
-  const { handleOpenModal: openDeleteModal } = useConfirmByModal({
-    mutation: deleteMutation,
-    successMessage: 'Патент успешно удален',
-    errorMessage: 'Не удалось удалить патент',
-    redirectPath: '/patents',
-    getMutationProps: () => patentId!,
-    showNotification,
-  });
-  const { handleOpenModal: openRestoreModal } = useConfirmByModal({
-    mutation: restoreMutation,
-    successMessage: 'Патент успешно восстановлен',
-    errorMessage: 'Не удалось восстановить патент',
-    redirectPath: '/patents',
-    getMutationProps: () => patentId!,
-    showNotification,
-  });
-  const handleEdit = () => navigate(`/patents/${patentId}/edit`);
+
   const handleTabChange = (key: string) => {
     const basePath = `/patents/${patentId}`;
     const navOpts = { state: location.state };
@@ -100,49 +79,23 @@ export default function PatentDetailsPage() {
         navigate(basePath, navOpts);
     }
   };
-  const handleBack = () => {
-    if (backPath !== '/patents') {
-      navigate(backPath, navState != null ? { state: navState } : undefined);
-      return;
-    }
-    navigate('/patents', {
-      state: {
-        tab: returnTab,
-        ...(patentsListReturn ? { patentsListReturn } : {}),
-      },
-    });
-  };
 
-  const earliestRequestDeadline = useMemo(
-    () => earliestPatentRequestsDeadlineFromFiles(patentFiles),
-    [patentFiles],
-  );
-
-  if (isLoading) return <Loader />;
+  if (isLoading && !patent) return <Loader />;
   if (isError || !patent) return <NotFound errorMessage='Патент не найден' />;
-  const ipTypeName = getNameById(patent.intellectprop_id, referenceBooks?.patentIntellectProps) || '';
-  const statusName = getNameById(patent.status_id, referenceBooks?.patentStatuses) || '';
-  const responsibleName =
-    getNameById(patent.responsible_for_patenting_id, referenceBooks?.users ?? []) || '—';
-  const projectEntity = getEntityById(patent.project_id, referenceBooks?.projects ?? []);
-  const projectChipLabel = formatProjectChipLabel(projectEntity);
+
   const headerStatusBadge = patent.is_deleted
     ? { label: 'Удален' as const, variant: 'danger' as const }
     : {
-        label: formatPatentStatusDisplayName(statusName, earliestRequestDeadline) || 'Статус не указан',
+        label: headerStatusLabel,
         variant: detailHeaderVariantForPatentRidStatus(statusName, earliestRequestDeadline),
       };
-  const title = formatPatentRegistryCardHeading(patent);
-  const filesTabLabel =
-    isPatentFilesLoading && patentFiles === undefined
-      ? 'Файлы'
-      : `Файлы (${patentFiles?.length ?? 0})`;
+
   return (
     <DetailPageHeader
       title={title}
       titleWeight='medium'
       backLabel={backLabel}
-      onBack={handleBack}
+      onBack={() => handleBack(backPath)}
       statusBadge={headerStatusBadge}
       subtitle={
         <div className={styles.detailHeaderSubtitle}>

@@ -24,7 +24,7 @@ function scoringLevelMeta(level: string): { label: string; color: string } {
     case 'low':
       return { label: 'Низкий', color: '#ff4d4f' };
     default:
-      return { label: '—', color: '#bfbfbf' };
+      return { label: '-', color: '#bfbfbf' };
   }
 }
 
@@ -59,7 +59,7 @@ function PartnerScoringSidebarCard({ partnerId }: { partnerId: string }) {
   const { data, isLoading, isError } = usePartnerScoring(partnerId);
   const models = data?.scoringData ?? [];
 
-  // Прячем карточку, когда скоринг недоступен/пуст — чтобы не засорять сайдбар.
+  // Прячем карточку, когда скоринг недоступен/пуст - чтобы не засорять сайдбар.
   if (isError || (!isLoading && models.length === 0)) return null;
 
   return (
@@ -131,7 +131,7 @@ function ContactInfoClassificationRows({
 }) {
   const phoneLabels = getContactPhonesForDisplay(contact).map(formatContactPhoneLabel).filter(Boolean);
   const email = contact.email?.trim();
-  const name = contact.full_name?.trim() || '—';
+  const name = contact.full_name?.trim() || '-';
   const position = contact.position?.trim();
 
   return (
@@ -142,7 +142,7 @@ function ContactInfoClassificationRows({
       </div>
       <div className={styles.classRowBorder}>
         <span className={styles.classLabel}>Должность</span>
-        <span className={`${styles.classValue} ${styles.classValueMultiline}`}>{position || '—'}</span>
+        <span className={`${styles.classValue} ${styles.classValueMultiline}`}>{position || '-'}</span>
       </div>
       <div className={styles.classRowBorder}>
         <span className={styles.classLabel}>Телефон</span>
@@ -151,7 +151,7 @@ function ContactInfoClassificationRows({
             {phoneLabels.join('; ')}
           </span>
         ) : (
-          <span className={styles.classValue}>—</span>
+          <span className={styles.classValue}>-</span>
         )}
       </div>
       <div className={styles.classRowBorder}>
@@ -159,7 +159,7 @@ function ContactInfoClassificationRows({
         {email ? (
           <span className={`${styles.classValue} ${styles.classValueMultiline}`}>{email}</span>
         ) : (
-          <span className={styles.classValue}>—</span>
+          <span className={styles.classValue}>-</span>
         )}
       </div>
       <div className={styles.classRowBorder}>
@@ -169,7 +169,7 @@ function ContactInfoClassificationRows({
             Основной
           </Tag>
         ) : (
-          <span className={styles.classValue}>—</span>
+          <span className={styles.classValue}>-</span>
         )}
       </div>
       {extraCount > 0 ? (
@@ -208,7 +208,7 @@ interface DetailSidebarProps {
 }
 export default function DetailSidebar({ partner, references, contacts = [] }: DetailSidebarProps) {
   const statusName =
-    references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '—';
+    references?.partnerStatuses?.find(status => status.id === partner.status_id)?.name ?? '-';
   const displayStatusName = partner.is_deleted ? 'Удален' : statusName;
   const displayStatusSurface = partner.is_deleted
     ? SURFACE_BLOCKED
@@ -244,7 +244,7 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
             {partnerPhone ? (
               <span className={styles.classValue}>{partnerPhone}</span>
             ) : (
-              <span className={styles.classValue}>—</span>
+              <span className={styles.classValue}>-</span>
             )}
           </div>
           <div className={styles.classRowBorder}>
@@ -252,7 +252,7 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
             {partnerEmail ? (
               <span className={`${styles.classValue} ${styles.classValueMultiline}`}>{partnerEmail}</span>
             ) : (
-              <span className={styles.classValue}>—</span>
+              <span className={styles.classValue}>-</span>
             )}
           </div>
           <div className={styles.classRow}>
@@ -264,7 +264,7 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
                 </a>
               </span>
             ) : (
-              <span className={styles.classValue}>—</span>
+              <span className={styles.classValue}>-</span>
             )}
           </div>
         </div>
@@ -313,11 +313,11 @@ export default function DetailSidebar({ partner, references, contacts = [] }: De
           </div>
           <div className={styles.classRowBorder}>
             <span className={styles.classLabel}>Типы</span>
-            <span className={styles.classValue}>{typeNames.length > 0 ? typeNames.join(', ') : '—'}</span>
+            <span className={styles.classValue}>{typeNames.length > 0 ? typeNames.join(', ') : '-'}</span>
           </div>
           <div className={styles.classRow}>
             <span className={styles.classLabel}>Экон. группа</span>
-            <span className={styles.classValue}>{econCategory || '—'}</span>
+            <span className={styles.classValue}>{econCategory || '-'}</span>
           </div>
         </div>
       </div>

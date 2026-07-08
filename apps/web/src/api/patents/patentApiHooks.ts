@@ -68,11 +68,15 @@ export function usePatentsList(
   });
 }
 
-export const usePatentById = (patentId: string): UseQueryResult<Patent, Error> => {
+export const usePatentById = (
+  patentId: string,
+  initialData?: Patent,
+): UseQueryResult<Patent, Error> => {
   return useQuery<Patent, Error>({
     queryKey: patentQueryKeys.detail(patentId),
     queryFn: () => patentApi.getPatentById(patentId),
     enabled: !!patentId,
+    initialData: initialData?.id === patentId ? initialData : undefined,
   });
 };
 

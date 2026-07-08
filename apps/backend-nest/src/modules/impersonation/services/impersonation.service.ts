@@ -28,7 +28,7 @@ export class ImpersonationService {
    * Контракт:
    *  - Запрещаем self-impersonate (target == admin).
    *  - Запрещаем входить в неактивного пользователя.
-   *  - Запрещаем «админ-под-админом»: если у цели есть admin.impersonate:edit — отказ.
+   *  - Запрещаем «админ-под-админом»: если у цели есть admin.impersonate:edit - отказ.
    *  - Запрещаем вложенную имперсонацию (если текущая сессия уже imperсонирует).
    */
   async start(
@@ -49,7 +49,7 @@ export class ImpersonationService {
     if (!target.is_active) throw new ForbiddenException('Учетная запись цели деактивирована');
 
     // Защита от «админ-под-админом»: если у цели есть право admin.impersonate:edit,
-    // войти под ней не даем — иначе можно эскалировать привилегии через цепочку.
+    // войти под ней не даем - иначе можно эскалировать привилегии через цепочку.
     const targetPerms = await this.permissions.getUserSectionPermissions(targetUserId);
     if (this.permissions.hasSectionPermission(targetPerms, SECTIONS.ADMIN_IMPERSONATE, 'edit')) {
       throw new ForbiddenException(
@@ -93,7 +93,7 @@ export class ImpersonationService {
 
     const admin = await this.users.findOne(adminId);
     if (!admin) {
-      // Очистим cookies — невалидное состояние
+      // Очистим cookies - невалидное состояние
       res.clearCookie(AUTH_COOKIE, { path: '/' });
       res.clearCookie(ADMIN_BACKUP_COOKIE, { path: '/' });
       throw new NotFoundException('Учетная запись администратора не найдена');
@@ -144,7 +144,7 @@ export class ImpersonationService {
 
   /**
    * Утилита: дочитать `req.cookies.admin_token` пытаясь верифицировать.
-   * Используется только если потребуется fallback — сейчас не нужно.
+   * Используется только если потребуется fallback - сейчас не нужно.
    */
   async tryDecodeBackup(req: Request): Promise<string | null> {
     const token = req.cookies?.[ADMIN_BACKUP_COOKIE];

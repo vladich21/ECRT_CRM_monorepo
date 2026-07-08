@@ -53,7 +53,7 @@ export function PartnerHeaderAvgScoreTag({
 
 /**
  * Дата следующей оценки: `Tag` + скобки (шапка / по умолчанию).
- * `layout="registry"` — карточка в реестре: одна строка, без рамки у даты.
+ * `layout="registry"` - карточка в реестре: одна строка, без рамки у даты.
  */
 export function PartnerNextEvalDateTags({
   nextIso,

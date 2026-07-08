@@ -4,7 +4,7 @@ import { App, Button, Checkbox, Form, Input, List, Space, Spin, Tooltip, Typogra
 
 import { useResubmitProcess } from '@/api/approvals/approvalApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
-import { useModalStore, type ModalState } from '@/store/ModalStore';
+import { useModalStore, type ModalShellProps } from '@/store/ModalStore';
 import type { MyFile } from '@/types/files';
 
 import { BaseModal } from '../BaseModal';
@@ -22,9 +22,16 @@ function extractError(e: unknown): string | undefined {
  * убрать или заменить новым файлом; можно добавить новые. На submit → multipart
  * resubmit (keepFileIds + файлы), backend создаёт версию N+1, старую архивирует.
  */
-export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modalData }) => {
+type ApprovalResubmitModalData = {
+  processId: string;
+  entityType: string;
+  entityId: string;
+};
+
+export const ApprovalResubmitModal: React.FC<ModalShellProps> = ({ open, title, modalData: rawModalData }) => {
+  const modalData = (rawModalData ?? {}) as ApprovalResubmitModalData;
   const { message } = App.useApp();
-  const closeModal = useModalStore((s) => s.closeModal);
+  const closeModal = useModalStore(s => s.closeModal);
 
   const processId: string = modalData?.processId;
   const entityType: string = modalData?.entityType;
@@ -34,7 +41,7 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
   const resubmit = useResubmitProcess();
 
   const currentDocs = useMemo(
-    () => (allFiles as MyFile[]).filter((f) => f.document_section === SECTION && (f.is_current ?? true)),
+    () => (allFiles as MyFile[]).filter(f => f.document_section === SECTION && (f.is_current ?? true)),
     [allFiles],
   );
 
@@ -58,11 +65,18 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
 
   const handleSubmit = async () => {
     // Переносим: отмеченные оставленными файлы, КРОМЕ заменяемых (их перезапишут загрузки).
-    const keepFileIds = currentDocs.filter((f) => isKept(f.id) && !replacements[f.id]).map((f) => f.id);
+    const keepFileIds = currentDocs.filter(f => isKept(f.id) && !replacements[f.id]).map(f => f.id);
     const files: File[] = [...Object.values(replacements), ...additions];
 
     try {
-      await resubmit.mutateAsync({ processId, comment: comment.trim() || undefined, keepFileIds, files, entityType, entityId });
+      await resubmit.mutateAsync({
+        processId,
+        comment: comment.trim() || undefined,
+        keepFileIds,
+        files,
+        entityType,
+        entityId,
+      });
       message.success('Отправлено повторно');
       handleClose();
     } catch (e) {
@@ -75,44 +89,44 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
       {isLoading ? (
         <Spin />
       ) : (
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
-          <Typography.Text type="secondary">
+        <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+          <Typography.Text type='secondary'>
             Документы перейдут в новую версию. Снимите отметку, чтобы убрать документ, или замените его новым файлом.
           </Typography.Text>
 
           {currentDocs.length > 0 ? (
             <List
-              size="small"
+              size='small'
               header={<Typography.Text strong>Текущие документы</Typography.Text>}
               dataSource={currentDocs}
-              renderItem={(f) => {
+              renderItem={f => {
                 const replaced = replacements[f.id];
                 const kept = isKept(f.id);
                 return (
                   <List.Item
                     actions={[
                       <Upload
-                        key="replace"
+                        key='replace'
                         showUploadList={false}
-                        beforeUpload={(file) => {
-                          setReplacements((p) => ({ ...p, [f.id]: file }));
-                          setKeep((p) => ({ ...p, [f.id]: true }));
+                        beforeUpload={file => {
+                          setReplacements(p => ({ ...p, [f.id]: file }));
+                          setKeep(p => ({ ...p, [f.id]: true }));
                           return false;
                         }}
                       >
-                        <Tooltip title="Заменить файл">
-                          <Button size="small" type="text" icon={<SwapOutlined />} />
+                        <Tooltip title='Заменить файл'>
+                          <Button size='small' type='text' icon={<SwapOutlined />} />
                         </Tooltip>
                       </Upload>,
                       ...(replaced
                         ? [
-                            <Tooltip key="undo" title="Отменить замену">
+                            <Tooltip key='undo' title='Отменить замену'>
                               <Button
-                                size="small"
-                                type="text"
+                                size='small'
+                                type='text'
                                 icon={<UndoOutlined />}
                                 onClick={() =>
-                                  setReplacements((p) => {
+                                  setReplacements(p => {
                                     const next = { ...p };
                                     delete next[f.id];
                                     return next;
@@ -126,10 +140,7 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
                   >
                     <List.Item.Meta
                       avatar={
-                        <Checkbox
-                          checked={kept}
-                          onChange={(e) => setKeep((p) => ({ ...p, [f.id]: e.target.checked }))}
-                        />
+                        <Checkbox checked={kept} onChange={e => setKeep(p => ({ ...p, [f.id]: e.target.checked }))} />
                       }
                       title={
                         <Space size={6}>
@@ -141,7 +152,7 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
                       }
                       description={
                         replaced ? (
-                          <Typography.Text type="success" style={{ fontSize: 12, wordBreak: 'break-word' }}>
+                          <Typography.Text type='success' style={{ fontSize: 12, wordBreak: 'break-word' }}>
                             → заменить на «{replaced.name}»
                           </Typography.Text>
                         ) : null
@@ -152,18 +163,18 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
               }}
             />
           ) : (
-            <Typography.Text type="secondary">Текущих документов нет</Typography.Text>
+            <Typography.Text type='secondary'>Текущих документов нет</Typography.Text>
           )}
 
-          <Form.Item label="Добавить новые документы" style={{ marginBottom: 0 }}>
+          <Form.Item label='Добавить новые документы' style={{ marginBottom: 0 }}>
             <Upload
               multiple
-              beforeUpload={(file) => {
-                setAdditions((p) => [...p, file]);
+              beforeUpload={file => {
+                setAdditions(p => [...p, file]);
                 return false;
               }}
               fileList={additions.map((file, i) => ({ uid: String(i), name: file.name, status: 'done' as const }))}
-              onRemove={(uf) => setAdditions((p) => p.filter((_, i) => String(i) !== uf.uid))}
+              onRemove={uf => setAdditions(p => p.filter((_, i) => String(i) !== uf.uid))}
             >
               <Button icon={<UploadOutlined />}>Выбрать файлы</Button>
             </Upload>
@@ -171,14 +182,14 @@ export const ApprovalResubmitModal: React.FC<ModalState> = ({ open, title, modal
 
           <Input.TextArea
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Комментарий (необязательно)"
+            onChange={e => setComment(e.target.value)}
+            placeholder='Комментарий (необязательно)'
             rows={2}
           />
 
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
             <Button onClick={handleClose}>Отмена</Button>
-            <Button type="primary" loading={resubmit.isPending} onClick={handleSubmit}>
+            <Button type='primary' loading={resubmit.isPending} onClick={handleSubmit}>
               Отправить повторно
             </Button>
           </Space>

@@ -1,4 +1,4 @@
-import type { PatentGrant } from '../../../../types/patent';
+import type { PatentGrant } from '@/types/patent';
 
 export function getPartnerDisplayLabel(
   partner?: { short_name?: string | null; name?: string | null } | null,
@@ -45,7 +45,7 @@ export function buildPatentSelectLabel(patent: {
 }): string {
   const reg = patent.registration_number?.trim();
   const name = patent.name?.trim();
-  if (reg && name) return `${reg} — ${name}`;
+  if (reg && name) return `${reg} - ${name}`;
   if (reg) return reg;
   if (name) return name;
   return 'РИД';

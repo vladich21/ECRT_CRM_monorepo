@@ -315,11 +315,11 @@ export class HrSyncService {
           );
         }
 
-        // patch — поля, приходящие из HR-системы. Используется и для UPDATE,
+        // patch - поля, приходящие из HR-системы. Используется и для UPDATE,
         // и для INSERT. КРИТИЧНО: тут НЕТ passwordHash / mustChangePassword /
-        // twoFactorEnabled / lastLoginAt — это локальные поля PMDB, HR ими
+        // twoFactorEnabled / lastLoginAt - это локальные поля PMDB, HR ими
         // не управляет. При UPDATE их трогать нельзя (затрутся пароли всех
-        // пользователей). При INSERT — БД проставит дефолты из schema.ts.
+        // пользователей). При INSERT - БД проставит дефолты из schema.ts.
         const patch = {
           externalUserId: row.id,
           personnelNumber: clip(row.tabel, MAX_PERSONNEL_LEN),

@@ -5,7 +5,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 import type { ActionType, SectionCode } from '../../shared/permissions';
 
 interface Props {
-  /** Один раздел или список. Если список — достаточно прав хотя бы на один. */
+  /** Один раздел или список. Если список - достаточно прав хотя бы на один. */
   section?: SectionCode | string;
   sections?: ReadonlyArray<SectionCode | string>;
   action?: ActionType;

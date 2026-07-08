@@ -10,7 +10,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:dev": "vite build",
-    "build:prod": "vite build"
+    "build:prod": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
@@ -26,7 +28,6 @@
     "react-router-dom": "^7.7.0",
     "recharts": "^3.8.1",
     "scss": "^0.2.4",
-    "xlsx": "^0.18.5",
     "xlsx-js-style": "^1.2.0",
     "zustand": "^5.0.7"
   },
@@ -45,6 +46,7 @@
     "sass": "^1.93.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }

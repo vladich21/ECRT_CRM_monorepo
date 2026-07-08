@@ -1,15 +1,15 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { useDeletePartnerCompetence, usePartnerCompetencies } from '../../../api/partners/partnerCompetenceApiHooks';
-import { NotFound } from '../../../components/notFound/NotFound';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
-import { useNotification } from '../../../customhooks/useNotification';
-import { COMPETENCE_TAG_BG, COMPETENCE_TAG_BORDER, COMPETENCE_TAG_TEXT } from '../../../constants/competenceDisplay';
-import { PartnerCompetence } from '../../../types/partner';
+import { useDeletePartnerCompetence, usePartnerCompetencies } from '@/api/partners/partnerCompetenceApiHooks';
+import { NotFound } from '@/components/notFound/NotFound';
+import ReferenceBookListPage from '@/components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '@/components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '@/components/referenceBooks/ReferenceBookItemCard';
+import { COMPETENCE_TAG_BG, COMPETENCE_TAG_BORDER, COMPETENCE_TAG_TEXT } from '@/constants/competenceDisplay';
+import { useOpenAntdDeleteConfirm } from '@/hooks/modals/confirmDelete';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { PartnerCompetence } from '@/types/partner';
 
 export default function PartnerCompetencesListPage() {
   const navigate = useNavigate();

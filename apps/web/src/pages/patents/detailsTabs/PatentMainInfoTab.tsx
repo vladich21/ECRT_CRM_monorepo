@@ -29,7 +29,7 @@ import { PatentRidFinanceCard } from './PatentRidFinanceCard';
 import styles from './PatentMainInfoTab.module.scss';
 
 function formatDate(dateString: string) {
-  return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '—';
+  return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '-';
 }
 function getInitials(name: string) {
   return name
@@ -104,7 +104,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{patent.registration_number || '—'}</div>
+                <div className={styles.kpiValue}>{patent.registration_number || '-'}</div>
                 <div className={styles.kpiLabel}>Рег. номер (ИЦ ЖТ)</div>
               </div>
               <div className={styles.kpiIcon}>
@@ -128,7 +128,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{patent.registration_number_cir || '—'}</div>
+                <div className={styles.kpiValue}>{patent.registration_number_cir || '-'}</div>
                 <div className={styles.kpiLabel}>Рег. номер (ЦИР)</div>
               </div>
               <div className={styles.kpiIcon}>
@@ -140,7 +140,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{patent.kd_number || '—'}</div>
+                <div className={styles.kpiValue}>{patent.kd_number || '-'}</div>
                 <div className={styles.kpiLabel}>Номер КД</div>
               </div>
               <div className={styles.kpiIcon}>
@@ -258,7 +258,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                     state={{ from: `/patents/${patent.id}` }}
                     className={`${styles.infoValue} ${styles.contractRegistryLink}`}
                   >
-                    {incomeContract.number?.trim() || incomeContract.name || '—'}
+                    {incomeContract.number?.trim() || incomeContract.name || '-'}
                   </Link>
                 ) : (
                   <span className={styles.infoValueMuted}>Не указан</span>
@@ -318,7 +318,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           <div className={styles.infoRows}>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Объект ИС</span>
-              <span className={ipTypeName ? styles.infoValue : styles.infoValueMuted}>{ipTypeName || '—'}</span>
+              <span className={ipTypeName ? styles.infoValue : styles.infoValueMuted}>{ipTypeName || '-'}</span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Статус</span>
@@ -331,17 +331,17 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
                     : styles.infoValueMuted
                 }
               >
-                {statusDisplay || '—'}
+                {statusDisplay || '-'}
               </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Отдел</span>
-              <span className={deptName ? styles.infoValue : styles.infoValueMuted}>{deptName || '—'}</span>
+              <span className={deptName ? styles.infoValue : styles.infoValueMuted}>{deptName || '-'}</span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Ответственный за патентование</span>
               <span className={responsibleName ? styles.infoValue : styles.infoValueMuted}>
-                {responsibleName || '—'}
+                {responsibleName || '-'}
               </span>
             </div>
           </div>

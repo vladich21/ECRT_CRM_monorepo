@@ -32,7 +32,7 @@ export const getColumnsData = (
     width: 280,
     render: (name: string) => {
       const trimmed = name?.trim() ?? '';
-      if (!trimmed) return '—';
+      if (!trimmed) return '-';
       const display = trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
       return (
         <div style={{ fontWeight: 'bold' }} title={trimmed}>

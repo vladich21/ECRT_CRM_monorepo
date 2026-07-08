@@ -7,7 +7,7 @@ import type { ApprovalEntity, EntityHandler } from './entity-handler.interface';
 
 /**
  * Контрагенты. Статус авто-деривируется (applyDerivedPartnerStatus),
- * поэтому согласование статус НЕ меняет (v1). Владелец — created_by.
+ * поэтому согласование статус НЕ меняет (v1). Владелец - created_by.
  */
 @Injectable()
 export class PartnerEntityHandler implements EntityHandler {
@@ -33,7 +33,7 @@ export class PartnerEntityHandler implements EntityHandler {
   }
 
   assertCanStartByStatus(): void {
-    // Статус не управляется согласованием — precondition нет.
+    // Статус не управляется согласованием - precondition нет.
   }
 
   resolveOwnerId(entity: ApprovalEntity): string | null {

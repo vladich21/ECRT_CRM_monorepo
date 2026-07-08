@@ -3,12 +3,12 @@ import { SaveOutlined, TagOutlined } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Modal, Row } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { usePartnerCompetenceById, useUpdatePartnerCompetence } from '../../../api/partners/partnerCompetenceApiHooks';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { partnerCompetenceUpdateFormMapper } from '../../../helpers/mappers/competenceUpdateFormMapper';
+import { usePartnerCompetenceById, useUpdatePartnerCompetence } from '@/api/partners/partnerCompetenceApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { getChangedFields } from '@/helpers/getChangedFields';
+import { partnerCompetenceUpdateFormMapper } from '@/helpers/mappers/competenceUpdateFormMapper';
 import styles from './CompetencyFormPage.module.scss';
 
 export default function PartnerCompetenceEditPage() {

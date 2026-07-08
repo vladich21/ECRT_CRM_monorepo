@@ -15,8 +15,8 @@ const REMINDER_WINDOW_MS = 24 * HOUR_MS;
 
 /**
  * Фоновый SLA-шедулер (§5.1): ежечасно шлёт напоминание за 24ч до дедлайна и
- * уведомление о просрочке. Идемпотентность — через reminder_sent_at / overdue_notified_at.
- * Метку ставим только при sent|skipped; при transient-сбое (failed) — оставляем NULL.
+ * уведомление о просрочке. Идемпотентность - через reminder_sent_at / overdue_notified_at.
+ * Метку ставим только при sent|skipped; при transient-сбое (failed) - оставляем NULL.
  * Паттерн как у hr-sync-scheduler (OnModuleInit + setInterval + lock).
  */
 @Injectable()
@@ -107,8 +107,8 @@ export class ApprovalSlaSchedulerService implements OnModuleInit, OnModuleDestro
       if (!r.timeLimitHours || !r.createdAt) continue;
       const deadline = new Date(r.createdAt).getTime() + r.timeLimitHours * HOUR_MS;
       const ctx: ApprovalMailContext = {
-        routeName: r.routeName ?? '—',
-        stepName: r.stepName ?? '—',
+        routeName: r.routeName ?? '-',
+        stepName: r.stepName ?? '-',
         initiatorName: '',
         entityType: r.entityType,
         entityId: r.entityId,

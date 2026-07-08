@@ -24,7 +24,7 @@ export class ContractStatesService {
 
   /**
    * Порядок жизненного цикла: черновик → согласование → … → подписан → закрыт.
-   * Неизвестные состояния — в конце списка.
+   * Неизвестные состояния - в конце списка.
    */
   private contractStateLifecycleRank(codeRaw: string, nameRaw: string): number {
     const code = codeRaw.trim().toLowerCase();

@@ -35,9 +35,9 @@ interface UsePermissionsResult {
 /**
  * Хук-обертка над useAuthStore для проверки прав.
  *
- * Источник правды — useAuthStore.sectionPermissions (после GET /auth/me).
+ * Источник правды - useAuthStore.sectionPermissions (после GET /auth/me).
  * До заполнения стора приватная зона не рендерится (см. PrivateRoute). JWT
- * хранит snapshot; бэкенд при mismatch pv перевыпускает cookie — актуальные
+ * хранит snapshot; бэкенд при mismatch pv перевыпускает cookie - актуальные
  * права приходят при следующем вызове refreshSessionUser().
  */
 export function usePermissions(): UsePermissionsResult {
