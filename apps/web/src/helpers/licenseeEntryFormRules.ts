@@ -16,7 +16,7 @@ export const LICENSEE_NAME_REQUIRED_MESSAGE =
   'Укажите название или выберите контрагента из справочника';
 
 export const LICENSEE_INN_ONLY_MESSAGE =
-  'Нельзя указать только ИНН — укажите название или выберите контрагента из справочника';
+  'Нельзя указать только ИНН - укажите название или выберите контрагента из справочника';
 
 export function buildLicenseeNameFormRules(listName: string, fieldIndex: number): Rule[] {
   return [

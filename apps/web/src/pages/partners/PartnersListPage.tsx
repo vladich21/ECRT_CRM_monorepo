@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CloudSyncOutlined,
   ExportOutlined,
@@ -10,21 +10,24 @@ import {
 import { Button, Input, Pagination, Select, Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { BackButton } from '../../components/backButton/BackButton';
-import { NotFound } from '../../components/notFound/NotFound';
-import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '../../hooks/useListScrollRestoration';
-import { useServerPaginationClamp, useResetPageWhenListQueryChanges, useServerTablePagination } from '../../hooks/useServerTablePagination';
-import { useNotification } from '../../customhooks/useNotification';
-import type { PartnerListSortBy } from '../../api/partners/partnerApi';
-import { usePartnerSyncNow, usePartnerSyncStatus } from '../../api/partners/partnerApiHooks';
-import type { Partner } from '../../types/partner';
+import type { PartnerListSortBy } from '@/api/partners/partnerApi';
+import { usePartnerSyncNow, usePartnerSyncStatus } from '@/api/partners/partnerApiHooks';
+import { BackButton } from '@/components/backButton/BackButton';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { openFromRegistry, useRegistryScroll } from '@/hooks/registryScroll';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import {
+  useResetPageWhenListQueryChanges,
+  useServerPaginationClamp,
+  useServerTablePagination,
+} from '@/hooks/useServerTablePagination';
+import type { Partner } from '@/types/partner';
 import { PartnerFiltersModal } from './PartnerFiltersModal';
 import { PartnerExportModal } from './components/export/PartnerExportModal';
 import { buildPartnersApiFilters } from './utils/buildPartnersApiFilters';
 import { toPartnerListDisplayPartner } from './utils/partnersListDisplayUtils';
-import { buildPartnersListNavSnapshot } from './utils/partnersListNavSnapshot';
 import { buildPartnersListQueryResetKey } from './utils/partnersListQueryResetKey';
 import {
   isPartnerCreateRestricted,
@@ -50,6 +53,11 @@ const SORT_OPTIONS: { value: PartnerListSortBy; label: string }[] = [
 export default function PartnersListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    void import('./PartnerDetailsPage');
+  }, []);
+
   const { contextHolder, showNotification } = useNotification();
   const partnerSyncNowMutation = usePartnerSyncNow();
   const { data: partnerSyncStatus } = usePartnerSyncStatus();
@@ -80,7 +88,7 @@ export default function PartnersListPage() {
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination({ defaultPageSize: 20 });
 
-  const { restoreToken, pendingScrollY } = usePartnersListUiState(
+  const { restoreToken, flushPersist } = usePartnersListUiState(
     location,
     navigate,
     { setSearchQuery, flushDebouncedSearch },
@@ -125,25 +133,22 @@ export default function PartnersListPage() {
 
   const paginationConfig = getPaginationConfig(total);
 
-  const buildPartnerDetailLinkState = (partner: Partner) => ({
-    from: 'partners-list',
-    deletionScope: partner.is_deleted ? ('deleted' as const) : undefined,
-    partnersListReturn: buildPartnersListNavSnapshot(
-      searchQuery,
-      appliedFilters,
-      page,
-      pageSize,
-      sortBy,
-      sortOrder,
-      getListScrollY(),
-    ),
-  });
+  const openPartnerDetail = (partner: Partner) => {
+    flushPersist();
+    openFromRegistry(location, navigate, `/partners/${partner.id}`, {
+      state: {
+        from: 'partners-list',
+        partner,
+        deletionScope: partner.is_deleted ? ('deleted' as const) : undefined,
+      },
+    });
+  };
 
-  const kpiStillLoading = partnerEvalKpiQueries.some(query => query.isFetching || query.isPending);
-  const isListReady = !isInitialLoad && !isFetching && !kpiStillLoading;
-  usePersistListScrollY(location.pathname);
-  useListScrollRestoration({ pendingScrollY, isListReady, listKey: location.pathname });
-  useScrollToTopOnPageChange(page, restoreToken);
+  useRegistryScroll({
+    isListReady: !isInitialLoad && !isFetching,
+    page,
+    restoreToken,
+  });
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
@@ -299,7 +304,7 @@ export default function PartnersListPage() {
                 initialEvaluation={partnerInitialEvalQueries[index]?.data}
                 initialEvaluationLoading={Boolean(partnerInitialEvalQueries[index]?.isPending)}
                 detailTo={`/partners/${partner.id}`}
-                detailState={buildPartnerDetailLinkState(partner)}
+                onOpenDetail={() => openPartnerDetail(partner)}
               />
             ))
           )}

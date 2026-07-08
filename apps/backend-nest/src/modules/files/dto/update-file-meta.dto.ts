@@ -5,7 +5,7 @@ export class UpdateFileMetaDto {
   @IsBoolean()
   responseRequired?: boolean;
 
-  /** ISO-дата срока или null — сбросить */
+  /** ISO-дата срока или null - сбросить */
   @IsOptional()
   @IsString()
   responseDeadline?: string | null;

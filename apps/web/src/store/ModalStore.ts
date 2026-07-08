@@ -21,9 +21,9 @@ export interface ModalState {
   type: ModalType;
   okText?: string;
   cancelText?: string;
-  onConfirm: (data?: any) => void | Promise<void>;
-  onCancel: (data?: any) => void;
-  modalData?: any;
+  onConfirm: (data?: unknown) => void | Promise<void>;
+  onCancel: (data?: unknown) => void;
+  modalData?: unknown;
   loading?: boolean;
   content?: ReactNode;
   confirmAppearance?: ConfirmModalAppearance;
@@ -32,6 +32,37 @@ export interface ModalState {
   closeModal: () => void;
   setLoading: (loading: boolean) => void;
   resetModal: () => void;
+}
+
+/** Props spread from the store into the active modal shell component. */
+export type ModalShellProps = Omit<ModalState, 'openModal' | 'closeModal' | 'setLoading' | 'resetModal'>;
+
+export function pickModalShellProps(state: ModalState): ModalShellProps {
+  const {
+    openModal: _openModal,
+    closeModal: _closeModal,
+    setLoading: _setLoading,
+    resetModal: _resetModal,
+    ...shell
+  } = state;
+  return shell;
+}
+
+/** Flat selector for `useShallow` — nested objects break shallow compare and cause render loops. */
+export function selectGlobalModalView(state: ModalState) {
+  return {
+    open: state.open,
+    type: state.type,
+    title: state.title,
+    okText: state.okText,
+    cancelText: state.cancelText,
+    onConfirm: state.onConfirm,
+    onCancel: state.onCancel,
+    modalData: state.modalData,
+    loading: state.loading,
+    content: state.content,
+    confirmAppearance: state.confirmAppearance,
+  };
 }
 
 export interface ModalConfig {

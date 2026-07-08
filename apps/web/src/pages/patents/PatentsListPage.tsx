@@ -1,25 +1,21 @@
 import { ExportOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Pagination, Spin } from 'antd';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '@/api/hooks/useReferences';
-import { usePatentsLinkedContractIds, usePatentsList } from '@/api/patents/patentApiHooks';
 import { BackButton } from '@/components/backButton/BackButton';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
-import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '@/hooks/useListScrollRestoration';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { openFromRegistry, useRegistryScroll } from '@/hooks/registryScroll';
 import {
   useResetPageWhenListQueryChanges,
   useServerPaginationClamp,
   useServerTablePagination,
 } from '@/hooks/useServerTablePagination';
 import type { Patent } from '@/types/patent';
-import type { ReferenceDataForPatents } from './types/data';
 import { usePatentListFilters } from './hooks/usePatentListFilters';
-import { usePatentsListContractIdsForFilter } from './hooks/usePatentsListContractIdsForFilter';
-import { usePatentsListSearchDebounce } from './hooks/usePatentsListSearchDebounce';
-import { usePatentsListSelectOptions } from './hooks/usePatentsListSelectOptions';
+import { usePatentsListData } from './hooks/usePatentsListData';
 import { usePatentsListServerFilters } from './hooks/usePatentsListServerFilters';
 import { usePatentsListUiState } from './hooks/usePatentsListUiState';
 import { PatentCard } from './components/cards/PatentCard';
@@ -27,13 +23,19 @@ import { PatentFiltersModal } from './components/filters/PatentFiltersModal';
 import { PatentExportModal } from './components/export/PatentExportModal';
 import { PatentsListFiltersBar } from './components/filters/PatentsListFiltersBar';
 import styles from './PatentsListPage.module.scss';
-import { buildPatentsListNavSnapshot } from './utils/patentsListNavSnapshot';
 import { buildPatentsListQueryResetKey } from './utils/patentsListQueryResetKey';
 import { patentListTabToDeletedScope } from './utils/patentListTabScope';
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 export default function PatentsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    void import('./PatentDetailsPage');
+  }, []);
+
   const {
     searchQuery,
     setSearchQuery,
@@ -57,14 +59,14 @@ export default function PatentsListPage() {
     restoreListSorting,
   } = usePatentListFilters();
 
-  const { debouncedSearch, alignDebouncedWithQuery } = usePatentsListSearchDebounce(searchQuery);
+  const [debouncedSearch, alignDebouncedWithQuery] = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
 
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  const { restoreToken, pendingScrollY } = usePatentsListUiState(
+  const { restoreToken, flushPersist } = usePatentsListUiState(
     location,
     navigate,
     { setSearchQuery, alignDebouncedWithQuery },
@@ -91,37 +93,23 @@ export default function PatentsListPage() {
   const serverFilters = usePatentsListServerFilters(debouncedSearch, appliedFilters, sortBy, sortOrder);
 
   const {
-    data: listData,
-    isLoading,
+    patents,
+    total,
+    tabCounts,
+    refs,
+    selectOptions,
+    isInitialLoad,
     isError,
     isFetching,
-  } = usePatentsList(deletedScope, page, pageSize, serverFilters);
-
-  const { data: patentLinkedContractIds = [] } = usePatentsLinkedContractIds(deletedScope);
-
-  const {
-    data: referenceBooks,
-    isError: isRefsError,
-    isLoading: isRefsLoading,
-  } = useReferenceData(
-    [
-      'departments',
-      'users',
-      'contracts',
-      'projects',
-      'partners',
-      'contractCategories',
-      'patentStatuses',
-      'patentIntellectProps',
-      'patentAreas',
-    ],
-    { contractsIncludeInactive: true },
-  );
-
-  const refs = referenceBooks as ReferenceDataForPatents;
-  const patents = listData?.data ?? [];
-  const total = listData?.total ?? 0;
-  const tabCounts = listData?.tab_counts ?? { all: 0, deleted: 0 };
+    isRefsError,
+  } = usePatentsListData({
+    deletedScope,
+    page,
+    pageSize,
+    serverFilters,
+    appliedFilters,
+    draftFilters,
+  });
 
   useServerPaginationClamp({
     total,
@@ -131,42 +119,24 @@ export default function PatentsListPage() {
     handleTableChange,
   });
 
-  const contractIdsForPatentFilter = usePatentsListContractIdsForFilter(
-    patentLinkedContractIds,
-    appliedFilters.contractId,
-    draftFilters.contractId,
-  );
-
-  const selectOptions = usePatentsListSelectOptions(refs, contractIdsForPatentFilter);
-
-  const isInitialLoad = isRefsLoading || (isLoading && !listData);
   const paginationConfig = getPaginationConfig(total);
 
-  usePersistListScrollY(location.pathname);
-  useListScrollRestoration({
-    pendingScrollY,
+  useRegistryScroll({
     isListReady: !isInitialLoad && !isFetching,
-    listKey: location.pathname,
+    page,
+    restoreToken,
   });
-  useScrollToTopOnPageChange(page, restoreToken);
 
-  const handlePatentClick = (patent: Patent) =>
-    navigate(`/patents/${patent.id}`, {
+  const handlePatentClick = (patent: Patent) => {
+    flushPersist();
+    openFromRegistry(location, navigate, `/patents/${patent.id}`, {
       state: {
         from: 'patents-list',
         tab: activeTab,
-        patentsListReturn: buildPatentsListNavSnapshot(
-          searchQuery,
-          activeTab,
-          appliedFilters,
-          page,
-          pageSize,
-          sortBy,
-          sortOrder,
-          getListScrollY(),
-        ),
+        patent,
       },
     });
+  };
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;
@@ -254,7 +224,7 @@ export default function PatentsListPage() {
         <div className={styles.empty}>Нет результатов интеллектуальной деятельности</div>
       ) : (
         <>
-          <div className={`${styles.cardList}${isFetching && !isLoading ? ` ${styles.cardListDimmed}` : ''}`}>
+          <div className={`${styles.cardList}${isFetching && !isInitialLoad ? ` ${styles.cardListDimmed}` : ''}`}>
             {patents.map(patent => (
               <PatentCard key={patent.id} patent={patent} refs={refs} onClick={handlePatentClick} />
             ))}

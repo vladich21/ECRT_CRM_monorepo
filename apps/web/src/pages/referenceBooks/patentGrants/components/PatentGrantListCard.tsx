@@ -1,7 +1,7 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Tag, Tooltip } from 'antd';
 
-import type { PatentGrant } from '../../../../types/patent';
+import type { PatentGrant } from '@/types/patent';
 import { patentGrantStatusTagInlineStyle, patentGrantStatusTagPreset } from '../constants/patentGrantStatusStyles';
 import { buildPatentGrantRidDescription, formatPatentGrantIssueDateRu } from '../utils/patentGrantCardHelpers';
 import styles from './PatentGrantListCard.module.scss';
@@ -14,7 +14,7 @@ export type PatentGrantListCardProps = {
 };
 
 export function PatentGrantListCard({ grant, onClick, onEdit, onDelete }: PatentGrantListCardProps) {
-  const title = grant.grant_number || '—';
+  const title = grant.grant_number || '-';
   const aside = formatPatentGrantIssueDateRu(grant.grant_date) || undefined;
   const useTwoCol = Boolean(aside?.trim());
   const leftClassName = useTwoCol ? `${styles.left} ${styles.leftGrid}` : styles.left;

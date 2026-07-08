@@ -10,7 +10,7 @@ import {
 } from '../../../../api/partners/partnerContactApiHooks';
 import { useOpenAntdDeleteConfirm } from '../../../../customhooks/confirmDelete';
 import { useMutateByModal } from '../../../../customhooks/useMutateByModal';
-import { useNotification } from '../../../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { buildContactFormModalData } from '../../../../helpers/partnerContactPhoneHelpers';
 import { getEntityById } from '../../../../helpers/getEntityById';
 import type { PartnerContact } from '../../../../types/partner';

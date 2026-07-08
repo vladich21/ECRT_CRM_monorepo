@@ -4,7 +4,7 @@ import type {
   PatentGrantsRegistryAdvancedFilters,
   PatentGrantsRegistryServerFilters,
   PatentGrantsRegistrySortBy,
-} from '../../../../api/patents/patentGrantsRegistryFilters.types';
+} from '@/api/patents/patentGrantsRegistryFilters.types';
 
 export function usePatentGrantsRegistryServerFilters(
   debouncedSearch: string,

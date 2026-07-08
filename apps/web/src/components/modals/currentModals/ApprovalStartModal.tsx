@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { UploadOutlined } from '@ant-design/icons';
-import { App, Button, Form, Select, Space, Spin, Upload } from 'antd';
-import type { UploadFile } from 'antd';
 import { useQueryClient } from '@tanstack/react-query';
+import { App, Button, Form, Select, Space, Spin, Upload, type UploadFile } from 'antd';
 
 import { useApprovalStartInfo, useStartProcess } from '@/api/approvals/approvalApiHooks';
 import { fileApi } from '@/api/files/fileApi';
 import { fileQueryKeys } from '@/api/files/fileQueryKeys';
 import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
-import { useModalStore, type ModalState } from '@/store/ModalStore';
+import { useModalStore, type ModalShellProps } from '@/store/ModalStore';
 import type { ApprovalRouteRef } from '@/types/approval';
 
 import { BaseModal } from '../BaseModal';
@@ -18,10 +17,17 @@ function extractError(e: unknown): string | undefined {
   return Array.isArray(msg) ? msg.join(', ') : msg;
 }
 
-export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalData }) => {
+type ApprovalStartModalData = {
+  entityType: string;
+  entityId: string;
+  availableRoutes?: ApprovalRouteRef[];
+};
+
+export const ApprovalStartModal: React.FC<ModalShellProps> = ({ open, title, modalData: rawModalData }) => {
+  const modalData = (rawModalData ?? {}) as ApprovalStartModalData;
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const closeModal = useModalStore((s) => s.closeModal);
+  const closeModal = useModalStore(s => s.closeModal);
   const [routeId, setRouteId] = useState<string | undefined>();
   const [stepAssignees, setStepAssignees] = useState<Record<number, string[]>>({});
   const [taskAssignees, setTaskAssignees] = useState<Record<string, string>>({});
@@ -43,7 +49,7 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
   };
 
   const uploadAttachedFiles = async () => {
-    const files = fileList.map((f) => f.originFileObj as File).filter(Boolean);
+    const files = fileList.map(f => f.originFileObj as File).filter(Boolean);
     if (!files.length) return;
     const fd = new FormData();
     files.forEach((file, i) => fd.append(`file${i + 1}`, file));
@@ -56,8 +62,8 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
 
   const requiredFilled =
     !startInfo?.requires_selection ||
-    (startInfo.steps_requiring_selection.every((s) => (stepAssignees[s.step_order]?.length ?? 0) > 0) &&
-      startInfo.actions_requiring_selection.every((a) => !!taskAssignees[a.id]));
+    (startInfo.steps_requiring_selection.every(s => (stepAssignees[s.step_order]?.length ?? 0) > 0) &&
+      startInfo.actions_requiring_selection.every(a => !!taskAssignees[a.id]));
 
   const handleSubmit = async () => {
     if (!routeId) return;
@@ -78,7 +84,7 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
       try {
         await uploadAttachedFiles();
       } catch {
-        message.warning('Согласование запущено, но часть файлов не загрузилась — приложите их в панели');
+        message.warning('Согласование запущено, но часть файлов не загрузилась - приложите их в панели');
       }
       message.success('Отправлено на согласование');
       handleClose();
@@ -89,17 +95,17 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
 
   return (
     <BaseModal open={open} title={title} onCancel={handleClose} footer={null} width={560}>
-      <Form layout="vertical">
-        <Form.Item label="Маршрут согласования" required>
+      <Form layout='vertical'>
+        <Form.Item label='Маршрут согласования' required>
           <Select
             value={routeId}
-            onChange={(v) => {
+            onChange={v => {
               setRouteId(v);
               setStepAssignees({});
               setTaskAssignees({});
             }}
-            placeholder="Выберите маршрут"
-            options={routes.map((r) => ({
+            placeholder='Выберите маршрут'
+            options={routes.map(r => ({
               value: r.id,
               label: r.isDefault ? `${r.name} (по умолчанию)` : r.name,
             }))}
@@ -110,29 +116,29 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
 
         {routeId && startInfo?.requires_selection ? (
           <>
-            {startInfo.steps_requiring_selection.map((s) => (
+            {startInfo.steps_requiring_selection.map(s => (
               <Form.Item key={s.step_order} label={`Согласующие: ${s.name}`} required>
                 <EmployeeSelect
                   multiple
                   ordered
                   value={stepAssignees[s.step_order]}
-                  onChange={(v) => setStepAssignees((p) => ({ ...p, [s.step_order]: v as string[] }))}
-                  placeholder="Выберите согласующих"
+                  onChange={v => setStepAssignees(p => ({ ...p, [s.step_order]: v as string[] }))}
+                  placeholder='Выберите согласующих'
                 />
               </Form.Item>
             ))}
-            {startInfo.actions_requiring_selection.map((a) => (
+            {startInfo.actions_requiring_selection.map(a => (
               <Form.Item key={a.id} label={`Исполнитель задачи: ${a.title_template}`} required>
                 <EmployeeSelect
                   value={taskAssignees[a.id]}
-                  onChange={(v) => setTaskAssignees((p) => ({ ...p, [a.id]: v as string }))}
+                  onChange={v => setTaskAssignees(p => ({ ...p, [a.id]: v as string }))}
                 />
               </Form.Item>
             ))}
           </>
         ) : null}
 
-        <Form.Item label="Документы на согласование">
+        <Form.Item label='Документы на согласование'>
           <Upload
             multiple
             beforeUpload={() => false}
@@ -145,7 +151,12 @@ export const ApprovalStartModal: React.FC<ModalState> = ({ open, title, modalDat
 
         <Space style={{ width: '100%', justifyContent: 'flex-end', marginTop: 16 }}>
           <Button onClick={handleClose}>Отмена</Button>
-          <Button type="primary" disabled={!routeId || !requiredFilled} loading={start.isPending} onClick={handleSubmit}>
+          <Button
+            type='primary'
+            disabled={!routeId || !requiredFilled}
+            loading={start.isPending}
+            onClick={handleSubmit}
+          >
             Отправить
           </Button>
         </Space>

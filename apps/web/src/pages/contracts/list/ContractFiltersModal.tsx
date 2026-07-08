@@ -109,7 +109,7 @@ export function ContractFiltersModal({
               formatter={value => (value != null ? Number(value).toLocaleString('ru-RU') : '')}
               parser={parseThousandSeparatedNumber}
             />
-            <span className={styles.filtersModalAmountSep}>—</span>
+            <span className={styles.filtersModalAmountSep}>-</span>
             <InputNumber
               className={styles.filtersModalAmountInput}
               placeholder='До'

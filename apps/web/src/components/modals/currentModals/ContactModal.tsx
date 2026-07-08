@@ -2,15 +2,16 @@ import { useEffect } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Col, Form, FormInstance, Input, Row, Space, Switch } from 'antd';
 
+import { getChangedFields } from '@/helpers/getChangedFields';
 import {
   buildContactFormPayload,
   defaultContactPhoneFormRows,
   EMPTY_PARTNER_CONTACT_PHONE,
 } from '@/helpers/partnerContactPhoneHelpers';
-import { getChangedFields } from '../../../helpers/getChangedFields';
-import { ModalState } from '../../../store/ModalStore';
-import { BaseModal, BaseModalProps } from '../BaseModal';
+import type { PartnerContactPhone } from '@/types/partner';
+import type { ModalShellProps } from '@/store/ModalStore';
 
+import { BaseModal, BaseModalProps } from '../BaseModal';
 import styles from './ContactModal.module.scss';
 
 export interface PartnerContactFormModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
@@ -22,12 +23,21 @@ export interface PartnerContactFormModalProps extends Omit<BaseModalProps, 'foot
   onConfirm: (values: Record<string, unknown>) => void | Promise<void>;
 }
 
-export const PartnerContactFormModal: React.FC<ModalState> = ({
+type PartnerContactModalData = Record<string, unknown> & {
+  id?: string;
+  hasPrimaryContact?: boolean;
+  phones?: PartnerContactPhone[];
+  phone?: string;
+  phone_ext?: string;
+};
+
+export const PartnerContactFormModal: React.FC<ModalShellProps> = ({
   cancelText = 'Отмена',
   onConfirm,
-  modalData,
+  modalData: rawModalData,
   ...layoutProps
 }) => {
+  const modalData = rawModalData as PartnerContactModalData | undefined;
   const [form] = Form.useForm();
   const hasPrimaryContact = modalData?.hasPrimaryContact ?? false;
   const isEdit = !!modalData?.id;
@@ -46,9 +56,7 @@ export const PartnerContactFormModal: React.FC<ModalState> = ({
 
   const handleFinish = async (values: Record<string, unknown>) => {
     const payload = buildContactFormPayload(values);
-    const initialPayload = modalData
-      ? buildContactFormPayload({ ...modalData, hasPrimaryContact: undefined })
-      : null;
+    const initialPayload = modalData ? buildContactFormPayload({ ...modalData, hasPrimaryContact: undefined }) : null;
     await onConfirm(initialPayload ? getChangedFields(payload, initialPayload) : payload);
   };
 

@@ -1,13 +1,13 @@
 import { CalendarOutlined, RightOutlined, UserOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 
-import { mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
-import { Project } from '../../../types/referenceTypes';
+import { mutedTagStyle } from '@/constants/statusBadgeSurfaces';
+import { Project } from '@/types/referenceTypes';
 import styles from './ProjectsListPage.module.scss';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
 
 function formatDate(dateStr: string) {
-  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
+  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '-';
 }
 type Props = {
   project: Project;
@@ -20,8 +20,8 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
     !!project.is_deleted || project.status === 'cancelled' || project.status === 'completed';
   const periodStr =
     project.start_date || project.end_date
-      ? [project.start_date, project.end_date].filter(Boolean).map(formatDate).join(' — ')
-      : '—';
+      ? [project.start_date, project.end_date].filter(Boolean).map(formatDate).join(' - ')
+      : '-';
   return (
     <div
       className={styles.card}
@@ -29,7 +29,7 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
       onClick={() => onClick(project)}
     >
       <div className={styles.mainInfo}>    
-        <div className={styles.projectName}>{project.name || '—'}</div>
+        <div className={styles.projectName}>{project.name || '-'}</div>
         <div className={styles.metaRow}>
           <Tag bordered={false} style={mutedTagStyle(st, { fontSize: 12 })}>
             {st.label}

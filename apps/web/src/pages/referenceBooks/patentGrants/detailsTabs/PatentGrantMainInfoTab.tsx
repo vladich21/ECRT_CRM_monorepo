@@ -9,13 +9,13 @@ import {
 import { Tag } from 'antd';
 import { Link, useOutletContext } from 'react-router-dom';
 
-import { useContractById } from '../../../../api/contracts/contractApiHooks';
-import { useReferenceData } from '../../../../api/hooks/useReferences';
-import { usePatentById } from '../../../../api/patents/patentApiHooks';
-import { Loader } from '../../../../components/loader/Loader';
-import { NotFound } from '../../../../components/notFound/NotFound';
-import { getNameById } from '../../../../helpers/getNameById';
-import { PatentGrant } from '../../../../types/patent';
+import { useContractById } from '@/api/contracts/contractApiHooks';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { usePatentById } from '@/api/patents/patentApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import { getNameById } from '@/helpers/getNameById';
+import { PatentGrant } from '@/types/patent';
 import {
   patentGrantStatusTagInlineStyle,
   patentGrantStatusTagPreset,
@@ -34,7 +34,7 @@ import styles from './PatentGrantMainInfoTab.module.scss';
 const valueLink = `${styles.infoValue} ${styles.infoValueWide} ${styles.registryLink}`;
 
 function formatDate(dateString?: string) {
-  return dateString?.trim() ? new Date(dateString).toLocaleDateString('ru-RU') : '—';
+  return dateString?.trim() ? new Date(dateString).toLocaleDateString('ru-RU') : '-';
 }
 
 interface PatentGrantMainInfoProps {
@@ -87,7 +87,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
             <div className={styles.kpiContent}>
               <div>
                 <div className={patentGrant.grant_number ? styles.kpiValue : styles.kpiValueMuted}>
-                  {patentGrant.grant_number || '—'}
+                  {patentGrant.grant_number || '-'}
                 </div>
                 <div className={styles.kpiLabel}>Номер охранного документа</div>
               </div>
@@ -110,7 +110,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
                     {patentGrant.status}
                   </Tag>
                 ) : (
-                  <div className={styles.kpiValueMuted}>—</div>
+                  <div className={styles.kpiValueMuted}>-</div>
                 )}
                 <div className={styles.kpiLabel}>Статус</div>
               </div>
@@ -148,7 +148,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
             <div className={styles.kpiContent}>
               <div>
                 <div className={patentGrant.office?.trim() ? styles.kpiValue : styles.kpiValueMuted}>
-                  {patentGrant.office?.trim() || '—'}
+                  {patentGrant.office?.trim() || '-'}
                 </div>
                 <div className={styles.kpiLabel}>Ведомство</div>
               </div>
@@ -194,7 +194,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
                     state={{ from: grantBackPath }}
                     className={valueLink}
                   >
-                    {getNameById(projectId, referenceBooks.projects) || '—'}
+                    {getNameById(projectId, referenceBooks.projects) || '-'}
                   </Link>
                 ) : (
                   <span className={styles.infoValueMuted}>Не указан</span>
@@ -208,7 +208,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
                     state={{ from: grantBackPath }}
                     className={`${styles.infoValue} ${styles.registryLink}`}
                   >
-                    {getContractDisplayLabel(contract) || '—'}
+                    {getContractDisplayLabel(contract) || '-'}
                   </Link>
                 ) : (
                   <span className={styles.infoValueMuted}>Не указан</span>

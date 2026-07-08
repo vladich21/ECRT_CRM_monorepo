@@ -38,7 +38,7 @@ function RequisiteCell({
   copyable?: boolean;
 }) {
   const trimmed = value.trim();
-  const display = trimmed || '—';
+  const display = trimmed || '-';
 
   return (
     <div className={`${styles.requisiteCell} ${className ?? ''}`.trim()}>
@@ -88,11 +88,13 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
 
           <Descriptions.Item label='Компетенции'>
             {partner?.competence_ids && partner.competence_ids.length > 0 ? (
-              <Space wrap>
-                {partner.competence_ids.map(competenceId =>
-                  renderCompetenceTag(getEntityById(competenceId, referenceBooks?.competencies)),
-                )}
-              </Space>
+              <div className={styles.competencies}>
+                <Space wrap>
+                  {partner.competence_ids.map(competenceId =>
+                    renderCompetenceTag(getEntityById(competenceId, referenceBooks?.competencies)),
+                  )}
+                </Space>
+              </div>
             ) : (
               <Text type='secondary'>Компетенции не указаны</Text>
             )}

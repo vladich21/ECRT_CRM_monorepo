@@ -7,7 +7,7 @@ import type { ApprovalEntity, EntityHandler } from './entity-handler.interface';
 
 /**
  * Патенты/РИД. Статус авто-вычисляется из файлов/грантов (ensurePatentAutoStatus),
- * поэтому согласование статус НЕ меняет (v1). Владелец — ответственный → created_by.
+ * поэтому согласование статус НЕ меняет (v1). Владелец - ответственный → created_by.
  */
 @Injectable()
 export class PatentEntityHandler implements EntityHandler {

@@ -77,7 +77,6 @@ export interface PartnerContact {
   partner_id: string;
   full_name: string;
   position: string;
-  /** Первый телефон (legacy, для совместимости). */
   phone: string;
   phone_ext: string;
   phones: PartnerContactPhone[];

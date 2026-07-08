@@ -24,13 +24,12 @@ type ContractsAppliedSnapshot = {
 
 export type ContractsListNavSnapshot = ListReturnSnapshot<FilterTab, ContractsAppliedSnapshot>;
 
-export function buildContractsListNavSnapshot(
+export function serializeContractsListPersistedUi(
   searchQuery: string,
   activeTab: FilterTab,
   applied: AdvancedFilters,
   page: number,
   pageSize: number,
-  scrollY?: number,
 ): ContractsListNavSnapshot {
   return makeListReturnSnapshot({
     searchQuery,
@@ -48,17 +47,15 @@ export function buildContractsListNavSnapshot(
     },
     page,
     pageSize,
-    scrollY,
   });
 }
 
-export function parseContractsListNavSnapshot(raw: unknown): {
+export function parseContractsListPersistedUi(raw: unknown): {
   searchQuery: string;
   activeTab: FilterTab;
   appliedFilters: AdvancedFilters;
   page: number;
   pageSize: number;
-  scrollY?: number;
 } | null {
   const parsed = readListReturnSnapshot(raw, {
     defaultTab: 'all',
@@ -102,6 +99,5 @@ export function parseContractsListNavSnapshot(raw: unknown): {
     },
     page: parsed.page,
     pageSize: parsed.pageSize,
-    scrollY: parsed.scrollY,
   };
 }

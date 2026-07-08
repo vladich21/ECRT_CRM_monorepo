@@ -15,7 +15,7 @@ type Props = {
 function resolveEntryLabel(entry: LicenseeEntry, partners?: Reference[]): string {
   const inlineLabel = formatLicenseeEntryLabel(entry);
   if (inlineLabel) return inlineLabel;
-  if (!entry.partner_id) return '—';
+  if (!entry.partner_id) return '-';
   const partner = partners?.find(row => row.id === entry.partner_id);
   const fullName = String(partner?.name ?? '').trim();
   const shortName = String(partner?.short_name ?? '').trim();

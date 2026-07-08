@@ -75,9 +75,9 @@ export class FilesService {
    *
    * ТОЛЬКО ПОВЫШЕНИЕ (upgrade-only): загрузка файла partner-legal /
    * partner-questionnaire переводит флаг в true. Авто-понижения нет: флаг = true
-   * — легитимное состояние без файлов (массово выставлен импортом из ecrt/Тезиса
+   * - легитимное состояние без файлов (массово выставлен импортом из ecrt/Тезиса
    * напрямую, без записей в files), его нельзя затирать удалением файла.
-   * Снятие статуса — отдельным явным действием.
+   * Снятие статуса - отдельным явным действием.
    */
   private async syncPartnerVerificationFlags(entityType: string, entityId: string): Promise<void> {
     if (!isPartnerVerificationEntityType(entityType)) return;
@@ -94,7 +94,7 @@ export class FilesService {
     const partnerRow = partnerRows[0];
     if (!partnerRow) return;
 
-    // Уже true — ничего не делаем (не понижаем).
+    // Уже true - ничего не делаем (не понижаем).
     if (Boolean(partnerRow[flagColumn] ?? false)) return;
 
     const [{ value: fileCount } = { value: 0 }] = await this.db.db
@@ -108,7 +108,7 @@ export class FilesService {
       .set({ [flagColumn]: true, updatedAt: new Date() })
       .where(eq(partners.id, entityId));
 
-    // Пересчитать производный операционный статус (Активный/Потенциальный) — флаг
+    // Пересчитать производный операционный статус (Активный/Потенциальный) - флаг
     // влияет на «утвержден» и автодеривацию статуса инжиниринговых контрагентов.
     await this.partnersService.refreshPartnerDerivedStatus(entityId);
   }
@@ -135,7 +135,7 @@ export class FilesService {
 
     for (const file of uploadedFiles) {
       const fileType = file.mimetype || 'application/octet-stream';
-      // Сначала upsert — получаем id, затем пишем физически по непрозрачному пути id.
+      // Сначала upsert - получаем id, затем пишем физически по непрозрачному пути id.
       const fileId = await this.upsertFile(
         entityType,
         entityId,
@@ -148,7 +148,7 @@ export class FilesService {
         responseDeadline,
       );
 
-      // Хранение по id: uploads/files/{fileId}/{originalName} — нет коллизий одноимённых
+      // Хранение по id: uploads/files/{fileId}/{originalName} - нет коллизий одноимённых
       // файлов (разные секции/версии), реальное имя сохраняется для отдачи.
       writeFileToIdStorage(uploadPath, fileId, file.originalname, file.buffer);
 
@@ -323,7 +323,7 @@ export class FilesService {
     if (entityType === 'patent') {
       await syncPatentAutoStatus(this.db, entityId);
     }
-    // Деривация статусов проверки — upgrade-only, удаление файла флаг не понижает.
+    // Деривация статусов проверки - upgrade-only, удаление файла флаг не понижает.
     return row;
   }
 

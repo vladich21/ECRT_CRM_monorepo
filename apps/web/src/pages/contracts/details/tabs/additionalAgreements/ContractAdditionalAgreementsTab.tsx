@@ -30,7 +30,7 @@ const statusConfig = {
 };
 
 function formatRuDate(iso: string): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleDateString('ru-RU');
 }
 
@@ -83,7 +83,7 @@ export function ContractAdditionalAgreementsTab() {
         width: 200,
         render: (_, row) => (
           <span>
-            {formatRuDate(row.validFrom)} — {formatRuDate(row.validTo)}
+            {formatRuDate(row.validFrom)} - {formatRuDate(row.validTo)}
           </span>
         ),
       },

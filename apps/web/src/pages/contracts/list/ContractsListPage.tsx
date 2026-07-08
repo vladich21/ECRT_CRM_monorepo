@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -7,8 +7,8 @@ import { BackButton } from '@/components/backButton/BackButton';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useNotification } from '@/customhooks/useNotification';
-import { getListScrollY, useListScrollRestoration, usePersistListScrollY, useScrollToTopOnPageChange } from '@/hooks/useListScrollRestoration';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { openFromRegistry, useRegistryScroll } from '@/hooks/registryScroll';
 import {
   useResetPageWhenListQueryChanges,
   useServerPaginationClamp,
@@ -17,7 +17,6 @@ import {
 import { Contract } from '@/types/contract';
 import { useContractListFilters } from '../hooks/useContractListFilters';
 import { useContractsListUiState } from '../hooks/useContractsListUiState';
-import { buildContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
 import { useContractsListData } from './hooks/useContractsListData';
 import { buildContractsApiFilters } from './utils/buildContractsApiFilters';
 import { buildContractsListQueryResetKey } from './utils/contractsListQueryResetKey';
@@ -32,6 +31,10 @@ const SEARCH_DEBOUNCE_MS = 350;
 export default function ContractsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    void import('../details/ContractDetailsPage');
+  }, []);
   const { partnerId: partnerIdFromRoute } = useParams();
   const { contextHolder, showNotification } = useNotification();
   const {
@@ -59,15 +62,32 @@ export default function ContractsListPage() {
   const { page, pageSize, setPage, setPageSize, getPaginationConfig, handleTableChange, resetPage } =
     useServerTablePagination();
 
-  const { restoreToken, pendingScrollY } = useContractsListUiState(location, navigate, {
-    setSearchQuery,
-    flushDebouncedSearch,
-    setActiveTab,
-    setAppliedFilters,
-    setDraftFilters,
-    setPage,
-    setPageSize,
-  });
+  const persistedUi = useMemo(
+    () => ({
+      searchQuery,
+      activeTab,
+      appliedFilters,
+      page,
+      pageSize,
+    }),
+    [searchQuery, activeTab, appliedFilters, page, pageSize],
+  );
+
+  const { restoreToken, flushPersist } = useContractsListUiState(
+    location,
+    navigate,
+    {
+      setSearchQuery,
+      flushDebouncedSearch,
+      setActiveTab,
+      setAppliedFilters,
+      setDraftFilters,
+      setPage,
+      setPageSize,
+    },
+    persistedUi,
+    partnerIdFromRoute,
+  );
 
   const effectivePartnerId = partnerIdFromRoute ?? appliedFilters.partnerId ?? undefined;
 
@@ -118,27 +138,22 @@ export default function ContractsListPage() {
     }
   };
 
-  const handleContractClick = (contract: Contract) =>
-    navigate(`/contracts/${contract.id}`, {
+  const handleContractClick = (contract: Contract) => {
+    flushPersist();
+    openFromRegistry(location, navigate, `/contracts/${contract.id}`, {
       state: {
         contract,
         from: location.pathname,
         deletionScope: activeTab === 'deleted' ? ('deleted' as const) : undefined,
-        contractsListReturn: buildContractsListNavSnapshot(
-          searchQuery,
-          activeTab,
-          appliedFilters,
-          page,
-          pageSize,
-          getListScrollY(),
-        ),
       },
     });
+  };
 
-  const isListReady = !isInitialLoad && !isFetching;
-  usePersistListScrollY(location.pathname);
-  useListScrollRestoration({ pendingScrollY, isListReady, listKey: location.pathname });
-  useScrollToTopOnPageChange(page, restoreToken);
+  useRegistryScroll({
+    isListReady: !isInitialLoad && !isFetching,
+    page,
+    restoreToken,
+  });
 
   if (isRefsError || isError) {
     return <NotFound errorMessage='Не удалось выполнить запрос' />;

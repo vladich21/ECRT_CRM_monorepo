@@ -41,7 +41,7 @@ type Props = {
 export function PatentCard({ patent, refs, onClick }: Props) {
   const ipTypeName = getNameById(patent.intellectprop_id, refs?.patentIntellectProps) || '';
   const statusName = getNameById(patent.status_id, refs?.patentStatuses) || '';
-  const responsibleName = getNameById(patent.responsible_for_patenting_id, refs?.users ?? []) || '—';
+  const responsibleName = getNameById(patent.responsible_for_patenting_id, refs?.users ?? []) || '-';
   const deletedSurface = getPatentRecordSurface(true);
   const requestDeadlineDate = patent.requests_earliest_deadline
     ? new Date(patent.requests_earliest_deadline)
@@ -121,7 +121,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
               Охранные документы{grantsCount > 1 ? ` (${grantsCount})` : ''}
             </div>
             {visibleGrantsPreview.map((previewItem, index) => {
-              const grantTitle = previewItem.grant_number?.trim() || '—';
+              const grantTitle = previewItem.grant_number?.trim() || '-';
               const grantStatusLabel = previewItem.status?.trim() ?? '';
               const officeLabel = previewItem.office?.trim() ?? '';
               const issuedLabel = formatPatentGrantIssueDateRu(previewItem.grant_date);
@@ -131,7 +131,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
                 <div
                   key={`${patent.id}-grant-${index}`}
                   className={styles.grantMiniCard}
-                  title={tooltipParts.join(' — ')}
+                  title={tooltipParts.join(' - ')}
                 >
                   <div className={styles.grantMiniTitleRow}>
                     <div className={styles.grantMiniTitle}>{grantTitle}</div>
@@ -141,7 +141,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
                       className={styles.grantMiniMeta}
                       style={patentGrantStatusTagInlineStyle(grantStatusLabel)}
                     >
-                      {grantStatusLabel || '—'}
+                      {grantStatusLabel || '-'}
                     </Tag>
                   </div>
                   {officeLabel || issuedLabel ? (
@@ -158,7 +158,7 @@ export function PatentCard({ patent, refs, onClick }: Props) {
                 className={styles.grantMore}
                 title='Откройте карточку РИД и перейдите в раздел «Охранные документы», там полный список.'
               >
-                {grantsRemainderLabel(collapsedGrantsTotal)} — полный список в карточке РИД
+                {grantsRemainderLabel(collapsedGrantsTotal)} - полный список в карточке РИД
               </div>
             )}
           </div>

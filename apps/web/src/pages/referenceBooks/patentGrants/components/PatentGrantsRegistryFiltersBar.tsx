@@ -1,12 +1,12 @@
 import { SearchOutlined, SortAscendingOutlined } from '@ant-design/icons';
 import { Button, Input, Select } from 'antd';
 
-import type { PatentGrantRegistryListScope } from '../../../../api/patents/patentGrantsApi';
+import type { PatentGrantRegistryListScope } from '@/api/patents/patentGrantsApi';
 import {
   PATENT_GRANTS_REGISTRY_SORT_OPTIONS,
   type PatentGrantsRegistrySortBy,
-} from '../../../../api/patents/patentGrantsRegistryFilters.types';
-import patentListStyles from '../../../patents/PatentsListPage.module.scss';
+} from '@/api/patents/patentGrantsRegistryFilters.types';
+import patentListStyles from '@/pages/patents/PatentsListPage.module.scss';
 
 export const PATENT_GRANT_REGISTRY_TABS: { key: PatentGrantRegistryListScope; label: string }[] = [
   { key: 'all', label: 'Все' },

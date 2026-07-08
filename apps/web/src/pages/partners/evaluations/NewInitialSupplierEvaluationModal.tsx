@@ -6,7 +6,7 @@ import {
   useCreateInitialSupplierEvaluation,
   useSupplierEvaluationCriteria,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { readAxiosLikeError } from '../../../utils/readAxiosLikeError';
 import type { SupplierEvaluationCriterion } from '../../../types/supplierEvaluation';
 import {

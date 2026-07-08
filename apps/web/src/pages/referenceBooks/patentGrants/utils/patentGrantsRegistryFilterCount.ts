@@ -1,4 +1,4 @@
-import type { PatentGrantsRegistryAdvancedFilters } from '../../../../api/patents/patentGrantsRegistryFilters.types';
+import type { PatentGrantsRegistryAdvancedFilters } from '@/api/patents/patentGrantsRegistryFilters.types';
 
 export function countPatentGrantsRegistryFilters(filters: PatentGrantsRegistryAdvancedFilters): number {
   let n = 0;

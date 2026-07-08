@@ -141,7 +141,7 @@ export class ApprovalEngineService {
 
       // Новый процесс начинается с чистого набора документов: убираем прежние
       // документы согласования (от терминальных отменён/отклонён процессов), иначе
-      // они накапливаются и попадают в новый процесс. Физическое удаление — после коммита.
+      // они накапливаются и попадают в новый процесс. Физическое удаление - после коммита.
       const clearedFilePaths = await this.approvalFiles.clearEntityDocuments(
         tx,
         dto.entity_type,
@@ -309,7 +309,7 @@ export class ApprovalEngineService {
         comment: dto.comment ?? null,
       });
 
-      // Снимаем pending (кроме delegated — это делает handleDelegation).
+      // Снимаем pending (кроме delegated - это делает handleDelegation).
       if (dto.decision_type !== 'delegated') {
         await tx
           .update(approvalAssignments)
@@ -735,7 +735,7 @@ export class ApprovalEngineService {
           ),
         );
     }
-    // mode='add' — делегирующий остаётся pending (в makeDecision pending не сбрасывали).
+    // mode='add' - делегирующий остаётся pending (в makeDecision pending не сбрасывали).
     return { assigned: [delegatedTo] };
   }
 

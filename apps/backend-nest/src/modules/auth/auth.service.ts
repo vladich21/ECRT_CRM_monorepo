@@ -73,7 +73,7 @@ export class AuthService {
 
     if (user.mustChangePassword) return { mustChangePassword: true };
 
-    // Когда появится админ-панель — заменить на: if (user.twoFactorEnabled !== false)
+    // Когда появится админ-панель - заменить на: if (user.twoFactorEnabled !== false)
     await this.sendCode(user.id, user.email, '2fa');
     return { awaiting2FA: true, email: this.maskEmail(user.email) };
   }
@@ -189,7 +189,7 @@ export class AuthService {
 
   /**
    * Установка основной auth-cookie. impersonatedBy переносится в подписанный
-   * токен — присутствует там тогда и только тогда, когда сессия в режиме
+   * токен - присутствует там тогда и только тогда, когда сессия в режиме
    * имперсонации.
    */
   private async setAuthCookie(

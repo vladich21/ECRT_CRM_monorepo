@@ -1,6 +1,6 @@
 import type { NavigateFunction } from 'react-router-dom';
 
-import type { NotificationType } from '../useNotification';
+import type { NotificationType } from '@/hooks/notifications/useNotification';
 
 /**
  * Общие побочные эффекты после delete/update-мутации через модалку подтверждения:

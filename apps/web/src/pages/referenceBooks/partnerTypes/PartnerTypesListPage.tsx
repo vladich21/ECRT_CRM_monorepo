@@ -6,15 +6,15 @@ import {
   useDeletePartnerType,
   usePartnerTypes,
   useUpdatePartnerType,
-} from '../../../api/partners/partnerTypeApiHooks';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getNameById } from '../../../helpers/getNameById';
-import { PartnerType } from '../../../types/partner';
+} from '@/api/partners/partnerTypeApiHooks';
+import ReferenceBookListPage from '@/components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '@/components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '@/components/referenceBooks/ReferenceBookItemCard';
+import { getNameById } from '@/helpers/getNameById';
+import { useOpenAntdDeleteConfirm } from '@/hooks/modals/confirmDelete';
+import { useMutateByModal } from '@/hooks/modals/useMutateByModal';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { PartnerType } from '@/types/partner';
 
 const PartnerTypesListPage: React.FC = () => {
   const navigate = useNavigate();

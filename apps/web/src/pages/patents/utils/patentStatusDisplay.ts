@@ -15,7 +15,7 @@ export { isPatentRequestDeadlineOverdue } from '@/constants/patentRequestDeadlin
 
 /**
  * Человекочитаемый статус РИД: подмена подписей при неизменном справочнике (`ref_patent_statuses.name`).
- * Для статуса «запрос» — дата из файлов «Запросы»; без даты — плейсхолдер ДД.ММ.ГГГГ; «Выдан патент» → «Получен охранный документ».
+ * Для статуса «запрос» - дата из файлов «Запросы»; без даты - плейсхолдер ДД.ММ.ГГГГ; «Выдан патент» → «Получен охранный документ».
  */
 export function formatPatentStatusDisplayName(
   statusNameFromRef: string | undefined,

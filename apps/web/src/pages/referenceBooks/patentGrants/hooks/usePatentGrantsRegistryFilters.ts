@@ -4,7 +4,7 @@ import {
   DEFAULT_PATENT_GRANTS_REGISTRY_ADVANCED_FILTERS,
   type PatentGrantsRegistryAdvancedFilters,
   type PatentGrantsRegistrySortBy,
-} from '../../../../api/patents/patentGrantsRegistryFilters.types';
+} from '@/api/patents/patentGrantsRegistryFilters.types';
 import { countPatentGrantsRegistryFilters } from '../utils/patentGrantsRegistryFilterCount';
 
 const DEFAULT_SORT_BY: PatentGrantsRegistrySortBy = 'patent_registration_number';

@@ -22,7 +22,7 @@ interface UserContact {
 }
 
 /**
- * Email-уведомления согласований (§5). Все отправки — после коммита транзакции.
+ * Email-уведомления согласований (§5). Все отправки - после коммита транзакции.
  * Пустой email → 'skipped'. Транзиентный сбой → 'failed' (метку SLA не ставим).
  * Все user-controlled поля экранируются (escapeHtml).
  */
@@ -47,7 +47,7 @@ export class ApprovalMailService {
     });
   }
 
-  /** Назначение на шаг — всем переданным согласующим (§5 approval_assigned). */
+  /** Назначение на шаг - всем переданным согласующим (§5 approval_assigned). */
   async notifyAssigned(processId: string, assigneeIds: string[]): Promise<void> {
     if (!assigneeIds.length) return;
     const ctx = await this.loadProcessContext(processId);
@@ -62,7 +62,7 @@ export class ApprovalMailService {
     }
   }
 
-  /** Финал успешного согласования — инициатору (§5 document_approved). */
+  /** Финал успешного согласования - инициатору (§5 document_approved). */
   async notifyApproved(processId: string, initiatorId: string): Promise<void> {
     const ctx = await this.loadProcessContext(processId);
     if (!ctx) return;
@@ -75,7 +75,7 @@ export class ApprovalMailService {
     );
   }
 
-  /** Возврат на доработку — инициатору (§5, по контексту). */
+  /** Возврат на доработку - инициатору (§5, по контексту). */
   async notifyReturnedToInitiator(processId: string, initiatorId: string, comment: string | null): Promise<void> {
     const ctx = await this.loadProcessContext(processId);
     if (!ctx) return;
@@ -88,7 +88,7 @@ export class ApprovalMailService {
     );
   }
 
-  /** Отклонение — инициатору. */
+  /** Отклонение - инициатору. */
   async notifyRejected(processId: string, initiatorId: string, comment: string | null): Promise<void> {
     const ctx = await this.loadProcessContext(processId);
     if (!ctx) return;
@@ -233,9 +233,9 @@ export class ApprovalMailService {
     if (!row) return null;
     const [initiator] = await this.loadUsers([row.initiatedBy]);
     return {
-      routeName: row.routeName ?? '—',
-      stepName: row.stepName ?? '—',
-      initiatorName: initiator?.name ?? '—',
+      routeName: row.routeName ?? '-',
+      stepName: row.stepName ?? '-',
+      initiatorName: initiator?.name ?? '-',
       entityType: row.entityType,
       entityId: row.entityId,
     };

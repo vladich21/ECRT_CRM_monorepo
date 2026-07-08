@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { Button, Form, Input, Space } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 
-import { ModalState } from '../../../store/ModalStore';
+import type { ModalShellProps } from '@/store/ModalStore';
+
 import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface PatentFormModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
@@ -12,12 +13,19 @@ export interface PatentFormModalProps extends Omit<BaseModalProps, 'footer' | 'c
   onConfirm: (values: { name: string }) => void | Promise<void>;
 }
 
-export const PatentAreasFormModal: React.FC<ModalState> = ({
+type PatentAreasFormModalData = {
+  name?: string;
+  description?: string;
+  code?: string;
+};
+
+export const PatentAreasFormModal: React.FC<ModalShellProps> = ({
   cancelText = 'Отмена',
   onConfirm,
-  modalData,
+  modalData: rawModalData,
   ...layoutProps
 }) => {
+  const modalData = (rawModalData ?? {}) as PatentAreasFormModalData;
   const [form] = Form.useForm();
 
   useEffect(() => {

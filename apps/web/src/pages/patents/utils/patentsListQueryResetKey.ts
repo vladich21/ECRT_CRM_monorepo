@@ -17,7 +17,7 @@ export function buildPatentsListFiltersResetKey(filters: PatentAdvancedFilters):
   });
 }
 
-/** Ключ параметров серверного запроса (без page). При изменении — сброс на 1-ю страницу. */
+/** Ключ параметров серверного запроса (без page). При изменении - сброс на 1-ю страницу. */
 export function buildPatentsListQueryResetKey(params: {
   debouncedSearch: string;
   activeTab: PatentFilterTab;

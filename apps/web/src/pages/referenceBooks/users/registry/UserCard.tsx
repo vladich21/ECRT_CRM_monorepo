@@ -8,20 +8,18 @@ import {
 } from '@ant-design/icons';
 import { Avatar, Button, Tag, Tooltip } from 'antd';
 
-import { getActiveInactiveSurface, mutedTagStyle } from '../../../../constants/statusBadgeSurfaces';
-import type { User } from '../../../../types/user';
+import { getActiveInactiveSurface, mutedTagStyle } from '@/constants/statusBadgeSurfaces';
+import type { User } from '@/types/user';
 import styles from './UserCard.module.scss';
 
 interface UserCardProps {
   user: User;
   onClick: (user: User) => void;
-  /** Когда передан — отрисовывает кнопку «Роли», вызывая обработчик при клике (без перехода на карточку). */
   onAssignRoles?: (user: User) => void;
-  /** Когда передан — отрисовывает кнопку «Войти как» для имперсонации. */
   onImpersonate?: (user: User) => void;
 }
 function getFio(user: User): string {
-  return [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ').trim() || '—';
+  return [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ').trim() || '-';
 }
 export default function UserCard({ user, onClick, onAssignRoles, onImpersonate }: UserCardProps) {
   const handleRolesClick = (e: MouseEvent) => {
@@ -52,7 +50,7 @@ export default function UserCard({ user, onClick, onAssignRoles, onImpersonate }
           <span className={styles.name}>{getFio(user)}</span>
           <span className={styles.metaInn}>
             <MailOutlined style={{ fontSize: 11, marginRight: 4 }} />
-            {user.email || '—'}
+            {user.email || '-'}
           </span>
         </div>
         <div className={styles.metaRow}>

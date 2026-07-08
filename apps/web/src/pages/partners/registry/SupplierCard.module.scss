@@ -9,7 +9,7 @@
   padding: 14px 16px;
   cursor: pointer;
   text-decoration: none;
-  color: inherit;
+  color: #141414;
   transition:
     box-shadow 0.2s ease,
     border-color 0.2s ease;
@@ -20,8 +20,13 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 
   &:hover {
+    color: #141414;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     border-color: #d0d0d0;
+  }
+
+  &:visited {
+    color: #141414;
   }
 }
 
@@ -61,6 +66,10 @@
 
 .metaSubRow {
   margin-top: 2px;
+}
+
+.metaTypeNames {
+  color: #595959;
 }
 
 .mutedTag {

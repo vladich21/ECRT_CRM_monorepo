@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 import type {
   PartnerReportEvaluation,
   SupplierEvaluationCategory,
@@ -235,18 +237,16 @@ export type EvaluationDateBounds = {
   max: string;
 };
 
-/** Границы выбора дат в фильтре отчёта — от первой до последней оценки в охвате. */
+/** Границы выбора дат: не раньше первой оценки, не позже сегодня. */
 export function resolveEvaluationDateBounds(
   evaluations: PartnerReportEvaluation[],
 ): EvaluationDateBounds | null {
   if (!evaluations.length) return null;
 
   let min = evaluations[0].evaluated_at;
-  let max = evaluations[0].evaluated_at;
   for (const evaluation of evaluations) {
     if (evaluation.evaluated_at < min) min = evaluation.evaluated_at;
-    if (evaluation.evaluated_at > max) max = evaluation.evaluated_at;
   }
 
-  return { min: min.slice(0, 10), max: max.slice(0, 10) };
+  return { min: min.slice(0, 10), max: dayjs().format('YYYY-MM-DD') };
 }

@@ -490,7 +490,7 @@ export const files = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }),
     createdBy: uuid('created_by'),
     updatedBy: uuid('updated_by'),
-    /** Версионность (F-V0): version — номер версии/раунда; is_current — входит ли в последнюю версию набора. */
+    /** Версионность (F-V0): version - номер версии/раунда; is_current - входит ли в последнюю версию набора. */
     version: integer('version').notNull().default(1),
     isCurrent: boolean('is_current').notNull().default(true),
   },
@@ -634,7 +634,7 @@ export const syncMetadata = pgTable('sync_metadata', {
 });
 
 // ============================================================
-// Согласования документов (approvals). FK и CHECK — в scripts/approvals/.
+// Согласования документов (approvals). FK и CHECK - в scripts/approvals/.
 // enum-подобные поля хранятся как varchar (в проекте pgEnum не используется).
 // ============================================================
 
@@ -730,7 +730,7 @@ export const relApprovalStepAssignees = pgTable(
   ],
 );
 
-/** Экземпляр согласования (рантайм). currentProcessStepId — FK добавляется в SQL (цикл). */
+/** Экземпляр согласования (рантайм). currentProcessStepId - FK добавляется в SQL (цикл). */
 export const approvalProcesses = pgTable(
   'approval_processes',
   {

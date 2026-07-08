@@ -38,7 +38,7 @@ export function PartnerExportModal({ open, onClose, exportFilters, references }:
       const selectedColumns = getExportColumnsByKeys(PARTNER_EXPORT_MODAL_CONFIG.columns, selectedKeys);
       const headers = selectedColumns.map(column => getExportColumnHeader(column));
       const rows = mapPartnersToExportRows(data, references, selectedKeys);
-      exportPartnersToExcel(headers, rows, selectedKeys);
+      await exportPartnersToExcel(headers, rows, selectedKeys);
 
       if (truncated) {
         message.warning(`Экспортировано ${data.length} из ${total} записей (лимит выгрузки)`);

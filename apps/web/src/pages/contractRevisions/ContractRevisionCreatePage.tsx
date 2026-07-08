@@ -13,7 +13,7 @@ import BasicTable from '../../components/basicTable/BasicTable';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { getEntityById } from '../../helpers/getEntityById';
 import type { ContractStage } from '../../types/contract';
 import { getStageColumnsData } from '../contracts/details/tabs/stages/data';

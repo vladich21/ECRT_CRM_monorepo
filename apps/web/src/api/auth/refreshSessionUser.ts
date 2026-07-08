@@ -5,7 +5,7 @@ import { authApi } from './authApi';
 import { useAuthStore } from '../../store/AuthStore';
 
 const SESSION_EXPIRED_STATUSES = new Set([401, 403]);
-const RETRY_DELAYS_MS = [400, 1200];
+const RETRY_DELAYS_MS = [300, 800, 1500, 2500];
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -16,7 +16,6 @@ function sleep(ms: number): Promise<void> {
 function isRetryableMeError(err: unknown): boolean {
   if (!axios.isAxiosError(err)) return false;
   if (err.response?.status && SESSION_EXPIRED_STATUSES.has(err.response.status)) return false;
-  // Сеть, таймаут или 5xx — можно повторить.
   return !err.response || err.response.status >= 500;
 }
 
@@ -29,7 +28,8 @@ export async function refreshSessionUser(): Promise<void> {
     const { isAuth, permissionsBootstrapStatus } = useAuthStore.getState();
     if (!isAuth) return;
 
-    if (permissionsBootstrapStatus !== 'ready') {
+    const wasReady = permissionsBootstrapStatus === 'ready';
+    if (!wasReady) {
       useAuthStore.getState().setPermissionsBootstrapStatus('pending');
     }
 
@@ -57,7 +57,11 @@ export async function refreshSessionUser(): Promise<void> {
       }
     }
 
-    useAuthStore.getState().setPermissionsBootstrapStatus('error');
+    // Не сбрасываем ready-сессию из-за временного сбоя; PrivateRoute сам повторит запрос.
+    if (!wasReady) {
+      useAuthStore.getState().setPermissionsBootstrapStatus('pending');
+    }
+
     throw lastError instanceof Error ? lastError : new Error('refreshSessionUser: GET /auth/me failed');
   })().finally(() => {
     refreshInFlight = null;

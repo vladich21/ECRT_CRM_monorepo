@@ -49,7 +49,7 @@ export function PatentExportModal({
       const headers = selectedColumns.map(column => getExportColumnHeader(column));
       const exportRefs = await enrichReferenceDataForPatentExport(data, refs);
       const rows = mapPatentsToExportRows(data, exportRefs, selectedKeys);
-      exportPatentsToExcel(headers, rows, selectedKeys);
+      await exportPatentsToExcel(headers, rows, selectedKeys);
 
       if (truncated) {
         message.warning(`Экспортировано ${data.length} из ${total} записей (лимит выгрузки)`);

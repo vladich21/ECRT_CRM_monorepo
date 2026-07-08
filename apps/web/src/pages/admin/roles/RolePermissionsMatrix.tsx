@@ -55,7 +55,7 @@ export function RolePermissionsMatrix({ roleId, readOnly, onSaved }: Props) {
   const { data, isLoading, isError } = useAdminRolePermissions(roleId);
   const updateMut = useUpdateRolePermissions();
 
-  // Локальное состояние матрицы — копируется из data при загрузке.
+  // Локальное состояние матрицы - копируется из data при загрузке.
   const [draft, setDraft] = useState<Record<string, RolePermissionFlags>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -103,7 +103,7 @@ export function RolePermissionsMatrix({ roleId, readOnly, onSaved }: Props) {
       }
     }
     // Также передаем пустые объекты (canRead=false) для отзыва прав;
-    // однако backend пропускает {false,false,false} — для этого нам нужно
+    // однако backend пропускает {false,false,false} - для этого нам нужно
     // явно передать список и без флагов: пройдемся по всем известным разделам.
     const payload: Record<string, RolePermissionFlags> = {};
     for (const code of Object.keys(draft)) {

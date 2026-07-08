@@ -32,7 +32,7 @@ export default function KpiRow({
       key: 'avgScore',
       icon: <SafetyCertificateOutlined />,
       value:
-        supplierEvalAvgScore == null ? '—' : formatEvaluationScoreDisplay(supplierEvalAvgScore),
+        supplierEvalAvgScore == null ? '-' : formatEvaluationScoreDisplay(supplierEvalAvgScore),
       label: avgScoreLabel,
     },
     {

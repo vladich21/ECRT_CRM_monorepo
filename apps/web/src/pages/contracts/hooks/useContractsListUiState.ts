@@ -1,11 +1,14 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Location, NavigateFunction } from 'react-router-dom';
 
-import { useListReturnFromDetail } from '@/hooks/useListReturnFromDetail';
-import { useRestoreToken } from '@/hooks/useServerTablePagination';
+import { useRegistryListUiState } from '@/hooks/useRegistryListUiState';
 
 import type { AdvancedFilters, FilterTab } from '../list/ContractsListPage.types';
-import { parseContractsListNavSnapshot } from '../utils/contractsListNavSnapshot';
+import {
+  loadContractsListPersistedUi,
+  saveContractsListPersistedUi,
+  type ContractsListPersistedUi,
+} from '../utils/contractsListPersistedUi';
 
 type ContractsListUiSetters = {
   setSearchQuery: (query: string) => void;
@@ -27,25 +30,36 @@ export function useContractsListUiState(
   location: Location,
   navigate: NavigateFunction,
   setters: ContractsListUiSetters,
+  persistedUi: ContractsListPersistedUi,
+  routePartnerId?: string,
 ) {
-  const [restoreToken, bumpRestoreToken] = useRestoreToken();
-
-  const { pendingScrollY } = useListReturnFromDetail({
+  return useRegistryListUiState({
     location,
     navigate,
-    getRawSnapshot: navigationState => navigationState.contractsListReturn,
-    parse: parseContractsListNavSnapshot,
-    applyParsed: restoredListState => {
-      setters.setSearchQuery(restoredListState.searchQuery);
-      setters.flushDebouncedSearch(restoredListState.searchQuery.trim());
-      setters.setActiveTab(restoredListState.activeTab);
-      setters.setAppliedFilters(restoredListState.appliedFilters);
-      setters.setDraftFilters(restoredListState.appliedFilters);
-      setters.setPage(restoredListState.page);
-      setters.setPageSize(restoredListState.pageSize);
+    load: () => loadContractsListPersistedUi(routePartnerId),
+    save: snapshot =>
+      saveContractsListPersistedUi(
+        {
+          searchQuery: snapshot.searchQuery,
+          activeTab: snapshot.activeTab,
+          appliedFilters: snapshot.appliedFilters,
+          page: snapshot.page,
+          pageSize: snapshot.pageSize,
+        },
+        routePartnerId,
+      ),
+    getSnapshot: () => persistedUi,
+    apply: (snapshot, { bumpRestoreToken }) => {
+      setters.setSearchQuery(snapshot.searchQuery);
+      setters.flushDebouncedSearch(snapshot.searchQuery.trim());
+      setters.setActiveTab(snapshot.activeTab);
+      setters.setAppliedFilters(snapshot.appliedFilters);
+      setters.setDraftFilters(snapshot.appliedFilters);
+      setters.setPage(snapshot.page);
+      setters.setPageSize(snapshot.pageSize);
       bumpRestoreToken();
     },
-    applyFallback: navigationState => {
+    applyFallback: (navigationState, { bumpRestoreToken }) => {
       if (navigationState.listTab != null) {
         const fallbackTab = coerceFilterTab(navigationState.listTab, VALID_TABS);
         if (fallbackTab) {
@@ -60,6 +74,4 @@ export function useContractsListUiState(
       }
     },
   });
-
-  return { restoreToken, pendingScrollY };
 }

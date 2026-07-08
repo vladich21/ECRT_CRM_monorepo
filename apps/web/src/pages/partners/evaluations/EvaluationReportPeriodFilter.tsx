@@ -18,38 +18,50 @@ type Props = {
   evaluationDateBounds?: EvaluationDateBounds | null;
 };
 
-function disabledOutsideEvaluationBounds(
+function resolveSelectableBounds(bounds: EvaluationDateBounds | null | undefined) {
+  const today = dayjs().startOf('day');
+  const min = bounds ? dayjs(bounds.min).startOf('day') : null;
+  const max = bounds ? dayjs(bounds.max).startOf('day') : today;
+  const cappedMax = max.isAfter(today, 'day') ? today : max;
+  return { min, max: cappedMax };
+}
+
+function disabledPeriodDate(
   bounds: EvaluationDateBounds | null | undefined,
 ): ((current: Dayjs) => boolean) | undefined {
-  if (!bounds) return undefined;
-
-  const min = dayjs(bounds.min).startOf('day');
-  const max = dayjs(bounds.max).startOf('day');
+  const { min, max } = resolveSelectableBounds(bounds);
+  if (!min) return (current: Dayjs) => current.isAfter(max, 'day');
 
   return (current: Dayjs) => current.isBefore(min, 'day') || current.isAfter(max, 'day');
 }
 
-function disabledOutsideExcludeWindow(
+function disabledExcludeDate(
   bounds: EvaluationDateBounds | null | undefined,
   dateRange: [Dayjs | null, Dayjs | null] | null,
 ): ((current: Dayjs) => boolean) | undefined {
-  const outsideBounds = disabledOutsideEvaluationBounds(bounds);
+  const { min, max } = resolveSelectableBounds(bounds);
   const rangeFrom = dateRange?.[0]?.startOf('day') ?? null;
   const rangeTo = dateRange?.[1]?.startOf('day') ?? null;
+  const excludeMax =
+    rangeTo && rangeTo.isBefore(max, 'day') ? rangeTo : max;
+
+  if (!min) {
+    return (current: Dayjs) => {
+      if (current.isAfter(excludeMax, 'day')) return true;
+      if (rangeFrom && current.isBefore(rangeFrom, 'day')) return true;
+      return false;
+    };
+  }
 
   return (current: Dayjs) => {
-    if (outsideBounds?.(current)) return true;
+    if (current.isBefore(min, 'day') || current.isAfter(excludeMax, 'day')) return true;
     if (rangeFrom && current.isBefore(rangeFrom, 'day')) return true;
-    if (rangeTo && current.isAfter(rangeTo, 'day')) return true;
     return false;
   };
 }
 
 /** Диапазон отчёта и исключения — оба задаются через RangePicker. */
 export function EvaluationReportPeriodFilter({ value, onChange, evaluationDateBounds }: Props) {
-  const disablePeriodDate = disabledOutsideEvaluationBounds(evaluationDateBounds);
-  const disableExcludeDate = disabledOutsideExcludeWindow(evaluationDateBounds, value.dateRange);
-
   return (
     <div className={styles.root}>
       <RangePicker
@@ -59,7 +71,7 @@ export function EvaluationReportPeriodFilter({ value, onChange, evaluationDateBo
         allowClear
         format='DD.MM.YYYY'
         placeholder={['Период с', 'Период по']}
-        disabledDate={disablePeriodDate}
+        disabledDate={disabledPeriodDate(evaluationDateBounds)}
       />
       <RangePicker
         value={value.excludedRange}
@@ -68,7 +80,7 @@ export function EvaluationReportPeriodFilter({ value, onChange, evaluationDateBo
         allowClear
         format='DD.MM.YYYY'
         placeholder={['Исключить с', 'Исключить по']}
-        disabledDate={disableExcludeDate}
+        disabledDate={disabledExcludeDate(evaluationDateBounds, value.dateRange)}
       />
     </div>
   );

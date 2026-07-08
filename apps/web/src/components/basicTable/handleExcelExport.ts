@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import { loadXlsxStyle } from '@/utils/loadXlsxStyle';
 
 const CHILDREN_FIELD = 'children';
 
@@ -19,13 +19,14 @@ const flattenTreeData = <T extends Record<string, unknown>>(treeData: T[]): T[] 
   return result;
 };
 
-export const handleExport = (
+export const handleExport = async (
   data: any,
   enableExpandable: boolean = false,
   exportFileName: string,
   columns: any = [],
 ) => {
   try {
+    const XLSX = await loadXlsxStyle();
     const exportData = enableExpandable ? flattenTreeData(data) : data;
 
     const excelData: any[][] = [];
@@ -55,6 +56,7 @@ export const handleExport = (
                 value = renderedValue;
               }
             } catch {
+              // render может вернуть ReactNode — для Excel берём сырое value
             }
           }
 
@@ -108,10 +110,10 @@ export const handleExport = (
       }
 
       const colWidths: number[] = [];
-      const maxColumnWidth = 100; // Максимальная ширина в символах
+      const maxColumnWidth = 100;
 
       for (let col = range.s.c; col <= range.e.c; col++) {
-        let maxWidth = 10; // Минимальная ширина
+        let maxWidth = 10;
 
         for (let row = range.s.r; row <= range.e.r; row++) {
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
@@ -146,7 +148,7 @@ export const handleExport = (
 
       worksheet['!cols'] = colWidths.map(width => ({
         width,
-        wpx: width * 8, // Примерная конвертация в пиксели
+        wpx: width * 8,
       }));
     }
 

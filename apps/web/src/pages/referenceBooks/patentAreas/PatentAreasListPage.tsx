@@ -7,16 +7,17 @@ import {
   useDeletePatentArea,
   usePatentAreas,
   useUpdatePatentArea,
-} from '../../../api/patents/patentAreasApiHooks';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
-import { PatentArea } from '../../../types/patent';
+} from '@/api/patents/patentAreasApiHooks';
+import ReferenceBookListPage from '@/components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '@/components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '@/components/referenceBooks/ReferenceBookItemCard';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { useOpenAntdDeleteConfirm } from '@/hooks/modals/confirmDelete';
+import { useMutateByModal } from '@/hooks/modals/useMutateByModal';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { PatentArea } from '@/types/patent';
+
 import styles from './PatentAreasListPage.module.scss';
 
 const PatentAreasListPage: React.FC = () => {
@@ -86,7 +87,7 @@ const PatentAreasListPage: React.FC = () => {
           {data.map(area => (
             <ReferenceBookItemCard
               key={area.id}
-              title={area.name || '—'}
+              title={area.name || '-'}
               metaText={area.code}
               description={area.description}
               onEdit={() => onEdit({ id: area.id })}

@@ -1,5 +1,5 @@
-import type { PartnerListSortBy } from '../../../api/partners/partnerApi';
-import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '../../../utils/listNavSnapshotShared';
+import type { PartnerListSortBy } from '@/api/partners/partnerApi';
+import { asListNavSnapshotV1Record, parseListNavSnapshotBase } from '@/utils/listNavSnapshotShared';
 
 import { EMPTY_FILTERS, type PartnerFilters } from '../PartnerFiltersModal';
 
@@ -77,7 +77,11 @@ function normalizeAppliedFromSnapshot(
   return applyLegacyReadinessTab(filters, legacyTab);
 }
 
-export type PartnersListNavSnapshot = {
+/**
+ * Partners v3 snapshot: filters in `applied` (not tabs), optional legacy `activeTab` in parser only.
+ * Partners v3 schema in localStorage (`srn.partnersList.ui.v1`).
+ */
+export type PartnersListNavSnapshotV3 = {
   version: 3;
   searchQuery: string;
   applied: PartnerFilters;
@@ -85,18 +89,19 @@ export type PartnersListNavSnapshot = {
   pageSize: number;
   sortBy?: PartnerListSortBy;
   sortOrder?: 'asc' | 'desc';
-  scrollY?: number;
 };
 
-export function buildPartnersListNavSnapshot(
+/** @deprecated Use PartnersListNavSnapshotV3 */
+export type PartnersListNavSnapshot = PartnersListNavSnapshotV3;
+
+export function serializePartnersListPersistedUi(
   searchQuery: string,
   applied: PartnerFilters,
   page: number,
   pageSize: number,
   sortBy: PartnerListSortBy,
   sortOrder: 'asc' | 'desc',
-  scrollY?: number,
-): PartnersListNavSnapshot {
+): PartnersListNavSnapshotV3 {
   return {
     version: 3,
     searchQuery,
@@ -105,22 +110,20 @@ export function buildPartnersListNavSnapshot(
     pageSize,
     sortBy,
     sortOrder,
-    scrollY,
   };
 }
 
-export function parsePartnersListNavSnapshot(raw: unknown): {
+export function parsePartnersListPersistedUi(raw: unknown): {
   searchQuery: string;
   appliedFilters: PartnerFilters;
   page: number;
   pageSize: number;
   sortBy: PartnerListSortBy;
   sortOrder: 'asc' | 'desc';
-  scrollY?: number;
 } | null {
   const body = asListNavSnapshotV1Record(raw);
   if (!body) return null;
-  const { searchQuery, page, pageSize, scrollY } = parseListNavSnapshotBase(body, 20);
+  const { searchQuery, page, pageSize } = parseListNavSnapshotBase(body, 20);
   const snapshotRecord = body as Record<string, unknown>;
   const legacyTabRaw = snapshotRecord.activeTab;
   const legacyTab =
@@ -145,6 +148,5 @@ export function parsePartnersListNavSnapshot(raw: unknown): {
     pageSize,
     sortBy,
     sortOrder,
-    scrollY,
   };
 }

@@ -3,18 +3,18 @@ import { SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Button } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useUserById } from '../../../api/users/userApiHooks';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '../../../components/pageLayout/DetailPageHeader';
-import pi from '../../../components/pageLayout/profileInfoCards.module.scss';
-import { UserProfileBody } from '../../../components/userProfile/UserProfileBody';
-import { userHeaderRoleChips } from '../../../components/userProfile/userHeaderRoleChips';
-import { useNotification } from '../../../customhooks/useNotification';
-import { usePermissions } from '../../../hooks/usePermissions';
-import { SECTIONS } from '../../../shared/permissions';
+import { useUserById } from '@/api/users/userApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader, { detailPageHeaderStyles as hStyles } from '@/components/pageLayout/DetailPageHeader';
+import pi from '@/components/pageLayout/profileInfoCards.module.scss';
+import { UserProfileBody } from '@/components/userProfile/UserProfileBody';
+import { userHeaderRoleChips } from '@/components/userProfile/userHeaderRoleChips';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { usePermissions } from '@/hooks/usePermissions';
+import { SECTIONS } from '@/shared/permissions';
 import { UserRolesModal } from '../../admin/roles/UserRolesModal';
-import type { User } from '../../../types/user';
+import type { User } from '@/types/user';
 
 function headerSubtitle(user: User): string | undefined {
   const parts = [user.position?.name, user.department?.name].filter(Boolean);

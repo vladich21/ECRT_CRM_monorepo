@@ -1,8 +1,8 @@
 import { CalendarOutlined, SafetyOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 
-import { useReferenceData } from '../../../../api/hooks/useReferences';
-import { FilterFieldConfig } from '../../../../components/basicFilters/BasicFilters';
-import { User } from '../../../../types/user';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { FilterFieldConfig } from '@/components/basicFilters/BasicFilters';
+import { User } from '@/types/user';
 
 export const useUsersFilters = () => {
   const {

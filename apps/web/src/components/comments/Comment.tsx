@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDeleteComment } from '../../api/comments/commentApiHooks';
 import { commentQueryKeys } from '../../api/comments/commentQueryKeys';
 import { useOpenAntdDeleteConfirm } from '../../customhooks/confirmDelete';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { useCommentHelpers } from '../../hooks/useCommentHelpers';
 import { Comment } from '../../types/comments';
 import { getRelativeTime } from '../../utils/formatDate';

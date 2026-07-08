@@ -221,3 +221,37 @@
   flex: 1;
   min-height: 0;
 }
+
+@media print {
+  :global([data-print-scope='evaluation-report']) {
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  :global([data-print-scope='evaluation-report']) .header {
+    background: #fff !important;
+    padding: 0 0 6mm;
+  }
+
+  :global([data-print-scope='evaluation-report']) .backBtn,
+  :global([data-print-scope='evaluation-report']) .tabs,
+  :global([data-print-scope='evaluation-report']) .actions {
+    display: none !important;
+  }
+
+  :global([data-print-scope='evaluation-report']) .companyName,
+  :global([data-print-scope='evaluation-report']) .subtitle,
+  :global([data-print-scope='evaluation-report']) .metaText,
+  :global([data-print-scope='evaluation-report']) .titleSuffix {
+    color: #1e293b !important;
+  }
+
+  :global([data-print-scope='evaluation-report']) .subtitle {
+    color: #64748b !important;
+  }
+
+  :global([data-print-scope='evaluation-report']) .contentWrap {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+}

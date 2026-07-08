@@ -29,7 +29,7 @@ interface ApprovalPanelProps {
   variant?: 'card' | 'compact';
 }
 
-/** Детали архивного (завершённого) процесса — подгружаются по разворачиванию.
+/** Детали архивного (завершённого) процесса - подгружаются по разворачиванию.
  *  Документы не показываем: они привязаны к сущности и очищаются при старте нового
  *  согласования. Архив хранит ход (шаги) и ленту (решения/комментарии). */
 function ArchiveProcessDetail({ processId, active }: { processId: string; active: boolean }) {
@@ -75,10 +75,10 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
 
   const process = state.process;
   // Отменённый процесс свёрнут в строку (история сохраняется, разворачивается по клику);
-  // согласованные/текущие — на весь экран.
+  // согласованные/текущие - на весь экран.
   const isCancelled = process?.status === 'cancelled';
   const collapsed = isCancelled && !expanded;
-  // Документы и обсуждение редактируемы только пока согласование идёт; после финала — блокировка.
+  // Документы и обсуждение редактируемы только пока согласование идёт; после финала - блокировка.
   const editable = process ? process.status === 'active' || process.status === 'revision' : false;
   const currentStep = process?.steps.find((s) => s.state === 'current');
 
@@ -186,7 +186,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
             </Typography.Text>
           ) : null}
 
-          {/* Маршрут — доска компактных карточек */}
+          {/* Маршрут - доска компактных карточек */}
           <ApprovalStepsBoard
             steps={process.steps}
             decisions={process.decisions}
@@ -247,7 +247,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
             { title: 'Согласующий', dataIndex: 'decided_by_name' },
             { title: 'Решение', dataIndex: 'decision_type', render: (t: keyof typeof DECISION_LABELS) => DECISION_LABELS[t] },
             { title: 'Дата', dataIndex: 'decided_at', render: (v: string) => new Date(v).toLocaleString('ru-RU') },
-            { title: 'Комментарий', dataIndex: 'comment', render: (c: string | null) => c ?? '—' },
+            { title: 'Комментарий', dataIndex: 'comment', render: (c: string | null) => c ?? '-' },
           ]}
         />
       </Modal>
@@ -259,7 +259,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   // Архив = завершённые процессы, кроме показанного в «Текущем».
   const archive = (state.completed_processes ?? []).filter((p) => p.id !== process?.id);
 
-  // «Новое согласование» — в шапке карточки, когда есть процесс и можно запустить новый.
+  // «Новое согласование» - в шапке карточки, когда есть процесс и можно запустить новый.
   const headerExtra =
     process && state.can_start_approval && state.available_routes.length > 0 ? (
       <Button type="primary" onClick={openStart}>

@@ -20,9 +20,9 @@ import {
   supplierEvaluationQueryKeys,
 } from '../../../api/supplierEvaluations/supplierEvaluationQueryKeys';
 import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { useServerTablePagination, useResetPageWhenListQueryChanges, useServerPaginationClamp } from '../../../hooks/useServerTablePagination';
-import { useScrollToTopOnPageChange } from '../../../hooks/useListScrollRestoration';
+import { useScrollToTopOnPageChange } from '../../../hooks/registryScroll';
 import { mutedTagStyle } from '../../../constants/statusBadgeSurfaces';
 import type { Partner } from '../../../types/partner';
 import type {

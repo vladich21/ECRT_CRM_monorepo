@@ -25,7 +25,7 @@ export function toPartnerUuid(value: unknown): string | null {
 }
 
 const LICENSEE_INN_ONLY_MESSAGE =
-  'Нельзя указать только ИНН — укажите название или выберите контрагента из справочника';
+  'Нельзя указать только ИНН - укажите название или выберите контрагента из справочника';
 
 function assertNoInnOnlyLicenseeRows(raw: unknown[], fieldLabel: string): void {
   for (const item of raw) {

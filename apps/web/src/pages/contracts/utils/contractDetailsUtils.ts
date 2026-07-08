@@ -15,7 +15,7 @@ function buildContractHeading(
   prefix: string,
   contract: Pick<Contract, 'number' | 'date_signed' | 'name'>,
 ): string {
-  const num = contract.number?.trim() || '—';
+  const num = contract.number?.trim() || '-';
   const date = formatContractSignedDateRu(contract.date_signed);
   const name = contract.name?.trim();
   let heading = `${prefix}${num}`;

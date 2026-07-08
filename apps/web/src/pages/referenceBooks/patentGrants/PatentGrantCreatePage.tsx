@@ -3,14 +3,14 @@ import { InfoCircleOutlined, SaveOutlined } from '@ant-design/icons';
 import { Alert, Button, Form, Modal, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { usePatentById } from '../../../api/patents/patentApiHooks';
-import { useCreatePatentGrant } from '../../../api/patents/patentGrantsApiHooks';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import DetailPageHeader from '../../../components/pageLayout/DetailPageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
-import type { PatentGrant } from '../../../types/patent';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { usePatentById } from '@/api/patents/patentApiHooks';
+import { useCreatePatentGrant } from '@/api/patents/patentGrantsApiHooks';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import DetailPageHeader from '@/components/pageLayout/DetailPageHeader';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import type { PatentGrant } from '@/types/patent';
 import { PatentGrantFormFields } from './components/PatentGrantFormFields';
 import { buildPatentSelectLabel } from './utils/patentGrantCardHelpers';
 import { PATENT_GRANT_NAV_FROM_REGISTRY, resolvePatentGrantBackTarget } from './navigation/patentGrantListNavigation';
@@ -174,7 +174,7 @@ export default function PatentGrantCreatePage() {
           message='Загрузка в IPS'
           description={
             <Typography.Paragraph style={{ marginBottom: 0 }}>
-              После получения патента не забудьте выполнить загрузку сведений в IPS — это обязательный шаг для учета
+              После получения патента не забудьте выполнить загрузку сведений в IPS - это обязательный шаг для учета
               охранного документа.
             </Typography.Paragraph>
           }

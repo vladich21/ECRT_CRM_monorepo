@@ -173,7 +173,7 @@ export class AdminRbacService {
     for (const code of codes) {
       const sec = sectionByCode.get(code);
       if (!sec) throw new BadRequestException(`Раздел '${code}' не найден`);
-      if (sec.isFolder) throw new BadRequestException(`Раздел '${code}' — папка, права не выдаются`);
+      if (sec.isFolder) throw new BadRequestException(`Раздел '${code}' - папка, права не выдаются`);
     }
 
     await this.db.db.transaction(async (tx) => {

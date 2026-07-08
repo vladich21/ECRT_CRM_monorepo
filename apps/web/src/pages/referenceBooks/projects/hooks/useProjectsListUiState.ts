@@ -1,10 +1,14 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Location, NavigateFunction } from 'react-router-dom';
 
-import { useListReturnFromDetail } from '@/hooks/useListReturnFromDetail';
-import { useRestoreToken } from '@/hooks/useServerTablePagination';
+import { useRegistryListUiState } from '@/hooks/useRegistryListUiState';
+
 import type { ProjectAdvancedFilters, ProjectFilterTab } from '../ProjectsListPage.types';
-import { parseProjectsListNavSnapshot } from '../utils/projectsListNavSnapshot';
+import {
+  loadProjectsListPersistedUi,
+  saveProjectsListPersistedUi,
+  type ProjectsListPersistedUi,
+} from '../utils/projectsListPersistedUi';
 
 type ProjectsListUiSetters = {
   setSearchQuery: (query: string) => void;
@@ -20,25 +24,25 @@ export function useProjectsListUiState(
   location: Location,
   navigate: NavigateFunction,
   setters: ProjectsListUiSetters,
+  persistedUi: ProjectsListPersistedUi,
 ) {
-  const [restoreToken, bumpRestoreToken] = useRestoreToken();
-
-  const { pendingScrollY } = useListReturnFromDetail({
+  return useRegistryListUiState({
     location,
     navigate,
-    getRawSnapshot: navigationState => navigationState.projectsListReturn,
-    parse: parseProjectsListNavSnapshot,
-    applyParsed: restoredListState => {
-      setters.setSearchQuery(restoredListState.searchQuery);
-      setters.flushDebouncedSearch(restoredListState.searchQuery.trim());
-      setters.setActiveTab(restoredListState.activeTab);
-      setters.setAppliedFilters(restoredListState.appliedFilters);
-      setters.setDraftFilters(restoredListState.appliedFilters);
-      setters.setPage(restoredListState.page);
-      setters.setPageSize(restoredListState.pageSize);
+    load: loadProjectsListPersistedUi,
+    save: saveProjectsListPersistedUi,
+    getSnapshot: () => persistedUi,
+    apply: (snapshot, { bumpRestoreToken }) => {
+      setters.setSearchQuery(snapshot.searchQuery);
+      setters.flushDebouncedSearch(snapshot.searchQuery.trim());
+      setters.setActiveTab(snapshot.activeTab);
+      setters.setAppliedFilters(snapshot.appliedFilters);
+      setters.setDraftFilters(snapshot.appliedFilters);
+      setters.setPage(snapshot.page);
+      setters.setPageSize(snapshot.pageSize);
       bumpRestoreToken();
     },
-    applyFallback: navigationState => {
+    applyFallback: (navigationState, { bumpRestoreToken }) => {
       if (navigationState.listTab != null) {
         setters.setActiveTab(navigationState.listTab as ProjectFilterTab);
         bumpRestoreToken();
@@ -50,6 +54,4 @@ export function useProjectsListUiState(
       }
     },
   });
-
-  return { restoreToken, pendingScrollY };
 }

@@ -17,7 +17,7 @@ interface ProcessStepLike {
 interface ResolveContext {
   initiatedBy: string;
   runtimeData: ApprovalRuntimeData;
-  /** Владелец сущности — вычисляется ядром через EntityHandler для document_owner. */
+  /** Владелец сущности - вычисляется ядром через EntityHandler для document_owner. */
   ownerId: string | null;
 }
 
@@ -100,7 +100,7 @@ export class AssigneeResolver {
     const headId = await this.findSupervisor(tx, initiatedBy);
     if (!headId) {
       // Self-approval guard (§0.6): fallback на инициатора, логируем.
-      this.logger.warn(`initiator_head не найден для ${initiatedBy} — fallback на самого инициатора`);
+      this.logger.warn(`initiator_head не найден для ${initiatedBy} - fallback на самого инициатора`);
       return [{ assigneeId: initiatedBy, sourceType: 'initiator_head', position: 0 }];
     }
     return [{ assigneeId: headId, sourceType: 'initiator_head', position: 0 }];

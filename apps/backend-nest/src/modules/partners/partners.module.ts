@@ -6,11 +6,22 @@ import { PartnersService } from './services/partners.service';
 import { PartnerContactsService } from './services/partner-contacts.service';
 import { PartnerInnLookupService } from './services/partner-inn-lookup.service';
 import { PartnerScoringService } from './services/partner-scoring.service';
+import { PartnerExportService } from './services/partner-export.service';
+import { PartnerDerivedStatusService } from './services/partner-derived-status.service';
+import { PartnerListQueryService } from './services/partner-list-query.service';
 
 @Module({
   imports: [forwardRef(() => SupplierEvaluationsModule)],
   controllers: [PartnerContactsController, PartnersController],
-  providers: [PartnersService, PartnerContactsService, PartnerInnLookupService, PartnerScoringService],
+  providers: [
+    PartnersService,
+    PartnerContactsService,
+    PartnerInnLookupService,
+    PartnerScoringService,
+    PartnerExportService,
+    PartnerDerivedStatusService,
+    PartnerListQueryService,
+  ],
   exports: [PartnersService],
 })
 export class PartnersModule {}

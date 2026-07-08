@@ -5,8 +5,8 @@ import {
   mutedTagStyle,
   SURFACE_BLOCKED,
   SURFACE_NEUTRAL,
-} from '../../../constants/statusBadgeSurfaces';
-import { Department, Position, User } from '../../../types/user';
+} from '@/constants/statusBadgeSurfaces';
+import { Department, Position, User } from '@/types/user';
 
 export const initialFormValues = {
   last_name: '',

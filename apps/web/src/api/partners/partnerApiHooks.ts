@@ -30,12 +30,16 @@ export function usePartners(
   });
 }
 
-export const usePartnerById = (partnerId: string): UseQueryResult<Partner, Error> => {
+export const usePartnerById = (
+  partnerId: string,
+  initialData?: Partner,
+): UseQueryResult<Partner, Error> => {
   return useQuery<Partner, Error>({
     queryKey: partnerQueryKeys.detail(partnerId),
     queryFn: () => partnerApi.getPartnerById(partnerId),
     enabled: isValidUuid(partnerId),
     refetchOnWindowFocus: true,
+    initialData: initialData?.id === partnerId ? initialData : undefined,
   });
 };
 

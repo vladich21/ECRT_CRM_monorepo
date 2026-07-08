@@ -35,7 +35,7 @@ export type PatentsListNavSnapshot = ListReturnSnapshot<PatentFilterTab, PatentA
   sortOrder: 'asc' | 'desc';
 };
 
-export function buildPatentsListNavSnapshot(
+export function serializePatentsListPersistedUi(
   searchQuery: string,
   activeTab: PatentFilterTab,
   applied: PatentAdvancedFilters,
@@ -43,7 +43,6 @@ export function buildPatentsListNavSnapshot(
   pageSize: number,
   sortBy: PatentListSortBy,
   sortOrder: 'asc' | 'desc',
-  scrollY?: number,
 ): PatentsListNavSnapshot {
   return {
     ...makeListReturnSnapshot({
@@ -59,14 +58,13 @@ export function buildPatentsListNavSnapshot(
       },
       page,
       pageSize,
-      scrollY,
     }),
     sortBy,
     sortOrder,
   };
 }
 
-export function parsePatentsListNavSnapshot(raw: unknown): {
+export function parsePatentsListPersistedUi(raw: unknown): {
   searchQuery: string;
   activeTab: PatentFilterTab;
   appliedFilters: PatentAdvancedFilters;
@@ -74,7 +72,6 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
   pageSize: number;
   sortBy: PatentListSortBy;
   sortOrder: 'asc' | 'desc';
-  scrollY?: number;
 } | null {
   const parsed = readListReturnSnapshot(raw, {
     defaultTab: 'all',
@@ -113,6 +110,5 @@ export function parsePatentsListNavSnapshot(raw: unknown): {
     appliedFilters: { ...DEFAULT_PATENT_FILTERS, ...parsed.appliedFilters },
     sortBy,
     sortOrder,
-    scrollY: parsed.scrollY,
   };
 }

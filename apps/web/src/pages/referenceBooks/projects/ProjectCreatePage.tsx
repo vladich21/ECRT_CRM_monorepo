@@ -9,13 +9,13 @@ import {
 import { Button, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { useCreateProject } from '../../../api/projects/projectApiHooks';
-import { BackButton } from '../../../components/backButton/BackButton';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
-import { PageHeader } from '../../../components/pageLayout/PageHeader';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useReferenceData } from '@/api/hooks/useReferences';
+import { useCreateProject } from '@/api/projects/projectApiHooks';
+import { BackButton } from '@/components/backButton/BackButton';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
+import { PageHeader } from '@/components/pageLayout/PageHeader';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { initialFormValues } from './data';
 import styles from './ProjectFormPage.module.scss';
 

@@ -4,7 +4,7 @@ import { LogoutOutlined, UserSwitchOutlined } from '@ant-design/icons';
 
 import { impersonationApi } from '../../api/impersonation/impersonationApi';
 import { refreshSessionUser } from '../../api/auth/refreshSessionUser';
-import { useNotification } from '../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import useAuthStore from '../../store/AuthStore';
 import styles from './ImpersonationBanner.module.scss';
 

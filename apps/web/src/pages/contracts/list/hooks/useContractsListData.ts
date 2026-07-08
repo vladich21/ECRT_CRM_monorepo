@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import type { ContractsListParams } from '@/api/contracts/contractApi';
 import { useContracts } from '@/api/contracts/contractApiHooks';
-import { useReferenceData } from '@/api/hooks/useReferences';
+import { useContractReferenceData } from '@/api/hooks/useContractReferenceData';
 import { EMPTY_DELETION_TAB_COUNTS } from '@/constants/deletionScope';
 import type { ContractListReferences } from '../ContractsListPage.types';
 
@@ -38,7 +38,7 @@ export function useContractsListData(apiFilters: ContractsListParams, page: numb
     data: referenceBooks,
     isError: isRefsError,
     isLoading: isRefsLoading,
-  } = useReferenceData(['partners', 'contractStates', 'contractCategories', 'contractTypes', 'projects']);
+  } = useContractReferenceData();
 
   const contracts = data?.data ?? [];
   const total = data?.total ?? 0;

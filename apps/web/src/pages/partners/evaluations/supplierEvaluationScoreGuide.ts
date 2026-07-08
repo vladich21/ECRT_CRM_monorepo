@@ -1,5 +1,3 @@
-import type { SupplierEvaluationCriterion } from '../../../types/supplierEvaluation';
-
 export type ScoreGuideStep = {
   score: number;
   label: string;
@@ -34,15 +32,3 @@ export const SUPPLIER_EVALUATION_SCORE_GUIDE: ScoreGuideStep[] = [
     description: 'Полное соответствие требованиям, образцовое выполнение обязательств.',
   },
 ];
-
-export function buildCriterionScoreGuideContent(criterion: SupplierEvaluationCriterion): string {
-  const description = criterion.description?.trim();
-  const scale = SUPPLIER_EVALUATION_SCORE_GUIDE.map(
-    step => `${step.label} - ${step.description}`,
-  ).join('\n');
-
-  if (description) {
-    return `${description}\n\nШкала баллов:\n${scale}`;
-  }
-  return `Шкала баллов:\n${scale}`;
-}

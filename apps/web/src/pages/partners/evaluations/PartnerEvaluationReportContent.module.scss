@@ -1,0 +1,334 @@
+@use '../../../styles/variables' as v;
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: v.$bg-primary;
+  border: 1px solid v.$border-tertiary;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(30, 41, 59, 0.06);
+}
+
+.cardTitle {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: v.$text-secondary;
+}
+
+.sectionTitle {
+  margin: 4px 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: v.$text-secondary;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fieldLabel {
+  font-size: v.$font-sm;
+  color: v.$text-quaternary;
+}
+
+.fieldValue {
+  font-weight: 600;
+  color: v.$text-secondary;
+  word-break: break-word;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1.15fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.radarCard,
+.gaugeCard {
+  min-width: 0;
+}
+
+.gaugeCard .cardTitle {
+  line-height: 1.3;
+}
+
+.trendGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trendCard {
+  background: v.$bg-primary;
+  border: 1px solid v.$border-tertiary;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px rgba(30, 41, 59, 0.04);
+}
+
+.trendTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: v.$text-secondary;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chartFrame {
+  width: 100%;
+  min-width: 0;
+}
+
+.chartFramePrint {
+  width: 100%;
+  max-width: 680px;
+}
+
+.gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.gaugeValue {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.gaugeSubtitle {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: v.$text-quaternary;
+  text-align: center;
+}
+
+.gaugeTrack {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  margin-top: 8px;
+}
+
+.gaugeZoneD,
+.gaugeZoneC,
+.gaugeZoneB,
+.gaugeZoneA {
+  height: 100%;
+}
+
+.gaugeZoneD {
+  width: 40%;
+  background: #ffd6d6;
+}
+
+.gaugeZoneC {
+  width: 20%;
+  background: #fff0c2;
+}
+
+.gaugeZoneB {
+  width: 20%;
+  background: #d9f5cf;
+}
+
+.gaugeZoneA {
+  width: 20%;
+  background: #c2ecc8;
+}
+
+.gaugeFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  opacity: 0.85;
+  border-radius: 6px 0 0 6px;
+}
+
+.gaugeScale {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 11px;
+  color: v.$text-quaternary;
+}
+
+.matrixToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.matrixPickLabel {
+  font-weight: 600;
+  color: v.$text-tertiary;
+}
+
+.evalSelect {
+  min-width: 280px;
+}
+
+.matrixComment {
+  margin-top: 16px;
+}
+
+.matrixHead {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid v.$border-tertiary;
+}
+
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  th,
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid v.$border-tertiary;
+    text-align: left;
+  }
+
+  thead th {
+    background: v.$bg-secondary;
+    font-weight: 700;
+    color: v.$text-tertiary;
+    font-size: v.$font-sm;
+  }
+}
+
+.matrixNum {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  width: 90px;
+}
+
+.matrixTotal td {
+  font-weight: 800;
+  background: v.$bg-secondary;
+  border-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .matrixHead,
+  .trendGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  .section {
+    gap: 12px;
+  }
+
+  .section[data-report-layout='print'] .row2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card,
+  .trendCard {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none;
+    border-color: #d9d9d9;
+    padding: 12px 14px;
+  }
+
+  .cardTitle,
+  .sectionTitle {
+    color: #1e293b;
+  }
+
+  .row2 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 10px;
+  }
+
+  .gaugeCard .cardTitle {
+    font-size: 14px;
+  }
+
+  .gaugeTrack,
+  .gaugeFill,
+  .gaugeZoneD,
+  .gaugeZoneC,
+  .gaugeZoneB,
+  .gaugeZoneA {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .trendGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .trendCard :global(.recharts-bar-rectangle),
+  .trendCard :global(path.recharts-curve),
+  .card :global(.recharts-bar-rectangle),
+  .card :global(path.recharts-curve),
+  .card :global(polygon.recharts-radar-polygon) {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .matrix {
+    font-size: 12px;
+
+    th,
+    td {
+      padding: 6px 8px;
+    }
+  }
+
+  .matrixHead {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+
+  .matrixComment {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .chartFrame :global(.recharts-responsive-container),
+  .chartFrame :global(.recharts-wrapper),
+  .chartFrame :global(svg) {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

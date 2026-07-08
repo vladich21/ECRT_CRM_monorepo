@@ -66,7 +66,7 @@ export class JwtGuard implements CanActivate {
 
     let sectionPermissions = payload.sectionPermissions ?? [];
 
-    // Если pv в токене не совпадает с серверным — перевыпускаем токен
+    // Если pv в токене не совпадает с серверным - перевыпускаем токен
     // с актуальным snapshot прав. Также покрывает старые токены без pv.
     // impersonatedBy сохраняем, чтобы не сломать активную сессию имперсонации.
     if (payload.pv !== this.permissionsVersion.get()) {

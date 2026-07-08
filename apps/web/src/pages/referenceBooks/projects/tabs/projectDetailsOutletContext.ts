@@ -1,4 +1,4 @@
-import type { Project } from '../../../../types/referenceTypes';
+import type { Project } from '@/types/referenceTypes';
 
 export type ProjectDetailsOutletContext = {
   project: Project;

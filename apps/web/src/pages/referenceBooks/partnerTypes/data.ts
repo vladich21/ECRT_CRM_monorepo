@@ -1,4 +1,4 @@
-import { PartnerType } from '../../../types/partner';
+import { PartnerType } from '@/types/partner';
 
 export const columns = [
   {

@@ -1,6 +1,6 @@
 import type { Dayjs } from 'dayjs';
 
-import { PROJECT_STATUS_SURFACES, type StatusBadgeSurface } from '../../../constants/statusBadgeSurfaces';
+import { PROJECT_STATUS_SURFACES, type StatusBadgeSurface } from '@/constants/statusBadgeSurfaces';
 
 export type ProjectFilterTab = 'all' | 'active' | 'completed' | 'pending' | 'paused' | 'cancelled' | 'deleted';
 export type ProjectEndDatePresenceFilter = 'any' | 'set' | 'empty';

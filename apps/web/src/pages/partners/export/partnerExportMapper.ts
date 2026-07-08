@@ -35,7 +35,7 @@ function formatEvaluationRequired(value: Partner['evaluation_required']): string
     case 'overdue':
       return 'Требуется переоценка';
     case 'none':
-      return '—';
+      return '-';
     default:
       return '';
   }

@@ -6,16 +6,16 @@ import {
   useCreateContractType,
   useDeleteContractType,
   useUpdateContractType,
-} from '../../../api/contracts/contractTypeApiHooks';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { ReferenceBookItemCard } from '../../../components/referenceBooks/ReferenceBookItemCard';
-import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
-import { useMutateByModal } from '../../../customhooks/useMutateByModal';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getEntityById } from '../../../helpers/getEntityById';
-import { getNameById } from '../../../helpers/getNameById';
-import { ContractType } from '../../../types/contract';
+} from '@/api/contracts/contractTypeApiHooks';
+import ReferenceBookListPage from '@/components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '@/components/referenceBooks/ReferenceBookCardList';
+import { ReferenceBookItemCard } from '@/components/referenceBooks/ReferenceBookItemCard';
+import { getEntityById } from '@/helpers/getEntityById';
+import { getNameById } from '@/helpers/getNameById';
+import { useOpenAntdDeleteConfirm } from '@/hooks/modals/confirmDelete';
+import { useMutateByModal } from '@/hooks/modals/useMutateByModal';
+import { useNotification } from '@/hooks/notifications/useNotification';
+import { ContractType } from '@/types/contract';
 
 const ContractTypesListPage: React.FC = () => {
   const navigate = useNavigate();

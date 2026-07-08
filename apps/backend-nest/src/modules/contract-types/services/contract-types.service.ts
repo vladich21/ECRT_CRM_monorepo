@@ -3,6 +3,12 @@ import { Injectable, Logger, NotFoundException, ConflictException } from '@nestj
 import { DatabaseService } from '../../../database/database.service';
 import { refContractTypes } from '../../../database/schema';
 
+function isPgForeignKeyViolation(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const cause = (err as { cause?: { code?: string } }).cause;
+  return cause?.code === '23503';
+}
+
 @Injectable()
 export class ContractTypesService {
   private readonly logger = new Logger(ContractTypesService.name);
@@ -51,8 +57,8 @@ export class ContractTypesService {
       return { success: true };
     } catch (err) {
       if (err instanceof NotFoundException) throw err;
-      if ((err as any)?.cause?.code === '23503') {
-        throw new ConflictException('Нельзя удалить тип договора — он используется в существующих договорах');
+      if (isPgForeignKeyViolation(err)) {
+        throw new ConflictException('Нельзя удалить тип договора - он используется в существующих договорах');
       }
       throw err;
     }

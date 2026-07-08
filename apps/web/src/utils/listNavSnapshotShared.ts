@@ -9,7 +9,6 @@ export function listNavSnapshotFormatVersion(raw: unknown): number | undefined {
 export function asListNavSnapshotV1Record(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object') return null;
   const v = listNavSnapshotFormatVersion(raw);
-  // v3 — реестр контрагентов: добавлены sortBy / sortOrder к формату v1–v2.
   if (v !== 1 && v !== 2 && v !== 3) return null;
   return raw as Record<string, unknown>;
 }
@@ -17,13 +16,7 @@ export function asListNavSnapshotV1Record(raw: unknown): Record<string, unknown>
 export function parseListNavSnapshotBase(
   snapshotRecord: Record<string, unknown>,
   defaultPageSize: number,
-): { searchQuery: string; page: number; pageSize: number; scrollY?: number } {
-  const scrollY =
-    typeof snapshotRecord.scrollY === 'number' &&
-    Number.isFinite(snapshotRecord.scrollY) &&
-    snapshotRecord.scrollY >= 0
-      ? snapshotRecord.scrollY
-      : undefined;
+): { searchQuery: string; page: number; pageSize: number } {
   return {
     searchQuery: typeof snapshotRecord.searchQuery === 'string' ? snapshotRecord.searchQuery : '',
     page: typeof snapshotRecord.page === 'number' && snapshotRecord.page >= 1 ? snapshotRecord.page : 1,
@@ -31,7 +24,6 @@ export function parseListNavSnapshotBase(
       typeof snapshotRecord.pageSize === 'number' && snapshotRecord.pageSize >= 1
         ? snapshotRecord.pageSize
         : defaultPageSize,
-    scrollY,
   };
 }
 
@@ -42,7 +34,6 @@ export type ListReturnSnapshot<TTab extends string, TApplied> = {
   applied: TApplied;
   page: number;
   pageSize: number;
-  scrollY?: number;
 };
 
 export function makeListReturnSnapshot<TTab extends string, TApplied>(params: {
@@ -51,7 +42,6 @@ export function makeListReturnSnapshot<TTab extends string, TApplied>(params: {
   applied: TApplied;
   page: number;
   pageSize: number;
-  scrollY?: number;
 }): ListReturnSnapshot<TTab, TApplied> {
   return { version: 1, ...params };
 }
@@ -72,7 +62,6 @@ export function readListReturnSnapshot<TTab extends string, TApplied>(
   appliedFilters: TApplied;
   page: number;
   pageSize: number;
-  scrollY?: number;
 } | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -85,8 +74,6 @@ export function readListReturnSnapshot<TTab extends string, TApplied>(
     typeof r.pageSize === 'number' && Number.isInteger(r.pageSize) && r.pageSize >= 1
       ? r.pageSize
       : opts.defaultPageSize;
-  const scrollY =
-    typeof r.scrollY === 'number' && Number.isFinite(r.scrollY) && r.scrollY >= 0 ? r.scrollY : undefined;
 
   return {
     searchQuery,
@@ -94,6 +81,5 @@ export function readListReturnSnapshot<TTab extends string, TApplied>(
     appliedFilters: opts.readApplied(r.applied),
     page,
     pageSize,
-    scrollY,
   };
 }

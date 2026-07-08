@@ -54,7 +54,7 @@ function readGrantApplied(rawApplied: unknown): PatentGrantsRegistryAdvancedFilt
   };
 }
 
-export function buildPatentGrantsRegistryListSnapshot(
+export function serializePatentGrantsRegistryPersistedUi(
   searchQuery: string,
   grantScopeTab: PatentGrantRegistryListScope,
   applied: PatentGrantsRegistryAdvancedFilters,
@@ -62,7 +62,6 @@ export function buildPatentGrantsRegistryListSnapshot(
   pageSize: number,
   sortBy: PatentGrantsRegistrySortBy,
   sortOrder: 'asc' | 'desc',
-  scrollY?: number,
 ) {
   return {
     ...makeListReturnSnapshot({
@@ -71,14 +70,13 @@ export function buildPatentGrantsRegistryListSnapshot(
       applied: readGrantApplied(applied),
       page,
       pageSize,
-      scrollY,
     }),
     sortBy,
     sortOrder,
   };
 }
 
-export function parsePatentGrantsRegistryListSnapshot(raw: unknown): {
+export function parsePatentGrantsRegistryPersistedUi(raw: unknown): {
   searchQuery: string;
   grantScopeTab: PatentGrantRegistryListScope;
   appliedFilters: PatentGrantsRegistryAdvancedFilters;
@@ -86,7 +84,6 @@ export function parsePatentGrantsRegistryListSnapshot(raw: unknown): {
   pageSize: number;
   sortBy: PatentGrantsRegistrySortBy;
   sortOrder: 'asc' | 'desc';
-  scrollY?: number;
 } | null {
   const parsed = readListReturnSnapshot(raw, {
     defaultTab: 'all',
@@ -108,6 +105,5 @@ export function parsePatentGrantsRegistryListSnapshot(raw: unknown): {
     pageSize: parsed.pageSize,
     sortBy,
     sortOrder,
-    scrollY: parsed.scrollY,
   };
 }

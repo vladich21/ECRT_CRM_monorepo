@@ -3,13 +3,13 @@ import type { RegistryExportCellValue } from '../../../components/registryExport
 
 import { PATENT_EXPORT_EXCEL_OPTIONS, type PatentExportColumnKey } from './patentExportColumns';
 
-export function exportPatentsToExcel(
+export async function exportPatentsToExcel(
   headers: string[],
   rows: RegistryExportCellValue[][],
   columnKeys: PatentExportColumnKey[],
   fileNamePrefix = 'reestr_rid',
-): void {
-  exportRegistryToExcel(
+): Promise<void> {
+  await exportRegistryToExcel(
     { ...PATENT_EXPORT_EXCEL_OPTIONS, fileNamePrefix },
     headers,
     rows,

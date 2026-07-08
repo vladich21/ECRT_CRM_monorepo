@@ -5,7 +5,7 @@ import styles from '../ProjectDetails.module.scss';
 import type { ProjectDetailsOutletContext } from './projectDetailsOutletContext';
 
 function formatDate(dateStr: string) {
-  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
+  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '-';
 }
 
 function getInitials(name: string) {
@@ -28,7 +28,7 @@ export default function ProjectDetailsMainTab() {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{project.code || '—'}</div>
+                <div className={styles.kpiValue}>{project.code || '-'}</div>
                 <div className={styles.kpiLabel}>Код</div>
               </div>
               <div className={styles.kpiIcon}>

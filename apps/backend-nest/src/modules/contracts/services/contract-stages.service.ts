@@ -5,6 +5,7 @@ import { DatabaseService } from '../../../database/database.service';
 import { contractStages } from '../../../database/schema';
 
 type StageRow = typeof contractStages.$inferSelect;
+type StageInsert = typeof contractStages.$inferInsert;
 
 @Injectable()
 export class ContractStagesService {
@@ -29,11 +30,11 @@ export class ContractStagesService {
   }
 
   async create(contractId: string, data: Record<string, unknown>): Promise<unknown> {
-    const insertData = this.mapRequestToColumns(data) as Record<string, unknown>;
+    const insertData = this.mapRequestToColumns(data) as Partial<StageInsert>;
     insertData.contractId = contractId;
     const [row] = await this.db.db
       .insert(contractStages)
-      .values(insertData as any)
+      .values(insertData as StageInsert)
       .returning();
     return this.toResponse(row);
   }
@@ -43,11 +44,11 @@ export class ContractStagesService {
     stageId: string,
     data: Record<string, unknown>,
   ): Promise<unknown | null> {
-    const updateData = this.mapRequestToColumns(data) as Record<string, unknown>;
+    const updateData = this.mapRequestToColumns(data) as Partial<StageInsert>;
     updateData.updatedAt = new Date();
     await this.db.db
       .update(contractStages)
-      .set(updateData as any)
+      .set(updateData)
       .where(and(eq(contractStages.id, stageId), eq(contractStages.contractId, contractId)));
     return this.findOne(contractId, stageId);
   }

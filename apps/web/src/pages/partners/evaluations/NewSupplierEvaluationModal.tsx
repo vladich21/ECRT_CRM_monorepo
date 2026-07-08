@@ -9,7 +9,7 @@ import {
   useSupplierEvaluationDetail,
   useSupplierEvaluationsList,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import type {
   SupplierEvaluationCriterion,
   SupplierEvaluationDetail,

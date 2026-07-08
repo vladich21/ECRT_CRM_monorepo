@@ -19,11 +19,11 @@ type Refs =
   | null;
 
 function formatDate(dateStr: string) {
-  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '—';
+  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '-';
 }
 
 function formatMoney(amount: number | null | undefined) {
-  if (amount == null) return '—';
+  if (amount == null) return '-';
   return `${amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`;
 }
 type Props = {
@@ -32,7 +32,7 @@ type Props = {
   onClick: (contract: Contract) => void;
 };
 export function ContractCard({ contract, refs, onClick }: Props) {
-  const partnerName = refs?.partners?.find(partner => partner.id === contract.partner_id)?.name ?? '—';
+  const partnerName = refs?.partners?.find(partner => partner.id === contract.partner_id)?.name ?? '-';
   const contractTypeName = getNameById(contract.contract_type_id, refs?.contractTypes ?? []);
   const projectEntity = getEntityById(contract.project_id, refs?.projects ?? []);
   const projectLabel = formatProjectChipLabel(projectEntity);
@@ -41,8 +41,8 @@ export function ContractCard({ contract, refs, onClick }: Props) {
   const effectiveTagClass = contract.is_active ? styles.contractEffectiveTag : styles.contractInactiveTag;
   const periodStr =
     contract.start_date || contract.end_date
-      ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' — ')
-      : '—';
+      ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' - ')
+      : '-';
   const amountExclStr = formatMoney(contract.amount_excl_vat);
   const amountInclStr = formatMoney(contract.amount_incl_vat);
   const heading = formatContractRegistryCardHeading(contract);

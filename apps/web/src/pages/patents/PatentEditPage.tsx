@@ -14,7 +14,7 @@ import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
 import { Loader } from '@/components/loader/Loader';
 import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader, { detailHeaderVariantForPatentRidStatus } from '@/components/pageLayout/DetailPageHeader';
-import { useNotification } from '@/customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import { formReferenceId } from '@/helpers/formReferenceId';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
@@ -73,7 +73,7 @@ export default function PatentEditPage() {
     [patentFiles],
   );
   /**
-   * После cold start `useEffect` отрабатывает после paint — Ant Design Select иногда показывает value (uuid),
+   * После cold start `useEffect` отрабатывает после paint - Ant Design Select иногда показывает value (uuid),
    * пока опции не «привязались». useLayoutEffect + key на Form синхронизируют значения до отрисовки.
    */
   useLayoutEffect(() => {
@@ -213,7 +213,7 @@ export default function PatentEditPage() {
             : currentRegNumberCir
               ? 'Сдано в ЦИР'
               : 'Подготовка документации';
-  const responsibleName = getNameById(responsibleId, referenceBooks.users ?? []) || '—';
+  const responsibleName = getNameById(responsibleId, referenceBooks.users ?? []) || '-';
   const projectEntity = getEntityById(projectId, referenceBooks.projects ?? []);
   const projectChipLabel = formatProjectChipLabel(projectEntity);
   const headingLine = formatPatentRegistryCardHeading({

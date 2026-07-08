@@ -40,7 +40,7 @@ export class HrSyncSchedulerService implements OnModuleInit, OnModuleDestroy {
         .runSyncWithLock()
         .then((out) => {
           if (out.skipped) {
-            this.logger.debug('HR sync (планировщик): пропуск — синхронизация уже выполняется');
+            this.logger.debug('HR sync (планировщик): пропуск - синхронизация уже выполняется');
             return;
           }
           const { created, updated, errors, departments, positions } = out.result;

@@ -6,6 +6,8 @@ import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { getDaysUntilDate, shouldShowDeadlineBanner } from '@/pages/contracts/utils/contractDetailsUtils';
 
+import type { Contract } from '@/types/contract';
+
 const REFERENCE_TYPES: ReferenceType[] = [
   'contractStates',
   'contractCategories',
@@ -15,8 +17,8 @@ const REFERENCE_TYPES: ReferenceType[] = [
   'users',
 ];
 
-export function useContractDetailsData(contractId: string) {
-  const { data: contract, isLoading, isError } = useContractById(contractId);
+export function useContractDetailsData(contractId: string, initialContract?: Contract) {
+  const { data: contract, isLoading, isError } = useContractById(contractId, initialContract);
   const { data: referenceBooks } = useReferenceData(REFERENCE_TYPES);
   const { data: contractFiles = [] } = useFilesByEntity('contract', contractId);
   const { data: stagesData } = useContractStages(contractId);

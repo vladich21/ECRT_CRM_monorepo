@@ -7,8 +7,8 @@ import { Loader } from '../../components/loader/Loader';
 import pi from '../../components/pageLayout/profileInfoCards.module.scss';
 import { UserProfileBody } from '../../components/userProfile/UserProfileBody';
 import { userHeaderRoleChips } from '../../components/userProfile/userHeaderRoleChips';
-import { UseLogout } from '../../customhooks/useLogout';
-import { useNotification } from '../../customhooks/useNotification';
+import { UseLogout } from '@/hooks/useLogout';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import useAuthStore from '../../store/AuthStore';
 import styles from './Profile.module.scss';
 

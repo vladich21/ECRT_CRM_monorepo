@@ -8,6 +8,10 @@ import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 
+type ContractRow = typeof contracts.$inferSelect;
+type ContractInsert = typeof contracts.$inferInsert;
+type ContractPreviewRow = Pick<ContractRow, 'id' | 'name' | 'number'>;
+
 export type ContractListTab = 'all' | 'active' | 'draft' | 'inactive';
 
 export interface ContractQueryFilters {
@@ -106,29 +110,38 @@ export class ContractsService {
     partnerFilter?: SQL,
     pagination?: PaginationParams,
     options?: { referenceSignedContractsOnly?: boolean },
-  ) {
+  ): Promise<ContractPreviewRow[] | ContractRow[]> {
     const baseWhere = this.contractsListBaseWhere(partnerFilter, options);
 
     if (preview) {
-      let query: any = this.db.db
+      const baseQuery = this.db.db
         .select({ id: contracts.id, name: contracts.name, number: contracts.number })
         .from(contracts)
         .where(baseWhere)
         .orderBy(asc(contracts.number));
-      if (pagination) query = query.limit(pagination.limit).offset(pagination.offset);
-      return query;
+      if (pagination) {
+        return baseQuery.limit(pagination.limit).offset(pagination.offset);
+      }
+      return baseQuery;
     }
 
-    let query: any = this.db.db.select().from(contracts).where(baseWhere).orderBy(asc(contracts.number));
-    if (pagination) query = query.limit(pagination.limit).offset(pagination.offset);
-    return query;
+    const baseQuery = this.db.db.select().from(contracts).where(baseWhere).orderBy(asc(contracts.number));
+    if (pagination) {
+      return baseQuery.limit(pagination.limit).offset(pagination.offset);
+    }
+    return baseQuery;
   }
 
-  private mapContractsRows(rows: any[], preview: boolean): unknown[] {
+  private mapContractsRows(rows: ContractPreviewRow[], preview: true): unknown[];
+  private mapContractsRows(rows: ContractRow[], preview: false): unknown[];
+  private mapContractsRows(rows: ContractPreviewRow[] | ContractRow[], preview: boolean): unknown[] {
     if (preview) {
-      return rows.map((row) => ({ id: String(row.id), name: row.name ?? row.number ?? '' }));
+      return (rows as ContractPreviewRow[]).map((row) => ({
+        id: String(row.id),
+        name: row.name ?? row.number ?? '',
+      }));
     }
-    return rows.map((row) => this.toResponse(row));
+    return (rows as ContractRow[]).map((row) => this.toResponse(row));
   }
 
   private mergeWhereParts(parts: SQL[]): SQL {
@@ -294,7 +307,7 @@ export class ContractsService {
       'endDate',
       'dateSigned',
     ]);
-    const insertData: Record<string, unknown> = {};
+    const insertData: Partial<ContractInsert> = {};
     for (const [requestKey, columnKey] of Object.entries(requestFieldToColumn)) {
       let rawValue = data[requestKey];
       if (rawValue === undefined) continue;
@@ -317,7 +330,7 @@ export class ContractsService {
     }
     insertData.stateId = stateId;
     insertData.isActive = await this.resolveIsActiveFromStateId(String(stateId));
-    const [row] = await this.db.db.insert(contracts).values(insertData as any).returning();
+    const [row] = await this.db.db.insert(contracts).values(insertData as ContractInsert).returning();
     this.invalidateListCache();
     await this.refreshPartnerDerivedStatusForPartnerIds([row?.partnerId]);
     return row ? this.toResponse(row) : null;
@@ -344,7 +357,7 @@ export class ContractsService {
         referenceSignedContractsOnly: signedOnly,
       });
       const result = {
-        data: this.mapContractsRows(rows, !!preview),
+        data: this.mapContractsRows(rows as ContractPreviewRow[], true),
         total: rows.length,
       };
       this.setListCache(key, result);
@@ -359,7 +372,7 @@ export class ContractsService {
         this.getContractsTotal(partnerFilter),
         this.getContractsRows(true, partnerFilter, { limit, offset }),
       ]);
-      return { data: this.mapContractsRows(rows, true), total };
+      return { data: this.mapContractsRows(rows as ContractPreviewRow[], true), total };
     }
 
     const filterParts = await this.buildContractFilterParts(filters);
@@ -591,7 +604,7 @@ export class ContractsService {
     return restored;
   }
 
-  private toResponse(row: (typeof contracts.$inferSelect)) {
+  private toResponse(row: ContractRow) {
     return {
       id: String(row.id),
       number: row.number ?? '',

@@ -17,7 +17,7 @@ export class ImpersonationController {
 
   /**
    * Войти как пользователь.
-   * Право admin.impersonate:edit обязательно (по сидам — только у роли admin).
+   * Право admin.impersonate:edit обязательно (по сидам - только у роли admin).
    */
   @Post(':userId')
   @RequirePermission(SECTIONS.ADMIN_IMPERSONATE, 'edit')
@@ -39,7 +39,7 @@ export class StopImpersonationController {
 
   /**
    * Завершить имперсонацию.
-   * Намеренно без @RequirePermission — текущая JWT-сессия может уже не иметь
+   * Намеренно без @RequirePermission - текущая JWT-сессия может уже не иметь
    * admin.impersonate (мы под целевым пользователем). Доступ контролируем по
    * наличию impersonatedBy в токене.
    */

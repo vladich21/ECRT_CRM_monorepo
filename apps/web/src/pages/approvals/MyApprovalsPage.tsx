@@ -84,12 +84,12 @@ export default function MyApprovalsPage() {
     { title: 'Задача', dataIndex: 'title' },
     {
       title: 'Объект',
-      render: (_, r) => (r.entity_type && r.entity_id ? entityCell(r.entity_type, r.entity_id) : '—'),
+      render: (_, r) => (r.entity_type && r.entity_id ? entityCell(r.entity_type, r.entity_id) : '-'),
     },
     {
       title: 'Срок',
       dataIndex: 'due_date',
-      render: (v: string | null) => (v ? new Date(v).toLocaleDateString('ru-RU') : '—'),
+      render: (v: string | null) => (v ? new Date(v).toLocaleDateString('ru-RU') : '-'),
     },
     {
       title: 'Приоритет',

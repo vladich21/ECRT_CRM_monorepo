@@ -42,7 +42,7 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // Сначала .env — общие секреты (SMTP и т.д.), затем .env.development;
+      // Сначала .env - общие секреты (SMTP и т.д.), затем .env.development;
       // при совпадении ключей побеждает .env (см. merge в @nestjs/config loadEnvFile).
       envFilePath: ['.env', '.env.development'],
     }),
@@ -73,7 +73,7 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
     PartnerTypesModule,
     PartnerEconomicCategoriesModule,
     // ВАЖНО: до FilesModule. У FilesController пустой префикс и жадный
-    // @Get(':entityType/:entityId/:filename') — он перехватывает любые
+    // @Get(':entityType/:entityId/:filename') - он перехватывает любые
     // 3-сегментные GET /api/X/Y/Z. Approvals (references/*, routes/:id,
     // processes/:id) должен зарегистрировать роуты раньше files-catch-all.
     ApprovalsModule,

@@ -22,10 +22,10 @@ interface AuthRequest extends Request {
 
 /**
  * Проверяет права из метаданных декораторов @RequirePermission /
- * @RequireAnyPermission. Запускается ПОСЛЕ JwtGuard — рассчитывает на
+ * @RequireAnyPermission. Запускается ПОСЛЕ JwtGuard - рассчитывает на
  * заполненный request.user.sectionPermissions.
  *
- * Если декораторов нет — пропускает (open by default; глобальной
+ * Если декораторов нет - пропускает (open by default; глобальной
  * блокировки не делаем, т.к. много существующих эндпоинтов без меток).
  */
 @Injectable()

@@ -1,10 +1,9 @@
 import type { SQL } from 'drizzle-orm';
-import { and, asc, count, desc, eq, exists, ilike, inArray, isNull, ne, not, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import {
   ConflictException,
   Inject,
   Injectable,
-  InternalServerErrorException,
   Logger,
   forwardRef,
 } from '@nestjs/common';
@@ -15,110 +14,36 @@ import {
   relPartnersTypes,
   relPartnersCompetencies,
   contracts,
-  refPartnerStatuses,
   refPartnerEconomicCategories,
   refPartnerTypes,
   refPartnerCompetencies,
   refPartnerCategories,
   supplierEvaluations,
   supplierPartnerProjectBlocks,
-  partnerContacts,
-  files,
 } from '../../../database/schema';
 import { computePartnerIsApproved, inferPartnerCategoryKind } from '../domain/partner-approval.rules';
 import { PaginationParams } from '../../../common/pagination';
-import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
-import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
+import type { DeletedScope } from '../../../common/deleted-scope';
 import { SupplierEvaluationsService } from '../../supplier-evaluations/services/supplier-evaluations.service';
-import { buildFileDownloadUrl } from '../../files/file-download-url';
 import { getFileBaseUrl } from '../../files/files-config';
+import { PartnerExportService, type PartnersExportPayload } from './partner-export.service';
+import { PartnerDerivedStatusService } from './partner-derived-status.service';
+import { PartnerListQueryService } from './partner-list-query.service';
 
-export type PartnerListTabScope = 'all' | 'ready' | 'in_progress' | 'key_supplier';
-
-export type PartnerListTriState = 'yes' | 'no' | 'all';
-
-export type PartnerListSortField =
-  | 'name'
-  | 'created_at'
-  | 'weighted_score'
-  | 'next_reevaluation_date'
-  | 'status_name';
-
-export type PartnerListSortOrder = 'asc' | 'desc';
-
-export type PartnerEvaluationCategoryFilterToken = 'A' | 'B' | 'C' | 'D' | 'none';
-export type PartnerEvaluationRequiredValue = 'none' | 'missing' | 'overdue';
-
-export interface PartnerQueryFilters {
-  search?: string;
-  typeIds?: string[];
-  statusIds?: string[];
-  competenceIds?: string[];
-  readiness?: PartnerListTabScope;
-  deletedScope?: DeletedScope;
-  evaluationCategories?: PartnerEvaluationCategoryFilterToken[];
-  categoryIds?: string[];
-  categoryIdsIncludeNull?: boolean;
-  evaluationRequired?: PartnerListTriState;
-  isKeySupplier?: PartnerListTriState;
-  isTargeted?: PartnerListTriState;
-  reevaluationOverdue?: PartnerListTriState;
-  hasActiveBlocks?: PartnerListTriState;
-  isApproved?: PartnerListTriState;
-  legalCheckPassed?: PartnerListTriState;
-  questionnaireFilled?: PartnerListTriState;
-  initialAssessmentDone?: PartnerListTriState;
-  sortBy?: PartnerListSortField;
-  sortOrder?: PartnerListSortOrder;
-  previewExcludeArchived?: boolean;
-}
-
-export interface PartnersListPayload {
-  data: unknown[];
-  total: number;
-  tab_counts: {
-    all: number;
-    ready: number;
-    in_progress: number;
-    key_supplier: number;
-  };
-  deletion_tab_counts: DeletionTabCounts;
-}
-
-export interface PartnersExportPayload {
-  data: unknown[];
-  total: number;
-  truncated: boolean;
-}
-
-export interface PartnerExportFileLinkPayload {
-  name: string;
-  url: string;
-}
-
-export interface PartnerExportExtrasPayload {
-  contacts_summary: string;
-  primary_contact_name: string;
-  primary_contact_position: string;
-  primary_contact_phone: string;
-  primary_contact_email: string;
-  contracts_summary: string;
-  contracts_count: number;
-  legal_verification_files: string;
-  legal_verification_file_links: PartnerExportFileLinkPayload[];
-  questionnaire_files: string;
-  questionnaire_file_links: PartnerExportFileLinkPayload[];
-  partner_files: string;
-  partner_file_links: PartnerExportFileLinkPayload[];
-  avg_project_score: number | null;
-  next_reevaluation_date: string | null;
-  initial_evaluation_score: number | null;
-  blocked_projects_count: number;
-}
+export type { PartnersExportPayload, PartnerExportFileLinkPayload, PartnerExportExtrasPayload } from './partner-export.service';
+export type {
+  PartnerEvaluationCategoryFilterToken,
+  PartnerEvaluationRequiredValue,
+  PartnerListSortField,
+  PartnerListSortOrder,
+  PartnerListTabScope,
+  PartnerListTriState,
+  PartnerQueryFilters,
+  PartnersListPayload,
+} from './partner-list.types';
+import type { PartnerEvaluationRequiredValue, PartnerQueryFilters, PartnersListPayload } from './partner-list.types';
 
 const PARTNER_EXPORT_MAX_ROWS = 10_000;
-const EVAL_SCOPE_PROJECT = 'project';
-const EVAL_SCOPE_INITIAL = 'initial';
 
 @Injectable()
 export class PartnersService {
@@ -129,398 +54,10 @@ export class PartnersService {
     private readonly config: ConfigService,
     @Inject(forwardRef(() => SupplierEvaluationsService))
     private readonly supplierEvaluationsService: SupplierEvaluationsService,
+    private readonly partnerExportService: PartnerExportService,
+    private readonly derivedStatus: PartnerDerivedStatusService,
+    private readonly listQueryService: PartnerListQueryService,
   ) {}
-
-  private listTabSql(tab: PartnerListTabScope): SQL | undefined {
-    switch (tab) {
-      case 'all':
-        return undefined;
-      case 'ready':
-        return and(
-          eq(partners.legalCheckPassed, true),
-          eq(partners.questionnaireFilled, true),
-          eq(partners.initialAssessmentDone, true),
-        );
-      case 'in_progress':
-        return or(
-          eq(partners.legalCheckPassed, false),
-          eq(partners.questionnaireFilled, false),
-          eq(partners.initialAssessmentDone, false),
-        );
-      case 'key_supplier':
-        return eq(partners.isKeySupplier, true);
-    }
-  }
-
-  private basePlusReadiness(baseParts: SQL[], tab: PartnerListTabScope): SQL {
-    const extra = this.listTabSql(tab);
-    const parts = extra ? [...baseParts, extra] : [...baseParts];
-    return parts.length ? and(...parts)! : sql`true`;
-  }
-
-  private whereWithDeletion(
-    baseParts: SQL[],
-    readinessTab: PartnerListTabScope,
-    deletedScope: DeletedScope,
-  ): SQL {
-    const inner = this.basePlusReadiness(baseParts, readinessTab);
-    const dels = sqlPartsForDeletedScope(partners.isDeleted, deletedScope);
-    if (dels.length === 0) return inner;
-    return and(inner, dels[0])!;
-  }
-
-  private seActiveProjectPredicates() {
-    return [
-      eq(supplierEvaluations.partnerId, partners.id),
-      eq(supplierEvaluations.status, 'active'),
-      eq(supplierEvaluations.scope, 'project'),
-    ] as const;
-  }
-
-  private partnerApprovedMatchSql(): SQL {
-    const blockedExists = exists(
-      this.db.db
-        .select({ one: sql`1` })
-        .from(supplierPartnerProjectBlocks)
-        .where(
-          and(
-            eq(supplierPartnerProjectBlocks.partnerId, partners.id),
-            eq(supplierPartnerProjectBlocks.isActive, true),
-          )!,
-        ),
-    );
-    const resourceCategory = exists(
-      this.db.db
-        .select({ one: sql`1` })
-        .from(refPartnerCategories)
-        .where(
-          and(eq(refPartnerCategories.id, partners.categoryId), ilike(refPartnerCategories.name, '%ресурс%'))!,
-        ),
-    );
-    const hasActiveInitialEval = exists(
-      this.db.db
-        .select({ one: sql`1` })
-        .from(supplierEvaluations)
-        .where(
-          and(
-            eq(supplierEvaluations.partnerId, partners.id),
-            eq(supplierEvaluations.scope, 'initial'),
-            eq(supplierEvaluations.status, 'active'),
-          )!,
-        ),
-    );
-    return and(
-      not(blockedExists),
-      or(
-        and(resourceCategory, eq(partners.legalCheckPassed, true))!,
-        and(
-          not(resourceCategory),
-          eq(partners.legalCheckPassed, true),
-          eq(partners.questionnaireFilled, true),
-          or(eq(partners.initialAssessmentDone, true), hasActiveInitialEval)!,
-        )!,
-      )!,
-    )!;
-  }
-
-  private partnerEngineeringCategorySql(): SQL {
-    return exists(
-      this.db.db
-        .select({ one: sql`1` })
-        .from(refPartnerCategories)
-        .where(
-          and(
-            eq(refPartnerCategories.id, partners.categoryId),
-            ilike(refPartnerCategories.name, '%инжинир%'),
-          )!,
-        ),
-    );
-  }
-
-  private async requiredEvaluationAttentionSql(): Promise<SQL> {
-    const statusIds = await this.resolvePartnerOperationalStatusIds();
-    const isEngineering = this.partnerEngineeringCategorySql();
-    const approvedExpr = this.partnerApprovedMatchSql();
-
-    // Только утвержденные инжиниринговые со статусом Активный или Потенциальный.
-    const shouldBeEvaluated = and(
-      isEngineering,
-      approvedExpr,
-      or(
-        eq(partners.statusId, statusIds.activeId),
-        eq(partners.statusId, statusIds.potentialId),
-      )!,
-    )!;
-
-    const hasActiveInitialEval = exists(
-      this.db.db
-        .select({ one: sql`1` })
-        .from(supplierEvaluations)
-        .where(
-          and(
-            eq(supplierEvaluations.partnerId, partners.id),
-            eq(supplierEvaluations.scope, 'initial'),
-            eq(supplierEvaluations.status, 'active'),
-          )!,
-        ),
-    );
-    const overdueEvalExists = exists(
-      this.db.db
-        .select({ one: sql`1` })
-        .from(supplierEvaluations)
-        .where(
-          and(
-            eq(supplierEvaluations.partnerId, partners.id),
-            eq(supplierEvaluations.status, 'active'),
-            sql`${supplierEvaluations.nextReevaluationDate} is not null`,
-            sql`${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE`,
-          )!,
-        ),
-    );
-
-    // Missing: Активный + нет первичной оценки.
-    const isActiveMissing = and(
-      eq(partners.statusId, statusIds.activeId),
-      not(hasActiveInitialEval),
-    )!;
-    // Overdue: есть первичная оценка И переоценка просрочена (для Активных и Потенциальных).
-    const isOverdue = and(hasActiveInitialEval, overdueEvalExists)!;
-
-    return and(shouldBeEvaluated, or(isActiveMissing, isOverdue)!)!;
-  }
-
-  private appendRegistryExtendedFilters(parts: SQL[], filters?: PartnerQueryFilters): void {
-    if (!filters) return;
-    const triStateValue = (value?: PartnerListTriState) => value ?? 'all';
-
-    if (filters.categoryIds?.length || filters.categoryIdsIncludeNull) {
-      const categoryParts: SQL[] = [];
-      if (filters.categoryIds?.length) {
-        categoryParts.push(inArray(partners.categoryId, filters.categoryIds));
-      }
-      if (filters.categoryIdsIncludeNull) {
-        categoryParts.push(isNull(partners.categoryId));
-      }
-      if (categoryParts.length === 1) parts.push(categoryParts[0]!);
-      else if (categoryParts.length > 1) parts.push(or(...categoryParts)!);
-    }
-
-    if (triStateValue(filters.isKeySupplier) === 'yes') parts.push(eq(partners.isKeySupplier, true));
-    if (triStateValue(filters.isKeySupplier) === 'no') parts.push(eq(partners.isKeySupplier, false));
-    if (triStateValue(filters.isTargeted) === 'yes') parts.push(eq(partners.isTargeted, true));
-    if (triStateValue(filters.isTargeted) === 'no') parts.push(eq(partners.isTargeted, false));
-    if (triStateValue(filters.legalCheckPassed) === 'yes') parts.push(eq(partners.legalCheckPassed, true));
-    if (triStateValue(filters.legalCheckPassed) === 'no') parts.push(eq(partners.legalCheckPassed, false));
-    if (triStateValue(filters.questionnaireFilled) === 'yes') parts.push(eq(partners.questionnaireFilled, true));
-    if (triStateValue(filters.questionnaireFilled) === 'no') parts.push(eq(partners.questionnaireFilled, false));
-    if (triStateValue(filters.initialAssessmentDone) === 'yes') parts.push(eq(partners.initialAssessmentDone, true));
-    if (triStateValue(filters.initialAssessmentDone) === 'no') parts.push(eq(partners.initialAssessmentDone, false));
-
-    const cats = filters.evaluationCategories;
-    if (cats?.length) {
-      const letters = cats.filter((c): c is 'A' | 'B' | 'C' | 'D' =>
-        c === 'A' || c === 'B' || c === 'C' || c === 'D',
-      );
-      const wantNone = cats.includes('none');
-      const orParts: SQL[] = [];
-      if (letters.length) {
-        orParts.push(
-          exists(
-            this.db.db
-              .select({ one: sql`1` })
-              .from(supplierEvaluations)
-              .where(
-                and(...this.seActiveProjectPredicates(), inArray(supplierEvaluations.category, letters))!,
-              ),
-          ),
-        );
-      }
-      if (wantNone) {
-        orParts.push(
-          not(
-            exists(
-              this.db.db
-                .select({ one: sql`1` })
-                .from(supplierEvaluations)
-                .where(and(...this.seActiveProjectPredicates())!),
-            ),
-          ),
-        );
-      }
-      if (orParts.length === 1) parts.push(orParts[0]!);
-      else if (orParts.length > 1) parts.push(or(...orParts)!);
-    }
-
-    if (triStateValue(filters.reevaluationOverdue) === 'yes') {
-      parts.push(
-        exists(
-          this.db.db
-            .select({ one: sql`1` })
-            .from(supplierEvaluations)
-            .where(
-              and(
-                ...this.seActiveProjectPredicates(),
-                sql`${supplierEvaluations.nextReevaluationDate} is not null`,
-                sql`${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE`,
-              )!,
-            ),
-        ),
-      );
-    }
-    if (triStateValue(filters.reevaluationOverdue) === 'no') {
-      parts.push(
-        not(
-          exists(
-            this.db.db
-              .select({ one: sql`1` })
-              .from(supplierEvaluations)
-              .where(
-                and(
-                  ...this.seActiveProjectPredicates(),
-                  sql`${supplierEvaluations.nextReevaluationDate} is not null`,
-                  sql`${supplierEvaluations.nextReevaluationDate} < CURRENT_DATE`,
-                )!,
-              ),
-          ),
-        ),
-      );
-    }
-
-    if (triStateValue(filters.hasActiveBlocks) === 'yes') {
-      parts.push(
-        exists(
-          this.db.db
-            .select({ one: sql`1` })
-            .from(supplierPartnerProjectBlocks)
-            .where(
-              and(
-                eq(supplierPartnerProjectBlocks.partnerId, partners.id),
-                eq(supplierPartnerProjectBlocks.isActive, true),
-              )!,
-            ),
-        ),
-      );
-    }
-    if (triStateValue(filters.hasActiveBlocks) === 'no') {
-      parts.push(
-        not(
-          exists(
-            this.db.db
-              .select({ one: sql`1` })
-              .from(supplierPartnerProjectBlocks)
-              .where(
-                and(
-                  eq(supplierPartnerProjectBlocks.partnerId, partners.id),
-                  eq(supplierPartnerProjectBlocks.isActive, true),
-                )!,
-              ),
-          ),
-        ),
-      );
-    }
-
-    const approvedTri = triStateValue(filters.isApproved);
-    if (approvedTri === 'yes' || approvedTri === 'no') {
-      const approvedExpr = this.partnerApprovedMatchSql();
-      parts.push(approvedTri === 'yes' ? approvedExpr : not(approvedExpr));
-    }
-  }
-
-  private buildPartnerListOrderBy(sortBy?: PartnerListSortField, sortOrder?: PartnerListSortOrder): SQL[] {
-    const dirDesc = sortOrder === 'desc';
-    switch (sortBy) {
-      case 'created_at':
-        return [dirDesc ? desc(partners.createdAt) : asc(partners.createdAt)];
-      case 'weighted_score': {
-        const expr = sql`(select avg(cast(weighted_score as numeric)) from supplier_evaluations se where se.partner_id = ${partners.id} and se.status = 'active' and se.scope = 'project')`;
-        return [dirDesc ? sql`${expr} DESC NULLS LAST` : sql`${expr} ASC NULLS LAST`];
-      }
-      case 'next_reevaluation_date': {
-        const expr = sql`(select min(se.next_reevaluation_date) from supplier_evaluations se where se.partner_id = ${partners.id} and se.status = 'active' and se.scope = 'project')`;
-        return [dirDesc ? sql`${expr} DESC NULLS LAST` : sql`${expr} ASC NULLS LAST`];
-      }
-      case 'status_name': {
-        const expr = sql`(select s.name from ref_partner_statuses s where s.id = ${partners.statusId})`;
-        return [dirDesc ? sql`${expr} DESC NULLS LAST` : sql`${expr} ASC NULLS LAST`];
-      }
-      case 'name':
-      default:
-        return [dirDesc ? desc(partners.name) : asc(partners.name)];
-    }
-  }
-
-  private async countPartners(where: SQL): Promise<number> {
-    const rows = await this.db.db.select({ value: count() }).from(partners).where(where);
-    return Number(rows[0]?.value ?? 0);
-  }
-
-  private isOperationalStatusDeriveEnabled(): boolean {
-    return true;
-  }
-
-  private async syncDerivedPartnerStatusForPartnersMatching(where: SQL): Promise<void> {
-    if (!this.isOperationalStatusDeriveEnabled()) return;
-    const idRows = await this.db.db
-      .select({ id: partners.id })
-      .from(partners)
-      .where(where)
-      .orderBy(asc(partners.name));
-    const partnerIds = idRows.map((row) => String(row.id)).filter(Boolean);
-    const parallelBatchSize = 40;
-    for (let startIndex = 0; startIndex < partnerIds.length; startIndex += parallelBatchSize) {
-      const chunk = partnerIds.slice(startIndex, startIndex + parallelBatchSize);
-      await Promise.all(
-        chunk.map((partnerId) => this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false })),
-      );
-    }
-  }
-
-  private async buildPartnerBaseParts(filters?: PartnerQueryFilters): Promise<SQL[] | null> {
-    const parts: SQL[] = [];
-    const raw = filters?.search?.trim();
-    if (raw) {
-      const normalized = raw.replace(/\s+/g, ' ').trim();
-      if (normalized.length > 0) {
-        const escaped = normalized.replace(/[\\%_]/g, '\\$&');
-        const term = `%${escaped}%`;
-        parts.push(
-          or(
-            sql`${partners.name} ILIKE ${term} ESCAPE '\\'`,
-            sql`${partners.shortName} ILIKE ${term} ESCAPE '\\'`,
-            sql`${partners.inn} ILIKE ${term} ESCAPE '\\'`,
-          )!,
-        );
-      }
-    }
-    if (filters?.statusIds?.length) {
-      parts.push(inArray(partners.statusId, filters.statusIds));
-    }
-    if (filters?.typeIds?.length) {
-      const typeRows = await this.db.db
-        .select({ partnerId: relPartnersTypes.partnerId })
-        .from(relPartnersTypes)
-        .where(inArray(relPartnersTypes.typeId, filters.typeIds));
-      const matchedIds = [...new Set(typeRows.map((relRow) => relRow.partnerId).filter(Boolean))] as string[];
-      if (matchedIds.length === 0) return null;
-      parts.push(inArray(partners.id, matchedIds));
-    }
-    if (filters?.competenceIds?.length) {
-      const compRows = await this.db.db
-        .select({ partnerId: relPartnersCompetencies.partnerId })
-        .from(relPartnersCompetencies)
-        .where(inArray(relPartnersCompetencies.competenceId, filters.competenceIds));
-      const matchedIds = [...new Set(compRows.map((relRow) => relRow.partnerId).filter(Boolean))] as string[];
-      if (matchedIds.length === 0) return null;
-      parts.push(inArray(partners.id, matchedIds));
-    }
-    this.appendRegistryExtendedFilters(parts, filters);
-    const evaluationRequiredTri = filters?.evaluationRequired ?? 'all';
-    if (evaluationRequiredTri === 'yes' || evaluationRequiredTri === 'no') {
-      const requiredAttentionExpr = await this.requiredEvaluationAttentionSql();
-      parts.push(evaluationRequiredTri === 'yes' ? requiredAttentionExpr : not(requiredAttentionExpr));
-    }
-    return parts;
-  }
 
   async findAll(
     preview?: boolean,
@@ -529,7 +66,7 @@ export class PartnersService {
   ): Promise<PartnersListPayload> {
 
     if (preview) {
-      const { blockedId, archiveId } = await this.resolvePartnerOperationalStatusIds();
+      const { blockedId, archiveId } = await this.derivedStatus.resolvePartnerOperationalStatusIds();
       const previewParts: SQL[] = [
         eq(partners.isDeleted, false),
         or(isNull(partners.statusId), ne(partners.statusId, blockedId))!,
@@ -576,7 +113,7 @@ export class PartnersService {
       };
     }
 
-    const baseParts = await this.buildPartnerBaseParts(filters);
+    const baseParts = await this.listQueryService.buildPartnerBaseParts(filters);
     if (baseParts === null) {
       return {
         data: [],
@@ -591,30 +128,30 @@ export class PartnersService {
 
     const { limit = 20, offset = 0 } = pagination ?? {};
 
-    const listWhere = this.whereWithDeletion(baseParts, tab, deletedScope);
+    const listWhere = this.listQueryService.whereWithDeletion(baseParts, tab, deletedScope);
 
     const shouldSyncDerivedStatusBeforeList =
-      this.isOperationalStatusDeriveEnabled() && Boolean(filters?.statusIds?.length) && limit > 1;
+      this.derivedStatus.isOperationalStatusDeriveEnabled() && Boolean(filters?.statusIds?.length) && limit > 1;
 
     if (shouldSyncDerivedStatusBeforeList) {
-      await this.syncDerivedPartnerStatusForPartnersMatching(listWhere);
+      await this.derivedStatus.syncDerivedPartnerStatusForPartnersMatching(listWhere);
     }
 
     const [tabAll, tabReady, tabInProgress, tabKeySupplier, delActive, delDeleted, delAll, listTotal, rows] =
       await Promise.all([
-        this.countPartners(this.whereWithDeletion(baseParts, 'all', 'active')),
-        this.countPartners(this.whereWithDeletion(baseParts, 'ready', 'active')),
-        this.countPartners(this.whereWithDeletion(baseParts, 'in_progress', 'active')),
-        this.countPartners(this.whereWithDeletion(baseParts, 'key_supplier', 'active')),
-        this.countPartners(this.whereWithDeletion(baseParts, tab, 'active')),
-        this.countPartners(this.whereWithDeletion(baseParts, tab, 'deleted')),
-        this.countPartners(this.whereWithDeletion(baseParts, tab, 'all')),
-        this.countPartners(listWhere),
+        this.listQueryService.countPartners(this.listQueryService.whereWithDeletion(baseParts, 'all', 'active')),
+        this.listQueryService.countPartners(this.listQueryService.whereWithDeletion(baseParts, 'ready', 'active')),
+        this.listQueryService.countPartners(this.listQueryService.whereWithDeletion(baseParts, 'in_progress', 'active')),
+        this.listQueryService.countPartners(this.listQueryService.whereWithDeletion(baseParts, 'key_supplier', 'active')),
+        this.listQueryService.countPartners(this.listQueryService.whereWithDeletion(baseParts, tab, 'active')),
+        this.listQueryService.countPartners(this.listQueryService.whereWithDeletion(baseParts, tab, 'deleted')),
+        this.listQueryService.countPartners(this.listQueryService.whereWithDeletion(baseParts, tab, 'all')),
+        this.listQueryService.countPartners(listWhere),
         this.db.db
           .select()
           .from(partners)
           .where(listWhere)
-          .orderBy(...this.buildPartnerListOrderBy(filters?.sortBy, filters?.sortOrder))
+          .orderBy(...this.listQueryService.buildPartnerListOrderBy(filters?.sortBy, filters?.sortOrder))
           .limit(limit)
           .offset(offset),
       ]);
@@ -624,17 +161,17 @@ export class PartnersService {
     const pagePartnerIds = rows.map((row) => row.id).filter(Boolean) as string[];
 
     if (
-      this.isOperationalStatusDeriveEnabled() &&
+      this.derivedStatus.isOperationalStatusDeriveEnabled() &&
       !shouldSyncDerivedStatusBeforeList &&
       pagePartnerIds.length > 0
     ) {
       await Promise.all(
-        pagePartnerIds.map((partnerId) => this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false })),
+        pagePartnerIds.map((partnerId) => this.derivedStatus.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false })),
       );
     }
 
     let rowsForList = rows;
-    if (this.isOperationalStatusDeriveEnabled() && pagePartnerIds.length > 0) {
+    if (this.derivedStatus.isOperationalStatusDeriveEnabled() && pagePartnerIds.length > 0) {
       const freshList = await this.db.db.select().from(partners).where(inArray(partners.id, pagePartnerIds));
       const freshByPartnerId = new Map(freshList.map((freshRow) => [String(freshRow.id), freshRow]));
       rowsForList = rows.map((originalRow) => freshByPartnerId.get(String(originalRow.id)) ?? originalRow);
@@ -680,7 +217,7 @@ export class PartnersService {
         this.loadBlockedPartnerIds(partnerIds),
         this.loadInitialEvalPartnerIds(partnerIds),
         this.loadActiveEvaluationFactsByPartnerId(partnerIds),
-        this.resolvePartnerOperationalStatusIds(),
+        this.derivedStatus.resolvePartnerOperationalStatusIds(),
       ]);
 
     const data = rowsForList.map((row) => {
@@ -735,341 +272,11 @@ export class PartnersService {
       { limit: PARTNER_EXPORT_MAX_ROWS, offset: 0 },
       filters,
     );
-    const total = result.total;
-    const rows = result.data as Array<Record<string, unknown>>;
-    const partnerIds = rows.map((row) => String(row.id ?? '')).filter(Boolean);
-    const extrasByPartnerId = await this.loadPartnerExportExtrasByIds(partnerIds, fileBaseUrl);
-    const data = rows.map((row) => {
-      const partnerId = String(row.id ?? '');
-      return {
-        ...row,
-        export_extras: extrasByPartnerId.get(partnerId) ?? this.emptyPartnerExportExtras(),
-      };
-    });
-    return {
-      data,
-      total,
-      truncated: total > data.length,
-    };
-  }
-
-  private emptyPartnerExportExtras(): PartnerExportExtrasPayload {
-    return {
-      contacts_summary: '',
-      primary_contact_name: '',
-      primary_contact_position: '',
-      primary_contact_phone: '',
-      primary_contact_email: '',
-      contracts_summary: '',
-      contracts_count: 0,
-      legal_verification_files: '',
-      legal_verification_file_links: [],
-      questionnaire_files: '',
-      questionnaire_file_links: [],
-      partner_files: '',
-      partner_file_links: [],
-      avg_project_score: null,
-      next_reevaluation_date: null,
-      initial_evaluation_score: null,
-      blocked_projects_count: 0,
-    };
-  }
-
-  private formatPartnerContactLine(contact: {
-    fullName: string | null;
-    position: string | null;
-    phone: string | null;
-    email: string | null;
-  }): string {
-    return [contact.fullName, contact.position, contact.phone, contact.email]
-      .map((part) => (part ?? '').trim())
-      .filter(Boolean)
-      .join(' · ');
-  }
-
-  private formatPartnerContractLine(contract: {
-    number: string | null;
-    cipher: string | null;
-    name: string | null;
-  }): string {
-    const number = (contract.number ?? '').trim();
-    const cipher = (contract.cipher ?? '').trim();
-    const name = (contract.name ?? '').trim();
-    const head = [number, cipher].filter(Boolean).join(' / ');
-    if (head && name) return `${head} — ${name}`;
-    return head || name;
-  }
-
-  private formatPartnerFileLinks(
-    fileRecords: Array<{ id: string; name: string }>,
-    fileBaseUrl: string,
-  ): PartnerExportFileLinkPayload[] {
-    return fileRecords.map(file => ({
-      name: file.name,
-      url: buildFileDownloadUrl(this.config, file.id, { fileBaseUrl }),
-    }));
-  }
-
-  private isoDateOnly(value: unknown): string {
-    if (value == null) return '';
-    if (typeof value === 'string') return value.length >= 10 ? value.slice(0, 10) : value;
-    if (value instanceof Date) return value.toISOString().slice(0, 10);
-    return String(value).slice(0, 10);
-  }
-
-  private async loadPartnerExportExtrasByIds(
-    partnerIds: string[],
-    fileBaseUrl: string,
-  ): Promise<Map<string, PartnerExportExtrasPayload>> {
-    const map = new Map<string, PartnerExportExtrasPayload>();
-    if (partnerIds.length === 0) return map;
-
-    const [
-      contactRows,
-      contractRows,
-      legalFileRows,
-      questionnaireFileRows,
-      partnerFileRows,
-      evalRows,
-      blockRows,
-      initialEvalRows,
-    ] = await Promise.all([
-      this.db.db
-        .select({
-          partnerId: partnerContacts.partnerId,
-          fullName: partnerContacts.fullName,
-          position: partnerContacts.position,
-          phone: partnerContacts.phone,
-          email: partnerContacts.email,
-          isPrimary: partnerContacts.isPrimary,
-        })
-        .from(partnerContacts)
-        .where(inArray(partnerContacts.partnerId, partnerIds))
-        .orderBy(desc(partnerContacts.isPrimary), asc(partnerContacts.fullName)),
-      this.db.db
-        .select({
-          partnerId: contracts.partnerId,
-          number: contracts.number,
-          cipher: contracts.cipher,
-          name: contracts.name,
-        })
-        .from(contracts)
-        .where(and(inArray(contracts.partnerId, partnerIds), eq(contracts.isDeleted, false))!)
-        .orderBy(asc(contracts.number), asc(contracts.name)),
-      this.db.db
-        .select({ id: files.id, tableId: files.tableId, name: files.name })
-        .from(files)
-        .where(and(eq(files.entityType, 'partner-legal'), inArray(files.tableId, partnerIds))!)
-        .orderBy(asc(files.name)),
-      this.db.db
-        .select({ id: files.id, tableId: files.tableId, name: files.name })
-        .from(files)
-        .where(and(eq(files.entityType, 'partner-questionnaire'), inArray(files.tableId, partnerIds))!)
-        .orderBy(asc(files.name)),
-      this.db.db
-        .select({ id: files.id, tableId: files.tableId, name: files.name })
-        .from(files)
-        .where(and(eq(files.entityType, 'partner'), inArray(files.tableId, partnerIds))!)
-        .orderBy(asc(files.name)),
-      this.db.db
-        .select({
-          partnerId: supplierEvaluations.partnerId,
-          projectId: supplierEvaluations.projectId,
-          evaluatedAt: supplierEvaluations.evaluatedAt,
-          weightedScore: supplierEvaluations.weightedScore,
-          nextReevaluationDate: supplierEvaluations.nextReevaluationDate,
-          status: supplierEvaluations.status,
-        })
-        .from(supplierEvaluations)
-        .where(
-          and(
-            inArray(supplierEvaluations.partnerId, partnerIds),
-            eq(supplierEvaluations.scope, EVAL_SCOPE_PROJECT),
-            inArray(supplierEvaluations.status, ['active', 'archived']),
-          )!,
-        ),
-      this.db.db
-        .select({
-          partnerId: supplierPartnerProjectBlocks.partnerId,
-          projectId: supplierPartnerProjectBlocks.projectId,
-        })
-        .from(supplierPartnerProjectBlocks)
-        .where(
-          and(
-            inArray(supplierPartnerProjectBlocks.partnerId, partnerIds),
-            eq(supplierPartnerProjectBlocks.isActive, true),
-          )!,
-        ),
-      this.db.db
-        .select({
-          partnerId: supplierEvaluations.partnerId,
-          weightedScore: supplierEvaluations.weightedScore,
-        })
-        .from(supplierEvaluations)
-        .where(
-          and(
-            inArray(supplierEvaluations.partnerId, partnerIds),
-            eq(supplierEvaluations.scope, EVAL_SCOPE_INITIAL),
-            eq(supplierEvaluations.status, 'active'),
-          )!,
-        ),
-    ]);
-
-    const contactsByPartner = new Map<string, typeof contactRows>();
-    for (const row of contactRows) {
-      if (!row.partnerId) continue;
-      const pid = String(row.partnerId);
-      const arr = contactsByPartner.get(pid) ?? [];
-      arr.push(row);
-      contactsByPartner.set(pid, arr);
-    }
-
-    const contractsByPartner = new Map<string, typeof contractRows>();
-    for (const row of contractRows) {
-      if (!row.partnerId) continue;
-      const pid = String(row.partnerId);
-      const arr = contractsByPartner.get(pid) ?? [];
-      arr.push(row);
-      contractsByPartner.set(pid, arr);
-    }
-
-    type PartnerExportFileRecord = { id: string; name: string };
-    const legalFilesByPartner = new Map<string, PartnerExportFileRecord[]>();
-    for (const row of legalFileRows) {
-      if (!row.tableId || !row.name || !row.id) continue;
-      const pid = String(row.tableId);
-      const arr = legalFilesByPartner.get(pid) ?? [];
-      arr.push({ id: String(row.id), name: String(row.name) });
-      legalFilesByPartner.set(pid, arr);
-    }
-
-    const questionnaireFilesByPartner = new Map<string, PartnerExportFileRecord[]>();
-    for (const row of questionnaireFileRows) {
-      if (!row.tableId || !row.name || !row.id) continue;
-      const pid = String(row.tableId);
-      const arr = questionnaireFilesByPartner.get(pid) ?? [];
-      arr.push({ id: String(row.id), name: String(row.name) });
-      questionnaireFilesByPartner.set(pid, arr);
-    }
-
-    const partnerFilesByPartner = new Map<string, PartnerExportFileRecord[]>();
-    for (const row of partnerFileRows) {
-      if (!row.tableId || !row.name || !row.id) continue;
-      const pid = String(row.tableId);
-      const arr = partnerFilesByPartner.get(pid) ?? [];
-      arr.push({ id: String(row.id), name: String(row.name) });
-      partnerFilesByPartner.set(pid, arr);
-    }
-
-    const evalsByPartner = new Map<string, typeof evalRows>();
-    for (const row of evalRows) {
-      if (!row.partnerId) continue;
-      const pid = String(row.partnerId);
-      const arr = evalsByPartner.get(pid) ?? [];
-      arr.push(row);
-      evalsByPartner.set(pid, arr);
-    }
-
-    const blocksByPartner = new Map<string, Set<string>>();
-    for (const row of blockRows) {
-      if (!row.partnerId || !row.projectId) continue;
-      const pid = String(row.partnerId);
-      const set = blocksByPartner.get(pid) ?? new Set<string>();
-      set.add(String(row.projectId));
-      blocksByPartner.set(pid, set);
-    }
-
-    const initialEvalByPartner = new Map<string, number>();
-    for (const row of initialEvalRows) {
-      if (!row.partnerId || row.weightedScore == null) continue;
-      initialEvalByPartner.set(String(row.partnerId), Number(row.weightedScore));
-    }
-
-    for (const partnerId of partnerIds) {
-      const contactList = contactsByPartner.get(partnerId) ?? [];
-      const primary =
-        contactList.find((contact) => contact.isPrimary) ?? contactList[0] ?? null;
-      const contactsSummary = contactList
-        .map((contact) =>
-          this.formatPartnerContactLine({
-            fullName: contact.fullName,
-            position: contact.position,
-            phone: contact.phone,
-            email: contact.email,
-          }),
-        )
-        .filter(Boolean)
-        .join('; ');
-
-      const partnerContracts = contractsByPartner.get(partnerId) ?? [];
-      const contractsSummary = partnerContracts
-        .map((contract) =>
-          this.formatPartnerContractLine({
-            number: contract.number,
-            cipher: contract.cipher,
-            name: contract.name,
-          }),
-        )
-        .filter(Boolean)
-        .join('; ');
-
-      const partnerEvalRows = evalsByPartner.get(partnerId) ?? [];
-      const activeEvalRows = partnerEvalRows.filter((row) => row.status === 'active');
-      const rowsForAverage = activeEvalRows.length > 0 ? activeEvalRows : partnerEvalRows;
-      const byProject = new Map<string, (typeof partnerEvalRows)[number]>();
-      for (const evaluationRow of rowsForAverage) {
-        const projectIdKey = String(evaluationRow.projectId);
-        const prev = byProject.get(projectIdKey);
-        const evAt = this.isoDateOnly(evaluationRow.evaluatedAt);
-        const prevAt = prev ? this.isoDateOnly(prev.evaluatedAt) : '';
-        if (!prev || evAt > prevAt) {
-          byProject.set(projectIdKey, evaluationRow);
-        }
-      }
-      const perProject = [...byProject.values()];
-      let avgProjectScore: number | null = null;
-      let nextReevaluationDate: string | null = null;
-      if (perProject.length > 0) {
-        const sum = perProject.reduce((acc, row) => acc + Number(row.weightedScore), 0);
-        avgProjectScore = Math.round((sum / perProject.length) * 100) / 100;
-        if (activeEvalRows.length > 0) {
-          const dates = perProject
-            .map((row) => (row.nextReevaluationDate ? this.isoDateOnly(row.nextReevaluationDate) : null))
-            .filter((dateIso): dateIso is string => Boolean(dateIso));
-          nextReevaluationDate =
-            dates.length === 0 ? null : dates.reduce((earlier, later) => (earlier <= later ? earlier : later));
-        }
-      }
-
-      const legalFileRecords = legalFilesByPartner.get(partnerId) ?? [];
-      const questionnaireFileRecords = questionnaireFilesByPartner.get(partnerId) ?? [];
-      const partnerFileRecords = partnerFilesByPartner.get(partnerId) ?? [];
-      const legalFileLinks = this.formatPartnerFileLinks(legalFileRecords, fileBaseUrl);
-      const questionnaireFileLinks = this.formatPartnerFileLinks(questionnaireFileRecords, fileBaseUrl);
-      const partnerFileLinks = this.formatPartnerFileLinks(partnerFileRecords, fileBaseUrl);
-
-      map.set(partnerId, {
-        contacts_summary: contactsSummary,
-        primary_contact_name: (primary?.fullName ?? '').trim(),
-        primary_contact_position: (primary?.position ?? '').trim(),
-        primary_contact_phone: (primary?.phone ?? '').trim(),
-        primary_contact_email: (primary?.email ?? '').trim(),
-        contracts_summary: contractsSummary,
-        contracts_count: partnerContracts.length,
-        legal_verification_files: legalFileRecords.map(file => file.name).join('; '),
-        legal_verification_file_links: legalFileLinks,
-        questionnaire_files: questionnaireFileRecords.map(file => file.name).join('; '),
-        questionnaire_file_links: questionnaireFileLinks,
-        partner_files: partnerFileRecords.map(file => file.name).join('; '),
-        partner_file_links: partnerFileLinks,
-        avg_project_score: avgProjectScore,
-        next_reevaluation_date: nextReevaluationDate,
-        initial_evaluation_score: initialEvalByPartner.get(partnerId) ?? null,
-        blocked_projects_count: blocksByPartner.get(partnerId)?.size ?? 0,
-      });
-    }
-
-    return map;
+    return this.partnerExportService.buildExportPayload(
+      result.data as Array<Record<string, unknown>>,
+      result.total,
+      fileBaseUrl,
+    );
   }
 
   async findOne(id: string) {
@@ -1082,10 +289,10 @@ export class PartnersService {
     if (!row) return null;
     const pid = String(row.id);
     let rowForResponse = row;
-    if (this.isOperationalStatusDeriveEnabled()) {
-      const statusNameBefore = await this.getPartnerStatusName(row.statusId ? String(row.statusId) : null);
+    if (this.derivedStatus.isOperationalStatusDeriveEnabled()) {
+      const statusNameBefore = await this.derivedStatus.getPartnerStatusName(row.statusId ? String(row.statusId) : null);
       if ((statusNameBefore ?? '').trim() !== 'Архив') {
-        await this.applyDerivedPartnerStatus(pid, { ignoreArchiveLock: false });
+        await this.derivedStatus.applyDerivedPartnerStatus(pid, { ignoreArchiveLock: false });
       }
       const rowsFresh = await this.db.db
         .select()
@@ -1109,7 +316,7 @@ export class PartnersService {
         this.loadBlockedPartnerIds([pid]),
         this.loadInitialEvalPartnerIds([pid]),
         this.loadActiveEvaluationFactsByPartnerId([pid]),
-        this.resolvePartnerOperationalStatusIds(),
+        this.derivedStatus.resolvePartnerOperationalStatusIds(),
       ]);
     const catName = catId ? categoryNameById.get(catId) ?? null : null;
     const hasBlock = blockedPartnerIds.has(pid);
@@ -1137,7 +344,7 @@ export class PartnersService {
     this.validateInnKppRequired(data);
     await this.validateReferences(data);
     const manualArchive = this.parseManualArchiveFlag(data);
-    const statusIds = await this.resolvePartnerOperationalStatusIds();
+    const statusIds = await this.derivedStatus.resolvePartnerOperationalStatusIds();
     const insertData = {
       ...this.mapToDb(data),
       statusId: manualArchive === true ? statusIds.archiveId : null,
@@ -1150,8 +357,8 @@ export class PartnersService {
     await this.syncRelTables(partnerId, data);
     if (manualArchive === true) {
       await this.supplierEvaluationsService.archiveAllActiveByPartner(partnerId);
-    } else if (this.isOperationalStatusDeriveEnabled()) {
-      await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: true });
+    } else if (this.derivedStatus.isOperationalStatusDeriveEnabled()) {
+      await this.derivedStatus.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: true });
     }
     return this.findOne(partnerId);
   }
@@ -1159,8 +366,8 @@ export class PartnersService {
   async update(id: string, data: Record<string, unknown>, userId?: string) {
     const current = await this.findOne(id);
     if (!current) return null;
-    const currentStatusName = this.isOperationalStatusDeriveEnabled()
-      ? await this.getPartnerStatusName(current.status_id ? String(current.status_id) : null)
+    const currentStatusName = this.derivedStatus.isOperationalStatusDeriveEnabled()
+      ? await this.derivedStatus.getPartnerStatusName(current.status_id ? String(current.status_id) : null)
       : null;
     const manualArchive = this.parseManualArchiveFlag(data);
     const manualActive = this.parseManualActiveFlag(data);
@@ -1203,13 +410,13 @@ export class PartnersService {
     await this.syncRelTables(id, data);
 
     if (manualArchive === true) {
-      const hasEffectiveContract = await this.partnerHasAtLeastOneEffectiveContract(id);
+      const hasEffectiveContract = await this.derivedStatus.partnerHasAtLeastOneEffectiveContract(id);
       if (hasEffectiveContract) {
         throw new ConflictException(
           'Невозможно архивировать контрагента: есть действующий договор. Завершите или деактивируйте договор перед архивацией.',
         );
       }
-      const { archiveId } = await this.resolvePartnerOperationalStatusIds();
+      const { archiveId } = await this.derivedStatus.resolvePartnerOperationalStatusIds();
       await this.db.db
         .update(partners)
         .set({
@@ -1220,16 +427,16 @@ export class PartnersService {
         .where(eq(partners.id, id));
       await this.supplierEvaluationsService.archiveAllActiveByPartner(id);
     } else if (manualArchive === false) {
-      await this.exitArchiveStatus(id, userId);
+      await this.derivedStatus.exitArchiveStatus(id, userId);
       if (manualActive !== undefined) {
-        await this.applyManualActiveForResource(id, manualActive, userId);
+        await this.derivedStatus.applyManualActiveForResource(id, manualActive, userId);
       }
-    } else if (this.isOperationalStatusDeriveEnabled()) {
+    } else if (this.derivedStatus.isOperationalStatusDeriveEnabled()) {
       if ((currentStatusName ?? '').trim() !== 'Архив') {
         if (manualActive !== undefined) {
-          await this.applyManualActiveForResource(id, manualActive, userId);
+          await this.derivedStatus.applyManualActiveForResource(id, manualActive, userId);
         }
-        await this.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
+        await this.derivedStatus.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
       }
     }
 
@@ -1267,7 +474,7 @@ export class PartnersService {
   }
 
   async refreshPartnerDerivedStatus(partnerId: string): Promise<void> {
-    await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false });
+    return this.derivedStatus.refreshPartnerDerivedStatus(partnerId);
   }
 
   private async syncRelTables(partnerId: string, data: Record<string, unknown>) {
@@ -1413,227 +620,8 @@ export class PartnersService {
     return undefined;
   }
 
-  private async applyManualActiveForResource(
-    partnerId: string,
-    active: boolean,
-    userId?: string,
-  ): Promise<void> {
-    const categoryName = await this.loadPartnerCategoryName(partnerId);
-    if (inferPartnerCategoryKind(categoryName) !== 'resource') return;
-    const ids = await this.resolvePartnerOperationalStatusIds();
-    await this.db.db
-      .update(partners)
-      .set({
-        statusId: active ? ids.activeId : ids.potentialId,
-        updatedAt: new Date(),
-        ...(userId ? { updatedBy: userId } : {}),
-      })
-      .where(eq(partners.id, partnerId));
-  }
-
-  private async getPartnerStatusName(statusId: string | null | undefined): Promise<string | null> {
-    if (!statusId) return null;
-    const nameRows = await this.db.db
-      .select({ name: refPartnerStatuses.name })
-      .from(refPartnerStatuses)
-      .where(eq(refPartnerStatuses.id, statusId))
-      .limit(1);
-    return nameRows[0]?.name?.trim() ?? null;
-  }
-
   async isPartnerInArchiveStatus(partnerId: string): Promise<boolean> {
-    const rows = await this.db.db
-      .select({ statusId: partners.statusId })
-      .from(partners)
-      .where(and(eq(partners.id, partnerId), eq(partners.isDeleted, false)))
-      .limit(1);
-    if (!rows[0]) return false;
-    const name = await this.getPartnerStatusName(rows[0].statusId ? String(rows[0].statusId) : null);
-    return (name ?? '').trim() === 'Архив';
-  }
-
-  private async resolvePartnerOperationalStatusIds(): Promise<{
-    activeId: string;
-    potentialId: string;
-    blockedId: string;
-    archiveId: string;
-  }> {
-    const rows = await this.db.db
-      .select({ id: refPartnerStatuses.id, name: refPartnerStatuses.name })
-      .from(refPartnerStatuses);
-    const byLower = new Map<string, string>();
-    for (const statusRow of rows) {
-      const normalizedStatusKey = (statusRow.name ?? '').trim().toLowerCase();
-      if (normalizedStatusKey) byLower.set(normalizedStatusKey, String(statusRow.id));
-    }
-    const need = (ru: string) => {
-      const id = byLower.get(ru.toLowerCase());
-      if (!id) {
-        throw new InternalServerErrorException(`В ref_partner_statuses не найден статус «${ru}»`);
-      }
-      return id;
-    };
-    return {
-      activeId: need('Активный'),
-      potentialId: need('Потенциальный'),
-      blockedId: need('Заблокирован'),
-      archiveId: need('Архив'),
-    };
-  }
-
-  private async exitArchiveStatus(partnerId: string, userId?: string): Promise<void> {
-    const ids = await this.resolvePartnerOperationalStatusIds();
-    const partnerRows = await this.db.db
-      .select({ statusId: partners.statusId })
-      .from(partners)
-      .where(eq(partners.id, partnerId))
-      .limit(1);
-    const currentStatusId = partnerRows[0]?.statusId ? String(partnerRows[0].statusId) : null;
-    const nextStatusId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids, currentStatusId);
-    await this.db.db
-      .update(partners)
-      .set({
-        statusId: nextStatusId,
-        updatedAt: new Date(),
-        ...(userId ? { updatedBy: userId } : {}),
-      })
-      .where(eq(partners.id, partnerId));
-  }
-
-  private async partnerHasAtLeastOneEffectiveContract(partnerId: string): Promise<boolean> {
-    const contractRows = await this.db.db
-      .select({ id: contracts.id })
-      .from(contracts)
-      .where(
-        and(
-          eq(contracts.partnerId, partnerId),
-          eq(contracts.isDeleted, false),
-          eq(contracts.isActive, true),
-        )!,
-      )
-      .limit(1);
-    return contractRows.length > 0;
-  }
-
-  private isoDateOnlyEval(value: unknown): string {
-    if (value == null) return '';
-    if (typeof value === 'string') return value.length >= 10 ? value.slice(0, 10) : value;
-    if (value instanceof Date) return value.toISOString().slice(0, 10);
-    return String(value).slice(0, 10);
-  }
-
-  private async partnerAvgWeightedScoreFromActiveEvaluations(partnerId: string): Promise<number | null> {
-    const evalRows = await this.db.db
-      .select({
-        projectId: supplierEvaluations.projectId,
-        evaluatedAt: supplierEvaluations.evaluatedAt,
-        weightedScore: supplierEvaluations.weightedScore,
-      })
-      .from(supplierEvaluations)
-      .where(
-        and(
-          eq(supplierEvaluations.partnerId, partnerId),
-          eq(supplierEvaluations.status, 'active'),
-          eq(supplierEvaluations.scope, 'project'),
-        )!,
-      );
-
-    type EvalPick = (typeof evalRows)[number];
-    const byProject = new Map<string, EvalPick>();
-    for (const evaluationRow of evalRows) {
-      const projectIdKey = String(evaluationRow.projectId);
-      const prev = byProject.get(projectIdKey);
-      const evAt = this.isoDateOnlyEval(evaluationRow.evaluatedAt);
-      const prevAt = prev ? this.isoDateOnlyEval(prev.evaluatedAt) : '';
-      if (!prev || evAt > prevAt) {
-        byProject.set(projectIdKey, evaluationRow);
-      }
-    }
-    const perProject = [...byProject.values()];
-    if (perProject.length === 0) return null;
-    const sum = perProject.reduce((acc, row) => acc + Number(row.weightedScore), 0);
-    return Math.round((sum / perProject.length) * 100) / 100;
-  }
-
-  private async partnerHasActiveProjectEvaluation(partnerId: string): Promise<boolean> {
-    const rows = await this.db.db
-      .select({ id: supplierEvaluations.id })
-      .from(supplierEvaluations)
-      .where(
-        and(
-          eq(supplierEvaluations.partnerId, partnerId),
-          eq(supplierEvaluations.status, 'active'),
-          eq(supplierEvaluations.scope, 'project'),
-        )!,
-      )
-      .limit(1);
-    return rows.length > 0;
-  }
-
-  private async loadPartnerCategoryName(partnerId: string): Promise<string | null> {
-    const rows = await this.db.db
-      .select({ categoryName: refPartnerCategories.name })
-      .from(partners)
-      .leftJoin(refPartnerCategories, eq(refPartnerCategories.id, partners.categoryId))
-      .where(eq(partners.id, partnerId))
-      .limit(1);
-    return rows[0]?.categoryName ?? null;
-  }
-
-  private async computeAutoStatusIdForPartnerRow(
-    partnerId: string,
-    ids: { activeId: string; potentialId: string; blockedId: string },
-    currentStatusId: string | null,
-  ): Promise<string> {
-    const categoryName = await this.loadPartnerCategoryName(partnerId);
-    const categoryKind = inferPartnerCategoryKind(categoryName);
-
-    if (categoryKind === 'engineering') {
-      const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
-      if (avg !== null && avg < 2) {
-        return ids.blockedId;
-      }
-      const hasActiveProjectEval = await this.partnerHasActiveProjectEvaluation(partnerId);
-      return hasActiveProjectEval ? ids.activeId : ids.potentialId;
-    }
-
-    // Ресурсные и прочие: автодеривация не работает — оставляем текущий Активный/Потенциальный/Заблокирован.
-    // Если выходим из Архива (current не в наборе), по умолчанию Потенциальный (применяется в exitArchiveStatus).
-    if (
-      currentStatusId === ids.activeId ||
-      currentStatusId === ids.potentialId ||
-      currentStatusId === ids.blockedId
-    ) {
-      return currentStatusId;
-    }
-    return ids.potentialId;
-  }
-
-  private async applyDerivedPartnerStatus(
-    partnerId: string,
-    opts: { ignoreArchiveLock: boolean },
-  ): Promise<void> {
-    if (!this.isOperationalStatusDeriveEnabled()) {
-      return;
-    }
-    const partnerRows = await this.db.db.select().from(partners).where(eq(partners.id, partnerId)).limit(1);
-    const partnerRow = partnerRows[0];
-    if (!partnerRow) return;
-
-    const ids = await this.resolvePartnerOperationalStatusIds();
-    const statusName = await this.getPartnerStatusName(partnerRow.statusId ? String(partnerRow.statusId) : null);
-    if (statusName === 'Архив' && !opts.ignoreArchiveLock) {
-      return;
-    }
-
-    const curId = partnerRow.statusId ? String(partnerRow.statusId) : null;
-    const nextId = await this.computeAutoStatusIdForPartnerRow(partnerId, ids, curId);
-    if (curId !== nextId) {
-      await this.db.db
-        .update(partners)
-        .set({ statusId: nextId, updatedAt: new Date() })
-        .where(eq(partners.id, partnerId));
-    }
+    return this.derivedStatus.isPartnerInArchiveStatus(partnerId);
   }
 
   private partnerApprovalExtras(
@@ -1737,10 +725,10 @@ export class PartnersService {
     if (!isActive && !isPotential) return 'none';
 
     // Активный без первичной оценки → сигнализируем «требуется первичная оценка» (missing).
-    // Потенциальных без первичной оценки не тревожим — их утверждение и оценка по усмотрению.
+    // Потенциальных без первичной оценки не тревожим - их утверждение и оценка по усмотрению.
     if (isActive && !params.hasInitialEvaluation) return 'missing';
 
-    // Если первичная оценка есть и переоценка просрочена — сигнализируем «требуется переоценка».
+    // Если первичная оценка есть и переоценка просрочена - сигнализируем «требуется переоценка».
     if (params.hasInitialEvaluation && params.hasOverdueEvaluation) return 'overdue';
 
     return 'none';

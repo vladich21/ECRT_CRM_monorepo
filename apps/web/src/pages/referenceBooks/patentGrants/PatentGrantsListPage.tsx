@@ -1,11 +1,11 @@
 import { Spin } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { NotFound } from '../../../components/notFound/NotFound';
-import ReferenceBookListPage from '../../../components/pageLayout/ReferenceBookListPage';
-import { ReferenceBookCardList } from '../../../components/referenceBooks/ReferenceBookCardList';
-import { usePatentGrants } from '../../../api/patents/patentGrantsApiHooks';
-import { PatentGrant } from '../../../types/patent';
+import { NotFound } from '@/components/notFound/NotFound';
+import ReferenceBookListPage from '@/components/pageLayout/ReferenceBookListPage';
+import { ReferenceBookCardList } from '@/components/referenceBooks/ReferenceBookCardList';
+import { usePatentGrants } from '@/api/patents/patentGrantsApiHooks';
+import { PatentGrant } from '@/types/patent';
 import { PatentGrantListCard } from './components/PatentGrantListCard';
 import styles from './PatentGrantsListPage.module.scss';
 

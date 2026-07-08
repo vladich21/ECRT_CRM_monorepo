@@ -19,7 +19,7 @@ interface RawMenuItem {
   icon?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   label: any;
-  /** Если задан — пункт показывается только если есть read-доступ хотя бы к одному из разделов */
+  /** Если задан - пункт показывается только если есть read-доступ хотя бы к одному из разделов */
   requiredSections?: ReadonlyArray<SectionCode | string>;
   children?: RawMenuItem[];
 }
@@ -183,9 +183,9 @@ export function buildMenuItems(
     const out: RawMenuItem[] = [];
     for (const node of nodes) {
       const cleanedChildren = node.children ? filterNodes(node.children) : undefined;
-      // Папка без видимых детей — скрываем
+      // Папка без видимых детей - скрываем
       if (cleanedChildren && cleanedChildren.length === 0) continue;
-      // Лист без прав — скрываем
+      // Лист без прав - скрываем
       if (!cleanedChildren && node.requiredSections && !hasReadAccess(node.requiredSections)) continue;
       out.push({ ...node, children: cleanedChildren });
     }

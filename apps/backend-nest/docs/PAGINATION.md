@@ -48,10 +48,12 @@
 
 ```bash
 cd apps/backend-nest
-npx tsx src/common/pagination.spec.ts
+npm run test:pagination
 ```
 
-Ожидается: `Pagination tests passed.`
+Or from monorepo root: `npm run check:backend` (build + pagination tests).
+
+Expected: `Pagination tests passed.` and 4 passing tests.
 
 ---
 

@@ -1,4 +1,4 @@
-import type { DetailHeaderStatusBadgeVariant } from '../../../../components/pageLayout/detailHeaderStatusBadge';
+import type { DetailHeaderStatusBadgeVariant } from '@/components/pageLayout/detailHeaderStatusBadge';
 import type { CSSProperties } from 'react';
 
 function patentGrantStatusSemantic(status: string): 'success' | 'error' | 'default' {

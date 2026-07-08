@@ -66,7 +66,7 @@ export function ReferenceBookItemCard({
       >
         <div className={styles.titleRow}>
           <div className={styles.title} title={title}>
-            {title || '—'}
+            {title || '-'}
           </div>
           {metaText ? <div className={styles.meta}>{metaText}</div> : null}
         </div>

@@ -7,7 +7,7 @@ export const formatFileSize = (bytes: number): string => {
 };
 
 export const formatFileSizeStr = (size: string | null): string => {
-  if (!size) return '—';
+  if (!size) return '-';
   const bytes = Number(size);
   if (bytes < 1024) return `${bytes} Б`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;

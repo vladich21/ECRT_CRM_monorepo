@@ -56,7 +56,7 @@ export default function ApprovalRoutesListPage() {
     {
       title: 'Тип сущности',
       dataIndex: 'entityTypeCode',
-      render: (code: string | null) => (code ? entityNameByCode.get(code) ?? code : '—'),
+      render: (code: string | null) => (code ? entityNameByCode.get(code) ?? code : '-'),
     },
     { title: 'Шагов', dataIndex: 'stepCount', width: 90 },
     {

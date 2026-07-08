@@ -237,7 +237,7 @@ export function BasicTable<T extends object>({
             type='primary'
             icon={<DownloadOutlined />}
             loading={exportLoading}
-            onClick={() => handleExport(data, enableExpandable, exportFileName, columns)}
+            onClick={() => void handleExport(data, enableExpandable, exportFileName, columns)}
             size='large'
           >
             {exportButtonText}

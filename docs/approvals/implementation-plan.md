@@ -126,7 +126,7 @@ modules/approvals/
 1. `apps/web/src/api/approvals/` — `approvalApi.ts` + `approvalApiHooks.ts` + `approvalQueryKeys.ts` (3-файловый паттерн; инвалидация `approvalState`/`approvalProcess`/`myTasks` в onSuccess).
 2. `components/approvals/ApprovalPanel.tsx` — полиморфная панель (§6.7) по образцу `CommentsList`/`EntityFilesTab` (читает `entityType`+route param). Timeline шагов, sequential-очередь, бейдж «Просрочено», история, кнопки по `DocumentApprovalState`.
 3. Встроить таб «Согласование» в details 4 сущностей (`CONTRACT_DETAILS_TABS` и аналоги) + lazy-роуты при необходимости.
-4. Модалки через ModalStore dispatch (`ModalStore.ts` тип + `App.jsx` MODAL_MAP):
+4. Модалки через ModalStore dispatch (`ModalStore.ts` тип + `GlobalModals.tsx` MODAL_MAP):
    - `approvalStart` (§6.5): выбор маршрута → `start-info` → выбор согласующих/исполнителей.
    - `approvalDecision` (§6.6): approve/reject/return_to_initiator/return_to_step/delegate (radio transfer/add).
 5. `components/employeeSelect/EmployeeSelect.tsx` (+ `EmployeeMultiSelect`) — из `useReferenceData(['users'])` + база `SelectWithQuickAdd`/`UsersMenu`.

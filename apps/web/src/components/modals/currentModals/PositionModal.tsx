@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Button, Form, Input, Space } from 'antd';
 
-import { ModalState } from '../../../store/ModalStore';
+import type { ModalShellProps } from '@/store/ModalStore';
+
 import { BaseModal, BaseModalProps } from '../BaseModal';
 
 export interface PositionFormModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
@@ -11,12 +12,18 @@ export interface PositionFormModalProps extends Omit<BaseModalProps, 'footer' | 
   onConfirm: (values: { name: string }) => void | Promise<void>;
 }
 
-export const PositionFormModal: React.FC<ModalState> = ({
+type PositionFormModalData = {
+  name?: string;
+  nameLabel?: string;
+};
+
+export const PositionFormModal: React.FC<ModalShellProps> = ({
   cancelText = 'Отмена',
   onConfirm,
-  modalData,
+  modalData: rawModalData,
   ...layoutProps
 }) => {
+  const modalData = (rawModalData ?? {}) as PositionFormModalData;
   const [form] = Form.useForm();
   const nameLabel: string = modalData?.nameLabel ?? 'название должности';
 

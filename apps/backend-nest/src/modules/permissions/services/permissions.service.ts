@@ -8,7 +8,7 @@ export class PermissionsService {
   constructor(private readonly db: DatabaseService) {}
 
   /**
-   * Snapshot прав пользователя — ложится в JWT и в request.user.
+   * Snapshot прав пользователя - ложится в JWT и в request.user.
    * Несколько ролей агрегируются через BOOL_OR.
    * Папки (is_folder=true) исключаются.
    */

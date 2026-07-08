@@ -3,26 +3,15 @@ import { DeleteOutlined, EditOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { useFilesByEntity } from '../../../api/files/fileApiHooks';
-import { useReferenceData } from '../../../api/hooks/useReferences';
-import { useDeleteProject, useProjectById, useRestoreProject } from '../../../api/projects/projectApiHooks';
-import { Loader } from '../../../components/loader/Loader';
-import { NotFound } from '../../../components/notFound/NotFound';
+import { Loader } from '@/components/loader/Loader';
+import { NotFound } from '@/components/notFound/NotFound';
 import DetailPageHeader, {
   detailHeaderVariantForProjectStatus,
   detailPageHeaderStyles as hStyles,
-} from '../../../components/pageLayout/DetailPageHeader';
-import type { DeletionScope } from '../../../constants/deletionScope';
-import { useConfirmByModal } from '../../../customhooks/useConfirmByModal';
-import { useNotification } from '../../../customhooks/useNotification';
-import { getNameById } from '../../../helpers/getNameById';
-import {
-  getInternalReturnBackLabel,
-  resolveInternalReturnPath,
-} from '../../../helpers/internalReturnNavigation';
-import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
-import type { ProjectDetailsOutletContext } from './tabs/projectDetailsOutletContext';
-import type { ProjectsListNavSnapshot } from './utils/projectsListNavSnapshot';
+} from '@/components/pageLayout/DetailPageHeader';
+
+import { useProjectDetailsActions } from './hooks/useProjectDetailsActions';
+import { useProjectDetailsData } from './hooks/useProjectDetailsData';
 import {
   getActiveProjectDetailsTab,
   getProjectDetailsTabPath,
@@ -33,41 +22,22 @@ export default function ProjectDetailsPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { contextHolder, showNotification } = useNotification();
-  const { data: project, isLoading, isError } = useProjectById(projectId!);
-  const { data: referenceBooks, isLoading: isRefsLoading } = useReferenceData(['users']);
-  const { data: projectFiles = [], isLoading: isProjectFilesLoading } = useFilesByEntity('project', projectId!);
-  const mutation = useDeleteProject();
-  const restoreMutation = useRestoreProject();
-  const navState = location.state as {
-    from?: string;
-    deletionScope?: DeletionScope;
-    projectsListReturn?: ProjectsListNavSnapshot;
-  } | null;
-  const listDeletionScope = navState?.deletionScope ?? 'active';
-  const projectsListReturn = navState?.projectsListReturn;
-  const backPath = resolveInternalReturnPath(navState?.from, '/projects');
-  const backLabel = getInternalReturnBackLabel(backPath, 'Проекты');
-  const { handleOpenModal } = useConfirmByModal({
-    mutation,
-    successMessage: 'Проект успешно удален',
-    errorMessage: 'Не удалось удалить проект',
-    getMutationProps: () => projectId!,
-    showNotification,
-    redirectPath: '/projects',
-    redirectReplace: true,
-    redirectState: { deletionScope: 'deleted' as const },
-  });
-  const { handleOpenModal: openRestoreModal } = useConfirmByModal({
-    mutation: restoreMutation,
-    successMessage: 'Проект успешно восстановлен',
-    errorMessage: 'Не удалось восстановить проект',
-    getMutationProps: () => projectId!,
-    showNotification,
-    redirectPath: '/projects',
-    redirectReplace: true,
-    redirectState: { listTab: 'all' as const },
-  });
+
+  const {
+    project,
+    isLoading,
+    isError,
+    isRefsLoading,
+    listDeletionScope,
+    backPath,
+    backLabel,
+    statusConfig,
+    documentsTabLabel,
+    outletContext,
+  } = useProjectDetailsData(projectId!);
+
+  const { contextHolder, openDeleteModal, openRestoreModal, handleBack, handleEdit } =
+    useProjectDetailsActions(projectId!, listDeletionScope);
 
   const activeTab = getActiveProjectDetailsTab(location.pathname);
 
@@ -77,48 +47,19 @@ export default function ProjectDetailsPage() {
   };
 
   if (isLoading || isRefsLoading) return <Loader />;
-  if (isError || !project) return <NotFound errorMessage='Проект не найден' />;
-  const st = PROJECT_STATUS_CONFIG[project.status] ?? PROJECT_STATUS_CONFIG.active;
-  const managerName = getNameById(project.manager_id, referenceBooks?.users) || '';
-  const purchaserName = getNameById(project.purchaser_id ?? '', referenceBooks?.users) || '';
-
-  const documentsTabLabel =
-    isProjectFilesLoading && projectFiles === undefined
-      ? 'Проектные документы'
-      : `Проектные документы (${projectFiles.length})`;
-
-  const outletContext: ProjectDetailsOutletContext = {
-    project,
-    managerName,
-    purchaserName,
-    statusLabel: st.label,
-    statusBadgeStyle: {
-      background: st.background,
-      borderColor: st.borderColor,
-      color: st.color,
-    },
-  };
+  if (isError || !project || !statusConfig || !outletContext) {
+    return <NotFound errorMessage='Проект не найден' />;
+  }
 
   return (
     <DetailPageHeader
       title={project.name}
       backLabel={backLabel}
-      onBack={() => {
-        if (backPath !== '/projects') {
-          navigate(backPath);
-          return;
-        }
-        navigate('/projects', {
-          state: {
-            deletionScope: listDeletionScope,
-            ...(projectsListReturn ? { projectsListReturn } : {}),
-          },
-        });
-      }}
+      onBack={() => handleBack(backPath)}
       statusBadge={
         project.is_deleted
           ? { label: 'Удален', variant: 'danger' }
-          : { label: st.label, variant: detailHeaderVariantForProjectStatus(project.status) }
+          : { label: statusConfig.label, variant: detailHeaderVariantForProjectStatus(project.status) }
       }
       metaItems={[
         project.code && (
@@ -134,12 +75,7 @@ export default function ProjectDetailsPage() {
       ].filter(Boolean)}
       actions={
         <>
-          <Button
-            type='primary'
-            icon={<EditOutlined />}
-            disabled={!!project.is_deleted}
-            onClick={() => navigate(`/projects/${projectId}/edit`)}
-          >
+          <Button type='primary' icon={<EditOutlined />} disabled={!!project.is_deleted} onClick={handleEdit}>
             Редактировать
           </Button>
           {project.is_deleted ? (
@@ -152,7 +88,7 @@ export default function ProjectDetailsPage() {
               Восстановить
             </Button>
           ) : (
-            <Button type='primary' danger icon={<DeleteOutlined />} onClick={handleOpenModal}>
+            <Button type='primary' danger icon={<DeleteOutlined />} onClick={openDeleteModal}>
               Удалить
             </Button>
           )}

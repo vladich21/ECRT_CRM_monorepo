@@ -1,20 +1,16 @@
+import type { ModalShellProps } from '@/store/ModalStore';
+
 import FileUpload, { FileWithId } from '../../fileUploader/FileUploader';
-import { BaseModal, BaseModalProps } from '../BaseModal';
+import { BaseModal } from '../BaseModal';
 
-export interface FileModalProps extends Omit<BaseModalProps, 'footer' | 'children'> {
-  isLoading: boolean;
-  onConfirm: (data: FileWithId[]) => Promise<void>;
-}
+export type FileModalProps = ModalShellProps;
 
-export const FileUploadModal: React.FC<FileModalProps> = ({
-  cancelText = 'Отмена',
-  onConfirm,
-  isLoading,
-  ...layoutProps
-}) => {
+export const FileUploadModal: React.FC<ModalShellProps> = ({ onConfirm, loading = false, ...layoutProps }) => {
+  const handleConfirm = (data: FileWithId[]) => Promise.resolve(onConfirm(data));
+
   return (
     <BaseModal {...layoutProps} footer={null}>
-      <FileUpload onConfirm={onConfirm} isLoading={isLoading} />
+      <FileUpload onConfirm={handleConfirm} isLoading={loading} />
     </BaseModal>
   );
 };

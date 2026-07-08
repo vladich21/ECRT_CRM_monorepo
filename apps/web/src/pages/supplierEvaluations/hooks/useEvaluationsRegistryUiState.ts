@@ -1,16 +1,14 @@
 import type { Location, NavigateFunction } from 'react-router-dom';
 
-import { useListReturnFromDetail } from '../../../hooks/useListReturnFromDetail';
-import { useRestoreToken } from '../../../hooks/useServerTablePagination';
-import type { SupplierEvaluationUiStatusParam } from '../../../types/supplierEvaluation';
+import { useRegistryListUiState } from '@/hooks/useRegistryListUiState';
+
+import type { SupplierEvaluationUiStatusParam } from '@/types/supplierEvaluation';
 import type { EvaluationsRegistryAppliedFilters } from '../SupplierEvaluationsRegistryFiltersModal';
 import {
+  loadSupplierEvaluationsRegistryPersistedUi,
   saveSupplierEvaluationsRegistryPersistedUi,
+  type SupplierEvaluationsRegistryPersistedUi,
 } from '../supplierEvaluationsRegistry.model';
-import {
-  EVALUATIONS_REGISTRY_RETURN_STATE_KEY,
-  parseEvaluationsRegistryNavSnapshot,
-} from '../supplierEvaluationsRegistryNavSnapshot';
 
 type EvaluationsRegistryUiSetters = {
   setSearchInput: (value: string) => void;
@@ -22,34 +20,27 @@ type EvaluationsRegistryUiSetters = {
   setPageSize: (size: number) => void;
 };
 
-/** Восстановление реестра оценок при возврате из карточки контрагента. */
 export function useEvaluationsRegistryUiState(
   location: Location,
   navigate: NavigateFunction,
   setters: EvaluationsRegistryUiSetters,
+  persistedUi: SupplierEvaluationsRegistryPersistedUi,
 ) {
-  const [restoreToken, bumpRestoreToken] = useRestoreToken();
-
-  const { pendingScrollY } = useListReturnFromDetail({
+  return useRegistryListUiState({
     location,
     navigate,
-    getRawSnapshot: navigationState => navigationState[EVALUATIONS_REGISTRY_RETURN_STATE_KEY],
-    parse: parseEvaluationsRegistryNavSnapshot,
-    applyParsed: restoredListState => {
-      setters.setSearchInput(restoredListState.searchQuery);
-      setters.flushDebouncedSearch(restoredListState.searchQuery.trim());
-      setters.setRowStatusTab(restoredListState.rowStatusTab);
-      setters.setAppliedListFilters(restoredListState.appliedListFilters);
-      setters.setDraftListFilters(restoredListState.appliedListFilters);
-      setters.setPage(restoredListState.page);
-      setters.setPageSize(restoredListState.pageSize);
-      saveSupplierEvaluationsRegistryPersistedUi({
-        appliedListFilters: restoredListState.appliedListFilters,
-        rowStatusTab: restoredListState.rowStatusTab,
-      });
+    load: loadSupplierEvaluationsRegistryPersistedUi,
+    save: saveSupplierEvaluationsRegistryPersistedUi,
+    getSnapshot: () => persistedUi,
+    apply: (snapshot, { bumpRestoreToken }) => {
+      setters.setSearchInput(snapshot.searchQuery);
+      setters.flushDebouncedSearch(snapshot.searchQuery.trim());
+      setters.setRowStatusTab(snapshot.rowStatusTab);
+      setters.setAppliedListFilters(snapshot.appliedListFilters);
+      setters.setDraftListFilters(snapshot.appliedListFilters);
+      setters.setPage(snapshot.page);
+      setters.setPageSize(snapshot.pageSize);
       bumpRestoreToken();
     },
   });
-
-  return { restoreToken, pendingScrollY };
 }

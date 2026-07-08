@@ -90,7 +90,7 @@ export class ApprovalSnapshotService {
         .returning({ id: approvalProcessSteps.id });
       const processStepId = inserted[0].id;
 
-      // Снапшот назначенцев — только для статичного списка (employee).
+      // Снапшот назначенцев - только для статичного списка (employee).
       if (step.assignmentType === 'employee') {
         const assignees = await tx
           .select({

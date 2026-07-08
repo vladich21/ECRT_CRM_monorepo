@@ -1,7 +1,7 @@
 import { Alert } from 'antd';
 
-import { EntityFilesTab } from '../../../../components/entityFiles/EntityFilesTab';
-import { PROJECT_DOCUMENT_SECTIONS } from '../../../../components/entityFiles/projectDocumentSections';
+import { EntityFilesTab } from '@/components/entityFiles/EntityFilesTab';
+import { PROJECT_DOCUMENT_SECTIONS } from '@/components/entityFiles/projectDocumentSections';
 import styles from '../ProjectDetails.module.scss';
 
 export default function ProjectDocumentsTab() {

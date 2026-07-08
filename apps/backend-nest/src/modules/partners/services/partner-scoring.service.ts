@@ -3,7 +3,6 @@ import {
   BadRequestException,
   Injectable,
   Logger,
-  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -48,22 +47,20 @@ export class PartnerScoringService {
    * Метод принимает ИНН или ОГРН; предпочитаем ОГРН как более точный идентификатор.
    */
   async getScoring(params: { inn?: string | null; ogrn?: string | null }): Promise<PartnerScoringResult> {
-    const apiKey = (this.config.get<string>('KONTUR_KEY') ?? process.env.KONTUR_KEY)?.trim();
-    if (!apiKey) {
-      throw new ServiceUnavailableException(
-        'Скоринг Контур.Фокуса не настроен (KONTUR_KEY на сервере).',
-      );
-    }
-
     const ogrn = params.ogrn?.replace(/\D/g, '') || '';
     const inn = params.inn?.replace(/\D/g, '') || '';
+
+    const apiKey = (this.config.get<string>('KONTUR_KEY') ?? process.env.KONTUR_KEY)?.trim();
+    if (!apiKey) {
+      return { inn: inn || null, ogrn: ogrn || null, focusHref: null, scoringData: [] };
+    }
     if (!ogrn && !inn) {
       throw new BadRequestException('У контрагента не указан ИНН или ОГРН для скоринга.');
     }
 
     const url = new URL(KONTUR_SCORING_URL);
     url.searchParams.set('key', apiKey);
-    // ОГРН однозначно идентифицирует организацию; ИНН — запасной вариант.
+    // ОГРН однозначно идентифицирует организацию; ИНН - запасной вариант.
     if (ogrn) url.searchParams.set('ogrn', ogrn);
     else url.searchParams.set('inn', inn);
 

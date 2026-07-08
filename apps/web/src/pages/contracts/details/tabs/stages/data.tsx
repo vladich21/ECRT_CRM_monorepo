@@ -166,7 +166,7 @@ export const getStageColumnsData = (
       const toneClass = STAGE_STATE_TAG_CLASS[code] ?? styles.tagNeutral;
       return (
         <Tag bordered={false} className={`${styles.statusTagCentered} ${styles.mutedStageTag} ${toneClass}`}>
-          {status?.name ?? '—'}
+          {status?.name ?? '-'}
         </Tag>
       );
     },

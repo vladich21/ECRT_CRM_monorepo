@@ -91,7 +91,7 @@ export const useResubmitProcess = () => {
     }) => approvalApi.resubmit(processId, { comment, keepFileIds, files }),
     onSuccess: (_data, vars) => {
       void invalidateApprovalQueries(qc);
-      // Документы версионируются — инвалидируем файлы сущности.
+      // Документы версионируются - инвалидируем файлы сущности.
       if (vars.entityType && vars.entityId) {
         void qc.invalidateQueries({ queryKey: fileQueryKeys.byEntity(vars.entityType, vars.entityId) });
       }

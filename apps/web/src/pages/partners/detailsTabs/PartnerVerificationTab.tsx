@@ -21,7 +21,7 @@ import { useDeleteFile, useFilesByEntity } from '../../../api/files/fileApiHooks
 import { fileQueryKeys } from '../../../api/files/fileQueryKeys';
 import { invalidatePartnerQueries } from '../../../api/partners/partnerQueryKeys';
 import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
-import { useNotification } from '../../../customhooks/useNotification';
+import { useNotification } from '@/hooks/notifications/useNotification';
 import type { MyFile } from '../../../types/files';
 import type { Partner } from '../../../types/partner';
 import { formatFileSizeStr } from '../../../utils/formatFileSize';
@@ -52,7 +52,7 @@ type SectionProps = {
   isConfirmed: boolean;
   confirmedLabel: string;
   pendingLabel: string;
-  /** Вызывается после успешной загрузки/удаления файла — статус деривируется на сервере. */
+  /** Вызывается после успешной загрузки/удаления файла - статус деривируется на сервере. */
   onAfterChange: () => void;
 };
 

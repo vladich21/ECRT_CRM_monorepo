@@ -3,11 +3,11 @@ import type { TablePaginationConfig } from 'antd/es/table';
 
 /**
  * Серверная пагинация списков:
- * - `useServerTablePagination` — состояние page / pageSize
- * - `build*QueryResetKey` — ключ параметров запроса без page (фильтры, сорт, поиск)
- * - `useResetPageWhenListQueryChanges` — сброс на 1-ю страницу при смене ключа
- * - `useRestoreToken` — после программного restore (nav / localStorage) page не сбрасывается
- * - `useServerPaginationClamp` — page не выходит за пределы при уменьшении total
+ * - `useServerTablePagination` - состояние page / pageSize
+ * - `build*QueryResetKey` - ключ параметров запроса без page (фильтры, сорт, поиск)
+ * - `useResetPageWhenListQueryChanges` - сброс на 1-ю страницу при смене ключа
+ * - `useRestoreToken` - после программного restore (nav / localStorage) page не сбрасывается
+ * - `useServerPaginationClamp` - page не выходит за пределы при уменьшении total
  */
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -75,9 +75,12 @@ export function useRestoreToken(): readonly [number, () => void] {
   return useReducer((value: number) => value + 1, 0);
 }
 
+/** Alias для читаемости: «поколение restore списка» — не сбрасывать page/scroll после programmatic restore. */
+export const useListRestoreGeneration = useRestoreToken;
+
 /**
  * Сброс page → 1 при смене queryResetKey (фильтры / сорт / поиск).
- * restoreToken увеличивают после программного restore — page сохраняется.
+ * restoreToken увеличивают после программного restore - page сохраняется.
  */
 export function useResetPageWhenListQueryChanges(
   queryResetKey: string,

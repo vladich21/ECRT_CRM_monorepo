@@ -1,4 +1,4 @@
-import { PartnerStatus } from '../../../types/partner';
+import { PartnerStatus } from '@/types/partner';
 
 export const columns = [
   {
