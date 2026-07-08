@@ -13,8 +13,8 @@ export function wrapRadarLabel(text: string, maxCharsPerLine = 20): string[] {
 
 type RadarTickProps = {
   payload?: { value?: string };
-  x?: number;
-  y?: number;
+  x?: string | number;
+  y?: string | number;
   textAnchor?: 'inherit' | 'end' | 'start' | 'middle';
   fontSize?: number;
 };
@@ -26,12 +26,14 @@ export function PartnerEvaluationReportRadarTick({
   textAnchor = 'middle',
   fontSize = 9,
 }: RadarTickProps) {
+  const xPos = Number(x);
+  const yPos = Number(y);
   const lines = wrapRadarLabel(String(payload?.value ?? ''), fontSize >= 10 ? 22 : 20);
 
   return (
-    <text x={x} y={y} textAnchor={textAnchor} fill='#64748b' fontSize={fontSize}>
+    <text x={xPos} y={yPos} textAnchor={textAnchor} fill='#64748b' fontSize={fontSize}>
       {lines.map((line, index) => (
-        <tspan key={`${line}-${index}`} x={x} dy={index === 0 ? 0 : 11}>
+        <tspan key={`${line}-${index}`} x={xPos} dy={index === 0 ? 0 : 11}>
           {line}
         </tspan>
       ))}

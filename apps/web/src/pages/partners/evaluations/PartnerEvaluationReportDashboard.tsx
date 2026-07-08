@@ -51,6 +51,10 @@ const periodAxisPropsPrint = {
   height: 44,
 };
 
+function formatScoreTooltip(value: unknown): [string, string] {
+  return [formatEvaluationScoreDisplay(Number(value ?? 0)), 'Балл'];
+}
+
 type Props = {
   criteria: SupplierEvaluationCriterion[];
   evaluations: PartnerReportEvaluation[];
@@ -158,9 +162,7 @@ export function PartnerEvaluationReportDashboard({
                       fillOpacity={0.35}
                       isAnimationActive={false}
                     />
-                    <RTooltip
-                      formatter={(value: number | string) => [formatEvaluationScoreDisplay(Number(value)), 'Балл']}
-                    />
+                    <RTooltip formatter={formatScoreTooltip} />
                   </RadarChart>
                 )}
               </MeasuredChartFrame>
@@ -214,7 +216,7 @@ export function PartnerEvaluationReportDashboard({
                 <XAxis dataKey='period' tick={{ fontSize: 10 }} {...axisProps} />
                 <YAxis domain={[0, 5]} tickCount={6} tick={{ fontSize: 11 }} />
                 <RTooltip
-                  formatter={(value: number | string) => [formatEvaluationScoreDisplay(Number(value)), 'Балл']}
+                  formatter={formatScoreTooltip}
                   labelFormatter={(_label, payload) => {
                     const quarter = payload?.[0]?.payload?.quarter;
                     const date = payload?.[0]?.payload?.date;
@@ -283,12 +285,7 @@ export function PartnerEvaluationReportDashboard({
                           <CartesianGrid strokeDasharray='3 3' vertical={false} />
                           <XAxis dataKey='period' tick={{ fontSize: 9 }} {...axisProps} />
                           <YAxis domain={[0, 5]} tickCount={6} tick={{ fontSize: 10 }} />
-                          <RTooltip
-                            formatter={(value: number | string) => [
-                              formatEvaluationScoreDisplay(Number(value)),
-                              'Балл',
-                            ]}
-                          />
+                          <RTooltip formatter={formatScoreTooltip} />
                           <Line
                             type='monotone'
                             dataKey='score'
