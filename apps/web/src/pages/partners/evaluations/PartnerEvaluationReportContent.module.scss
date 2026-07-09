@@ -45,6 +45,10 @@
   word-break: break-word;
 }
 
+.fieldProject .fieldValue {
+  line-height: 1.35;
+}
+
 .row2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 1.15fr);
@@ -171,29 +175,13 @@
   color: v.$text-quaternary;
 }
 
-.matrixToolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.matrixPickLabel {
-  font-weight: 600;
-  color: v.$text-tertiary;
-}
-
-.evalSelect {
-  min-width: 280px;
-}
-
 .matrixComment {
   margin-top: 16px;
 }
 
 .matrixHead {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr) minmax(0, 1.3fr) minmax(0, 0.85fr);
   gap: 12px;
   margin-bottom: 14px;
   padding-bottom: 14px;

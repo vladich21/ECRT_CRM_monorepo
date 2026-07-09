@@ -117,9 +117,10 @@ export function filterEvaluationsByDateRange(
 ): PartnerReportEvaluation[] {
   const excluded = new Set(excludedDates);
   return evaluations.filter(evaluation => {
-    if (excluded.has(evaluation.evaluated_at)) return false;
-    if (dateFrom && evaluation.evaluated_at < dateFrom) return false;
-    if (dateTo && evaluation.evaluated_at > dateTo) return false;
+    const evaluatedDate = evaluation.evaluated_at.slice(0, 10);
+    if (excluded.has(evaluatedDate)) return false;
+    if (dateFrom && evaluatedDate < dateFrom) return false;
+    if (dateTo && evaluatedDate > dateTo) return false;
     return true;
   });
 }

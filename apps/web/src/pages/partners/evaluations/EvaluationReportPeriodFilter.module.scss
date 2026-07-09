@@ -1,6 +1,11 @@
 .root {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+.quarterPicker {
+  min-width: 220px;
 }
