@@ -117,19 +117,6 @@ export default function AppRoutes() {
       />
 
       <Route
-        path="/partners/:partnerId/evaluation-report"
-        element={
-          <Private>
-            <Guarded section={SECTIONS.PARTNERS_LIST}>
-              <Suspense fallback={suspenseFallback}>
-                <PartnerEvaluationReportPage />
-              </Suspense>
-            </Guarded>
-          </Private>
-        }
-      />
-
-      <Route
         path="/"
         element={
           <Private>
@@ -220,6 +207,16 @@ export default function AppRoutes() {
           <Route index element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnersListPage /></Guarded>} />
           <Route path="create" element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnerCreatePage /></Guarded>} />
           <Route path=":partnerId/edit" element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnerEditPage /></Guarded>} />
+          <Route
+            path=":partnerId/evaluation-report"
+            element={
+              <Guarded section={SECTIONS.PARTNERS_LIST}>
+                <Suspense fallback={suspenseFallback}>
+                  <PartnerEvaluationReportPage />
+                </Suspense>
+              </Guarded>
+            }
+          />
           <Route path=":partnerId" element={<Guarded section={SECTIONS.PARTNERS_LIST}><PartnerDetailsPage /></Guarded>}>
             <Route index element={<PartnerMainInfoTab />} />
 

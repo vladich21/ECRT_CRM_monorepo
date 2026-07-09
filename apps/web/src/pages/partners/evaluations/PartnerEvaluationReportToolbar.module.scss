@@ -100,7 +100,11 @@
 }
 
 .evalSelect :global(.ant-select-selector) {
-  padding-inline: 8px 24px;
+  padding-inline: 8px;
+}
+
+.evalSelect :global(.ant-select-arrow) {
+  display: none;
 }
 
 .projectSelect :global(.ant-select-selector) {
