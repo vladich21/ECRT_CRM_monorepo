@@ -1,16 +1,132 @@
-.root {
+@use '../../../styles/variables' as v;
+
+.rootSplit {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-bottom: 4px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 4px 0;
+  overflow-x: auto;
 }
 
-.projectSelect {
-  min-width: 220px;
+.leftGroup,
+.filtersGroup,
+.matrixGroup {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.filtersGroup :global(.ant-picker-range),
+.quarterPicker:global(.ant-picker-range) {
+  width: 220px;
+}
+
+.projectSelect:global(.ant-select) {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.evalSelect:global(.ant-select) {
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.evalOption,
+.evalSelected {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+}
+
+.evalSelected {
+  overflow: hidden;
+}
+
+.evalOptionMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.evalOptionDate {
+  font-weight: 600;
+  color: v.$text-secondary;
+  white-space: nowrap;
+}
+
+.evalOptionQuarter {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.evalOptionProject {
+  font-size: 12px;
+  color: v.$text-quaternary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evalSelected .evalOptionProject {
+  display: none;
+}
+
+.evalSelected .evalOptionQuarter {
+  font-size: 10px;
+  padding: 0 6px;
+}
+
+.evalSelect :global(.ant-select-selection-item) {
+  overflow: hidden;
+  padding-inline-end: 0 !important;
+}
+
+.evalSelect :global(.ant-select-selector) {
+  padding-inline: 8px 24px;
+}
+
+.projectSelect :global(.ant-select-selector) {
+  padding-inline: 8px 24px;
+}
+
+.projectSelect :global(.ant-select-selection-item) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matrixPickLabel {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: v.$text-tertiary;
+  white-space: nowrap;
+}
+
+.selectDropdown:global(.ant-select-dropdown) {
+  min-width: 520px !important;
+  max-width: min(720px, 92vw);
+}
+
+.selectDropdown :global(.ant-select-item-option-content) {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.35;
 }

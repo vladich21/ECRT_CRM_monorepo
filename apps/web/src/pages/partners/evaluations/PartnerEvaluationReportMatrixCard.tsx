@@ -3,10 +3,10 @@ import { Alert } from 'antd';
 import type { PartnerReportEvaluation, SupplierEvaluationCriterion } from '@/types/supplierEvaluation';
 import { formatSupplierEvaluationCommentForDisplay } from './supplierEvaluationCommentDisplay';
 import { evaluationHasLowScore } from './partnerEvaluationReportModel';
+import { formatEvaluatedAtWithQuarter } from './evaluationReportQuarterUtils';
 import {
   CategoryTag,
   categoryFromWeightedScore,
-  formatEvaluatedAtRu,
   formatEvaluationScoreDisplay,
   scoreColor,
   weightPercent,
@@ -46,8 +46,11 @@ export function PartnerEvaluationReportMatrixCard({
       <div className={styles.matrixHead}>
         <ReportField label='Поставщик' value={supplierName} />
         <ReportField label='ИНН' value={inn} />
-        <ReportField label='Проект' value={evaluation.project_label} />
-        <ReportField label='Дата оценки' value={formatEvaluatedAtRu(evaluation.evaluated_at)} />
+        <div className={`${styles.field} ${styles.fieldProject}`}>
+          <span className={styles.fieldLabel}>Проект</span>
+          <span className={styles.fieldValue}>{evaluation.project_label}</span>
+        </div>
+        <ReportField label='Дата оценки' value={formatEvaluatedAtWithQuarter(evaluation.evaluated_at)} />
       </div>
       <table className={styles.matrix}>
         <thead>

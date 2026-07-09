@@ -17,6 +17,7 @@ import {
 } from './partnerEvaluationReportModel';
 import type { EvaluationReportPeriodFilterValue } from './EvaluationReportPeriodFilter';
 import { resolveExcludedDates } from './evaluationReportPeriodFilterUtils';
+import { quarterRangeToDateBounds } from './evaluationReportQuarterUtils';
 import { partnerEvaluationReportMetaItems } from './partnerEvaluationReportHeaderContent';
 import { PartnerEvaluationReportDashboard } from './PartnerEvaluationReportDashboard';
 import { PartnerEvaluationReportMatrixSection } from './PartnerEvaluationReportMatrixSection';
@@ -79,13 +80,18 @@ export default function PartnerEvaluationReportPage() {
     [scopedEvaluations],
   );
 
-  const dateFrom = periodFilter.dateRange?.[0]?.format('YYYY-MM-DD') ?? null;
-  const dateTo = periodFilter.dateRange?.[1]?.format('YYYY-MM-DD') ?? null;
+  const { dateFrom, dateTo } = useMemo(
+    () => quarterRangeToDateBounds(periodFilter.dateRange),
+    [
+      periodFilter.dateRange?.[0]?.format('YYYY-MM'),
+      periodFilter.dateRange?.[1]?.format('YYYY-MM'),
+    ],
+  );
   const excludedDates = useMemo(
     () => resolveExcludedDates(periodFilter.excludedRange),
     [
-      periodFilter.excludedRange?.[0]?.format('YYYY-MM-DD'),
-      periodFilter.excludedRange?.[1]?.format('YYYY-MM-DD'),
+      periodFilter.excludedRange?.[0]?.format('YYYY-MM'),
+      periodFilter.excludedRange?.[1]?.format('YYYY-MM'),
     ],
   );
 
@@ -94,18 +100,19 @@ export default function PartnerEvaluationReportPage() {
     [scopedEvaluations, dateFrom, dateTo, excludedDates],
   );
 
-  const evalsDesc = useMemo(
-    () => [...evaluations].sort((a, b) => b.evaluated_at.localeCompare(a.evaluated_at)),
-    [evaluations],
+  const matrixEvalsDesc = useMemo(
+    () => [...scopedEvaluations].sort((a, b) => b.evaluated_at.localeCompare(a.evaluated_at)),
+    [scopedEvaluations],
   );
 
-  const selectedEval = evalsDesc.find(e => e.id === selectedEvalId) ?? evalsDesc[0] ?? null;
+  const selectedEval =
+    matrixEvalsDesc.find(e => e.id === selectedEvalId) ?? matrixEvalsDesc[0] ?? null;
   const focusEval = resolveFocusEvaluation(evaluations, scope, selectedEval);
   const gaugeSummary = resolveGaugeSummary(evaluations, scope, focusEval);
 
   useEffect(() => {
     setSelectedEvalId(undefined);
-  }, [scope, dateFrom, dateTo, periodFilter.excludedRange?.[0]?.format('YYYY-MM-DD'), periodFilter.excludedRange?.[1]?.format('YYYY-MM-DD')]);
+  }, [scope]);
 
   const periods = useMemo(() => buildReportPeriods(evaluations, criteria, scope), [evaluations, criteria, scope]);
 
@@ -141,14 +148,24 @@ export default function PartnerEvaluationReportPage() {
 
   const matrixProps = {
     criteria,
-    evalsDesc,
     selectedEval,
-    selectedEvalId: selectedEvalId ?? selectedEval?.id,
-    onSelectedEvalIdChange: setSelectedEvalId,
-    scope,
     supplierName,
     inn: partner?.inn || '-',
     showComment: matrixShowComment,
+  };
+
+  const toolbarProps = {
+    periodFilter,
+    onPeriodFilterChange: setPeriodFilter,
+    evaluationDateBounds,
+    scope,
+    onScopeChange: setScope,
+    projectOptions,
+    showProjectSelect: (report?.projects?.length ?? 0) > 0,
+    showMatrixControls: view === 'matrix',
+    evalsDesc: matrixEvalsDesc,
+    selectedEvalId: selectedEvalId ?? selectedEval?.id,
+    onSelectedEvalIdChange: setSelectedEvalId,
   };
 
   const handlePrint = () => {
@@ -181,6 +198,7 @@ export default function PartnerEvaluationReportPage() {
   const reportContent = (
     <>
       <div className={styles.screenOnly}>
+        <PartnerEvaluationReportToolbar {...toolbarProps} />
         {view === 'dashboard' ? (
           <PartnerEvaluationReportDashboard layout='responsive' {...dashboardProps} />
         ) : (
@@ -253,17 +271,6 @@ export default function PartnerEvaluationReportPage() {
         >
           Печать / PDF
         </Button>
-      }
-      extraContent={
-        <PartnerEvaluationReportToolbar
-          periodFilter={periodFilter}
-          onPeriodFilterChange={setPeriodFilter}
-          evaluationDateBounds={evaluationDateBounds}
-          scope={scope}
-          onScopeChange={setScope}
-          projectOptions={projectOptions}
-          showProjectSelect={(report?.projects?.length ?? 0) > 0}
-        />
       }
     >
       {reportContent}

@@ -2,6 +2,13 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { DatePicker } from 'antd';
 
 import type { EvaluationDateBounds } from './partnerEvaluationReportModel';
+import {
+  dayjsToQuarterEnd,
+  dayjsToQuarterStart,
+  formatQuarterPickerValue,
+  isQuarterAfterBounds,
+  isQuarterBeforeBounds,
+} from './evaluationReportQuarterUtils';
 
 import styles from './EvaluationReportPeriodFilter.module.scss';
 
@@ -26,61 +33,64 @@ function resolveSelectableBounds(bounds: EvaluationDateBounds | null | undefined
   return { min, max: cappedMax };
 }
 
-function disabledPeriodDate(
+function disabledPeriodQuarter(
   bounds: EvaluationDateBounds | null | undefined,
 ): ((current: Dayjs) => boolean) | undefined {
-  const { min, max } = resolveSelectableBounds(bounds);
-  if (!min) return (current: Dayjs) => current.isAfter(max, 'day');
-
-  return (current: Dayjs) => current.isBefore(min, 'day') || current.isAfter(max, 'day');
+  const selectable = resolveSelectableBounds(bounds);
+  return (current: Dayjs) =>
+    isQuarterBeforeBounds(current, selectable) || isQuarterAfterBounds(current, selectable);
 }
 
-function disabledExcludeDate(
+function disabledExcludeQuarter(
   bounds: EvaluationDateBounds | null | undefined,
   dateRange: [Dayjs | null, Dayjs | null] | null,
 ): ((current: Dayjs) => boolean) | undefined {
-  const { min, max } = resolveSelectableBounds(bounds);
-  const rangeFrom = dateRange?.[0]?.startOf('day') ?? null;
-  const rangeTo = dateRange?.[1]?.startOf('day') ?? null;
-  const excludeMax =
-    rangeTo && rangeTo.isBefore(max, 'day') ? rangeTo : max;
-
-  if (!min) {
-    return (current: Dayjs) => {
-      if (current.isAfter(excludeMax, 'day')) return true;
-      if (rangeFrom && current.isBefore(rangeFrom, 'day')) return true;
-      return false;
-    };
-  }
+  const selectable = resolveSelectableBounds(bounds);
+  const periodStart = dateRange?.[0] ? dayjs(dayjsToQuarterStart(dateRange[0])) : null;
+  const periodEnd = dateRange?.[1] ? dayjs(dayjsToQuarterEnd(dateRange[1])) : null;
 
   return (current: Dayjs) => {
-    if (current.isBefore(min, 'day') || current.isAfter(excludeMax, 'day')) return true;
-    if (rangeFrom && current.isBefore(rangeFrom, 'day')) return true;
+    if (isQuarterBeforeBounds(current, selectable) || isQuarterAfterBounds(current, selectable)) {
+      return true;
+    }
+    const currentStart = dayjs(dayjsToQuarterStart(current));
+    const currentEnd = dayjs(dayjsToQuarterEnd(current));
+    if (periodStart && currentEnd.isBefore(periodStart, 'day')) return true;
+    if (periodEnd && currentStart.isAfter(periodEnd, 'day')) return true;
     return false;
   };
 }
 
-/** Диапазон отчёта и исключения — оба задаются через RangePicker. */
-export function EvaluationReportPeriodFilter({ value, onChange, evaluationDateBounds }: Props) {
+const quarterPickerProps = {
+  picker: 'quarter' as const,
+  allowEmpty: [true, true] as [boolean, boolean],
+  allowClear: true,
+  format: (value: Dayjs) => formatQuarterPickerValue(value),
+};
+
+/** Диапазон отчёта и исключения — выбор по кварталам. */
+export function EvaluationReportPeriodFilter({
+  value,
+  onChange,
+  evaluationDateBounds,
+}: Props) {
   return (
     <div className={styles.root}>
       <RangePicker
+        {...quarterPickerProps}
         value={value.dateRange}
         onChange={range => onChange({ ...value, dateRange: range })}
-        allowEmpty={[true, true]}
-        allowClear
-        format='DD.MM.YYYY'
         placeholder={['Период с', 'Период по']}
-        disabledDate={disabledPeriodDate(evaluationDateBounds)}
+        disabledDate={disabledPeriodQuarter(evaluationDateBounds)}
+        className={styles.quarterPicker}
       />
       <RangePicker
+        {...quarterPickerProps}
         value={value.excludedRange}
         onChange={range => onChange({ ...value, excludedRange: range })}
-        allowEmpty={[true, true]}
-        allowClear
-        format='DD.MM.YYYY'
         placeholder={['Исключить с', 'Исключить по']}
-        disabledDate={disabledExcludeDate(evaluationDateBounds, value.dateRange)}
+        disabledDate={disabledExcludeQuarter(evaluationDateBounds, value.dateRange)}
+        className={styles.quarterPicker}
       />
     </div>
   );
