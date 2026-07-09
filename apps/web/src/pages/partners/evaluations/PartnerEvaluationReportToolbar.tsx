@@ -92,6 +92,7 @@ export function PartnerEvaluationReportToolbar({
             className={styles.evalSelect}
             popupMatchSelectWidth={false}
             classNames={SELECT_POPUP_CLASS}
+            suffixIcon={null}
           />
           {projectSelect}
         </div>
