@@ -70,6 +70,8 @@ export function PartnerEvaluationReportToolbar({
       <div className={styles.rootSplit} data-print-hide>
         <div className={styles.leftGroup}>
           <SupplierEvaluationScoreGuideTrigger />
+        </div>
+        <div className={styles.filtersGroup}>
           <span className={styles.matrixPickLabel}>Оценка:</span>
           <Select
             value={selectedEvalId}
@@ -91,8 +93,8 @@ export function PartnerEvaluationReportToolbar({
             popupMatchSelectWidth={false}
             classNames={SELECT_POPUP_CLASS}
           />
+          {projectSelect}
         </div>
-        {projectSelect ? <div className={styles.filtersGroup}>{projectSelect}</div> : null}
       </div>
     );
   }
