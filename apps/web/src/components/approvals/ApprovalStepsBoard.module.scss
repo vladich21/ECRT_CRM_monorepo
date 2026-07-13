@@ -53,6 +53,12 @@
     color: #fff;
     box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.18);
   }
+  &.skipped {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
+    font-size: 14px;
+  }
 }
 
 .conn {
@@ -278,6 +284,10 @@
   position: relative;
   padding: 14px 0 8px 34px;
 
+  &.skippedStep {
+    opacity: 0.72;
+  }
+
   &:not(:last-child)::before {
     content: '';
     position: absolute;
@@ -319,6 +329,12 @@
     color: #fff;
     box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.18);
   }
+  &.skipped {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
+    box-shadow: none;
+  }
 }
 
 .dtop {
@@ -352,6 +368,11 @@
   &.bIdle {
     background: #f0f1f3;
     color: v.$text-quaternary;
+  }
+  &.bSkip {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
   }
 }
 

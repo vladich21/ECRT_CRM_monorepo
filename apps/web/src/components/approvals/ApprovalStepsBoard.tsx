@@ -104,6 +104,7 @@ function spotlightWho(step: ApprovalStepView): string | null {
 }
 
 function nodeCls(step: ApprovalStepView): string {
+  if (step.state === 'skipped') return styles.skipped;
   if (step.state === 'completed') return styles.done;
   if (step.state === 'current') return styles.current;
   return '';
@@ -113,6 +114,7 @@ const STATE_BADGE: Record<ApprovalStepView['state'], { label: string; cls: strin
   completed: { label: 'Готово', cls: styles.bDone },
   current: { label: 'Текущий', cls: styles.bCur },
   pending: { label: 'Ожидает', cls: styles.bIdle },
+  skipped: { label: 'Пропущен', cls: styles.bSkip },
 };
 
 function RowList({ rows }: { rows: Row[] }) {
@@ -131,6 +133,16 @@ function RowList({ rows }: { rows: Row[] }) {
 
 /** Краткий поповер узла рельса. */
 function railPopover(step: ApprovalStepView, decisions: ApprovalDecisionView[]): ReactNode {
+  if (step.state === 'skipped') {
+    return (
+      <div className={styles.pop}>
+        <div className={styles.popTitle}>
+          {step.step_order}. {step.name}
+        </div>
+        <div className={styles.popMeta}>Шаг не включён инициатором</div>
+      </div>
+    );
+  }
   const rows = stepRows(step, decisions);
   const shown = rows.slice(0, 4);
   return (
@@ -147,13 +159,16 @@ function railPopover(step: ApprovalStepView, decisions: ApprovalDecisionView[]):
 
 /** Один шаг в детальном маршруте (Drawer). */
 function DrawerStep({ step, decisions }: { step: ApprovalStepView; decisions: ApprovalDecisionView[] }) {
-  const rows = stepRows(step, decisions);
+  const rows = step.state === 'skipped' ? [] : stepRows(step, decisions);
   const badge = STATE_BADGE[step.state];
   const comment = step.state === 'completed' ? stepComment(step, decisions) : null;
   const isDone = step.state === 'completed';
+  const isSkipped = step.state === 'skipped';
   return (
-    <div className={`${styles.dstep} ${isDone ? styles.done : ''}`}>
-      <span className={`${styles.dnode} ${nodeCls(step)}`}>{isDone ? <CheckOutlined /> : step.step_order}</span>
+    <div className={`${styles.dstep} ${isDone ? styles.done : ''} ${isSkipped ? styles.skippedStep : ''}`}>
+      <span className={`${styles.dnode} ${nodeCls(step)}`}>
+        {isDone ? <CheckOutlined /> : isSkipped ? '—' : step.step_order}
+      </span>
       <div className={styles.dtop}>
         <span className={styles.dname}>
           {step.step_order}. {step.name}
@@ -173,7 +188,11 @@ function DrawerStep({ step, decisions }: { step: ApprovalStepView; decisions: Ap
           </span>
         ) : null}
       </div>
-      {rows.length ? <RowList rows={rows} /> : <div className={styles.popEmpty}>Согласующие будут назначены при переходе на шаг.</div>}
+      {rows.length ? <RowList rows={rows} /> : isSkipped ? (
+        <div className={styles.popEmpty}>Инициатор не включил этот шаг при запуске согласования.</div>
+      ) : (
+        <div className={styles.popEmpty}>Согласующие будут назначены при переходе на шаг.</div>
+      )}
       {comment ? (
         <div className={styles.dcmt}>
           <b>{comment.author}:</b> {comment.text}
@@ -185,8 +204,9 @@ function DrawerStep({ step, decisions }: { step: ApprovalStepView; decisions: Ap
 
 export function ApprovalStepsBoard({ steps, decisions, canApprove, onDecide }: ApprovalStepsBoardProps) {
   const [open, setOpen] = useState(false);
+  const activeSteps = steps.filter(s => s.state !== 'skipped');
   const current = steps.find((s) => s.state === 'current');
-  const currentOrder = current?.step_order ?? steps.length;
+  const currentIndex = current ? activeSteps.findIndex(s => s.id === current.id) + 1 : activeSteps.length;
 
   const who = current ? spotlightWho(current) : null;
 
@@ -199,13 +219,15 @@ export function ApprovalStepsBoard({ steps, decisions, canApprove, onDecide }: A
             <Fragment key={s.id}>
               {i > 0 ? <span className={`${styles.conn} ${steps[i - 1].state === 'completed' ? styles.connDone : ''}`} /> : null}
               <Popover content={railPopover(s, decisions)} placement="bottom" mouseEnterDelay={0.12}>
-                <span className={`${styles.node} ${nodeCls(s)}`}>{s.state === 'completed' ? <CheckOutlined /> : s.step_order}</span>
+                <span className={`${styles.node} ${nodeCls(s)}`}>
+                  {s.state === 'completed' ? <CheckOutlined /> : s.state === 'skipped' ? '—' : s.step_order}
+                </span>
               </Popover>
             </Fragment>
           ))}
         </div>
         <span className={styles.counter}>
-          {currentOrder} / {steps.length}
+          {currentIndex} / {activeSteps.length}
         </span>
         <Button size="small" onClick={() => setOpen(true)}>
           Весь маршрут <RightOutlined />
@@ -216,7 +238,7 @@ export function ApprovalStepsBoard({ steps, decisions, canApprove, onDecide }: A
       {current ? (
         <div className={styles.spot}>
           <div className={styles.kicker}>
-            Текущий шаг · {current.step_order} из {steps.length}
+            Текущий шаг · {currentIndex} из {activeSteps.length}
           </div>
           <h2 className={styles.spotTitle}>{current.name}</h2>
           <div className={styles.spotRow}>
@@ -251,7 +273,7 @@ export function ApprovalStepsBoard({ steps, decisions, canApprove, onDecide }: A
 
       {/* детальный маршрут */}
       <Drawer
-        title={`Маршрут согласования · ${steps.length} шагов`}
+        title={`Маршрут согласования · ${activeSteps.length} шагов`}
         open={open}
         onClose={() => setOpen(false)}
         width={560}

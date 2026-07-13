@@ -260,9 +260,32 @@ export class ApprovalStateService {
       const isCurrent = s.stepOrder === process.currentStepOrder && process.status === 'active';
       const isFinalApproved = process.status === 'approved' || process.status === 'ratified';
 
-      let state: 'completed' | 'current' | 'pending' = 'pending';
-      if (isFinalApproved || s.stepOrder < process.currentStepOrder) state = 'completed';
+      let state: 'completed' | 'current' | 'pending' | 'skipped' = 'pending';
+      if (!s.isIncluded) state = 'skipped';
+      else if (isFinalApproved || s.stepOrder < process.currentStepOrder) state = 'completed';
       else if (isCurrent) state = 'current';
+
+      if (state === 'skipped') {
+        return {
+          id: s.id,
+          step_order: s.stepOrder,
+          name: s.name,
+          description: s.description,
+          step_type: s.stepType,
+          step_role_code: s.stepRoleCode,
+          step_role_name: s.stepRoleName,
+          step_role_color: s.stepRoleColor,
+          is_required: s.isRequired,
+          is_included: s.isIncluded,
+          can_delegate: s.canDelegate,
+          can_return_to_previous: s.canReturnToPrevious,
+          state,
+          is_overdue: false,
+          deadline_at: null,
+          sequential_queue: undefined,
+          assignees: [],
+        };
+      }
 
       // Плановые назначенцы из снапшота (используются, когда боевых назначений
       // ещё нет - т.е. для будущих шагов).
@@ -313,6 +336,8 @@ export class ApprovalStateService {
         step_role_code: s.stepRoleCode,
         step_role_name: s.stepRoleName,
         step_role_color: s.stepRoleColor,
+        is_required: s.isRequired,
+        is_included: s.isIncluded,
         can_delegate: s.canDelegate,
         can_return_to_previous: s.canReturnToPrevious,
         state,

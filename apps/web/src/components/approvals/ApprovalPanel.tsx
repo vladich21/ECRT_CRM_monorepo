@@ -105,7 +105,7 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   const openDecision = () => {
     if (!process) return;
     const previousSteps = process.steps
-      .filter((s) => s.step_order < process.current_step_order)
+      .filter((s) => s.state !== 'skipped' && s.step_order < process.current_step_order)
       .map((s) => ({ step_order: s.step_order, name: s.name }));
     openModal({
       type: 'approvalDecision',

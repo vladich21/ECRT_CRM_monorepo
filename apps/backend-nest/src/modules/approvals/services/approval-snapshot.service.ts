@@ -7,6 +7,7 @@ import {
   relApprovalStepAssignees,
 } from '../../../database/schema';
 import { STEP_ROLE_APPROVER_FINAL, type DrizzleTx } from '../types/approval.types';
+import { isStepOrderIncluded } from '../utils/approval-step-inclusion';
 
 /** Шаг шаблона (approval_route_steps), нужный для снапшота. */
 export interface RouteStepRow {
@@ -31,6 +32,8 @@ export interface ProcessStepRow {
   stepType: string;
   assignmentType: string;
   stepRoleCode: string | null;
+  isRequired: boolean;
+  isIncluded: boolean;
   canDelegate: boolean;
   canReturnToPrevious: boolean;
   timeLimitHours: number | null;
@@ -51,6 +54,7 @@ export class ApprovalSnapshotService {
     tx: DrizzleTx,
     processId: string,
     routeSteps: RouteStepRow[],
+    includedStepOrders: number[],
   ): Promise<SnapshotResult> {
     const roleRows = await tx
       .select({
@@ -67,7 +71,8 @@ export class ApprovalSnapshotService {
 
     for (const step of routeSteps) {
       const role = step.stepRoleId ? roleById.get(step.stepRoleId) : undefined;
-      if (role?.code === STEP_ROLE_APPROVER_FINAL) hasApproverFinal = true;
+      const isIncluded = isStepOrderIncluded(step.stepOrder, includedStepOrders);
+      if (isIncluded && role?.code === STEP_ROLE_APPROVER_FINAL) hasApproverFinal = true;
 
       const inserted = await tx
         .insert(approvalProcessSteps)
@@ -83,6 +88,7 @@ export class ApprovalSnapshotService {
           stepRoleName: role?.name ?? null,
           stepRoleColor: role?.color ?? null,
           isRequired: step.isRequired ?? true,
+          isIncluded,
           canDelegate: step.canDelegate ?? false,
           canReturnToPrevious: step.canReturnToPrevious ?? true,
           timeLimitHours: step.timeLimitHours,
@@ -90,8 +96,8 @@ export class ApprovalSnapshotService {
         .returning({ id: approvalProcessSteps.id });
       const processStepId = inserted[0].id;
 
-      // Снапшот назначенцев - только для статичного списка (employee).
-      if (step.assignmentType === 'employee') {
+      // Снапшот назначенцев - только для статичного списка (employee) и включённых шагов.
+      if (isIncluded && step.assignmentType === 'employee') {
         const assignees = await tx
           .select({
             employeeId: relApprovalStepAssignees.employeeId,
@@ -117,6 +123,8 @@ export class ApprovalSnapshotService {
         stepType: step.stepType,
         assignmentType: step.assignmentType,
         stepRoleCode: role?.code ?? null,
+        isRequired: step.isRequired ?? true,
+        isIncluded,
         canDelegate: step.canDelegate ?? false,
         canReturnToPrevious: step.canReturnToPrevious ?? true,
         timeLimitHours: step.timeLimitHours,

@@ -187,6 +187,15 @@ export class ApprovalRoutesService {
   /** Метаданные для модалки запуска (§3.1). */
   async getStartInfo(routeId: string) {
     const route = await this.getById(routeId);
+    const routeSteps = route.steps.map((s) => ({
+      step_order: s.stepOrder,
+      name: s.name,
+      description: s.description,
+      is_required: s.isRequired ?? true,
+    }));
+
+    const optionalSteps = routeSteps.filter((s) => !s.is_required);
+
     const stepsRequiringSelection = route.steps
       .filter((s) => s.assignmentType === 'select_on_start')
       .map((s) => ({
@@ -214,7 +223,13 @@ export class ApprovalRoutesService {
         description: route.description,
         step_count: route.steps.length,
       },
-      requires_selection: stepsRequiringSelection.length > 0 || actionsRequiringSelection.length > 0,
+      route_steps: routeSteps,
+      optional_steps: optionalSteps,
+      requires_step_selection: optionalSteps.length > 0,
+      requires_selection:
+        stepsRequiringSelection.length > 0 ||
+        actionsRequiringSelection.length > 0 ||
+        optionalSteps.length > 0,
       steps_requiring_selection: stepsRequiringSelection,
       actions_requiring_selection: actionsRequiringSelection,
     };

@@ -48,4 +48,10 @@ export class StartProcessDto {
   @ValidateNested({ each: true })
   @Type(() => TaskAssigneeDto)
   task_assignees?: TaskAssigneeDto[];
+
+  /** Шаги, которые инициатор включает в согласование (обязательные добавляются автоматически). */
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  included_step_orders?: number[];
 }

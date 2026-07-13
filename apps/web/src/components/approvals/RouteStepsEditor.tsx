@@ -148,6 +148,12 @@ export function RouteStepsEditor({ value, onChange, stepRoles }: RouteStepsEdito
             </Col>
             <Col span={8}>
               <Space>
+                <Switch checked={step.is_required !== false} onChange={(v) => patch(index, { is_required: v })} />
+                <span>Обязательный шаг</span>
+              </Space>
+            </Col>
+            <Col span={8}>
+              <Space>
                 <Switch checked={step.can_delegate} onChange={(v) => patch(index, { can_delegate: v })} />
                 <span>Делегирование</span>
               </Space>
