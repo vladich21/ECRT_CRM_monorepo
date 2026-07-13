@@ -31,6 +31,10 @@ import { ApprovalFilesService } from './approval-files.service';
 import type { MakeDecisionDto, ResubmitDto } from '../dto/make-decision.dto';
 import type { StartProcessDto } from '../dto/start-process.dto';
 import type { ApprovalRuntimeData, DrizzleTx, PostApprovalAction } from '../types/approval.types';
+import {
+  resolveIncludedStepOrders,
+  validateIncludedStepOrders,
+} from '../utils/approval-step-inclusion';
 
 /** Что разослать после коммита транзакции (§5, уведомления только после commit). */
 interface NotifyIntent {
@@ -173,13 +177,24 @@ export class ApprovalEngineService {
         .orderBy(asc(approvalRouteSteps.stepOrder));
       if (!steps.length) throw new BadRequestException('В маршруте нет шагов');
 
+      const inclusionInput = steps.map((s) => ({
+        stepOrder: s.stepOrder,
+        isRequired: s.isRequired,
+      }));
+      const inclusionError = validateIncludedStepOrders(inclusionInput, dto.included_step_orders);
+      if (inclusionError) throw new BadRequestException(inclusionError);
+
+      const includedStepOrders = resolveIncludedStepOrders(inclusionInput, dto.included_step_orders);
+
       const runtimeData: ApprovalRuntimeData = {
         step_assignees: dto.step_assignees,
         task_assignees: dto.task_assignees,
+        included_step_orders: includedStepOrders,
       };
 
-      // Валидация select_on_start.
+      // Валидация select_on_start — только для включённых шагов.
       for (const s of steps) {
+        if (!includedStepOrders.includes(s.stepOrder)) continue;
         if (s.assignmentType === 'select_on_start') {
           const entry = runtimeData.step_assignees?.find((x) => x.step_order === s.stepOrder);
           if (!entry || !entry.employee_ids.length) {
@@ -216,8 +231,14 @@ export class ApprovalEngineService {
       const processId = insertedProc[0].id;
 
       // Снапшот маршрута (§4.0).
-      const snap = await this.snapshotService.snapshot(tx, processId, steps as RouteStepRow[]);
-      const step1 = snap.steps.find((s) => s.stepOrder === 1) ?? snap.steps[0];
+      const snap = await this.snapshotService.snapshot(
+        tx,
+        processId,
+        steps as RouteStepRow[],
+        includedStepOrders,
+      );
+      const firstStep = snap.steps.find((s) => s.isIncluded);
+      if (!firstStep) throw new BadRequestException('Нет включённых шагов согласования');
 
       await tx
         .update(approvalProcesses)
@@ -225,13 +246,13 @@ export class ApprovalEngineService {
           routeCode: route.code,
           hasApproverFinal: snap.hasApproverFinal,
           onCompleteActionsSnapshot: route.onCompleteActions,
-          currentProcessStepId: step1.id,
-          currentStepOrder: step1.stepOrder,
+          currentProcessStepId: firstStep.id,
+          currentStepOrder: firstStep.stepOrder,
           updatedAt: new Date(),
         })
         .where(eq(approvalProcesses.id, processId));
 
-      // Назначения шага 1.
+      // Назначения первого включённого шага.
       const assigned = await this.createAssignmentsForStep(
         tx,
         processId,
@@ -239,7 +260,7 @@ export class ApprovalEngineService {
         runtimeData,
         handler,
         entity,
-        step1,
+        firstStep,
       );
 
       // Статус сущности.
@@ -270,6 +291,9 @@ export class ApprovalEngineService {
 
       const currentStep = await this.loadProcessStepByOrder(tx, processId, process.currentStepOrder);
       if (!currentStep) throw new BadRequestException('Текущий шаг не найден в снапшоте');
+      if (!currentStep.isIncluded) {
+        throw new BadRequestException('Текущий шаг не включён в согласование');
+      }
 
       const myAssignment = await tx
         .select({ id: approvalAssignments.id })
@@ -372,15 +396,15 @@ export class ApprovalEngineService {
       if (process.status !== 'revision') throw new BadRequestException('Процесс не в статусе доработки');
       if (process.initiatedBy !== userId) throw new ForbiddenException('Только инициатор может повторно отправить');
 
-      const step1 = await this.loadProcessStepByOrder(tx, processId, 1);
-      if (!step1) throw new BadRequestException('Шаг 1 не найден в снапшоте');
+      const firstStep = await this.loadFirstIncludedStep(tx, processId);
+      if (!firstStep) throw new BadRequestException('Нет включённых шагов согласования');
 
       await tx
         .update(approvalProcesses)
         .set({
           status: 'active',
-          currentStepOrder: 1,
-          currentProcessStepId: step1.id,
+          currentStepOrder: firstStep.stepOrder,
+          currentProcessStepId: firstStep.id,
           completionComment: dto.comment ?? null,
           updatedAt: new Date(),
         })
@@ -398,7 +422,7 @@ export class ApprovalEngineService {
         runtimeData,
         handler,
         entity,
-        step1,
+        firstStep,
       );
       await handler.onStart(tx, entity);
 
@@ -544,6 +568,7 @@ export class ApprovalEngineService {
       .where(
         and(
           eq(approvalProcessSteps.processId, process.id),
+          eq(approvalProcessSteps.isIncluded, true),
           gt(approvalProcessSteps.stepOrder, process.currentStepOrder),
         ),
       )
@@ -625,6 +650,9 @@ export class ApprovalEngineService {
     }
     const target = await this.loadProcessStepByOrder(tx, process.id, targetStepOrder);
     if (!target) throw new BadRequestException('Целевой шаг не найден');
+    if (!target.isIncluded) {
+      throw new BadRequestException('Нельзя вернуть на шаг, который не был включён в согласование');
+    }
 
     await tx
       .update(approvalAssignments)
@@ -813,9 +841,29 @@ export class ApprovalEngineService {
         name: approvalProcessSteps.name,
         canDelegate: approvalProcessSteps.canDelegate,
         canReturnToPrevious: approvalProcessSteps.canReturnToPrevious,
+        isIncluded: approvalProcessSteps.isIncluded,
       })
       .from(approvalProcessSteps)
       .where(and(eq(approvalProcessSteps.processId, processId), eq(approvalProcessSteps.stepOrder, stepOrder)))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  private async loadFirstIncludedStep(tx: DrizzleTx, processId: string): Promise<StepSnapshot | null> {
+    const rows = await tx
+      .select({
+        id: approvalProcessSteps.id,
+        stepOrder: approvalProcessSteps.stepOrder,
+        stepType: approvalProcessSteps.stepType,
+        assignmentType: approvalProcessSteps.assignmentType,
+        name: approvalProcessSteps.name,
+        canDelegate: approvalProcessSteps.canDelegate,
+        canReturnToPrevious: approvalProcessSteps.canReturnToPrevious,
+        isIncluded: approvalProcessSteps.isIncluded,
+      })
+      .from(approvalProcessSteps)
+      .where(and(eq(approvalProcessSteps.processId, processId), eq(approvalProcessSteps.isIncluded, true)))
+      .orderBy(asc(approvalProcessSteps.stepOrder))
       .limit(1);
     return rows[0] ?? null;
   }
@@ -933,4 +981,5 @@ interface StepSnapshot {
   name: string;
   canDelegate: boolean;
   canReturnToPrevious: boolean;
+  isIncluded: boolean;
 }

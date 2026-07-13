@@ -49,9 +49,11 @@ export interface ApprovalStepView {
   step_role_code?: string | null;
   step_role_name?: string | null;
   step_role_color?: string | null;
+  is_required?: boolean;
+  is_included?: boolean;
   can_delegate: boolean;
   can_return_to_previous: boolean;
-  state: 'completed' | 'current' | 'pending';
+  state: 'completed' | 'current' | 'pending' | 'skipped';
   is_overdue: boolean;
   deadline_at: string | null;
   sequential_queue?: SequentialQueueItem[];
@@ -118,6 +120,9 @@ export interface DocumentApprovalState {
 
 export interface ApprovalStartInfo {
   route: { id: string; code: string; name: string; description?: string | null; step_count: number };
+  route_steps: { step_order: number; name: string; description?: string | null; is_required: boolean }[];
+  optional_steps: { step_order: number; name: string; description?: string | null; is_required: boolean }[];
+  requires_step_selection: boolean;
   requires_selection: boolean;
   steps_requiring_selection: { step_order: number; name: string; description?: string | null; step_type: string }[];
   actions_requiring_selection: { id: string; title_template: string; due_days: number; priority: string }[];
@@ -129,6 +134,7 @@ export interface StartProcessPayload {
   route_id: string;
   step_assignees?: { step_order: number; employee_ids: string[] }[];
   task_assignees?: { action_id: string; employee_id: string }[];
+  included_step_orders?: number[];
 }
 
 export interface MakeDecisionPayload {

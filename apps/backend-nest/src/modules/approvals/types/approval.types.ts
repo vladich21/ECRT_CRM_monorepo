@@ -70,6 +70,8 @@ export interface PostApprovalAction {
 export interface ApprovalRuntimeData {
   step_assignees?: { step_order: number; employee_ids: string[] }[];
   task_assignees?: { action_id: string; employee_id: string }[];
+  /** Шаги, включённые инициатором (все обязательные + выбранные опциональные). */
+  included_step_orders?: number[];
 }
 
 /** Разрешённый назначенец после резолва. */

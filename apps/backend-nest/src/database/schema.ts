@@ -776,6 +776,7 @@ export const approvalProcessSteps = pgTable(
     stepRoleName: varchar('step_role_name', { length: 100 }),
     stepRoleColor: varchar('step_role_color', { length: 20 }),
     isRequired: boolean('is_required').notNull().default(true),
+    isIncluded: boolean('is_included').notNull().default(true),
     canDelegate: boolean('can_delegate').notNull().default(false),
     canReturnToPrevious: boolean('can_return_to_previous').notNull().default(true),
     timeLimitHours: integer('time_limit_hours'),
