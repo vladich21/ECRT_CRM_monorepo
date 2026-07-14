@@ -9,7 +9,7 @@ type Props = {
   type?: 'link' | 'default' | 'text';
 };
 
-/** Кнопка «Шкала баллов» — открывает модалку с общей расшифровкой 1–5. */
+/** Кнопка «Шкала баллов» — полная матрица критериев из Excel. */
 export function SupplierEvaluationScoreGuideTrigger({
   size = 'small',
   type = 'link',

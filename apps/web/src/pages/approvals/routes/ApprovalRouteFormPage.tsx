@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { App, Button, Card, Divider, Form, Input, Select, Space, Switch } from 'antd';
+import { App, Button, Card, Form, Input, Select, Space, Switch } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -13,6 +13,8 @@ import {
 import { RouteStepsEditor } from '@/components/approvals/RouteStepsEditor';
 import type { ApprovalEntityTypeRef, ApprovalStepRoleRef, RouteStepFormValue } from '@/types/approval';
 
+import styles from './ApprovalRouteFormPage.module.scss';
+
 function extractError(e: unknown): string | undefined {
   const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
   return Array.isArray(msg) ? msg.join(', ') : msg;
@@ -24,7 +26,7 @@ const RU_TRANSLIT: Record<string, string> = {
   х: 'h', ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
 };
 
-/** Слаг из названия для машинного кода маршрита: транслит RU→EN, [a-z0-9_], ≤50. */
+/** Слаг из названия для машинного кода маршрута: транслит RU→EN, [a-z0-9_], ≤50. */
 function slugifyCode(name: string): string {
   const lower = (name ?? '').toLowerCase();
   let out = '';
@@ -151,11 +153,12 @@ export default function ApprovalRouteFormPage() {
 
   return (
     <Card
+      className={styles.page}
       title={isEdit ? 'Редактирование маршрута' : 'Новый маршрут согласования'}
       extra={
         <Space>
           <Button onClick={() => navigate('/admin/approval-routes')}>Отмена</Button>
-          <Button type="primary" loading={saving} onClick={handleSave}>
+          <Button type='primary' loading={saving} onClick={handleSave}>
             Сохранить
           </Button>
         </Space>
@@ -163,7 +166,7 @@ export default function ApprovalRouteFormPage() {
     >
       <Form
         form={form}
-        layout="vertical"
+        layout='vertical'
         initialValues={{ is_active: true, is_default: false }}
         onValuesChange={(changed: Partial<MetaForm>) => {
           if ('code' in changed) codeTouched.current = true;
@@ -172,48 +175,62 @@ export default function ApprovalRouteFormPage() {
           }
         }}
       >
-        <Space size="large" style={{ display: 'flex', flexWrap: 'wrap' }}>
-          <Form.Item name="name" label="Название" rules={[{ required: true, message: 'Укажите название' }]} style={{ minWidth: 320 }}>
-            <Input placeholder="Например, Согласование договора" />
-          </Form.Item>
+        <div className={styles.sectionTitle}>Параметры маршрута</div>
+        <div className={styles.metaGrid}>
           <Form.Item
-            name="code"
-            label="Код"
-            tooltip="Машинный код. Генерируется из названия, при необходимости можно поправить."
-            rules={[{ max: 50, message: 'Не более 50 символов' }]}
-            style={{ minWidth: 240 }}
+            name='name'
+            label='Название'
+            rules={[{ required: true, message: 'Укажите название' }]}
+            className={`${styles.metaField} ${styles.metaName}`}
           >
-            <Input placeholder="генерируется из названия" disabled={isEdit} />
+            <Input placeholder='Согласование договора' />
           </Form.Item>
           <Form.Item
-            name="entity_type_id"
-            label="Тип сущности"
+            name='code'
+            label='Код'
+            tooltip='Машинный код. Генерируется из названия, при необходимости можно поправить.'
+            rules={[{ max: 50, message: 'Не более 50 символов' }]}
+            className={`${styles.metaField} ${styles.metaCode}`}
+          >
+            <Input placeholder='из названия' disabled={isEdit} />
+          </Form.Item>
+          <Form.Item
+            name='entity_type_id'
+            label='Тип сущности'
             rules={[{ required: true, message: 'Выберите тип' }]}
-            style={{ minWidth: 240 }}
+            className={`${styles.metaField} ${styles.metaEntity}`}
           >
             <Select
-              placeholder="Тип сущности"
-              options={(entityTypes.data ?? []).map((t: ApprovalEntityTypeRef) => ({ value: t.id, label: t.name }))}
+              placeholder='Тип'
+              options={(entityTypes.data ?? []).map((t: ApprovalEntityTypeRef) => ({
+                value: t.id,
+                label: t.name,
+              }))}
             />
           </Form.Item>
-        </Space>
-
-        <Form.Item name="description" label="Описание">
-          <Input.TextArea rows={2} />
-        </Form.Item>
-
-        <Space size="large">
-          <Form.Item name="is_active" label="Активен" valuePropName="checked">
+          <Form.Item name='description' label='Описание' className={`${styles.metaField} ${styles.metaDesc}`}>
+            <Input.TextArea placeholder='Кратко, для чего этот маршрут' />
+          </Form.Item>
+          <Form.Item name='is_active' label='Активен' valuePropName='checked' className={`${styles.metaField} ${styles.metaFlag}`}>
             <Switch />
           </Form.Item>
-          <Form.Item name="is_default" label="По умолчанию для типа" valuePropName="checked">
+          <Form.Item
+            name='is_default'
+            label='По умолчанию для типа'
+            valuePropName='checked'
+            className={`${styles.metaField} ${styles.metaFlag}`}
+          >
             <Switch />
           </Form.Item>
-        </Space>
+        </div>
       </Form>
 
-      <Divider orientation="left">Шаги маршрута</Divider>
-      <RouteStepsEditor value={steps} onChange={setSteps} stepRoles={(stepRoles.data ?? []) as ApprovalStepRoleRef[]} />
+      <div className={styles.sectionTitle}>Шаги маршрута</div>
+      <RouteStepsEditor
+        value={steps}
+        onChange={setSteps}
+        stepRoles={(stepRoles.data ?? []) as ApprovalStepRoleRef[]}
+      />
     </Card>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Col, DatePicker, Form, Input, Modal, Row, Select, Space, Typography, notification } from 'antd';
+import { Alert, Col, DatePicker, Form, Input, Modal, Row, Select, Space, Typography, notification } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import {
@@ -17,6 +17,7 @@ import type {
 } from '../../../types/supplierEvaluation';
 import { readAxiosLikeError } from '../../../utils/readAxiosLikeError';
 import { shouldShowSupplierEvaluationModalNoProjectsWarning } from '../../supplierEvaluations/supplierEvaluationsRegistry.model';
+import { EvaluationMatrixCriterionRow } from '@/components/supplierEvaluations';
 import {
   CategoryTag,
   SCORE_STEPS,
@@ -28,6 +29,7 @@ import {
   weightedLineFromScoreAndWeight,
 } from './supplierEvaluationUi';
 import { getEvaluationCommentRules, requiresEvaluationComment } from './evaluationLowScore';
+import { SupplierEvaluationScoreGuideTrigger } from './SupplierEvaluationScoreGuideTrigger';
 import styles from './NewSupplierEvaluationModal.module.scss';
 
 const { Text } = Typography;
@@ -120,6 +122,7 @@ export default function NewSupplierEvaluationModal({
   const createMut = useCreateSupplierEvaluation();
   const { showNotification, contextHolder } = useNotification();
   const [scores, setScores] = useState<Record<string, number>>({});
+  const [expandedCriterionIds, setExpandedCriterionIds] = useState<string[]>([]);
 
   const criteriaOrdered = useMemo(
     () =>
@@ -138,6 +141,7 @@ export default function NewSupplierEvaluationModal({
     if (!open) {
       form.resetFields();
       setScores({});
+      setExpandedCriterionIds([]);
       return;
     }
     if (initialProjectId) {
@@ -356,9 +360,12 @@ export default function NewSupplierEvaluationModal({
             <Text type='secondary' className={styles.matrixHeaderTitle}>
               Матрица оценки
             </Text>
-            <Text type='secondary' className={styles.matrixHeaderMeta}>
-              Сумма весов: 100%
-            </Text>
+            <Space size={12} align='center'>
+              <SupplierEvaluationScoreGuideTrigger />
+              <Text type='secondary' className={styles.matrixHeaderMeta}>
+                Сумма весов: 100%
+              </Text>
+            </Space>
           </div>
           <div className={styles.matrixBody}>
             {criteriaLoading ? (
@@ -380,34 +387,27 @@ export default function NewSupplierEvaluationModal({
                   );
                   const weightedLineContribution = weightedLineFromScoreAndWeight(criterionScore, weightAtEval);
                   return (
-                    <div key={criterion.id} className={styles.criterionRow}>
-                      <div className={styles.colGrow}>
-                        <div className={styles.criterionTitle}>{criterion.name}</div>
-                        <Text type='secondary' className={styles.criterionMeta}>
-                          Вес {weightPercent(weightAtEval)}
-                        </Text>
-                      </div>
-                      <Space size={4} wrap>
-                        {SCORE_STEPS.map(scoreStep => (
-                          <Button
-                            key={scoreStep}
-                            size='small'
-                            type={scores[criterion.id] === scoreStep ? 'primary' : 'default'}
-                            onClick={() =>
-                              setScores(prevScores => ({ ...prevScores, [criterion.id]: scoreStep }))
-                            }
-                          >
-                            {scoreStep}
-                          </Button>
-                        ))}
-                      </Space>
-                      <Text strong className={styles.scoreAccent}>
-                        {criterionScore}
-                      </Text>
-                      <Text strong className={styles.weightedAccent}>
-                        {formatEvaluationScoreDisplay(weightedLineContribution)}
-                      </Text>
-                    </div>
+                    <EvaluationMatrixCriterionRow
+                      key={criterion.id}
+                      criterionId={criterion.id}
+                      criterionCode={criterion.code}
+                      criterionName={criterion.name}
+                      weightLabel={`Вес ${weightPercent(weightAtEval)}`}
+                      score={criterionScore}
+                      weightedDisplay={formatEvaluationScoreDisplay(weightedLineContribution)}
+                      scoreSteps={SCORE_STEPS}
+                      expanded={expandedCriterionIds.includes(criterion.id)}
+                      onToggleExpand={() =>
+                        setExpandedCriterionIds(prev =>
+                          prev.includes(criterion.id)
+                            ? prev.filter(id => id !== criterion.id)
+                            : [...prev, criterion.id],
+                        )
+                      }
+                      onScoreChange={step =>
+                        setScores(prevScores => ({ ...prevScores, [criterion.id]: step }))
+                      }
+                    />
                   );
                 })}
               </>

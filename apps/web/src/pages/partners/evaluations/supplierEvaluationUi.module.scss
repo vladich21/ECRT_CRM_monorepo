@@ -26,7 +26,12 @@ $muted: #8c8c8c;
 }
 
 .nextMain {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
   font-weight: 500;
+  line-height: 1.25;
+  gap: 2px;
 }
 
 .nextOverdue {
@@ -42,8 +47,19 @@ $muted: #8c8c8c;
 }
 
 .nextSub {
+  display: block;
   font-size: 12px;
   font-weight: 500;
+  line-height: 1.2;
+}
+
+.kpiOverdue,
+.kpiSoon {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+  gap: 2px;
 }
 
 .kpiOverdue {
@@ -55,8 +71,10 @@ $muted: #8c8c8c;
 }
 
 .kpiSub {
-  font-size: 16px;
-  font-weight: 700;
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .archived {
