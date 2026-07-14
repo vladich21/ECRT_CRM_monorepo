@@ -85,14 +85,63 @@ $warning: #d48806;
 
 .criterionNameCell {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 4px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 8px;
 }
 
-.criterionGuideIcon {
-  margin-top: 3px;
+.criterionNameExpandable {
+  cursor: pointer;
+}
+
+.criterionExpandHint {
+  font-size: 11px;
+  font-weight: 500;
   color: #8c8c8c;
-  cursor: help;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.criterionNameExpandable:hover .criterionExpandHint,
+.criterionNameOpen .criterionExpandHint {
+  opacity: 1;
+  color: #1677ff;
+}
+
+.scoresTable {
+  :global(.ant-table-row) {
+    transition: none;
+  }
+}
+
+.criterionRow {
+  cursor: pointer;
+
+  :global(> td) {
+    transition: box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+
+  &:hover :global(> td) {
+    background: #f5f9ff !important;
+    box-shadow: inset 0 -2px 0 0 #1677ff;
+  }
+}
+
+.criterionRowOpen {
+  :global(> td) {
+    background: #f0f7ff !important;
+    box-shadow: inset 0 -2px 0 0 #1677ff;
+  }
+}
+
+.criterionGuideRow {
+  :global(> td) {
+    background: #fafafa !important;
+    box-shadow: none !important;
+    cursor: default;
+    padding-top: 8px !important;
+    padding-bottom: 12px !important;
+  }
 }
 
 .mt12 {
@@ -101,28 +150,59 @@ $warning: #d48806;
 
 .actionBar {
   margin-top: 12px;
-  padding: 12px;
+  padding: 10px 0px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 10px 12px;
+}
+
+.actionStatus {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
+  padding: 2px;
+  background: #fff;
+  border-radius: 6px;
 }
 
 .actionBarSoon {
-  background: #fffbe6;
-  border: 1px solid #ffe58f;
+  border-color: #ffe58f;
+
+  .actionStatus {
+    background: #fffbe6;
+    border: 1px solid #ffe58f;
+  }
+}
+
+.actionBarOverdue {
+  border-color: #ffccc7;
+
+  .actionStatus {
+    background: #fff2f0;
+    border: 1px solid #ffccc7;
+  }
 }
 
 .actionBarNeutral {
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
-}
+  border-color: #ffffff;
 
-.actionCol {
-  flex: 1;
-  min-width: 200px;
+  .actionStatus {
+    background: #ffffff;
+    border: 1px solid #f0f0f0;
+  }
 }
 
 .flexGap {

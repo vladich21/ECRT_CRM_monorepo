@@ -1,4 +1,4 @@
-import type { ThHTMLAttributes } from 'react';
+import { useState, type ThHTMLAttributes } from 'react';
 import { CalendarOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import { Alert, Button, Modal, Table, Tooltip, Typography, notification } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -10,6 +10,8 @@ import {
   useSupplierEvaluationBlock,
   useSupplierEvaluationDetail,
 } from '../../../api/supplierEvaluations/supplierEvaluationApiHooks';
+import { CriterionScoreGuideContent } from '../../../components/supplierEvaluations/CriterionScoreGuideAccordion';
+import { getCriterionScoreGuide } from '../../../components/supplierEvaluations/criterionScoreGuides';
 import type { SupplierEvaluationListItem, SupplierEvaluationScoreDetail } from '../../../types/supplierEvaluation';
 import {
   ScoreDots,
@@ -44,6 +46,7 @@ export default function EvaluationExpandedContent({
   onReevaluate,
   showProjectActions = true,
 }: Props) {
+  const [expandedCriterionKeys, setExpandedCriterionKeys] = useState<string[]>([]);
   const { data: detail, isLoading } = useSupplierEvaluationDetail(row.id, true);
   const { data: block } = useSupplierEvaluationBlock(
     partnerId,
@@ -117,6 +120,23 @@ export default function EvaluationExpandedContent({
       title: 'Критерий',
       dataIndex: 'criterion_name',
       key: 'name',
+      render: (name: string, scoreDetail) => {
+        const hasGuide = Boolean(getCriterionScoreGuide(scoreDetail.criterion_code));
+        const isOpen = expandedCriterionKeys.includes(scoreDetail.criterion_id);
+        return (
+          <span
+            className={[
+              styles.criterionNameCell,
+              hasGuide ? styles.criterionNameExpandable : '',
+              isOpen ? styles.criterionNameOpen : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {name}
+          </span>
+        );
+      },
     },
     {
       title: 'Вес',
@@ -156,10 +176,18 @@ export default function EvaluationExpandedContent({
     },
   ];
 
-  const actionBarClass =
-    rowPresentationState === 'soon'
-      ? `${styles.actionBar} ${styles.actionBarSoon}`
-      : `${styles.actionBar} ${styles.actionBarNeutral}`;
+  const actionBarClass = [
+    styles.actionBar,
+    rowPresentationState === 'soon' ? styles.actionBarSoon : '',
+    rowPresentationState === 'overdue' || rowPresentationState === 'blocked'
+      ? styles.actionBarOverdue
+      : '',
+    rowPresentationState === 'active' || rowPresentationState === 'archived'
+      ? styles.actionBarNeutral
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const displayComment = formatSupplierEvaluationCommentForDisplay(detail?.comment);
 
@@ -184,6 +212,31 @@ export default function EvaluationExpandedContent({
             dataSource={sortedScores}
             columns={scoreColumns}
             showHeader
+            className={styles.scoresTable}
+            rowClassName={(scoreDetail) =>
+              [
+                getCriterionScoreGuide(scoreDetail.criterion_code) ? styles.criterionRow : '',
+                expandedCriterionKeys.includes(scoreDetail.criterion_id)
+                  ? styles.criterionRowOpen
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+            }
+            expandable={{
+              expandedRowKeys: expandedCriterionKeys,
+              onExpandedRowsChange: (keys) => setExpandedCriterionKeys(keys as string[]),
+              expandRowByClick: true,
+              showExpandColumn: false,
+              rowExpandable: (scoreDetail) => Boolean(getCriterionScoreGuide(scoreDetail.criterion_code)),
+              expandedRowRender: (scoreDetail) => (
+                <CriterionScoreGuideContent
+                  criterionCode={scoreDetail.criterion_code}
+                  currentScore={scoreDetail.score}
+                />
+              ),
+              expandedRowClassName: () => styles.criterionGuideRow,
+            }}
             components={{
               header: {
                 cell: (p: ThHTMLAttributes<HTMLTableCellElement>) => (
@@ -243,7 +296,7 @@ export default function EvaluationExpandedContent({
 
           {showProjectActions && row.status === 'active' && (
             <div className={actionBarClass}>
-              <div className={styles.actionCol}>
+              <div className={styles.actionStatus}>
                 {rowPresentationState === 'blocked' && (
                   <Text type='danger' className={styles.textBlock}>
                     Требуется новая оценка после снятия блокировки
@@ -281,37 +334,39 @@ export default function EvaluationExpandedContent({
                   </Text>
                 )}
               </div>
-              <Tooltip
-                title={
-                  projectBlockActive
-                    ? 'Сначала снимите блокировку по этому проекту - затем можно провести переоценку'
-                    : undefined
-                }
-              >
-                <span className={styles.inlineBlock}>
-                  <Button
-                    type='primary'
-                    ghost
-                    icon={<ReloadOutlined />}
-                    disabled={projectBlockActive}
-                    onClick={() => onReevaluate?.(row.project_id)}
-                  >
-                    Провести переоценку
-                  </Button>
-                </span>
-              </Tooltip>
-              {canArchiveEvaluation ? (
-                <span className={styles.inlineBlock}>
-                  <Button
-                    danger
-                    disabled={archiveMut.isPending}
-                    loading={archiveMut.isPending}
-                    onClick={handleArchiveEvaluation}
-                  >
-                    Архивировать
-                  </Button>
-                </span>
-              ) : null}
+              <div className={styles.actionButtons}>
+                <Tooltip
+                  title={
+                    projectBlockActive
+                      ? 'Сначала снимите блокировку по этому проекту - затем можно провести переоценку'
+                      : undefined
+                  }
+                >
+                  <span className={styles.inlineBlock}>
+                    <Button
+                      type='primary'
+                      ghost
+                      icon={<ReloadOutlined />}
+                      disabled={projectBlockActive}
+                      onClick={() => onReevaluate?.(row.project_id)}
+                    >
+                      Провести переоценку
+                    </Button>
+                  </span>
+                </Tooltip>
+                {canArchiveEvaluation ? (
+                  <span className={styles.inlineBlock}>
+                    <Button
+                      danger
+                      disabled={archiveMut.isPending}
+                      loading={archiveMut.isPending}
+                      onClick={handleArchiveEvaluation}
+                    >
+                      Архивировать
+                    </Button>
+                  </span>
+                ) : null}
+              </div>
             </div>
           )}
         </>

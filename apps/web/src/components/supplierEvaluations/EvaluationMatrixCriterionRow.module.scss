@@ -1,0 +1,97 @@
+.block {
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rowExpandable {
+  cursor: pointer;
+
+  &:hover {
+    background: #f5f9ff;
+    box-shadow: inset 0 -2px 0 0 #1677ff;
+  }
+}
+
+.rowOpen {
+  background: #f0f7ff;
+  box-shadow: inset 0 -2px 0 0 #1677ff;
+}
+
+.rowDisabled {
+  cursor: default;
+  opacity: 0.72;
+
+  &:hover {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+.colGrow {
+  flex: 1;
+  flex-basis: 280px;
+  min-width: 0;
+}
+
+.criterionTitle {
+  font-weight: 500;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.criterionMeta {
+  font-size: 12px;
+  display: block;
+}
+
+.expandHint {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8c8c8c;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.rowExpandable:hover .expandHint,
+.rowOpen .expandHint {
+  opacity: 1;
+  color: #1677ff;
+}
+
+.scoreAccent {
+  width: 40px;
+  text-align: right;
+  color: #1677ff;
+}
+
+.weightedAccent {
+  width: 56px;
+  text-align: right;
+  color: #8c8c8c;
+  font-variant-numeric: tabular-nums;
+}
+
+.trailing {
+  width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.guidePanel {
+  padding: 4px 0 10px;
+}

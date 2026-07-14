@@ -1,0 +1,12 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modalWrap {
+  :global(.ant-modal) {
+    width: max(920px, 80vw) !important;
+    max-width: calc(100vw - 20vw);
+  }
+}

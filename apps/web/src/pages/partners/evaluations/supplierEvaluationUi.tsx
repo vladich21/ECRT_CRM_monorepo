@@ -226,7 +226,7 @@ export function formatNextReevaluationInline(nextIso: string | null): ReactNode 
   if (overdue) {
     return (
       <span className={`${uiStyles.nextMain} ${uiStyles.nextOverdue}`}>
-        {dateStr}{' '}
+        <span>{dateStr}</span>
         <span className={uiStyles.nextSub}>({Math.abs(days)} дн. проср.)</span>
       </span>
     );
@@ -234,7 +234,7 @@ export function formatNextReevaluationInline(nextIso: string | null): ReactNode 
   if (soon) {
     return (
       <span className={`${uiStyles.nextMain} ${uiStyles.nextSoon}`}>
-        {dateStr}{' '}
+        <span>{dateStr}</span>
         <span className={uiStyles.nextSub}>({daysRemainingSuffix(days)})</span>
       </span>
     );
@@ -248,7 +248,7 @@ export function formatNextReevaluationKpiValue(nextIso: string | null): ReactNod
   if (overdue) {
     return (
       <span className={uiStyles.kpiOverdue}>
-        {dateStr}{' '}
+        <span>{dateStr}</span>
         <span className={uiStyles.kpiSub}>({Math.abs(days)} дн. проср.)</span>
       </span>
     );
@@ -256,7 +256,7 @@ export function formatNextReevaluationKpiValue(nextIso: string | null): ReactNod
   if (soon) {
     return (
       <span className={uiStyles.kpiSoon}>
-        {dateStr}{' '}
+        <span>{dateStr}</span>
         <span className={uiStyles.kpiSub}>({daysRemainingSuffix(days)})</span>
       </span>
     );

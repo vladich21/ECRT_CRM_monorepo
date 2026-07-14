@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Checkbox, DatePicker, Form, Input, Modal, Space, Typography } from 'antd';
+import { Alert, Button, Checkbox, DatePicker, Form, Input, Modal, Space, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import {
@@ -10,6 +10,10 @@ import { useNotification } from '@/hooks/notifications/useNotification';
 import { readAxiosLikeError } from '../../../utils/readAxiosLikeError';
 import type { SupplierEvaluationCriterion } from '../../../types/supplierEvaluation';
 import {
+  GENERAL_SCORE_GUIDE_CODE,
+  EvaluationMatrixCriterionRow,
+} from '@/components/supplierEvaluations';
+import {
   CategoryTag,
   SCORE_STEPS,
   categoryFromWeightedScore,
@@ -18,6 +22,7 @@ import {
   weightPercent,
 } from './supplierEvaluationUi';
 import { getEvaluationCommentRules, requiresEvaluationComment } from './evaluationLowScore';
+import { SupplierEvaluationScoreGuideTrigger } from './SupplierEvaluationScoreGuideTrigger';
 import styles from './NewSupplierEvaluationModal.module.scss';
 
 const { Text } = Typography;
@@ -40,6 +45,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
   const { showNotification, contextHolder } = useNotification();
   const [scores, setScores] = useState<Record<string, number>>({});
   const [excluded, setExcluded] = useState<Record<string, boolean>>({});
+  const [expandedCriterionIds, setExpandedCriterionIds] = useState<string[]>([]);
 
   const criteriaOrdered = useMemo(
     () =>
@@ -53,6 +59,7 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
     if (open && criteriaOrdered.length) {
       setScores(defaultScores(criteriaOrdered));
       setExcluded(Object.fromEntries(criteriaOrdered.map(criterion => [criterion.id, false])));
+      setExpandedCriterionIds([]);
       form.setFieldsValue({ evaluated_at: dayjs(), comment: undefined });
     }
   }, [open, criteriaOrdered, form]);
@@ -149,9 +156,12 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
             <Text type='secondary' className={styles.matrixHeaderTitle}>
               Матрица оценки
             </Text>
-            <Text type='secondary' className={styles.matrixHeaderMeta}>
-              {includedCriteria.length === 0 ? 'Сумма весов: -' : 'Сумма весов: 100%'}
-            </Text>
+            <Space size={12} align='center'>
+              <SupplierEvaluationScoreGuideTrigger />
+              <Text type='secondary' className={styles.matrixHeaderMeta}>
+                {includedCriteria.length === 0 ? 'Сумма весов: -' : 'Сумма весов: 100%'}
+              </Text>
+            </Space>
           </div>
           <div className={styles.matrixBody}>
             {criteriaLoading ? (
@@ -184,43 +194,41 @@ export default function NewInitialSupplierEvaluationModal({ open, onClose, partn
                         sort_order: criterion.sort_order,
                       });
                   return (
-                    <div key={criterion.id} className={styles.criterionRow}>
-                      <div className={styles.colGrow}>
-                        <div className={styles.criterionTitle}>{criterion.name}</div>
-                        <Text type='secondary' className={styles.criterionMeta}>
-                          {isExcluded
-                            ? 'Не оцениваем'
-                            : `Вес ${weightPercent(normalizedWeight / 100)}`}
-                        </Text>
-                      </div>
-                      <Space size={4} wrap>
-                        {SCORE_STEPS.map(step => (
-                          <Button
-                            key={step}
-                            size='small'
-                            type={score === step ? 'primary' : 'default'}
-                            disabled={isExcluded}
-                            onClick={() => setScores(prev => ({ ...prev, [criterion.id]: step }))}
-                          >
-                            {step}
-                          </Button>
-                        ))}
-                      </Space>
-                      <Text strong className={styles.scoreAccent}>
-                        {isExcluded ? '-' : score}
-                      </Text>
-                      <Text strong className={styles.weightedAccent}>
-                        {isExcluded ? '-' : formatEvaluationScoreDisplay(weightedContribution)}
-                      </Text>
-                      <div className={styles.colNa}>
+                    <EvaluationMatrixCriterionRow
+                      key={criterion.id}
+                      criterionId={criterion.id}
+                      criterionCode={criterion.code}
+                      criterionName={criterion.name}
+                      weightLabel={
+                        isExcluded ? 'Не оцениваем' : `Вес ${weightPercent(normalizedWeight / 100)}`
+                      }
+                      score={score}
+                      weightedDisplay={formatEvaluationScoreDisplay(weightedContribution)}
+                      scoreSteps={SCORE_STEPS}
+                      guideCode={GENERAL_SCORE_GUIDE_CODE}
+                      disabled={isExcluded}
+                      expanded={expandedCriterionIds.includes(criterion.id)}
+                      onToggleExpand={() =>
+                        setExpandedCriterionIds(prev =>
+                          prev.includes(criterion.id)
+                            ? prev.filter(id => id !== criterion.id)
+                            : [...prev, criterion.id],
+                        )
+                      }
+                      onScoreChange={step =>
+                        setScores(prev => ({ ...prev, [criterion.id]: step }))
+                      }
+                      trailing={
                         <Checkbox
                           checked={isExcluded}
-                          onChange={e => setExcluded(prev => ({ ...prev, [criterion.id]: e.target.checked }))}
+                          onChange={e =>
+                            setExcluded(prev => ({ ...prev, [criterion.id]: e.target.checked }))
+                          }
                         >
                           N/A
                         </Checkbox>
-                      </div>
-                    </div>
+                      }
+                    />
                   );
                 })}
               </>
