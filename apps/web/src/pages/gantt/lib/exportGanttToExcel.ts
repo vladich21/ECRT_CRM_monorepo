@@ -58,6 +58,14 @@ function isBranch(task: ITask): boolean {
     || task.entityKind === 'stage' || task.entityKind === 'workPackage';
 }
 
+/** Отступ прямо в тексте «Название» (как в MS Project) — видно в любом Excel. */
+const NAME_INDENT_UNIT = '\u00A0\u00A0\u00A0\u00A0'; // 4 NBSP ≈ один уровень
+
+function formatNestedName(name: string, level: number): string {
+  if (level <= 0) return name;
+  return `${NAME_INDENT_UNIT.repeat(level)}${name}`;
+}
+
 /** Дерево в порядке обхода: родитель → дети (как на Gantt). */
 function orderTasksTree(tasks: ITask[]): ITask[] {
   const byId = new Map(
@@ -105,7 +113,6 @@ function buildGanttSheet(tasks: ITask[]): BuiltSheet {
 
   const headers = [
     'Название',
-    'Уровень',
     'Тип',
     'Начало',
     'Окончание',
@@ -124,8 +131,7 @@ function buildGanttSheet(tasks: ITask[]): BuiltSheet {
     branchFlags.push(isBranch(task));
     const name = String(task.text ?? '').trim() || `ID ${task.id ?? ''}`;
     return [
-      name,
-      level + 1,
+      formatNestedName(name, level),
       entityLabel(task),
       formatDate(task.start),
       formatDate(task.end),
@@ -192,15 +198,13 @@ function applyHierarchyStyles(
 
   for (let rowIndex = 0; rowIndex < levels.length; rowIndex += 1) {
     const excelRow = rowIndex + 1;
-    const level = levels[rowIndex] ?? 0;
     const branch = branchFlags[rowIndex] ?? false;
 
-    for (let col = 0; col < 10; col += 1) {
+    for (let col = 0; col < 9; col += 1) {
       const address = xlsx.utils.encode_cell({ r: excelRow, c: col });
       const cell = sheet[address];
       if (!cell) continue;
 
-      const isNameCol = col === 0;
       cell.s = {
         font: {
           sz: 11,
@@ -208,9 +212,8 @@ function applyHierarchyStyles(
         },
         alignment: {
           vertical: 'center',
-          horizontal: col === 1 || col === 5 || col === 6 ? 'center' : 'left',
-          // визуальный отступ названия по уровню (Excel indent)
-          ...(isNameCol ? { indent: level } : {}),
+          // Тип, длительность, прогресс — по центру
+          horizontal: col === 1 || col === 4 || col === 5 ? 'center' : 'left',
         },
         border: BORDER,
         ...(branch
@@ -223,7 +226,7 @@ function applyHierarchyStyles(
 
 /**
  * Выгрузка текущего дерева Gantt (+ лист связей) в xlsx.
- * Вложенность: Excel outline (группировка строк) + indent + колонка «Уровень».
+ * Вложенность: отступ в тексте «Название» + Excel outline.
  */
 export async function exportGanttToExcel(tasks: ITask[], links: ILink[]): Promise<void> {
   const xlsx = await loadXlsxStyle();
@@ -235,7 +238,6 @@ export async function exportGanttToExcel(tasks: ITask[], links: ILink[]): Promis
   applyHierarchyStyles(xlsx, ganttSheet, levels, branchFlags);
   ganttSheet['!cols'] = [
     { wch: 48 },
-    { wch: 10 },
     { wch: 14 },
     { wch: 12 },
     { wch: 12 },
