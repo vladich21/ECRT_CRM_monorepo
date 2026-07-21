@@ -17,7 +17,6 @@ export type EvaluationMatrixCriterionRowProps = {
   weightedDisplay: string;
   scoreSteps: readonly number[];
   onScoreChange: (score: number) => void;
-  /** `general` — общая шкала для первичной оценки; иначе код критерия из матрицы Excel. */
   guideCode?: string;
   disabled?: boolean;
   expanded?: boolean;

@@ -167,7 +167,7 @@ function DrawerStep({ step, decisions }: { step: ApprovalStepView; decisions: Ap
   return (
     <div className={`${styles.dstep} ${isDone ? styles.done : ''} ${isSkipped ? styles.skippedStep : ''}`}>
       <span className={`${styles.dnode} ${nodeCls(step)}`}>
-        {isDone ? <CheckOutlined /> : isSkipped ? '—' : step.step_order}
+        {isDone ? <CheckOutlined /> : isSkipped ? '-' : step.step_order}
       </span>
       <div className={styles.dtop}>
         <span className={styles.dname}>
@@ -220,7 +220,7 @@ export function ApprovalStepsBoard({ steps, decisions, canApprove, onDecide }: A
               {i > 0 ? <span className={`${styles.conn} ${steps[i - 1].state === 'completed' ? styles.connDone : ''}`} /> : null}
               <Popover content={railPopover(s, decisions)} placement="bottom" mouseEnterDelay={0.12}>
                 <span className={`${styles.node} ${nodeCls(s)}`}>
-                  {s.state === 'completed' ? <CheckOutlined /> : s.state === 'skipped' ? '—' : s.step_order}
+                  {s.state === 'completed' ? <CheckOutlined /> : s.state === 'skipped' ? '-' : s.step_order}
                 </span>
               </Popover>
             </Fragment>

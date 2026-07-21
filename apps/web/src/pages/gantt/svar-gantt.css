@@ -1,0 +1,191 @@
+@import '@svar-ui/react-gantt/all.css';
+
+/* Производственный календарь */
+.gantt-weekend {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.gantt-holiday {
+  background-color: rgba(255, 77, 79, 0.12);
+}
+
+/* По умолчанию обычная стрелка; курсор AutoScroll только при зажатой СКМ (inline) */
+.wx-gantt .wx-chart.gantt-pan-enabled,
+.wx-gantt .wx-chart.gantt-pan-enabled .wx-area,
+.wx-gantt .wx-chart.gantt-pan-enabled .wx-scale {
+  cursor: default;
+}
+
+.wx-gantt .wx-chart.gantt-autoscroll,
+.wx-gantt .wx-chart.gantt-autoscroll .wx-area,
+.wx-gantt .wx-chart.gantt-autoscroll .wx-scale {
+  user-select: none !important;
+}
+
+.wx-gantt,
+.wx-gantt .wx-layout {
+  height: 100%;
+}
+
+/* Кнопка удалить в toolbar — danger как на других страницах */
+.gantt-toolbar-delete,
+.wx-toolbar .gantt-toolbar-delete,
+button.gantt-toolbar-delete {
+  color: #e84749 !important;
+}
+
+.gantt-toolbar-delete i,
+.wx-toolbar .gantt-toolbar-delete i {
+  color: #e84749 !important;
+}
+
+/* Кнопка «Удалить» в Editor — тот же danger (#e84749) */
+.wx-button.wx-danger,
+button.wx-button.wx-danger {
+  --wx-button-danger: #e84749;
+  --wx-button-danger-hover: #d73c3e;
+  --wx-button-danger-pressed: #c83336;
+  background-color: #e84749 !important;
+  border-color: #e84749 !important;
+  color: #fff !important;
+}
+
+.wx-button.wx-danger:hover:not([disabled]),
+button.wx-button.wx-danger:hover:not([disabled]) {
+  background-color: #d73c3e !important;
+  border-color: #d73c3e !important;
+}
+
+/* Слайдер «Прогресс» в Editor — как Progress на договоре (APP_COLOR_PRIMARY) */
+.wx-editor,
+.wx-willow-theme {
+  --wx-slider-primary: #1677ff;
+}
+
+/* Название: слева, чтобы дерево (стрелка + отступ) читалось */
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='text'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='text'] .wx-text,
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wx-text {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+/* Мета-колонки — по центру */
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='start'],
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='end'],
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='deadline'],
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='laborHours'],
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='actualHours'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='start'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='end'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='deadline'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='laborHours'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='actualHours'] {
+  text-align: center !important;
+  justify-content: center !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  font-size: 14px;
+}
+
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='start'] .wx-text,
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='end'] .wx-text,
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='deadline'] .wx-text,
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='laborHours'] .wx-text,
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='actualHours'] .wx-text {
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 14px;
+  text-align: center !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Дерево: стрелка рядом с текстом, компактный отступ уровня */
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wx-tree-cell,
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wx-table-tree-cell {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  width: 100%;
+}
+
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wx-table-tree-toggle,
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wx-toggle,
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] i[class*='wxi-menu'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wxi-menu-right,
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wxi-angle-right,
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='text'] .wxi-angle-down {
+  flex: 0 0 auto;
+  margin-right: 2px !important;
+}
+
+/* Сортировка отключена */
+.wx-gantt .wx-table-container .wx-header .wx-sort {
+  display: none !important;
+}
+
+/* Связи */
+.wx-gantt .wx-link line,
+.wx-gantt svg.wx-links path,
+.wx-gantt .wx-links path {
+  stroke: rgba(0, 120, 100, 0.75) !important;
+  stroke-width: 1.5px;
+}
+
+/* Линия «сегодня» */
+.wx-gantt .wx-marker.gantt-today-marker {
+  background: rgba(255, 77, 79, 0.45) !important;
+  width: 2px !important;
+}
+
+.wx-gantt .wx-marker.gantt-today-marker .wx-content {
+  background: rgba(255, 77, 79, 0.85) !important;
+  color: #fff !important;
+  font-size: 11px;
+  padding: 2px 6px !important;
+  min-width: auto !important;
+}
+
+/* Editor combo: не прыгать вверх/вниз */
+.wx-editor [class*='wx-content'],
+.wx-editor [class*='wx-left'],
+.wx-editor [class*='wx-right'],
+.wx-editor [class*='wx-sections'] {
+  overflow: visible !important;
+}
+
+.wx-dropdown {
+  z-index: 1200 !important;
+}
+
+/* Critical path: нативный wx-critical (MIT выставляет $critical + criticalPath в store).
+   Не путать с вертикальной линией «Сегодня». */
+.wx-gantt .wx-bar.wx-task.wx-critical,
+.wx-gantt .wx-bar.wx-critical .wx-segment {
+  background-color: #cf1322 !important;
+  border-color: #a8071a !important;
+  color: #fff !important;
+}
+
+.wx-gantt .wx-bar.wx-task.wx-critical .wx-progress-percent,
+.wx-gantt .wx-bar.wx-task.wx-critical .wx-text,
+.wx-gantt .wx-bar.wx-task.wx-critical .wx-content {
+  color: #fff !important;
+}
+
+.wx-gantt .wx-bar.wx-task.wx-critical .wx-progress {
+  background-color: rgba(0, 0, 0, 0.22) !important;
+}
+
+.wx-gantt .wx-line.wx-critical {
+  stroke: #cf1322 !important;
+}

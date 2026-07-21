@@ -41,9 +41,7 @@ interface DetailPageHeaderProps {
   onTabChange: (key: string) => void;
   extraContent?: ReactNode;
   stickyHeader?: boolean;
-  /** Скрывает кнопку «Назад», вкладки и actions при window.print(). */
   hideNavigationOnPrint?: boolean;
-  /** Атрибут data-print-scope на корне — для точечных @media print стилей страницы. */
   printScope?: string;
   contentClassName?: string;
   children?: ReactNode;

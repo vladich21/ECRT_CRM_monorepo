@@ -15,20 +15,12 @@ type MenuItem = NonNullable<MenuProps['items']>[number];
 
 interface RawMenuItem {
   key: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  label: any;
-  /** Если задан - пункт показывается только если есть read-доступ хотя бы к одному из разделов */
+  icon?: React.ReactNode;
+  label: React.ReactNode;
   requiredSections?: ReadonlyArray<SectionCode | string>;
   children?: RawMenuItem[];
 }
 
-/**
- * Все пункты меню с привязкой к разделам прав.
- * Корневые пункты без `requiredSections` показываются всегда (например, «Главная»).
- * Группы автоматически скрываются, если все их дочерние пункты недоступны.
- */
 const RAW_MENU: RawMenuItem[] = [
   {
     key: '/',
