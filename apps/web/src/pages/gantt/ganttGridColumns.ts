@@ -15,13 +15,22 @@ function formatHoursCell(value: unknown): string {
   return '—';
 }
 
+function formatBudgetCell(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toLocaleString('ru-RU', { maximumFractionDigits: 0 });
+  }
+  return '—';
+}
+
 /** Ширина под дату DD.MM.YYYY по центру. */
 const DATE_COL_WIDTH = 104;
 /** Ширина под часы по центру. */
 const HOURS_COL_WIDTH = 88;
+const BUDGET_COL_WIDTH = 110;
 
 /**
  * Колонки без сортировки и без «+»; добавление задач — только через ПКМ.
+ * Бюджет — для Project/Contract/Stage (у task пусто).
  */
 export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
   { id: 'text', header: 'Название', width: 300, align: 'left', resize: true, sort: false },
@@ -53,8 +62,17 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
     template: (value: unknown) => formatDateCell(value),
   },
   {
+    id: 'budget',
+    header: 'Бюджет',
+    width: BUDGET_COL_WIDTH,
+    align: 'center',
+    resize: true,
+    sort: false,
+    template: (value: unknown) => formatBudgetCell(value),
+  },
+  {
     id: 'laborHours',
-    header: 'Труд. ч',
+    header: 'План',
     width: HOURS_COL_WIDTH,
     align: 'center',
     resize: true,
@@ -76,4 +94,5 @@ export type GanttGridTaskFields = Pick<ITask, 'start' | 'end'> & {
   deadline?: Date | null;
   laborHours?: number | null;
   actualHours?: number | null;
+  budget?: number | null;
 };

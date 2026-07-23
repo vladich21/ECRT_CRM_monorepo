@@ -80,11 +80,13 @@ button.wx-button.wx-danger:hover:not([disabled]) {
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='start'],
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='end'],
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='deadline'],
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='budget'],
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='laborHours'],
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='actualHours'],
 .wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='start'],
 .wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='end'],
 .wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='deadline'],
+.wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='budget'],
 .wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='laborHours'],
 .wx-gantt .wx-table-container .wx-body .wx-cell[data-col-id='actualHours'] {
   text-align: center !important;
@@ -97,6 +99,7 @@ button.wx-button.wx-danger:hover:not([disabled]) {
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='start'] .wx-text,
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='end'] .wx-text,
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='deadline'] .wx-text,
+.wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='budget'] .wx-text,
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='laborHours'] .wx-text,
 .wx-gantt .wx-table-container .wx-header .wx-cell[data-header-id='actualHours'] .wx-text {
   padding: 0 !important;

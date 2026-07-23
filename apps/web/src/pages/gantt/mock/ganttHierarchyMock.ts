@@ -17,12 +17,17 @@ export type GanttHierarchyNode = {
   laborHours?: number;
   /** Фактические трудозатраты, ч */
   actualHours?: number;
+  /** Бюджет (только project/contract/stage) */
+  budget?: number | null;
   progress?: number;
   children?: GanttHierarchyNode[];
   projectCode?: string;
   contractNumber?: string;
   contractDateSigned?: string;
   stageNumber?: number;
+  responsibleUserId?: string | null;
+  assigneeIds?: string[];
+  status?: string;
 };
 
 export type GanttMockLink = {

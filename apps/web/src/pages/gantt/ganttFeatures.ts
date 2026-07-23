@@ -26,8 +26,11 @@ export const GANTT_UI = {
   workCalendarHighlight: true,
   /** Persist open/closed в localStorage */
   treeOpenPersist: true,
-  /** Persist tasks/links (add/edit/delete) в localStorage, пока нет API */
-  chartPersist: true,
+  /**
+   * Persist tasks/links в localStorage.
+   * Включается только при USE_GANTT_MOCKS (см. GanttField).
+   */
+  chartPersist: false,
   /** Excel export текущего дерева */
   excelExport: true,
   /** Critical path (наш compute + CSS) */

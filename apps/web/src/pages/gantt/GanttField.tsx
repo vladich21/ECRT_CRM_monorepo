@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { App } from 'antd';
+import { App, Spin } from 'antd';
 import { Locale } from '@svar-ui/react-core';
 import {
   ContextMenu,
@@ -12,7 +12,9 @@ import {
 
 import './svar-gantt.css';
 
+import { useGanttHierarchy } from '../../api/gantt/ganttApiHooks';
 import { GanttChromeToolbar } from './GanttChromeToolbar';
+import { USE_GANTT_MOCKS } from './ganttConfig';
 import {
   createGanttContextMenuOptions,
   filterGanttContextMenu,
@@ -23,6 +25,7 @@ import { GANTT_RU_LOCALE } from './ganttRuLocale';
 import { createGanttToolbarItems } from './ganttToolbar';
 import { GANTT_MONTH_CELL_WIDTH, GANTT_MONTH_SCALES, GANTT_ZOOM_CONFIG } from './ganttZoom';
 import { autoScheduleFs, tasksDatesEqual } from './lib/autoScheduleFs';
+import { attachApiTaskPersist } from './lib/attachApiTaskPersist';
 import { attachConfirmGuards } from './lib/attachConfirmGuards';
 import {
   attachCriticalPathHighlight,
@@ -36,8 +39,10 @@ import { attachTodayMarker } from './lib/attachTodayMarker';
 import { exportGanttToExcel } from './lib/exportGanttToExcel';
 import { filterGanttLinksByTasks, filterGanttTasksByQuery } from './lib/filterGanttTasksByQuery';
 import { cloneGanttTasks, linksFromApi, scrollChartToCurrentMonth } from './lib/ganttApi';
+import { mapApiHierarchyToGantt } from './lib/mapApiHierarchyToGantt';
 import { mapAllMockProjectsToGantt } from './lib/mapHierarchyToGantt';
 import { openLinkedBranches } from './lib/openLinkedBranches';
+import { presentGanttDateWarnings } from './lib/presentGanttDateWarnings';
 import { applyOpenState, attachTreeOpenPersist, loadOpenIdsForChart } from './lib/treeOpenState';
 import { highlightWorkCalendar } from './lib/workCalendar';
 import { GANTT_MOCK_PROJECTS } from './mock/ganttHierarchyMock';
@@ -61,11 +66,17 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   const confirmRef = useRef(modal.confirm);
   confirmRef.current = modal.confirm;
   const criticalRef = useRef<CriticalPathController | null>(null);
+  const warningsShownRef = useRef(false);
 
   const [api, setApi] = useState<IApi | null>(null);
   const [chartEpoch, setChartEpoch] = useState(0);
+  /** Remount after API mutations — not on every query refetch (`dataUpdatedAt`). */
+  const [chartRevision, setChartRevision] = useState(0);
   const [criticalPathEnabled, setCriticalPathEnabled] = useState(false);
   const [excelExporting, setExcelExporting] = useState(false);
+
+  const hierarchyQuery = useGanttHierarchy(!USE_GANTT_MOCKS);
+  const refetchHierarchy = hierarchyQuery.refetch;
 
   const toolbarItems = useMemo(
     () => createGanttToolbarItems(() => apiRef.current, props => confirmRef.current(props)),
@@ -73,12 +84,20 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   );
   const contextMenuOptions = useMemo(() => createGanttContextMenuOptions(), []);
 
+  const sourceChart = useMemo(() => {
+    if (USE_GANTT_MOCKS) {
+      return (
+        (GANTT_UI.chartPersist ? loadChartSnapshot() : null) ??
+        mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS)
+      );
+    }
+    if (!hierarchyQuery.data) return { tasks: [], links: [] as ILink[] };
+    return mapApiHierarchyToGantt(hierarchyQuery.data);
+  }, [hierarchyQuery.data]);
+
   const mapped = useMemo(() => {
-    const chart =
-      (GANTT_UI.chartPersist ? loadChartSnapshot() : null) ??
-      mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS);
-    const filteredTasks = filterGanttTasksByQuery(chart.tasks, searchQuery);
-    const filteredLinks = filterGanttLinksByTasks(chart.links, filteredTasks);
+    const filteredTasks = filterGanttTasksByQuery(sourceChart.tasks, searchQuery);
+    const filteredLinks = filterGanttLinksByTasks(sourceChart.links, filteredTasks);
     const scheduled = autoScheduleFs(cloneGanttTasks(filteredTasks), filteredLinks);
     let tasks = GANTT_UI.openLinkedBranches
       ? openLinkedBranches(scheduled, filteredLinks)
@@ -87,11 +106,21 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
       tasks = applyOpenState(tasks, loadOpenIdsForChart());
     }
     return { tasks, links: filteredLinks };
-  }, [searchQuery]);
+  }, [searchQuery, sourceChart]);
 
   useEffect(() => {
     linksFallbackRef.current = mapped.links;
   }, [mapped]);
+
+  useEffect(() => {
+    if (USE_GANTT_MOCKS || !hierarchyQuery.data || warningsShownRef.current) return;
+    const warnings = hierarchyQuery.data.date_warnings ?? [];
+    if (warnings.length === 0) return;
+    warningsShownRef.current = true;
+    presentGanttDateWarnings(warnings, props => confirmRef.current(props), () => {
+      void refetchHierarchy().then(() => setChartRevision(r => r + 1));
+    });
+  }, [hierarchyQuery.data, refetchHierarchy]);
 
   const applyAutoSchedule = useCallback(async (ganttApi: IApi) => {
     if (!GANTT_UI.fsAutoSchedule || schedulingRef.current) return;
@@ -117,7 +146,6 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
               end: task.end,
               duration: task.duration,
             },
-            // внутренний FS-пересчёт — без confirm на каждую сдвинутую задачу
             skipConfirm: true,
           }),
         );
@@ -161,7 +189,6 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     [applyAutoSchedule],
   );
 
-  // Guards + tree/chart persist (живут на api, без DOM)
   useEffect(() => {
     if (!api) return;
 
@@ -169,9 +196,16 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     const detachTypeSync = attachTaskTypeSync(api);
     const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
     const detachTreeOpen = GANTT_UI.treeOpenPersist ? attachTreeOpenPersist(api) : null;
-    const detachChart = GANTT_UI.chartPersist
-      ? attachChartPersist(api, () => linksFallbackRef.current)
-      : null;
+    const detachChart =
+      USE_GANTT_MOCKS && GANTT_UI.chartPersist
+        ? attachChartPersist(api, () => linksFallbackRef.current)
+        : null;
+    const detachApi =
+      !USE_GANTT_MOCKS
+        ? attachApiTaskPersist(api, () => {
+            void refetchHierarchy().then(() => setChartRevision(r => r + 1));
+          })
+        : null;
 
     return () => {
       detachHierarchy();
@@ -179,10 +213,10 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
       detachConfirm();
       detachTreeOpen?.();
       detachChart?.();
+      detachApi?.();
     };
-  }, [api]);
+  }, [api, refetchHierarchy]);
 
-  // DOM runtime: pan, today, scroll — при remount chart (поиск)
   useEffect(() => {
     const root = chartRootRef.current;
     if (!root || !api || chartEpoch === 0) return;
@@ -208,7 +242,6 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     };
   }, [api, chartEpoch, searchQuery]);
 
-  // Critical path — отдельный lifecycle; toggle через setEnabled
   useEffect(() => {
     const root = chartRootRef.current;
     if (!root || !api || chartEpoch === 0 || !GANTT_UI.criticalPath) return;
@@ -218,7 +251,6 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
       linksFallback: () => linksFallbackRef.current,
     });
     criticalRef.current = controller;
-    // синхронизировать текущее значение тумблера сразу после attach
     controller.setEnabled(criticalPathEnabled);
 
     return () => {
@@ -267,11 +299,35 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     />
   );
 
+  if (!USE_GANTT_MOCKS && hierarchyQuery.isLoading) {
+    return (
+      <div className={styles.root}>
+        {toolbar}
+        <div className={styles.empty}>
+          <Spin size='large' />
+        </div>
+      </div>
+    );
+  }
+
+  if (!USE_GANTT_MOCKS && hierarchyQuery.isError) {
+    return (
+      <div className={styles.root}>
+        {toolbar}
+        <div className={styles.empty}>Не удалось загрузить иерархию Ганта</div>
+      </div>
+    );
+  }
+
   if (mapped.tasks.length === 0) {
     return (
       <div className={styles.root}>
         {toolbar}
-        <div className={styles.empty}>Ничего не найдено по запросу</div>
+        <div className={styles.empty}>
+          {searchQuery.trim()
+            ? 'Ничего не найдено по запросу'
+            : 'Нет проектов для отображения'}
+        </div>
       </div>
     );
   }
@@ -290,7 +346,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
               <div ref={chartRootRef} className={styles.chart}>
                 <Gantt
-                  key={searchQuery.trim().toLowerCase() || 'all'}
+                  key={`${searchQuery.trim().toLowerCase() || 'all'}-r${chartRevision}`}
                   tasks={mapped.tasks}
                   links={mapped.links}
                   scales={GANTT_MONTH_SCALES}

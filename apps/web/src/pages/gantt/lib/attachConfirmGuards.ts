@@ -141,6 +141,46 @@ function patchTouchesDates(patch: Partial<ITask> | undefined): boolean {
   return 'start' in patch || 'end' in patch || 'duration' in patch;
 }
 
+function dayIso(value: Date | undefined | null): string | null {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return null;
+  const y = value.getFullYear();
+  const m = String(value.getMonth() + 1).padStart(2, '0');
+  const d = String(value.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Даты задачи должны укладываться в родительский этап. */
+function assertDatesWithinStage(
+  api: IApi,
+  taskId: string | number,
+  next: DateSnapshot,
+): string | null {
+  const tasks = api.getState().tasks as {
+    byId?: (id: string | number) => GanttTask | undefined;
+  };
+  let current = tasks.byId?.(taskId);
+  let guard = 0;
+  while (current && guard < 50) {
+    if (current.entityKind === 'stage') {
+      const stageStart = dayIso(current.start as Date | undefined);
+      const stageEnd = dayIso(current.end as Date | undefined);
+      const start = dayIso(next.start);
+      const end = dayIso(next.end);
+      if (start && stageStart && start < stageStart) {
+        return `Начало (${start}) раньше срока этапа (${stageStart})`;
+      }
+      if (end && stageEnd && end > stageEnd) {
+        return `Окончание (${end}) позже срока этапа (${stageEnd})`;
+      }
+      return null;
+    }
+    if (current.parent == null || current.parent === 0) return null;
+    current = tasks.byId?.(current.parent);
+    guard += 1;
+  }
+  return null;
+}
+
 /**
  * Показать confirm удаления (toolbar / ПКМ / Editor / Delete).
  * setTimeout + высокий zIndex — иначе модалка оказывается под SVAR ContextMenu/dropdown.
@@ -250,6 +290,33 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
 
       const after = mergeDatePatch(before, ev.task);
       if (!datesChanged(before, after)) return true;
+
+      const stageError = assertDatesWithinStage(api, id, after);
+      if (stageError) {
+        window.setTimeout(() => {
+          confirm({
+            title: 'Даты вне срока этапа',
+            content: stageError,
+            okText: 'Понятно',
+            cancelButtonProps: { style: { display: 'none' } },
+            centered: true,
+            zIndex: CONFIRM_Z_INDEX,
+            getContainer: () => document.body,
+            onOk: () => {
+              void api.exec('update-task', {
+                id,
+                task: {
+                  start: before.start,
+                  end: before.end,
+                  duration: before.duration,
+                },
+                skipConfirm: true,
+              });
+            },
+          });
+        }, 0);
+        return false;
+      }
 
       const label = current?.text ? `«${current.text}»` : `ID ${id}`;
 

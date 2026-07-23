@@ -1,16 +1,23 @@
 import type { ILink, ITask } from '@svar-ui/react-gantt';
 
+import { parseIsoDate } from './ganttDates';
 import {
-  durationDays,
   type GanttEntityKind,
   type GanttHierarchyNode,
   type GanttMockLink,
   type GanttMockProjectBundle,
 } from '../mock/ganttHierarchyMock';
 
+function durationDays(startIso: string, endIso: string): number {
+  const start = parseIsoDate(startIso);
+  const end = parseIsoDate(endIso);
+  if (!start || !end) return 1;
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
+}
+
 function formatDateRu(iso: string): string {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString('ru-RU');
+  const date = parseIsoDate(iso);
+  return date ? date.toLocaleDateString('ru-RU') : iso;
 }
 
 function formatProjectLabel(node: GanttHierarchyNode): string {
@@ -47,103 +54,99 @@ function formatNodeTitle(node: GanttHierarchyNode): string {
     case 'stage':
       return formatStageLabel(node);
     case 'workPackage':
-      return node.name.trim();
     case 'task':
-      return node.name.trim();
+      return node.name.trim() || '-';
     default:
       return node.name;
   }
 }
 
-/** summary = ветка дерева, task = лист */
 function toSvarType(kind: GanttEntityKind): ITask['type'] {
   return kind === 'task' ? 'task' : 'summary';
 }
 
-function parseDate(iso: string | undefined): Date | undefined {
-  if (!iso) return undefined;
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
 /**
- * Сплющивание дерева в flat `tasks[]` с `parent`.
- * По умолчанию ветки закрыты (`open: false`) — раскрывает пользователь.
+ * Сплющивание одного или нескольких корней в flat `tasks[]` с `parent`.
+ * По умолчанию ветки закрыты (`open: false`).
  */
-function mapNodeToTasks(
-  node: GanttHierarchyNode,
-  parentId: number | string,
-  out: ITask[],
-  orderCounter: { value: number },
-): void {
-  const children = node.children ?? [];
-  const title = formatNodeTitle(node);
-  const start = parseDate(node.start)!;
-  const end = parseDate(node.end)!;
-  const originalSortIndex = orderCounter.value;
-  orderCounter.value += 1;
+export function mapHierarchyForestToGantt(
+  roots: GanttHierarchyNode[],
+  links: GanttMockLink[] = [],
+): { tasks: ITask[]; links: ILink[] } {
+  const tasks: ITask[] = [];
+  const orderCounter = { value: 0 };
 
-  out.push({
-    id: node.id,
-    text: title,
-    start,
-    end,
-    duration: durationDays(node.start, node.end),
-    progress: node.progress ?? 0,
-    type: toSvarType(node.kind),
-    parent: parentId,
-    ...(children.length > 0 ? { open: false as const } : {}),
-    entityKind: node.kind,
-    entityName: title,
-    deadline: parseDate(node.deadline) ?? end,
-    laborHours: node.laborHours ?? null,
-    actualHours: node.actualHours ?? null,
-    originalSortIndex,
-  });
+  const walk = (node: GanttHierarchyNode, parentId: number | string) => {
+    const children = node.children ?? [];
+    const title = formatNodeTitle(node);
+    const start = parseIsoDate(node.start);
+    const end = parseIsoDate(node.end);
+    if (!start || !end) return;
 
-  for (const child of children) {
-    mapNodeToTasks(child, node.id, out, orderCounter);
+    tasks.push({
+      id: node.id,
+      text: title,
+      start,
+      end,
+      duration: durationDays(node.start, node.end),
+      progress: node.progress ?? 0,
+      type: toSvarType(node.kind),
+      parent: parentId,
+      ...(children.length > 0 ? { open: false as const } : {}),
+      entityKind: node.kind,
+      entityName: title,
+      deadline: parseIsoDate(node.deadline) ?? end,
+      laborHours: node.laborHours ?? null,
+      actualHours: node.actualHours ?? null,
+      budget: node.budget ?? null,
+      responsibleUserId: node.responsibleUserId ?? null,
+      assigneeIds: node.assigneeIds ?? [],
+      status: node.status,
+      originalSortIndex: orderCounter.value,
+    });
+    orderCounter.value += 1;
+
+    for (const child of children) {
+      walk(child, node.id);
+    }
+  };
+
+  for (const root of roots) {
+    walk(root, 0);
   }
+
+  return {
+    tasks,
+    links: links.map(link => ({
+      id: link.id,
+      source: link.source,
+      target: link.target,
+      type: link.type,
+    })),
+  };
 }
 
 export function mapHierarchyToGanttTasks(tree: GanttHierarchyNode): ITask[] {
-  const tasks: ITask[] = [];
-  mapNodeToTasks(tree, 0, tasks, { value: 0 });
-  return tasks;
+  return mapHierarchyForestToGantt([tree]).tasks;
 }
 
 export function mapMockLinks(links: GanttMockLink[]): ILink[] {
-  return links.map(link => ({
-    id: link.id,
-    source: link.source,
-    target: link.target,
-    type: link.type,
-  }));
+  return mapHierarchyForestToGantt([], links).links;
 }
 
 export function mapMockBundleToGantt(bundle: GanttMockProjectBundle): {
   tasks: ITask[];
   links: ILink[];
 } {
-  return {
-    tasks: mapHierarchyToGanttTasks(bundle.tree),
-    links: mapMockLinks(bundle.links),
-  };
+  return mapHierarchyForestToGantt([bundle.tree], bundle.links);
 }
 
-/** Все мок-проекты в одной плоской таблице Gantt (несколько корней с parent: 0). */
 export function mapAllMockProjectsToGantt(bundles: GanttMockProjectBundle[]): {
   tasks: ITask[];
   links: ILink[];
 } {
-  const tasks: ITask[] = [];
-  const links: ILink[] = [];
-  const orderCounter = { value: 0 };
-
-  for (const bundle of bundles) {
-    mapNodeToTasks(bundle.tree, 0, tasks, orderCounter);
-    links.push(...mapMockLinks(bundle.links));
-  }
-
-  return { tasks, links };
+  return mapHierarchyForestToGantt(
+    bundles.map(b => b.tree),
+    bundles.flatMap(b => b.links),
+  );
 }

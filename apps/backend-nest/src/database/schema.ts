@@ -851,3 +851,84 @@ export const approvalDecisions = pgTable(
   },
   (t) => [index('appr_decisions_process_idx').on(t.processId)],
 );
+
+/** Листовые задачи / подзадачи диаграммы Ганта (под этапом договора). */
+export const ganttTasks = pgTable(
+  'gantt_tasks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    stageId: uuid('stage_id').notNull(),
+    parentId: uuid('parent_id'),
+    name: varchar('name', { length: 500 }).notNull(),
+    startDate: date('start_date'),
+    endDate: date('end_date'),
+    deadline: date('deadline'),
+    progress: integer('progress').notNull().default(0),
+    status: varchar('status', { length: 50 }).notNull().default('open'),
+    plannedHours: numeric('planned_hours', { precision: 12, scale: 2 }).notNull().default('0'),
+    responsibleUserId: uuid('responsible_user_id'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+    createdBy: uuid('created_by'),
+    updatedBy: uuid('updated_by'),
+    isDeleted: boolean('is_deleted').notNull().default(false),
+  },
+  (t) => [
+    index('gantt_tasks_stage_idx').on(t.stageId),
+    index('gantt_tasks_parent_idx').on(t.parentId),
+    index('gantt_tasks_responsible_idx').on(t.responsibleUserId),
+  ],
+);
+
+/** Исполнители задачи Ганта (множественные). */
+export const ganttTaskAssignees = pgTable(
+  'gantt_task_assignees',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    taskId: uuid('task_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('gantt_task_assignees_uidx').on(t.taskId, t.userId),
+    index('gantt_task_assignees_user_idx').on(t.userId),
+  ],
+);
+
+/** Списания часов на задачу (таймшит → SRN). */
+export const ganttTaskTimeEntries = pgTable(
+  'gantt_task_time_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    taskId: uuid('task_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    workDate: date('work_date').notNull(),
+    hours: numeric('hours', { precision: 8, scale: 2 }).notNull(),
+    comment: text('comment'),
+    externalId: varchar('external_id', { length: 255 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('gantt_time_entries_task_idx').on(t.taskId),
+    index('gantt_time_entries_user_idx').on(t.userId),
+    uniqueIndex('gantt_time_entries_external_uidx').on(t.externalId),
+  ],
+);
+
+/** Связи зависимостей на диаграмме Ганта. */
+export const ganttLinks = pgTable(
+  'gantt_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sourceTaskId: uuid('source_task_id').notNull(),
+    targetTaskId: uuid('target_task_id').notNull(),
+    linkType: varchar('link_type', { length: 10 }).notNull().default('e2s'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    index('gantt_links_source_idx').on(t.sourceTaskId),
+    index('gantt_links_target_idx').on(t.targetTaskId),
+  ],
+);

@@ -1,5 +1,4 @@
 /**
- * Пока true — Gantt работает на моках (Project → Contract → Stage → Task).
- * Когда подключим API — поставьте false и удалите mock-данные.
+ * Пока true — Gantt на моках. false — реальные Project→Contract→Stage→Task с API.
  */
-export const USE_GANTT_MOCKS = true;
+export const USE_GANTT_MOCKS = false;
