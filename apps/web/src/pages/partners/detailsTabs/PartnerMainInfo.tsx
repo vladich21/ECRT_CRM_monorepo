@@ -103,6 +103,12 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
           <Descriptions.Item label='Комментарий'>
             {partner?.comment || <Text type='secondary'>Нет комментария</Text>}
           </Descriptions.Item>
+
+          {partner?.block_reason?.trim() ? (
+            <Descriptions.Item label='Причина блокировки'>
+              {partner.block_reason.trim()}
+            </Descriptions.Item>
+          ) : null}
         </Descriptions>
       </section>
 

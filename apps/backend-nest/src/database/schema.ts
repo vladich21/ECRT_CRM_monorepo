@@ -544,6 +544,8 @@ export const partners = pgTable('partners', {
   questionnaireFilled: boolean('questionnaire_filled').default(false),
   initialAssessmentDone: boolean('initial_assessment_done').default(false),
   isManuallyBlocked: boolean('is_manually_blocked').notNull().default(false),
+  /** Причина блокировки контрагента; очищается при снятии блокировки. */
+  blockReason: text('block_reason'),
   rating: numeric('rating', { precision: 3, scale: 2 }),
   nextAuditDate: date('next_audit_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

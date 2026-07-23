@@ -32,6 +32,8 @@ export interface Partner {
   short_name: string;
   name: string;
   comment: string;
+  /** Причина блокировки контрагента; показывается на Основном, очищается при снятии. */
+  block_reason?: string;
   status_id: string;
   category_id: string;
   partner_economic_category_id: string;

@@ -89,7 +89,7 @@
 
 Снятие — `PUT …/blocks/:id/deactivate`.
 
-Ручная блокировка **всего** контрагента: `PUT /api/partners/:id` с `manual_blocked: true` + `block_comment` (обязательно). Ставит `status_id = Заблокирован`, `is_manually_blocked = true`, пишет причину в `partners.comment` и в ленту `comments` (`entity_type=partner`). Авто-деривация статуса не снимает ручную блокировку, пока `is_manually_blocked = false` не придёт с формы. Ручной блокировки **по проекту** нет.
+Ручная блокировка **всего** контрагента: `PUT /api/partners/:id` с `manual_blocked: true` + `block_comment` (обязательно). Ставит `status_id = Заблокирован`, `is_manually_blocked = true`, пишет причину в `partners.block_reason` (обычный `comment` не трогает) и в ленту `comments`. При снятии блокировки / архивации `block_reason` очищается. Для автоблока (avg &lt; 2) причина тоже пишется в `block_reason` через `block_comment`. Ручной блокировки **по проекту** нет.
 
 ---
 
@@ -180,6 +180,7 @@ apps/web/
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-07-23 | Причина блокировки контрагента вынесена в `partners.block_reason` (отдельно от `comment`); на Основном показывается ниже комментария; очищается при снятии/архивации. |
 | 2026-07-23 | Убрана ручная блокировка по проекту (`POST /blocks`, reason=manual); блок по проекту только при категории D. Ручная блокировка контрагента (`is_manually_blocked`) сохранена. |
 | 2026-07-22 | Клиентская выгрузка Excel с вкладки оценок контрагента (проекты, период, критерии, блокировки); колонки критериев собираются из фактических scores оценок; в `GET partner-report` добавлены `next_reevaluation_date` и у scores — `criterion_name` / `sort_order`. |
 | 2026-04-10 | В ответах GET `/` и GET `/:id` добавлено поле `partner_name` (из `partners`). |

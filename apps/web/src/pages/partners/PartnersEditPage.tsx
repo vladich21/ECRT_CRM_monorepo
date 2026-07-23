@@ -61,6 +61,7 @@ export default function PartnerEditPage() {
   const isFormInitializedRef = useRef(false);
   const [unarchiveReminderOpen, setUnarchiveReminderOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [blockModalMode, setBlockModalMode] = useState<'manual_block' | 'auto_reason'>('manual_block');
   const pendingSaveValuesRef = useRef<PartnerFormSubmitValues | null>(null);
 
   useEffect(() => {
@@ -130,8 +131,10 @@ export default function PartnerEditPage() {
     payload.competence_ids = values.competence_ids ?? [];
     if (blockComment) {
       payload.block_comment = blockComment;
-      payload.manual_blocked = true;
-      payload.comment = blockComment;
+      if (blockModalMode === 'manual_block') {
+        payload.manual_blocked = true;
+      }
+      // Обычный comment контрагента не перезаписываем — причина в block_reason.
     }
     mutate(
       { id: partnerId!, data: payload },
@@ -167,14 +170,23 @@ export default function PartnerEditPage() {
       blockUiMode !== 'auto_score';
     if (willNewManualBlock) {
       pendingSaveValuesRef.current = values;
+      setBlockModalMode('manual_block');
       blockForm.resetFields();
       setBlockConfirmOpen(true);
       return;
     }
-    // Автоблок: чекбокс disabled=ON — не шлём manual_blocked:false и не требуем комментарий.
+    // Автоблок: чекбокс disabled=ON — не шлём manual_blocked:false;
+    // если причины ещё нет — обязательная модалка в то же поле block_reason.
     if (blockUiMode === 'auto_score') {
       const { manual_blocked: _ignored, ...rest } = values;
-      submitPartnerUpdate(rest);
+      if (!partner.block_reason?.trim()) {
+        pendingSaveValuesRef.current = rest as PartnerFormSubmitValues;
+        setBlockModalMode('auto_reason');
+        blockForm.resetFields();
+        setBlockConfirmOpen(true);
+        return;
+      }
+      submitPartnerUpdate(rest as PartnerFormSubmitValues);
       return;
     }
     submitPartnerUpdate(values);
@@ -282,11 +294,14 @@ export default function PartnerEditPage() {
         </DetailPageHeader>
       ) : null}
       <Modal
-        title='Блокировка контрагента'
+        title={blockModalMode === 'auto_reason' ? 'Причина блокировки' : 'Блокировка контрагента'}
         open={blockConfirmOpen}
-        okText='Заблокировать'
+        okText={blockModalMode === 'auto_reason' ? 'Сохранить' : 'Заблокировать'}
         cancelText='Отмена'
-        okButtonProps={{ danger: true, loading: isUpdateLoading }}
+        okButtonProps={{
+          danger: blockModalMode !== 'auto_reason',
+          loading: isUpdateLoading,
+        }}
         onCancel={() => {
           setBlockConfirmOpen(false);
           pendingSaveValuesRef.current = null;
@@ -295,8 +310,9 @@ export default function PartnerEditPage() {
         destroyOnHidden
       >
         <p style={{ marginBottom: 12 }}>
-          Контрагент будет переведён в статус «Заблокирован». Укажите обязательную причину — она
-          сохранится в карточке и во вкладке «Комментарии».
+          {blockModalMode === 'auto_reason'
+            ? 'Контрагент заблокирован автоматически (средняя оценка по проектам ниже 2). Укажите причину блокировки — она отобразится на вкладке «Основное» отдельно от обычного комментария.'
+            : 'Контрагент будет переведён в статус «Заблокирован». Укажите обязательную причину — она сохранится в поле «Причина блокировки» на вкладке «Основное» и во вкладке «Комментарии».'}
         </p>
         <Form form={blockForm} layout='vertical'>
           <Form.Item

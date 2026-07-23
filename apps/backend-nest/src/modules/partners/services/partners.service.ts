@@ -453,6 +453,7 @@ export class PartnersService {
         .set({
           statusId: archiveId,
           isManuallyBlocked: false,
+          blockReason: null,
           updatedAt: new Date(),
           ...(userId ? { updatedBy: userId } : {}),
         })
@@ -461,13 +462,16 @@ export class PartnersService {
     } else if (manualBlocked === true) {
       if (!alreadyManuallyBlocked) {
         await this.applyManualPartnerBlock(id, blockComment!, userId);
+      } else if (blockComment) {
+        await this.setPartnerBlockReason(id, blockComment, userId);
       }
-      // Уже вручную заблокирован — идемпотентно, без второго комментария.
+      // Уже вручную заблокирован — без повторной записи в ленту comments.
     } else if (manualArchive === false) {
       await this.db.db
         .update(partners)
         .set({
           isManuallyBlocked: false,
+          blockReason: null,
           updatedAt: new Date(),
           ...(userId ? { updatedBy: userId } : {}),
         })
@@ -487,6 +491,7 @@ export class PartnersService {
         .update(partners)
         .set({
           isManuallyBlocked: false,
+          blockReason: null,
           updatedAt: new Date(),
           ...(userId ? { updatedBy: userId } : {}),
         })
@@ -504,6 +509,12 @@ export class PartnersService {
         }
         await this.derivedStatus.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
       }
+      // Автоблок (avg < 2): причина без перевода в ручную блокировку.
+      if (blockComment && (await this.derivedStatus.isAutoBlockedByLowScore(id))) {
+        await this.setPartnerBlockReason(id, blockComment, userId);
+      }
+    } else if (blockComment && (await this.derivedStatus.isAutoBlockedByLowScore(id))) {
+      await this.setPartnerBlockReason(id, blockComment, userId);
     }
 
     return this.findOne(id);
@@ -516,7 +527,7 @@ export class PartnersService {
       .set({
         statusId: blockedId,
         isManuallyBlocked: true,
-        comment: reason,
+        blockReason: reason,
         updatedAt: new Date(),
         ...(userId ? { updatedBy: userId } : {}),
       })
@@ -530,6 +541,17 @@ export class PartnersService {
       created_by: userId ?? null,
       user_id: userId ?? null,
     });
+  }
+
+  private async setPartnerBlockReason(partnerId: string, reason: string, userId?: string): Promise<void> {
+    await this.db.db
+      .update(partners)
+      .set({
+        blockReason: reason,
+        updatedAt: new Date(),
+        ...(userId ? { updatedBy: userId } : {}),
+      })
+      .where(eq(partners.id, partnerId));
   }
 
   async remove(id: string) {
@@ -866,6 +888,7 @@ export class PartnersService {
       status_id: row.statusId ? String(row.statusId) : '',
       category_id: row.categoryId ? String(row.categoryId) : '',
       comment: row.comment ?? '',
+      block_reason: row.blockReason ?? '',
       partner_economic_category_id: row.partnerEconomicCategoryId ? String(row.partnerEconomicCategoryId) : '',
       is_key_supplier: row.isKeySupplier ?? false,
       is_targeted: row.isTargeted ?? false,
