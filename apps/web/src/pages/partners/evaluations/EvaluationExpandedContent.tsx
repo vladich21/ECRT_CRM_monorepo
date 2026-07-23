@@ -1,6 +1,6 @@
 import { useState, type ThHTMLAttributes } from 'react';
 import { CalendarOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
-import { Alert, Button, Modal, Table, Tooltip, Typography, notification } from 'antd';
+import { Alert, App, Button, Modal, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
@@ -35,7 +35,6 @@ type Props = {
   partnerId: string;
   projectLabel?: string;
   onReevaluate?: (projectId: string) => void;
-  /** false - только матрица, комментарий и подсказки (первичная оценка). */
   showProjectActions?: boolean;
 };
 
@@ -46,6 +45,7 @@ export default function EvaluationExpandedContent({
   onReevaluate,
   showProjectActions = true,
 }: Props) {
+  const { notification } = App.useApp();
   const [expandedCriterionKeys, setExpandedCriterionKeys] = useState<string[]>([]);
   const { data: detail, isLoading } = useSupplierEvaluationDetail(row.id, true);
   const { data: block } = useSupplierEvaluationBlock(
@@ -286,6 +286,13 @@ export default function EvaluationExpandedContent({
               showIcon
               className={styles.mt12}
               message='Контрагент заблокирован по этому проекту'
+              description={
+                block.reason === 'evaluation_category_d'
+                  ? 'Автоматически по категории оценки D'
+                  : block.reason === 'manual'
+                    ? 'Ручная блокировка (историческая)'
+                    : undefined
+              }
               action={
                 <Button size='small' danger icon={<StopOutlined />} onClick={handleDeactivateBlock}>
                   Снять блокировку

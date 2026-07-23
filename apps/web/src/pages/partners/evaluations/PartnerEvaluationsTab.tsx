@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Modal, Table, Tag, Tooltip, Typography } from 'antd';
-import { BarChartOutlined, DeleteOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
+import { BarChartOutlined, DeleteOutlined, FileExcelOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -46,6 +46,7 @@ import { buildPartnerEvaluationsListQueryResetKey } from '../../supplierEvaluati
 import EvaluationExpandedContent from './EvaluationExpandedContent';
 import NewSupplierEvaluationModal from './NewSupplierEvaluationModal';
 import NewInitialSupplierEvaluationModal from './NewInitialSupplierEvaluationModal';
+import PartnerEvaluationsExportModal from './export/PartnerEvaluationsExportModal';
 import {
   partnerEvaluationsCreationDisabledTooltip,
 } from './supplierEvaluationPartnerArchiveUi';
@@ -96,6 +97,7 @@ export default function PartnerEvaluationsTab() {
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
   const [initialEvaluationModalOpen, setInitialEvaluationModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const isPartnerArchived = useMemo(() => {
     const statusName = references?.partnerStatuses?.find(
@@ -469,6 +471,9 @@ export default function PartnerEvaluationsTab() {
             >
               Отчёт
             </Button>
+            <Button icon={<FileExcelOutlined />} onClick={() => setExportModalOpen(true)}>
+              Выгрузить в Excel
+            </Button>
             <Button
               icon={<FilterOutlined />}
               className={activeFiltersCount > 0 ? listStyles.filtersBtnActive : undefined}
@@ -618,6 +623,12 @@ export default function PartnerEvaluationsTab() {
           void invalidateSupplierEvaluationQueries(queryClient);
           void invalidatePartnerQueries(queryClient);
         }}
+      />
+
+      <PartnerEvaluationsExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        partner={partner}
       />
     </div>
   );

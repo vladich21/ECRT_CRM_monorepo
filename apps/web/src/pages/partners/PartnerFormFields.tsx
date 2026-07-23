@@ -6,6 +6,7 @@ import {
   PartnerFormExtraFields,
   PartnerFormFlagsFields,
   PartnerFormRequisitesFields,
+  type PartnerBlockUiMode,
   type PartnerFormRefs,
 } from './components/form';
 import styles from './PartnerFormPage.module.scss';
@@ -19,6 +20,9 @@ export interface PartnerFormFieldsProps {
   isLoadingInn?: boolean;
   formMode?: 'create' | 'edit';
   statusDisplayName?: string;
+  blockUiMode?: PartnerBlockUiMode;
+  projectBlocksCount?: number;
+  unblockLockedByLowScore?: boolean;
 }
 
 export function PartnerFormFields({
@@ -28,6 +32,9 @@ export function PartnerFormFields({
   onUploadByInn,
   isLoadingInn,
   formMode = 'create',
+  blockUiMode = 'none',
+  projectBlocksCount = 0,
+  unblockLockedByLowScore = false,
 }: PartnerFormFieldsProps) {
   const refs = referenceBooks;
 
@@ -41,7 +48,13 @@ export function PartnerFormFields({
 
       <div className={styles.threeColSections}>
         <PartnerFormClassificationFields refs={refs} />
-        <PartnerFormFlagsFields formMode={formMode} refs={refs} />
+        <PartnerFormFlagsFields
+          formMode={formMode}
+          refs={refs}
+          blockUiMode={blockUiMode}
+          projectBlocksCount={projectBlocksCount}
+          unblockLockedByLowScore={unblockLockedByLowScore}
+        />
         <PartnerFormContactFields />
         <PartnerFormExtraFields refs={refs} />
       </div>

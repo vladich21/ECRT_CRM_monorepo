@@ -113,7 +113,6 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
           <BankOutlined className={styles.sectionTitleIcon} aria-hidden />
           Реквизиты
         </h3>
-        <p className={styles.requisitesHint}>Идентификационные данные юридического лица</p>
         <div className={styles.requisitesGrid}>
           <RequisiteCell label='ИНН' value={partner?.inn ?? ''} />
           <RequisiteCell label='КПП' value={partner?.kpp ?? ''} />

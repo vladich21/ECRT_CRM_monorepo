@@ -539,8 +539,11 @@ export const partners = pgTable('partners', {
   isKeySupplier: boolean('is_key_supplier').default(false),
   isTargeted: boolean('is_targeted').default(false),
   legalCheckPassed: boolean('legal_check_passed').default(false),
+  /** Явный отказ по юр. проверке («Проверка не пройдена»), вручную с вкладки verification. */
+  legalCheckFailed: boolean('legal_check_failed').notNull().default(false),
   questionnaireFilled: boolean('questionnaire_filled').default(false),
   initialAssessmentDone: boolean('initial_assessment_done').default(false),
+  isManuallyBlocked: boolean('is_manually_blocked').notNull().default(false),
   rating: numeric('rating', { precision: 3, scale: 2 }),
   nextAuditDate: date('next_audit_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

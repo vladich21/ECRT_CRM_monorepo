@@ -48,9 +48,11 @@ export interface Partner {
   is_key_supplier: boolean;
   is_targeted: boolean;
   legal_check_passed: boolean;
+  legal_check_failed?: boolean;
   questionnaire_filled: boolean;
   initial_assessment_done: boolean;
   is_approved: boolean;
+  is_manually_blocked?: boolean;
   has_active_evaluation_block?: boolean;
   evaluation_required?: PartnerEvaluationRequired;
   rating: number | null;

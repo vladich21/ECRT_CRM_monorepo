@@ -40,6 +40,17 @@ export class PartnerDerivedStatusService {
     await this.applyDerivedPartnerStatus(partnerId, { ignoreArchiveLock: false });
   }
 
+  /**
+   * Инжиниринг: средняя оценка по активным проектным оценкам &lt; 2 → авто-статус «Заблокирован».
+   * Блоки по отдельным проектам сюда не входят.
+   */
+  async isAutoBlockedByLowScore(partnerId: string): Promise<boolean> {
+    const categoryName = await this.loadPartnerCategoryName(partnerId);
+    if (inferPartnerCategoryKind(categoryName) !== 'engineering') return false;
+    const avg = await this.partnerAvgWeightedScoreFromActiveEvaluations(partnerId);
+    return avg !== null && avg < 2;
+  }
+
   async applyDerivedPartnerStatus(
     partnerId: string,
     opts: { ignoreArchiveLock: boolean },
@@ -54,6 +65,16 @@ export class PartnerDerivedStatusService {
     const ids = await this.resolvePartnerOperationalStatusIds();
     const statusName = await this.getPartnerStatusName(partnerRow.statusId ? String(partnerRow.statusId) : null);
     if (statusName === 'Архив' && !opts.ignoreArchiveLock) {
+      return;
+    }
+
+    if (partnerRow.isManuallyBlocked) {
+      if (String(partnerRow.statusId ?? '') !== ids.blockedId) {
+        await this.db.db
+          .update(partners)
+          .set({ statusId: ids.blockedId, updatedAt: new Date() })
+          .where(eq(partners.id, partnerId));
+      }
       return;
     }
 

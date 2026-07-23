@@ -239,6 +239,7 @@ export class SupplierEvaluationsService {
           weightedScore: supplierEvaluations.weightedScore,
           category: supplierEvaluations.category,
           evaluatedAt: supplierEvaluations.evaluatedAt,
+          nextReevaluationDate: supplierEvaluations.nextReevaluationDate,
           comment: supplierEvaluations.comment,
         })
         .from(supplierEvaluations)
@@ -259,6 +260,8 @@ export class SupplierEvaluationsService {
             evaluationId: supplierEvaluationCriterionScores.evaluationId,
             criterionId: supplierEvaluationCriterionScores.criterionId,
             criterionCode: refSupplierEvaluationCriteria.code,
+            criterionName: refSupplierEvaluationCriteria.name,
+            criterionSortOrder: refSupplierEvaluationCriteria.sortOrder,
             score: supplierEvaluationCriterionScores.score,
           })
           .from(supplierEvaluationCriterionScores)
@@ -269,13 +272,24 @@ export class SupplierEvaluationsService {
           .where(inArray(supplierEvaluationCriterionScores.evaluationId, ids))
       : [];
 
-    const scoresByEval = new Map<string, Array<{ criterion_id: string; criterion_code: string; score: number }>>();
+    const scoresByEval = new Map<
+      string,
+      Array<{
+        criterion_id: string;
+        criterion_code: string;
+        criterion_name: string;
+        sort_order: number;
+        score: number;
+      }>
+    >();
     for (const scoreRow of scoreRows) {
       const key = String(scoreRow.evaluationId);
       const arr = scoresByEval.get(key) ?? [];
       arr.push({
         criterion_id: String(scoreRow.criterionId),
         criterion_code: scoreRow.criterionCode ?? '',
+        criterion_name: scoreRow.criterionName ?? '',
+        sort_order: Number(scoreRow.criterionSortOrder ?? 0),
         score: this.roundScore(Number(scoreRow.score)),
       });
       scoresByEval.set(key, arr);
@@ -294,6 +308,9 @@ export class SupplierEvaluationsService {
         weighted_score: this.roundScore(Number(row.weightedScore)),
         category: row.category,
         evaluated_at: this.isoDateOnly(row.evaluatedAt),
+        next_reevaluation_date: row.nextReevaluationDate
+          ? this.isoDateOnly(row.nextReevaluationDate)
+          : null,
         comment: row.comment?.trim() || null,
         scores: scoresByEval.get(String(row.id)) ?? [],
       };

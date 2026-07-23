@@ -12,4 +12,6 @@ export type PartnerFormRefs = {
 export type PartnerFormSubmitValues = Partial<Partner> & {
   manual_archive?: boolean;
   manual_active?: boolean;
+  manual_blocked?: boolean;
+  block_comment?: string;
 };

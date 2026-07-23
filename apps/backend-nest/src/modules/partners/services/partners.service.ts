@@ -1,6 +1,7 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -24,6 +25,7 @@ import {
 import { computePartnerIsApproved, inferPartnerCategoryKind } from '../domain/partner-approval.rules';
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope } from '../../../common/deleted-scope';
+import { CommentsService } from '../../comments/services/comments.service';
 import { SupplierEvaluationsService } from '../../supplier-evaluations/services/supplier-evaluations.service';
 import { getFileBaseUrl } from '../../files/files-config';
 import { PartnerExportService, type PartnersExportPayload } from './partner-export.service';
@@ -57,6 +59,7 @@ export class PartnersService {
     private readonly partnerExportService: PartnerExportService,
     private readonly derivedStatus: PartnerDerivedStatusService,
     private readonly listQueryService: PartnerListQueryService,
+    private readonly commentsService: CommentsService,
   ) {}
 
   async findAll(
@@ -371,6 +374,23 @@ export class PartnersService {
       : null;
     const manualArchive = this.parseManualArchiveFlag(data);
     const manualActive = this.parseManualActiveFlag(data);
+    const manualBlocked = this.parseManualBlockedFlag(data);
+    const blockComment = this.parseBlockComment(data);
+
+    if (manualBlocked === true && manualArchive === true) {
+      throw new ConflictException(
+        'Нельзя одновременно архивировать и блокировать контрагента. Выберите одно действие.',
+      );
+    }
+
+    const alreadyManuallyBlocked = Boolean(
+      (current as { is_manually_blocked?: boolean }).is_manually_blocked,
+    );
+    // Повторная ручная блокировка / уже заблокирован вручную — комментарий и повторная запись не нужны.
+    if (manualBlocked === true && !alreadyManuallyBlocked && !blockComment) {
+      throw new BadRequestException('Укажите причину блокировки контрагента');
+    }
+
     const merged = { ...current, ...data };
     this.validateInnKppRequired(merged);
     await this.validateReferences(data);
@@ -396,6 +416,7 @@ export class PartnersService {
       is_key_supplier: 'isKeySupplier',
       is_targeted: 'isTargeted',
       legal_check_passed: 'legalCheckPassed',
+      legal_check_failed: 'legalCheckFailed',
       questionnaire_filled: 'questionnaireFilled',
       initial_assessment_done: 'initialAssessmentDone',
       rating: 'rating',
@@ -406,6 +427,16 @@ export class PartnersService {
     for (const [snake, camel] of Object.entries(map)) {
       if (data[snake] !== undefined) updateObj[camel] = data[snake];
     }
+
+    // Явный отказ по юр. проверке снимает «пройдена»; снятие отказа не поднимает флаг само
+    // (повышение — загрузкой файла или явной установкой legal_check_passed).
+    if (data.legal_check_failed === true || data.legal_check_failed === 'true') {
+      updateObj.legalCheckFailed = true;
+      updateObj.legalCheckPassed = false;
+    } else if (data.legal_check_failed === false || data.legal_check_failed === 'false') {
+      updateObj.legalCheckFailed = false;
+    }
+
     await this.db.db.update(partners).set(updateObj).where(eq(partners.id, id));
     await this.syncRelTables(id, data);
 
@@ -421,15 +452,50 @@ export class PartnersService {
         .update(partners)
         .set({
           statusId: archiveId,
+          isManuallyBlocked: false,
           updatedAt: new Date(),
           ...(userId ? { updatedBy: userId } : {}),
         })
         .where(eq(partners.id, id));
       await this.supplierEvaluationsService.archiveAllActiveByPartner(id);
+    } else if (manualBlocked === true) {
+      if (!alreadyManuallyBlocked) {
+        await this.applyManualPartnerBlock(id, blockComment!, userId);
+      }
+      // Уже вручную заблокирован — идемпотентно, без второго комментария.
     } else if (manualArchive === false) {
+      await this.db.db
+        .update(partners)
+        .set({
+          isManuallyBlocked: false,
+          updatedAt: new Date(),
+          ...(userId ? { updatedBy: userId } : {}),
+        })
+        .where(eq(partners.id, id));
       await this.derivedStatus.exitArchiveStatus(id, userId);
       if (manualActive !== undefined) {
         await this.derivedStatus.applyManualActiveForResource(id, manualActive, userId);
+      }
+    } else if (manualBlocked === false) {
+      if (await this.derivedStatus.isAutoBlockedByLowScore(id)) {
+        throw new BadRequestException(
+          'Нельзя снять блокировку контрагента: средняя оценка по проектам ниже 2. ' +
+            'Сначала улучшите оценки (переоценка), либо оставьте статус «Заблокирован».',
+        );
+      }
+      await this.db.db
+        .update(partners)
+        .set({
+          isManuallyBlocked: false,
+          updatedAt: new Date(),
+          ...(userId ? { updatedBy: userId } : {}),
+        })
+        .where(eq(partners.id, id));
+      if ((currentStatusName ?? '').trim() !== 'Архив') {
+        if (manualActive !== undefined) {
+          await this.derivedStatus.applyManualActiveForResource(id, manualActive, userId);
+        }
+        await this.derivedStatus.applyDerivedPartnerStatus(id, { ignoreArchiveLock: false });
       }
     } else if (this.derivedStatus.isOperationalStatusDeriveEnabled()) {
       if ((currentStatusName ?? '').trim() !== 'Архив') {
@@ -441,6 +507,29 @@ export class PartnersService {
     }
 
     return this.findOne(id);
+  }
+
+  private async applyManualPartnerBlock(partnerId: string, reason: string, userId?: string): Promise<void> {
+    const { blockedId } = await this.derivedStatus.resolvePartnerOperationalStatusIds();
+    await this.db.db
+      .update(partners)
+      .set({
+        statusId: blockedId,
+        isManuallyBlocked: true,
+        comment: reason,
+        updatedAt: new Date(),
+        ...(userId ? { updatedBy: userId } : {}),
+      })
+      .where(eq(partners.id, partnerId));
+
+    await this.commentsService.create({
+      entity_type: 'partner',
+      entity_id: partnerId,
+      message: `Блокировка контрагента: ${reason}`,
+      html: `Блокировка контрагента: ${reason}`,
+      created_by: userId ?? null,
+      user_id: userId ?? null,
+    });
   }
 
   async remove(id: string) {
@@ -577,6 +666,7 @@ export class PartnersService {
     const isKeySupplier = toBool(data.is_key_supplier);
     const isTargeted = toBool(data.is_targeted);
     const legalCheckPassed = toBool(data.legal_check_passed);
+    const legalCheckFailed = toBool(data.legal_check_failed);
     const questionnaireFilled = toBool(data.questionnaire_filled);
     const initialAssessmentDone = toBool(data.initial_assessment_done);
 
@@ -596,7 +686,12 @@ export class PartnersService {
       partnerEconomicCategoryId: toUuid(data.partner_economic_category_id),
       ...(isKeySupplier !== undefined && { isKeySupplier }),
       ...(isTargeted !== undefined && { isTargeted }),
-      ...(legalCheckPassed !== undefined && { legalCheckPassed }),
+      ...(legalCheckFailed === true
+        ? { legalCheckFailed: true, legalCheckPassed: false }
+        : {
+            ...(legalCheckFailed !== undefined && { legalCheckFailed }),
+            ...(legalCheckPassed !== undefined && { legalCheckPassed }),
+          }),
       ...(questionnaireFilled !== undefined && { questionnaireFilled }),
       ...(initialAssessmentDone !== undefined && { initialAssessmentDone }),
       ...(data.rating !== undefined && { rating: data.rating != null ? String(data.rating) : null }),
@@ -618,6 +713,20 @@ export class PartnersService {
     if (raw === true || raw === 'true') return true;
     if (raw === false || raw === 'false') return false;
     return undefined;
+  }
+
+  private parseManualBlockedFlag(data: Record<string, unknown>): boolean | undefined {
+    if (!('manual_blocked' in data) || data.manual_blocked === undefined) return undefined;
+    const raw = data.manual_blocked;
+    if (raw === true || raw === 'true') return true;
+    if (raw === false || raw === 'false') return false;
+    return undefined;
+  }
+
+  private parseBlockComment(data: Record<string, unknown>): string | undefined {
+    if (!('block_comment' in data) || data.block_comment == null) return undefined;
+    const text = String(data.block_comment).trim();
+    return text.length > 0 ? text : undefined;
   }
 
   async isPartnerInArchiveStatus(partnerId: string): Promise<boolean> {
@@ -761,8 +870,10 @@ export class PartnersService {
       is_key_supplier: row.isKeySupplier ?? false,
       is_targeted: row.isTargeted ?? false,
       legal_check_passed: row.legalCheckPassed ?? false,
+      legal_check_failed: row.legalCheckFailed ?? false,
       questionnaire_filled: row.questionnaireFilled ?? false,
       initial_assessment_done: row.initialAssessmentDone ?? false,
+      is_manually_blocked: row.isManuallyBlocked ?? false,
       is_approved: extras.isApproved,
       has_active_evaluation_block: extras.hasActiveEvaluationBlock,
       evaluation_required: extras.evaluationRequired,

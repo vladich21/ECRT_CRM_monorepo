@@ -1,6 +1,7 @@
 import {
   CheckCircleFilled,
   ClockCircleOutlined,
+  CloseCircleFilled,
   DeleteOutlined,
   FileExcelOutlined,
   FileImageOutlined,
@@ -10,7 +11,7 @@ import {
   InboxOutlined,
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Card, Col, Row, Spin, Tooltip, Typography, Upload } from 'antd';
+import { Button, Card, Checkbox, Col, Modal, Row, Spin, Tooltip, Typography, Upload } from 'antd';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { useRef, useState } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -19,6 +20,7 @@ import { triggerFileDownload } from '../../../components/filePreview/FilePreview
 import { fileApi } from '../../../api/files/fileApi';
 import { useDeleteFile, useFilesByEntity } from '../../../api/files/fileApiHooks';
 import { fileQueryKeys } from '../../../api/files/fileQueryKeys';
+import { useUpdatePartner } from '../../../api/partners/partnerApiHooks';
 import { invalidatePartnerQueries } from '../../../api/partners/partnerQueryKeys';
 import { useOpenAntdDeleteConfirm } from '../../../customhooks/confirmDelete';
 import { useNotification } from '@/hooks/notifications/useNotification';
@@ -33,6 +35,8 @@ const { Dragger } = Upload;
 const LEGAL_ENTITY_TYPE = 'partner-legal';
 const QUESTIONNAIRE_ENTITY_TYPE = 'partner-questionnaire';
 
+type VerificationStatus = 'passed' | 'failed' | 'pending';
+
 function getFileIcon(filename: string): React.ReactNode {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   if (ext === 'pdf') return <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />;
@@ -43,27 +47,74 @@ function getFileIcon(filename: string): React.ReactNode {
   return <FileOutlined style={{ color: '#8c8c8c', fontSize: 20 }} />;
 }
 
+function resolveLegalStatus(partner: Partner | undefined): VerificationStatus {
+  if (partner?.legal_check_failed) return 'failed';
+  if (partner?.legal_check_passed) return 'passed';
+  return 'pending';
+}
 
 type SectionProps = {
   title: string;
   description: string;
   entityType: string;
   partnerId: string;
-  isConfirmed: boolean;
-  confirmedLabel: string;
+  status: VerificationStatus;
+  passedLabel: string;
+  failedLabel?: string;
   pendingLabel: string;
-  /** Вызывается после успешной загрузки/удаления файла - статус деривируется на сервере. */
+  failToggle?: {
+    checked: boolean;
+    loading: boolean;
+    onChange: (checked: boolean) => void;
+  };
   onAfterChange: () => void;
 };
+
+function StatusBadge({
+  status,
+  passedLabel,
+  failedLabel,
+  pendingLabel,
+}: {
+  status: VerificationStatus;
+  passedLabel: string;
+  failedLabel?: string;
+  pendingLabel: string;
+}) {
+  if (status === 'passed') {
+    return (
+      <div className={styles.statusBadge} data-status='passed'>
+        <CheckCircleFilled className={styles.iconSuccess} />
+        <span>{passedLabel}</span>
+      </div>
+    );
+  }
+  if (status === 'failed') {
+    return (
+      <div className={styles.statusBadge} data-status='failed'>
+        <CloseCircleFilled className={styles.iconFailed} />
+        <span>{failedLabel ?? 'Проверка не пройдена'}</span>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.statusBadge} data-status='pending'>
+      <ClockCircleOutlined className={styles.iconPending} />
+      <span>{pendingLabel}</span>
+    </div>
+  );
+}
 
 function VerificationSection({
   title,
   description,
   entityType,
   partnerId,
-  isConfirmed,
-  confirmedLabel,
+  status,
+  passedLabel,
+  failedLabel,
   pendingLabel,
+  failToggle,
   onAfterChange,
 }: SectionProps) {
   const queryClient = useQueryClient();
@@ -127,16 +178,25 @@ function VerificationSection({
           <Title level={5} className={styles.sectionTitle}>{title}</Title>
           <Text type='secondary' className={styles.sectionDesc}>{description}</Text>
         </div>
-        <div className={styles.statusBadge} data-confirmed={String(isConfirmed)}>
-          {isConfirmed ? (
-            <><CheckCircleFilled className={styles.iconSuccess} /> <span>{confirmedLabel}</span></>
-          ) : (
-            <><ClockCircleOutlined className={styles.iconPending} /> <span>{pendingLabel}</span></>
-          )}
-        </div>
+        <StatusBadge
+          status={status}
+          passedLabel={passedLabel}
+          failedLabel={failedLabel}
+          pendingLabel={pendingLabel}
+        />
       </div>
 
-      <Spin spinning={uploading || isLoading}>
+      {failToggle && (
+        <Checkbox
+          checked={failToggle.checked}
+          disabled={failToggle.loading}
+          onChange={e => failToggle.onChange(e.target.checked)}
+        >
+          Проверка не пройдена
+        </Checkbox>
+      )}
+
+      <Spin spinning={uploading || isLoading || Boolean(failToggle?.loading)}>
         <Dragger
           multiple={false}
           showUploadList={false}
@@ -187,15 +247,52 @@ export default function PartnerVerificationTab() {
   const partner = useOutletContext<Partner>();
   const { partnerId } = useParams();
   const queryClient = useQueryClient();
+  const { contextHolder, showNotification } = useNotification();
+  const updatePartner = useUpdatePartner();
 
-  // Статусы проверки деривируются на сервере от наличия файлов (см. FilesService).
-  // После загрузки/удаления инвалидируем карточку контрагента, чтобы подтянуть свежий статус.
   const handleAfterChange = () => {
     void invalidatePartnerQueries(queryClient);
   };
 
+  const applyLegalFailed = (failed: boolean) => {
+    if (!partnerId) return;
+    updatePartner.mutate(
+      { id: partnerId, data: { legal_check_failed: failed } },
+      {
+        onSuccess: () => {
+          showNotification(
+            'success',
+            'Статус обновлён',
+            failed ? 'Установлен статус «Проверка не пройдена»' : 'Статус «Проверка не пройдена» снят',
+          );
+        },
+        onError: () => {
+          showNotification('error', 'Ошибка', 'Не удалось обновить статус юридической проверки');
+        },
+      },
+    );
+  };
+
+  const handleLegalFailedChange = (checked: boolean) => {
+    if (checked) {
+      Modal.confirm({
+        title: 'Проверка не пройдена',
+        content: 'Установить статус юридической проверки «Проверка не пройдена»? Статус «Проверка пройдена» будет снят.',
+        okText: 'Установить',
+        okButtonProps: { danger: true },
+        cancelText: 'Отмена',
+        onOk: () => applyLegalFailed(true),
+      });
+      return;
+    }
+    applyLegalFailed(false);
+  };
+
+  const legalStatus = resolveLegalStatus(partner);
+
   return (
     <div className={styles.wrap}>
+      {contextHolder}
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={12}>
           <Card className={styles.card}>
@@ -204,9 +301,15 @@ export default function PartnerVerificationTab() {
               description='Загрузите документы юридической проверки контрагента'
               entityType={LEGAL_ENTITY_TYPE}
               partnerId={partnerId!}
-              isConfirmed={Boolean(partner?.legal_check_passed)}
-              confirmedLabel='Проверка пройдена'
+              status={legalStatus}
+              passedLabel='Проверка пройдена'
+              failedLabel='Проверка не пройдена'
               pendingLabel='Ожидает проверки'
+              failToggle={{
+                checked: Boolean(partner?.legal_check_failed),
+                loading: updatePartner.isPending,
+                onChange: handleLegalFailedChange,
+              }}
               onAfterChange={handleAfterChange}
             />
           </Card>
@@ -219,8 +322,8 @@ export default function PartnerVerificationTab() {
               description='Загрузите заполненную анкету контрагента'
               entityType={QUESTIONNAIRE_ENTITY_TYPE}
               partnerId={partnerId!}
-              isConfirmed={Boolean(partner?.questionnaire_filled)}
-              confirmedLabel='Анкета получена'
+              status={partner?.questionnaire_filled ? 'passed' : 'pending'}
+              passedLabel='Анкета получена'
               pendingLabel='Анкета не получена'
               onAfterChange={handleAfterChange}
             />

@@ -3,7 +3,7 @@
 Этот файл — **единая точка актуальности** по фиче «оценки поставщиков по проекту»: схема БД, ручные скрипты, бизнес-логика, HTTP API и расположение кода.  
 При любых изменениях поведения, полей, эндпоинтов или SQL **сначала обновляют этот документ**, затем код/скрипты. Ассистентам и разработчикам брать контекст **отсюда**; детальный DDL таблиц дублируется в [`supplier-evaluations-db-design.md`](./supplier-evaluations-db-design.md) (его §2–4 должны оставаться согласованными с этим файлом).
 
-**Последнее обновление:** 2026-03-24 (добавлен фронтенд).
+**Последнее обновление:** 2026-07-22 (выгрузка оценок контрагента в Excel).
 
 ---
 
@@ -19,6 +19,7 @@
 | Правила категорий и дат | `domain/supplier-evaluation.rules.ts` |
 | NestJS-модуль | `SupplierEvaluationsModule`, префикс API `/api/supplier-evaluations` |
 | Фронтенд (React + Ant Design) | Вкладка **«Оценки»** в карточке контрагента (`/partners/:id/evaluations`): таблица с раскрытием, фильтры, модалка «Новая оценка» (матрица 1–5 с шагом 0.5), снятие блокировки из раскрытия. Сводный **«Реестр оценок»**: меню Закупки → `/supplier-evaluations`. Запросы через `apiClient` (`withCredentials`); тело POST для создания оборачивается в `{ body }` в `apps/web/src/api/clients.ts`. |
+| Выгрузка Excel по контрагенту | Кнопка **«Выгрузить в Excel»** на вкладке оценок: выбор проектов / периода / архивных / первичной; клиентский xlsx (`xlsx-js-style`) на базе `GET partner-report` + blocks + initial. Листы «Оценки» (с колонками критериев) и «Блокировки». |
 
 ---
 
@@ -79,7 +80,16 @@
 
 ### 3.5. Блокировка
 
-«Заблокирован по проекту» = есть строка в `supplier_partner_project_blocks` с `is_active = true` для пары партнер+проект. Снятие — отдельный процесс (эндпоинт деактивации по `id` блока).
+«Заблокирован по проекту» = есть строка в `supplier_partner_project_blocks` с `is_active = true` для пары партнер+проект.  
+Статус контрагента «Заблокирован» — отдельное поле `partners.status_id` (весь контрагент).
+
+Способы создать блок по проекту:
+
+1. Автоматически при оценке категории `D` (`reason = evaluation_category_d`).
+
+Снятие — `PUT …/blocks/:id/deactivate`.
+
+Ручная блокировка **всего** контрагента: `PUT /api/partners/:id` с `manual_blocked: true` + `block_comment` (обязательно). Ставит `status_id = Заблокирован`, `is_manually_blocked = true`, пишет причину в `partners.comment` и в ленту `comments` (`entity_type=partner`). Авто-деривация статуса не снимает ручную блокировку, пока `is_manually_blocked = false` не придёт с формы. Ручной блокировки **по проекту** нет.
 
 ---
 
@@ -136,6 +146,10 @@ apps/web/
     NewSupplierEvaluationModal.tsx
     EvaluationExpandedContent.tsx
     supplierEvaluationUi.tsx             ← бейджи категорий, статусы строк, предпросчет балла
+    export/
+      PartnerEvaluationsExportModal.tsx
+      partnerEvaluationsExportMapper.ts
+      exportPartnerEvaluationsToExcel.ts
   src/pages/supplierEvaluations/
     SupplierEvaluationsRegistryPage.tsx
   src/pages/partners/PartnerDetailsPage.tsx  ← вкладка «Оценки», счетчик
@@ -166,6 +180,8 @@ apps/web/
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-07-23 | Убрана ручная блокировка по проекту (`POST /blocks`, reason=manual); блок по проекту только при категории D. Ручная блокировка контрагента (`is_manually_blocked`) сохранена. |
+| 2026-07-22 | Клиентская выгрузка Excel с вкладки оценок контрагента (проекты, период, критерии, блокировки); колонки критериев собираются из фактических scores оценок; в `GET partner-report` добавлены `next_reevaluation_date` и у scores — `criterion_name` / `sort_order`. |
 | 2026-04-10 | В ответах GET `/` и GET `/:id` добавлено поле `partner_name` (из `partners`). |
 | 2026-03-24 | Документ создан: сводка по БД, индексам, API, логике; зафиксированы пороги A/B/C/D как в UI. |
 | 2026-03-24 | Фронт: вкладка оценок у контрагента, сводный реестр, API-клиент и хуки. |

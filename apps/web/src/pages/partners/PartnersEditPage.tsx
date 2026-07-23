@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
-import { Button, Form, Modal } from 'antd';
+import { Button, Form, Input, Modal } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { usePartnerByInn, useUpdatePartner } from '../../api/partners/partnerApiHooks';
@@ -17,15 +17,29 @@ import {
   partnerEditBadgeOptions,
 } from './partnerDetailHeaderContent';
 import type { PartnerFormRefs, PartnerFormSubmitValues } from './components/form';
+import type { PartnerBlockUiMode } from './components/form/PartnerFormFlagsFields';
 import { PartnerFormFields } from './PartnerFormFields';
 import { usePartnerEditPageData } from './edit/hooks/usePartnerEditPageData';
+import { inferPartnerCategoryKind } from '../../utils/partnerApproval';
 import styles from './PartnerFormPage.module.scss';
+
+const { TextArea } = Input;
+
+function resolveBlockUiMode(
+  partner: { is_manually_blocked?: boolean; status_id: string },
+  statusName: string | null | undefined,
+): PartnerBlockUiMode {
+  if (partner.is_manually_blocked) return 'manual';
+  if ((statusName ?? '').trim() === 'Заблокирован') return 'auto_score';
+  return 'none';
+}
 
 export default function PartnerEditPage() {
   const { partnerId } = useParams();
   const navigate = useNavigate();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
+  const [blockForm] = Form.useForm<{ block_comment: string }>();
   const [isFormChanged, setIsFormChanged] = useState(false);
   const {
     partner,
@@ -46,6 +60,8 @@ export default function PartnerEditPage() {
   const isSubmittingRef = useRef(false);
   const isFormInitializedRef = useRef(false);
   const [unarchiveReminderOpen, setUnarchiveReminderOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const pendingSaveValuesRef = useRef<PartnerFormSubmitValues | null>(null);
 
   useEffect(() => {
     if (partner && referenceBooks?.partnerStatuses && !isFormInitializedRef.current) {
@@ -55,9 +71,22 @@ export default function PartnerEditPage() {
       const activeEntry = referenceBooks.partnerStatuses.find(
         status => (status.name ?? '').trim() === 'Активный',
       );
+      const blockedEntry = referenceBooks.partnerStatuses.find(
+        status => (status.name ?? '').trim() === 'Заблокирован',
+      );
       const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
       const isActive = Boolean(activeEntry && String(partner.status_id) === String(activeEntry.id));
-      form.setFieldsValue(partnerUpdateFormMapper(partner, { is_archived: isArchived, is_active: isActive }));
+      const isStatusBlocked = Boolean(
+        blockedEntry && String(partner.status_id) === String(blockedEntry.id),
+      );
+      form.setFieldsValue(
+        partnerUpdateFormMapper(partner, {
+          is_archived: isArchived,
+          is_active: isActive,
+          // Чекбокс отражает статус «Заблокирован» (ручной или авто), не блоки по проектам.
+          is_manually_blocked: Boolean(partner.is_manually_blocked) || isStatusBlocked,
+        }),
+      );
       isFormInitializedRef.current = true;
     }
   }, [partner, referenceBooks, form]);
@@ -73,7 +102,7 @@ export default function PartnerEditPage() {
       },
     });
   };
-  const handleSave = async (values: PartnerFormSubmitValues) => {
+  const submitPartnerUpdate = (values: PartnerFormSubmitValues, blockComment?: string) => {
     if (isSubmittingRef.current || !referenceBooks || !partner) return;
     isSubmittingRef.current = true;
     const archiveEntry = referenceBooks.partnerStatuses?.find(
@@ -82,12 +111,28 @@ export default function PartnerEditPage() {
     const activeEntry = referenceBooks.partnerStatuses?.find(
       status => (status.name ?? '').trim() === 'Активный',
     );
+    const blockedEntry = referenceBooks.partnerStatuses?.find(
+      status => (status.name ?? '').trim() === 'Заблокирован',
+    );
     const isArchived = Boolean(archiveEntry && String(partner.status_id) === String(archiveEntry.id));
     const isActive = Boolean(activeEntry && String(partner.status_id) === String(activeEntry.id));
+    const isStatusBlocked = Boolean(
+      blockedEntry && String(partner.status_id) === String(blockedEntry.id),
+    );
     const wasUnarchivedFromArchive = isArchived && values.manual_archive === false;
-    const payload = getChangedFields(values, partnerUpdateFormMapper(partner, { is_archived: isArchived, is_active: isActive }));
+    const baseline = partnerUpdateFormMapper(partner, {
+      is_archived: isArchived,
+      is_active: isActive,
+      is_manually_blocked: Boolean(partner.is_manually_blocked) || isStatusBlocked,
+    });
+    const payload = getChangedFields(values, baseline) as Record<string, unknown>;
     payload.type_ids = values.type_ids ?? [];
     payload.competence_ids = values.competence_ids ?? [];
+    if (blockComment) {
+      payload.block_comment = blockComment;
+      payload.manual_blocked = true;
+      payload.comment = blockComment;
+    }
     mutate(
       { id: partnerId!, data: payload },
       {
@@ -110,6 +155,42 @@ export default function PartnerEditPage() {
         },
       },
     );
+  };
+
+  const handleSave = async (values: PartnerFormSubmitValues) => {
+    if (!partner) return;
+    const blockUiMode = resolveBlockUiMode(partner, headerLabels?.statusName);
+    // Confirm только при новой ручной блокировке (не повтор и не авто).
+    const willNewManualBlock =
+      values.manual_blocked === true &&
+      !partner.is_manually_blocked &&
+      blockUiMode !== 'auto_score';
+    if (willNewManualBlock) {
+      pendingSaveValuesRef.current = values;
+      blockForm.resetFields();
+      setBlockConfirmOpen(true);
+      return;
+    }
+    // Автоблок: чекбокс disabled=ON — не шлём manual_blocked:false и не требуем комментарий.
+    if (blockUiMode === 'auto_score') {
+      const { manual_blocked: _ignored, ...rest } = values;
+      submitPartnerUpdate(rest);
+      return;
+    }
+    submitPartnerUpdate(values);
+  };
+
+  const handleConfirmBlock = async () => {
+    try {
+      const { block_comment } = await blockForm.validateFields();
+      const values = pendingSaveValuesRef.current;
+      if (!values) return;
+      setBlockConfirmOpen(false);
+      pendingSaveValuesRef.current = null;
+      submitPartnerUpdate(values, block_comment.trim());
+    } catch {
+      /* validation */
+    }
   };
   return (
     <AsyncBoundary
@@ -188,11 +269,48 @@ export default function PartnerEditPage() {
                 isLoadingInn={isLoadingInn}
                 formMode='edit'
                 statusDisplayName={headerLabels.statusName ?? '-'}
+                blockUiMode={resolveBlockUiMode(partner, headerLabels.statusName)}
+                projectBlocksCount={partnerEvalKpi?.blockedProjectCount ?? 0}
+                unblockLockedByLowScore={
+                  inferPartnerCategoryKind(headerLabels.categoryName) === 'engineering' &&
+                  partnerEvalKpi?.avgScore != null &&
+                  partnerEvalKpi.avgScore < 2
+                }
               />
             </Form>
           </div>
         </DetailPageHeader>
       ) : null}
+      <Modal
+        title='Блокировка контрагента'
+        open={blockConfirmOpen}
+        okText='Заблокировать'
+        cancelText='Отмена'
+        okButtonProps={{ danger: true, loading: isUpdateLoading }}
+        onCancel={() => {
+          setBlockConfirmOpen(false);
+          pendingSaveValuesRef.current = null;
+        }}
+        onOk={() => void handleConfirmBlock()}
+        destroyOnHidden
+      >
+        <p style={{ marginBottom: 12 }}>
+          Контрагент будет переведён в статус «Заблокирован». Укажите обязательную причину — она
+          сохранится в карточке и во вкладке «Комментарии».
+        </p>
+        <Form form={blockForm} layout='vertical'>
+          <Form.Item
+            name='block_comment'
+            label='Причина блокировки'
+            rules={[
+              { required: true, message: 'Укажите причину блокировки' },
+              { whitespace: true, message: 'Укажите причину блокировки' },
+            ]}
+          >
+            <TextArea rows={4} placeholder='Почему блокируете контрагента' maxLength={2000} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
       <Modal
         title='Восстановление из архива'
         open={unarchiveReminderOpen}

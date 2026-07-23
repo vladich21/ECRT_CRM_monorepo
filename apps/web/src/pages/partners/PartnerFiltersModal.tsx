@@ -46,7 +46,7 @@ export const EMPTY_FILTERS: PartnerFilters = {
 };
 
 const BLOCKS_FILTER_HINT =
-  'Все - фильтр не применяется. Да - у контрагента есть хотя бы одна активная блокировка по какому-либо проекту (участие в закупках по этому проекту ограничено). Нет - активных блокировок нет.';
+  'Фильтр по блокировкам проектов (не по статусу контрагента «Заблокирован»). Да — есть хотя бы одна активная блокировка по проекту. Нет — активных блокировок по проектам нет. Статус «Заблокирован» в поле «Статус» — это блокировка всего контрагента.';
 
 const EVAL_CATEGORY_OPTIONS: { label: string; value: PartnerEvaluationCategoryFilterValue }[] = [
   { label: 'A', value: 'A' },
@@ -247,7 +247,7 @@ export function PartnerFiltersModal({
         <Col xs={24} md={12} xl={6}>
           <div className={styles.filtersModalStackCol}>
             <TriRadioRow
-              label='Есть блокировки'
+              label='Есть блокировки по проектам'
               labelHint={BLOCKS_FILTER_HINT}
               value={draftFilters.hasActiveBlocks}
               onChange={nextValue => onUpdateDraftFilter({ hasActiveBlocks: nextValue })}
