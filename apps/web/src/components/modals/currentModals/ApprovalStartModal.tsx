@@ -170,7 +170,7 @@ export const ApprovalStartModal: React.FC<ModalShellProps> = ({ open, title, mod
                 if (!isOptional) {
                   return (
                     <Typography.Text key={step.step_order} type='secondary'>
-                      {step.step_order}. {step.name} — обязательный
+                      {step.step_order}. {step.name} - обязательный
                     </Typography.Text>
                   );
                 }

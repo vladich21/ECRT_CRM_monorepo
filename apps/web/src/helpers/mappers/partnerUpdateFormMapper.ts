@@ -2,7 +2,7 @@ import { Partner } from '../../types/partner';
 
 export const partnerUpdateFormMapper = (
   partnerData: Partner,
-  opts?: { is_archived?: boolean; is_active?: boolean },
+  opts?: { is_archived?: boolean; is_active?: boolean; is_manually_blocked?: boolean },
 ) => {
   const values = {
     name: partnerData.name || '',
@@ -10,6 +10,7 @@ export const partnerUpdateFormMapper = (
     comment: partnerData.comment || '',
     manual_archive: opts?.is_archived ?? false,
     manual_active: opts?.is_active ?? false,
+    manual_blocked: opts?.is_manually_blocked ?? partnerData.is_manually_blocked ?? false,
     category_id: partnerData.category_id || null,
     partner_economic_category_id: partnerData.partner_economic_category_id || null,
     type_ids: partnerData.type_ids || [],

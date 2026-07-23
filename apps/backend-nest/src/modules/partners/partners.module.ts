@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { CommentsModule } from '../comments/comments.module';
 import { SupplierEvaluationsModule } from '../supplier-evaluations/supplier-evaluations.module';
 import { PartnersController } from './controllers/partners.controller';
 import { PartnerContactsController } from './controllers/partner-contacts.controller';
@@ -11,7 +12,7 @@ import { PartnerDerivedStatusService } from './services/partner-derived-status.s
 import { PartnerListQueryService } from './services/partner-list-query.service';
 
 @Module({
-  imports: [forwardRef(() => SupplierEvaluationsModule)],
+  imports: [forwardRef(() => SupplierEvaluationsModule), CommentsModule],
   controllers: [PartnerContactsController, PartnersController],
   providers: [
     PartnersService,

@@ -32,6 +32,8 @@ export interface Partner {
   short_name: string;
   name: string;
   comment: string;
+  /** Причина блокировки/разблокировки; показывается на Основном, обновляется при обоих действиях. */
+  block_reason?: string;
   status_id: string;
   category_id: string;
   partner_economic_category_id: string;
@@ -48,9 +50,11 @@ export interface Partner {
   is_key_supplier: boolean;
   is_targeted: boolean;
   legal_check_passed: boolean;
+  legal_check_failed?: boolean;
   questionnaire_filled: boolean;
   initial_assessment_done: boolean;
   is_approved: boolean;
+  is_manually_blocked?: boolean;
   has_active_evaluation_block?: boolean;
   evaluation_required?: PartnerEvaluationRequired;
   rating: number | null;

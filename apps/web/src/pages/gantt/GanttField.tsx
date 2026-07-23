@@ -1,278 +1,309 @@
-import React, { useState } from 'react';
-import { Gantt, ILink, ITask, Willow } from '@svar-ui/react-gantt';
-
-import '@svar-ui/react-gantt/all.css';
-
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { App } from 'antd';
+import { Locale } from '@svar-ui/react-core';
 import {
-  CalendarOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  PlusOutlined,
-  TeamOutlined,
-} from '@ant-design/icons';
-import { Button, Card, Col, Row, Space, Statistic, Typography } from 'antd';
+  ContextMenu,
+  Editor,
+  Gantt,
+  Willow,
+  type IApi,
+  type ILink,
+} from '@svar-ui/react-gantt';
 
-const { Title, Text } = Typography;
+import './svar-gantt.css';
 
-const initialTasks: ITask[] = [
-  // Проект 1: Разработка веб-приложения
-  {
-    id: 'project-1',
-    text: '🎯 Веб-приложение для CRM',
-    start: new Date(2024, 5, 1),
-    end: new Date(2024, 7, 31),
-    progress: 35,
-    type: 'project',
-    isDisabled: false,
-    styles: {
-      backgroundColor: '#1890ff',
-      backgroundSelectedColor: '#40a9ff',
-      progressColor: '#52c41a',
-      progressSelectedColor: '#73d13d',
-    },
-  },
-  {
-    id: 'task-1-1',
-    text: 'Анализ требований',
-    start: new Date(2024, 5, 1),
-    end: new Date(2024, 5, 10),
-    progress: 100,
-    type: 'task',
-    parent: 'project-1', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#13c2c2',
-      progressColor: '#36cfc9',
-    },
-  },
-  {
-    id: 'task-1-2',
-    text: 'Дизайн интерфейса',
-    start: new Date(2024, 5, 5),
-    end: new Date(2024, 5, 20),
-    progress: 80,
-    type: 'task',
-    parent: 'project-1', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#722ed1',
-      progressColor: '#9254de',
-    },
-  },
-  {
-    id: 'task-1-3',
-    text: 'Разработка фронтенда',
-    start: new Date(2024, 5, 15),
-    end: new Date(2024, 6, 15),
-    progress: 60,
-    type: 'task',
-    parent: 'project-1', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#fa8c16',
-      progressColor: '#ffa940',
-    },
-  },
-  {
-    id: 'task-1-4',
-    text: 'Разработка бэкенда',
-    start: new Date(2024, 5, 20),
-    end: new Date(2024, 6, 25),
-    progress: 45,
-    type: 'task',
-    parent: 'project-1', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#f5222d',
-      progressColor: '#ff4d4f',
-    },
-  },
-  {
-    id: 'milestone-1',
-    text: '🚀 MVP готово',
-    start: new Date(2024, 6, 30),
-    progress: 0,
-    type: 'milestone',
-    parent: 'project-1', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#faad14',
-      backgroundSelectedColor: '#ffc53d',
-    },
-  },
+import { GanttChromeToolbar } from './GanttChromeToolbar';
+import {
+  createGanttContextMenuOptions,
+  filterGanttContextMenu,
+} from './ganttContextMenu';
+import { GANTT_UI } from './ganttFeatures';
+import { GANTT_GRID_COLUMNS } from './ganttGridColumns';
+import { GANTT_RU_LOCALE } from './ganttRuLocale';
+import { createGanttToolbarItems } from './ganttToolbar';
+import { GANTT_MONTH_CELL_WIDTH, GANTT_MONTH_SCALES, GANTT_ZOOM_CONFIG } from './ganttZoom';
+import { autoScheduleFs, tasksDatesEqual } from './lib/autoScheduleFs';
+import { attachConfirmGuards } from './lib/attachConfirmGuards';
+import {
+  attachCriticalPathHighlight,
+  type CriticalPathController,
+} from './lib/attachCriticalPathHighlight';
+import { attachHierarchyMoveGuard } from './lib/attachHierarchyMoveGuard';
+import { attachTimelinePan } from './lib/attachTimelinePan';
+import { attachTodayMarker } from './lib/attachTodayMarker';
+import { exportGanttToExcel } from './lib/exportGanttToExcel';
+import { filterGanttLinksByTasks, filterGanttTasksByQuery } from './lib/filterGanttTasksByQuery';
+import { cloneGanttTasks, linksFromApi, scrollChartToCurrentMonth } from './lib/ganttApi';
+import { mapAllMockProjectsToGantt } from './lib/mapHierarchyToGantt';
+import { openLinkedBranches } from './lib/openLinkedBranches';
+import { applyOpenState, attachTreeOpenPersist, loadOpenIdsForChart } from './lib/treeOpenState';
+import { highlightWorkCalendar } from './lib/workCalendar';
+import { GANTT_MOCK_PROJECTS } from './mock/ganttHierarchyMock';
+import styles from './GanttField.module.scss';
 
-  // Проект 2: Мобильное приложение
-  {
-    id: 'project-2',
-    text: '📱 Мобильное приложение',
-    start: new Date(2024, 6, 1),
-    end: new Date(2024, 8, 30),
-    progress: 15,
-    type: 'project',
-    isDisabled: false,
-    styles: {
-      backgroundColor: '#52c41a',
-      backgroundSelectedColor: '#73d13d',
-    },
-  },
-  {
-    id: 'task-2-1',
-    text: 'Прототипирование',
-    start: new Date(2024, 6, 1),
-    end: new Date(2024, 6, 15),
-    progress: 100,
-    type: 'task',
-    parent: 'project-2', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#1890ff',
-      progressColor: '#40a9ff',
-    },
-  },
-  {
-    id: 'task-2-2',
-    text: 'iOS разработка',
-    start: new Date(2024, 6, 10),
-    end: new Date(2024, 8, 10),
-    progress: 30,
-    type: 'task',
-    parent: 'project-2', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#eb2f96',
-      progressColor: '#f759ab',
-    },
-  },
-  {
-    id: 'task-2-3',
-    text: 'Android разработка',
-    start: new Date(2024, 6, 10),
-    end: new Date(2024, 8, 20),
-    progress: 25,
-    type: 'task',
-    parent: 'project-2', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#722ed1',
-      progressColor: '#9254de',
-    },
-  },
-  {
-    id: 'task-2-4',
-    text: 'Тестирование',
-    start: new Date(2024, 8, 15),
-    end: new Date(2024, 8, 30),
-    progress: 5,
-    type: 'task',
-    parent: 'project-2', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#fa8c16',
-      progressColor: '#ffa940',
-    },
-  },
+type GanttFieldProps = {
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
+};
 
-  // Проект 3: Интеграция систем
-  {
-    id: 'project-3',
-    text: '🔄 Интеграция с ERP',
-    start: new Date(2024, 5, 15),
-    end: new Date(2024, 7, 15),
-    progress: 70,
-    type: 'project',
-    isDisabled: false,
-    styles: {
-      backgroundColor: '#722ed1',
-      backgroundSelectedColor: '#9254de',
+/**
+ * Gantt chart + chrome (search / hotkeys / excel / critical path).
+ * Runtime attach* вынесены в lib; этот файл только wiring.
+ */
+export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps) {
+  const { modal, message } = App.useApp();
+  const schedulingRef = useRef(false);
+  const linksFallbackRef = useRef<ILink[]>([]);
+  const chartRootRef = useRef<HTMLDivElement>(null);
+  const apiRef = useRef<IApi | null>(null);
+  const confirmRef = useRef(modal.confirm);
+  confirmRef.current = modal.confirm;
+  const criticalRef = useRef<CriticalPathController | null>(null);
+
+  const [api, setApi] = useState<IApi | null>(null);
+  const [chartEpoch, setChartEpoch] = useState(0);
+  const [criticalPathEnabled, setCriticalPathEnabled] = useState(false);
+  const [excelExporting, setExcelExporting] = useState(false);
+
+  const toolbarItems = useMemo(
+    () => createGanttToolbarItems(() => apiRef.current, props => confirmRef.current(props)),
+    [],
+  );
+  const contextMenuOptions = useMemo(() => createGanttContextMenuOptions(), []);
+
+  const mapped = useMemo(() => {
+    const chart = mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS);
+    const filteredTasks = filterGanttTasksByQuery(chart.tasks, searchQuery);
+    const filteredLinks = filterGanttLinksByTasks(chart.links, filteredTasks);
+    const scheduled = autoScheduleFs(cloneGanttTasks(filteredTasks), filteredLinks);
+    let tasks = GANTT_UI.openLinkedBranches
+      ? openLinkedBranches(scheduled, filteredLinks)
+      : scheduled;
+    if (GANTT_UI.treeOpenPersist) {
+      tasks = applyOpenState(tasks, loadOpenIdsForChart());
+    }
+    return { tasks, links: filteredLinks };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    linksFallbackRef.current = mapped.links;
+  }, [mapped]);
+
+  const applyAutoSchedule = useCallback(async (ganttApi: IApi) => {
+    if (!GANTT_UI.fsAutoSchedule || schedulingRef.current) return;
+    schedulingRef.current = true;
+    try {
+      const before = ganttApi.serialize();
+      const links = linksFromApi(ganttApi, linksFallbackRef.current);
+      linksFallbackRef.current = links;
+      const scheduled = autoScheduleFs(cloneGanttTasks(before), links);
+      const beforeById = new Map(before.map(task => [String(task.id), task]));
+
+      const updates: Promise<unknown>[] = [];
+      for (const task of scheduled) {
+        if (task.id == null || !task.start || !task.end) continue;
+        const previous = beforeById.get(String(task.id));
+        if (previous && tasksDatesEqual(previous, task)) continue;
+
+        updates.push(
+          ganttApi.exec('update-task', {
+            id: task.id,
+            task: {
+              start: task.start,
+              end: task.end,
+              duration: task.duration,
+            },
+          }),
+        );
+      }
+
+      if (updates.length > 0) {
+        await Promise.all(updates);
+      }
+    } finally {
+      schedulingRef.current = false;
+    }
+  }, []);
+
+  const handleInit = useCallback(
+    (ganttApi: IApi) => {
+      apiRef.current = ganttApi;
+      setApi(ganttApi);
+      setChartEpoch(epoch => epoch + 1);
+
+      const tag = { tag: 'gantt-fs-all-projects' };
+      ganttApi.detach(tag.tag);
+
+      const scheduleIfIdle = () => {
+        if (schedulingRef.current) return;
+        void applyAutoSchedule(ganttApi);
+      };
+
+      ganttApi.on(
+        'update-task',
+        (ev: { inProgress?: boolean }) => {
+          if (ev?.inProgress) return;
+          scheduleIfIdle();
+        },
+        tag,
+      );
+      ganttApi.on('add-task', scheduleIfIdle, tag);
+      ganttApi.on('add-link', scheduleIfIdle, tag);
+      ganttApi.on('update-link', scheduleIfIdle, tag);
+      ganttApi.on('delete-link', scheduleIfIdle, tag);
     },
-  },
-  {
-    id: 'task-3-1',
-    text: 'API проектирование',
-    start: new Date(2024, 5, 15),
-    end: new Date(2024, 5, 30),
-    progress: 100,
-    type: 'task',
-    parent: 'project-3', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#13c2c2',
-      progressColor: '#36cfc9',
-    },
-  },
-  {
-    id: 'task-3-2',
-    text: 'Разработка интеграции',
-    start: new Date(2024, 5, 25),
-    end: new Date(2024, 6, 30),
-    progress: 85,
-    type: 'task',
-    parent: 'project-3', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#fa8c16',
-      progressColor: '#ffa940',
-    },
-  },
-  {
-    id: 'milestone-2',
-    text: '✅ Интеграция завершена',
-    start: new Date(2024, 7, 15),
-    progress: 0,
-    type: 'milestone',
-    parent: 'project-3', // ← Используем parent вместо project
-    styles: {
-      backgroundColor: '#52c41a',
-      backgroundSelectedColor: '#73d13d',
-    },
-  },
-];
+    [applyAutoSchedule],
+  );
 
-// Создаем связи между задачами
-const initialILinks: ILink[] = [
-  // Связи для проекта 1
-  { id: 'link-1-1-2', source: 'task-1-1', target: 'task-1-2', type: 'e2s' },
-  { id: 'link-1-2-3', source: 'task-1-2', target: 'task-1-3', type: 'e2s' },
-  { id: 'link-1-1-4', source: 'task-1-1', target: 'task-1-4', type: 'e2s' },
-  { id: 'link-1-3-m1', source: 'task-1-3', target: 'milestone-1', type: 'e2s' },
-  { id: 'link-1-4-m1', source: 'task-1-4', target: 'milestone-1', type: 'e2s' },
+  // Guards + tree persist (живут на api, без DOM)
+  useEffect(() => {
+    if (!api) return;
 
-  // Связи для проекта 2
-  { id: 'link-2-1-2', source: 'task-2-1', target: 'task-2-2', type: 'e2s' },
-  { id: 'link-2-1-3', source: 'task-2-1', target: 'task-2-3', type: 'e2s' },
-  { id: 'link-2-2-4', source: 'task-2-2', target: 'task-2-4', type: 'e2s' },
-  { id: 'link-2-3-4', source: 'task-2-3', target: 'task-2-4', type: 'e2s' },
+    const detachHierarchy = attachHierarchyMoveGuard(api);
+    const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
+    const detachTreeOpen = GANTT_UI.treeOpenPersist ? attachTreeOpenPersist(api) : null;
 
-  // Связи для проекта 3
-  { id: 'link-3-1-2', source: 'task-3-1', target: 'task-3-2', type: 'e2s' },
-  { id: 'link-3-2-m2', source: 'task-3-2', target: 'milestone-2', type: 'e2s' },
+    return () => {
+      detachHierarchy();
+      detachConfirm();
+      detachTreeOpen?.();
+    };
+  }, [api]);
 
-  // Межпроектные зависимости
-  { id: 'link-1-3-3-2', source: 'task-1-3', target: 'task-3-2', type: 'e2s' },
-  { id: 'link-m1-2-2', source: 'milestone-1', target: 'task-2-2', type: 'e2s' },
-];
+  // DOM runtime: pan, today, scroll — при remount chart (поиск)
+  useEffect(() => {
+    const root = chartRootRef.current;
+    if (!root || !api || chartEpoch === 0) return;
 
-export const GanttField = () => {
-  const [tasks, setTasks] = useState<ITask[]>(initialTasks);
-  const [links, setILinks] = useState<ILink[]>(initialILinks);
-  const [selectedTask, setSelectedTask] = useState<ITask | null>(null);
+    let detachPan: (() => void) | null = null;
+    let detachToday: (() => void) | null = null;
 
-  // Обработчики событий
-  const handleTaskSelect = (task: ITask) => {
-    setSelectedTask(task);
-    console.log('Selected task:', task);
-  };
+    const timer = window.setTimeout(() => {
+      detachPan = attachTimelinePan(api, root);
+      const chartEl = root.querySelector('.wx-chart') as HTMLElement | null;
+      if (chartEl) {
+        scrollChartToCurrentMonth(api, chartEl);
+      }
+      if (GANTT_UI.todayMarker) {
+        detachToday = attachTodayMarker(api);
+      }
+    }, 80);
 
-  const handleTaskUpdate = (updatedTask: ITask) => {
-    setTasks(tasks.map(task => (task.id === updatedTask.id ? updatedTask : task)));
-  };
+    return () => {
+      window.clearTimeout(timer);
+      detachPan?.();
+      detachToday?.();
+    };
+  }, [api, chartEpoch, searchQuery]);
+
+  // Critical path — отдельный lifecycle; toggle через setEnabled
+  useEffect(() => {
+    const root = chartRootRef.current;
+    if (!root || !api || chartEpoch === 0 || !GANTT_UI.criticalPath) return;
+
+    const controller = attachCriticalPathHighlight(api, root, {
+      initiallyEnabled: criticalPathEnabled,
+      linksFallback: () => linksFallbackRef.current,
+    });
+    criticalRef.current = controller;
+    // синхронизировать текущее значение тумблера сразу после attach
+    controller.setEnabled(criticalPathEnabled);
+
+    return () => {
+      controller.detach();
+      if (criticalRef.current === controller) {
+        criticalRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, chartEpoch, searchQuery]);
+
+  useEffect(() => {
+    criticalRef.current?.setEnabled(criticalPathEnabled);
+  }, [criticalPathEnabled]);
+
+  const handleExcelExport = useCallback(async () => {
+    const ganttApi = apiRef.current;
+    if (!ganttApi) {
+      message.warning('Диаграмма ещё не готова');
+      return;
+    }
+    setExcelExporting(true);
+    try {
+      const tasks = ganttApi.serialize();
+      const links = linksFromApi(ganttApi, linksFallbackRef.current);
+      await exportGanttToExcel(tasks, links);
+      message.success('Excel сохранён');
+    } catch {
+      message.error('Не удалось выгрузить Excel');
+    } finally {
+      setExcelExporting(false);
+    }
+  }, [message]);
+
+  const toolbar = (
+    <GanttChromeToolbar
+      searchQuery={searchQuery}
+      onSearchQueryChange={onSearchQueryChange}
+      api={api}
+      toolbarItems={toolbarItems}
+      criticalPathEnabled={criticalPathEnabled}
+      onCriticalPathEnabledChange={setCriticalPathEnabled}
+      excelExporting={excelExporting}
+      excelDisabled={mapped.tasks.length === 0}
+      onExcelExport={() => void handleExcelExport()}
+    />
+  );
+
+  if (mapped.tasks.length === 0) {
+    return (
+      <div className={styles.root}>
+        {toolbar}
+        <div className={styles.empty}>Ничего не найдено по запросу</div>
+      </div>
+    );
+  }
 
   return (
-    <Willow>
-      <Gantt
-        tasks={tasks}
-        links={links}
-        onTaskSelect={handleTaskSelect}
-        onTaskUpdate={handleTaskUpdate}
-        onILinkCreate={(link: ILink) => {
-          setILinks([...links, link]);
-        }}
-        onILinkDelete={(link: ILink) => {
-          setILinks(links.filter(linkItem => linkItem.id !== link.id));
-        }}
-        zoom
-      />
-    </Willow>
+    <div className={styles.root}>
+      <Willow>
+        <Locale words={GANTT_RU_LOCALE}>
+          <ContextMenu
+            api={api ?? undefined}
+            options={contextMenuOptions}
+            filter={(option, task) => filterGanttContextMenu(option, task)}
+          >
+            <div className={styles.shell}>
+              {toolbar}
+
+              <div ref={chartRootRef} className={styles.chart}>
+                <Gantt
+                  key={searchQuery.trim().toLowerCase() || 'all'}
+                  tasks={mapped.tasks}
+                  links={mapped.links}
+                  scales={GANTT_MONTH_SCALES}
+                  columns={GANTT_GRID_COLUMNS}
+                  cellWidth={GANTT_MONTH_CELL_WIDTH}
+                  zoom={GANTT_ZOOM_CONFIG}
+                  criticalPath={
+                    GANTT_UI.criticalPath && criticalPathEnabled
+                      ? { type: 'flexible' }
+                      : undefined
+                  }
+                  highlightTime={
+                    GANTT_UI.workCalendarHighlight ? highlightWorkCalendar : undefined
+                  }
+                  init={handleInit}
+                />
+              </div>
+
+              {GANTT_UI.taskEditing && api ? (
+                <Editor api={api} placement='sidebar' />
+              ) : null}
+            </div>
+          </ContextMenu>
+        </Locale>
+      </Willow>
+    </div>
   );
-};
+}

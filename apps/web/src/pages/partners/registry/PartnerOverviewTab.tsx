@@ -32,11 +32,16 @@ export default function PartnerOverviewTab() {
 
   const complianceItems = useMemo(() => {
     const initialAssessmentDone = partner.initial_assessment_done || initialEval != null;
+    const legalNote = partner.legal_check_failed
+      ? 'Проверка не пройдена'
+      : partner.legal_check_passed
+        ? 'Пройдена'
+        : 'Ожидает проверки';
     return [
       {
         label: 'Юрид. проверка',
-        done: partner.legal_check_passed,
-        note: partner.legal_check_passed ? 'Пройдена' : 'Не пройдена',
+        done: Boolean(partner.legal_check_passed) && !partner.legal_check_failed,
+        note: legalNote,
       },
       {
         label: 'Первичная оценка',
@@ -49,7 +54,13 @@ export default function PartnerOverviewTab() {
         note: partner.questionnaire_filled ? 'Заполнена' : 'Не заполнена',
       },
     ];
-  }, [partner.initial_assessment_done, partner.legal_check_passed, partner.questionnaire_filled, initialEval]);
+  }, [
+    partner.initial_assessment_done,
+    partner.legal_check_passed,
+    partner.legal_check_failed,
+    partner.questionnaire_filled,
+    initialEval,
+  ]);
 
   return (
     <div className={styles.layout}>

@@ -165,7 +165,7 @@ export default function SupplierCard({
           ) : null}
           {!evaluationKpiLoading && blockedCount > 0 ? (
             <span className={`${styles.mutedTag} ${styles.tagBlocked}`}>
-              Заблокирован · {blockedCount} {projectsCountLabel(blockedCount)}
+              Блок по проектам · {blockedCount} {projectsCountLabel(blockedCount)}
             </span>
           ) : null}
           <span className={styles.metaInn}>

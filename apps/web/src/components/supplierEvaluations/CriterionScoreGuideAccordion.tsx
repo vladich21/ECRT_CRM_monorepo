@@ -19,18 +19,12 @@ function levelColor(score: number): string {
 }
 
 export type CriterionScoreGuideAccordionProps = {
-  /** Код критерия из справочника (`tech_experience`, `qms`, …). */
   criterionCode: string;
-  /** Заголовок; по умолчанию — название из матрицы. */
   title?: string;
-  /** Текущий балл — подсвечивает соседние уровни матрицы. */
   currentScore?: number | null;
-  /** Начальное состояние. */
   defaultOpen?: boolean;
-  /** Контролируемое открытие. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Компактный режим без собственной шапки (контент для table expandable). */
   contentOnly?: boolean;
   className?: string;
 };
@@ -97,7 +91,6 @@ function GuideBody({
   );
 }
 
-/** Панель описаний баллов по критерию (без шапки). */
 export function CriterionScoreGuideContent({
   criterionCode,
   currentScore,
@@ -116,10 +109,6 @@ export function CriterionScoreGuideContent({
   );
 }
 
-/**
- * Аккордеон с описанием баллов матрицы SQA-TEM-003.
- * Можно встраивать в таблицы оценок и формы выставления баллов.
- */
 export function CriterionScoreGuideAccordion({
   criterionCode,
   title,

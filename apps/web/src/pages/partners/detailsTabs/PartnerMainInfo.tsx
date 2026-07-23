@@ -103,6 +103,12 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
           <Descriptions.Item label='Комментарий'>
             {partner?.comment || <Text type='secondary'>Нет комментария</Text>}
           </Descriptions.Item>
+
+          {partner?.block_reason?.trim() ? (
+            <Descriptions.Item label='Причина блокировки/разблокировки'>
+              {partner.block_reason.trim()}
+            </Descriptions.Item>
+          ) : null}
         </Descriptions>
       </section>
 
@@ -113,7 +119,6 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
           <BankOutlined className={styles.sectionTitleIcon} aria-hidden />
           Реквизиты
         </h3>
-        <p className={styles.requisitesHint}>Идентификационные данные юридического лица</p>
         <div className={styles.requisitesGrid}>
           <RequisiteCell label='ИНН' value={partner?.inn ?? ''} />
           <RequisiteCell label='КПП' value={partner?.kpp ?? ''} />

@@ -106,6 +106,8 @@ export type SupplierEvaluationUiStatusParam =
 export interface PartnerReportScore {
   criterion_id: string;
   criterion_code: string;
+  criterion_name?: string;
+  sort_order?: number;
   score: number;
 }
 
@@ -117,6 +119,7 @@ export interface PartnerReportEvaluation {
   weighted_score: number;
   category: SupplierEvaluationCategory;
   evaluated_at: string;
+  next_reevaluation_date?: string | null;
   comment?: string | null;
   scores: PartnerReportScore[];
 }

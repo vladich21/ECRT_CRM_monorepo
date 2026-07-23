@@ -77,7 +77,9 @@ export class FilesService {
    * partner-questionnaire переводит флаг в true. Авто-понижения нет: флаг = true
    * - легитимное состояние без файлов (массово выставлен импортом из ecrt/Тезиса
    * напрямую, без записей в files), его нельзя затирать удалением файла.
-   * Снятие статуса - отдельным явным действием.
+   * Снятие статуса - отдельным явным действием (legal_check_failed / update партнёра).
+   *
+   * Успешная загрузка юр. документов также снимает явный отказ (legal_check_failed).
    */
   private async syncPartnerVerificationFlags(entityType: string, entityId: string): Promise<void> {
     if (!isPartnerVerificationEntityType(entityType)) return;
@@ -86,6 +88,7 @@ export class FilesService {
     const partnerRows = await this.db.db
       .select({
         legalCheckPassed: partners.legalCheckPassed,
+        legalCheckFailed: partners.legalCheckFailed,
         questionnaireFilled: partners.questionnaireFilled,
       })
       .from(partners)
@@ -94,22 +97,24 @@ export class FilesService {
     const partnerRow = partnerRows[0];
     if (!partnerRow) return;
 
-    // Уже true - ничего не делаем (не понижаем).
-    if (Boolean(partnerRow[flagColumn] ?? false)) return;
-
     const [{ value: fileCount } = { value: 0 }] = await this.db.db
       .select({ value: count() })
       .from(files)
       .where(and(eq(files.entityType, entityType), eq(files.tableId, entityId)));
     if (Number(fileCount ?? 0) === 0) return;
 
-    await this.db.db
-      .update(partners)
-      .set({ [flagColumn]: true, updatedAt: new Date() })
-      .where(eq(partners.id, entityId));
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (!Boolean(partnerRow[flagColumn] ?? false)) {
+      patch[flagColumn] = true;
+    }
+    if (entityType === 'partner-legal' && Boolean(partnerRow.legalCheckFailed)) {
+      patch.legalCheckFailed = false;
+      patch.legalCheckPassed = true;
+    }
+    if (Object.keys(patch).length <= 1) return;
 
-    // Пересчитать производный операционный статус (Активный/Потенциальный) - флаг
-    // влияет на «утвержден» и автодеривацию статуса инжиниринговых контрагентов.
+    await this.db.db.update(partners).set(patch).where(eq(partners.id, entityId));
+
     await this.partnersService.refreshPartnerDerivedStatus(entityId);
   }
 

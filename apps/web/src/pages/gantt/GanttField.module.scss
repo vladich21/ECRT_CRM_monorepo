@@ -1,1 +1,106 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 
+  :global(.wx-willow-theme),
+  :global(.wx-material-theme) {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.ganttToolbar {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.search {
+  flex: 1 1 240px;
+  max-width: 420px;
+  min-width: 200px;
+}
+
+.hotkeys {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 32px;
+
+  /* SVAR Toolbar — в одну линию с поиском, без лишних отступов */
+  :global(.wx-toolbar),
+  :global(.wx-bar) {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    gap: 4px;
+  }
+
+  :global(.wx-button),
+  :global(button.wx-button) {
+    min-width: 32px;
+    height: 32px;
+  }
+}
+
+.toolbarExtras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.chart {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  :global(.wx-willow-theme),
+  :global(.wx-material-theme),
+  :global(.wx-gantt),
+  :global(.wx-layout) {
+    height: 100% !important;
+    min-height: 100%;
+    flex: 1 1 auto;
+  }
+
+  :global(.wx-chart) {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  :global(.wx-area) {
+    min-height: calc(100% - 48px);
+  }
+}
+
+.empty {
+  padding: 48px;
+  text-align: center;
+  color: #8c8c8c;
+}
