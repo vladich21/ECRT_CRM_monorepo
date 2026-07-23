@@ -390,6 +390,9 @@ export class PartnersService {
     if (manualBlocked === true && !alreadyManuallyBlocked && !blockComment) {
       throw new BadRequestException('Укажите причину блокировки контрагента');
     }
+    if (manualBlocked === false && alreadyManuallyBlocked && !blockComment) {
+      throw new BadRequestException('Укажите причину снятия блокировки контрагента');
+    }
 
     const merged = { ...current, ...data };
     this.validateInnKppRequired(merged);
@@ -487,15 +490,7 @@ export class PartnersService {
             'Сначала улучшите оценки (переоценка), либо оставьте статус «Заблокирован».',
         );
       }
-      await this.db.db
-        .update(partners)
-        .set({
-          isManuallyBlocked: false,
-          blockReason: null,
-          updatedAt: new Date(),
-          ...(userId ? { updatedBy: userId } : {}),
-        })
-        .where(eq(partners.id, id));
+      await this.applyManualPartnerUnblock(id, blockComment!, userId);
       if ((currentStatusName ?? '').trim() !== 'Архив') {
         if (manualActive !== undefined) {
           await this.derivedStatus.applyManualActiveForResource(id, manualActive, userId);
@@ -538,6 +533,28 @@ export class PartnersService {
       entity_id: partnerId,
       message: `Блокировка контрагента: ${reason}`,
       html: `Блокировка контрагента: ${reason}`,
+      created_by: userId ?? null,
+      user_id: userId ?? null,
+    });
+  }
+
+  private async applyManualPartnerUnblock(partnerId: string, reason: string, userId?: string): Promise<void> {
+    await this.db.db
+      .update(partners)
+      .set({
+        isManuallyBlocked: false,
+        // Оставляем текст как «причину разблокировки» на Основном.
+        blockReason: reason,
+        updatedAt: new Date(),
+        ...(userId ? { updatedBy: userId } : {}),
+      })
+      .where(eq(partners.id, partnerId));
+
+    await this.commentsService.create({
+      entity_type: 'partner',
+      entity_id: partnerId,
+      message: `Разблокировка контрагента: ${reason}`,
+      html: `Разблокировка контрагента: ${reason}`,
       created_by: userId ?? null,
       user_id: userId ?? null,
     });

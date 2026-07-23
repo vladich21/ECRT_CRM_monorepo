@@ -105,7 +105,7 @@ export default function PartnersMainInfo({ partner }: PartnersMainInfoProps) {
           </Descriptions.Item>
 
           {partner?.block_reason?.trim() ? (
-            <Descriptions.Item label='Причина блокировки'>
+            <Descriptions.Item label='Причина блокировки/разблокировки'>
               {partner.block_reason.trim()}
             </Descriptions.Item>
           ) : null}

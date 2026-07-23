@@ -89,7 +89,7 @@
 
 Снятие — `PUT …/blocks/:id/deactivate`.
 
-Ручная блокировка **всего** контрагента: `PUT /api/partners/:id` с `manual_blocked: true` + `block_comment` (обязательно). Ставит `status_id = Заблокирован`, `is_manually_blocked = true`, пишет причину в `partners.block_reason` (обычный `comment` не трогает) и в ленту `comments`. При снятии блокировки / архивации `block_reason` очищается. Для автоблока (avg &lt; 2) причина тоже пишется в `block_reason` через `block_comment`. Ручной блокировки **по проекту** нет.
+Ручная блокировка **всего** контрагента: `PUT /api/partners/:id` с `manual_blocked: true` + `block_comment` (обязательно). Ставит `status_id = Заблокирован`, `is_manually_blocked = true`, пишет причину в `partners.block_reason` (обычный `comment` не трогает) и в ленту `comments`. Снятие: `manual_blocked: false` + `block_comment` (обязательно) → комментарий «Разблокировка контрагента: …», `block_reason` обновляется текстом разблокировки. Для автоблока (avg &lt; 2) причина тоже пишется в `block_reason` через `block_comment`. Ручной блокировки **по проекту** нет.
 
 ---
 

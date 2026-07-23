@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 
+import { useComments } from '@/api/comments/commentApiHooks';
 import { useContracts } from '@/api/contracts/contractApiHooks';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
 import { usePartnerReferenceData } from '@/api/hooks/usePartnerReferenceData';
@@ -27,6 +28,7 @@ export function usePartnerDetailsData(
   const { data: references } = usePartnerReferenceData();
   const { data: contacts = [] } = usePartnerContacts(partnerId);
   const { data: files = [] } = useFilesByEntity('partner', partnerId ?? '');
+  const { data: comments = [] } = useComments('partner', partnerId);
   const { data: contractsList } = useContracts(partnerId ? { partner_id: partnerId } : undefined, 1, 1, {
     enabled: Boolean(partnerId),
   });
@@ -58,11 +60,11 @@ export function usePartnerDetailsData(
       { key: 'contacts', label: `Контактные лица (${contacts.length})` },
       { key: 'contracts', label: `Договоры (${contractsList?.total ?? 0})` },
       { key: 'evaluations', label: `Оценки (${evaluationsTotal})` },
-      { key: 'comments', label: 'Комментарии' },
+      { key: 'comments', label: `Комментарии (${comments.length})` },
       { key: 'files', label: `Файлы (${files.length})` },
       { key: 'verification', label: 'Проверка' },
     ];
-  }, [contacts.length, contractsList?.total, evaluationsTotal, files.length]);
+  }, [contacts.length, contractsList?.total, evaluationsTotal, comments.length, files.length]);
 
   const categoryName = useMemo(() => {
     if (!partner || !references?.partnerCategories) return null;

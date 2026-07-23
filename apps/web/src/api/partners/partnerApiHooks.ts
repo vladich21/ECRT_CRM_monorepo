@@ -6,6 +6,7 @@ import {
   invalidateSupplierEvaluationQueries,
   supplierEvaluationQueryKeys,
 } from '../supplierEvaluations/supplierEvaluationQueryKeys';
+import { commentQueryKeys } from '../comments/commentQueryKeys';
 import {
   partnerApi,
   PartnerListParams,
@@ -98,6 +99,9 @@ export const useUpdatePartner = (): UseMutationResult<
       });
       void queryClient.invalidateQueries({
         queryKey: supplierEvaluationQueryKeys.partnerInitial(vars.id),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: commentQueryKeys.byEntity('partner', vars.id),
       });
       void invalidateSupplierEvaluationQueries(queryClient);
     },

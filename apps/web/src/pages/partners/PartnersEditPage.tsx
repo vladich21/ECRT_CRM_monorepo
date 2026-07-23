@@ -61,7 +61,9 @@ export default function PartnerEditPage() {
   const isFormInitializedRef = useRef(false);
   const [unarchiveReminderOpen, setUnarchiveReminderOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
-  const [blockModalMode, setBlockModalMode] = useState<'manual_block' | 'auto_reason'>('manual_block');
+  const [blockModalMode, setBlockModalMode] = useState<'manual_block' | 'manual_unblock' | 'auto_reason'>(
+    'manual_block',
+  );
   const pendingSaveValuesRef = useRef<PartnerFormSubmitValues | null>(null);
 
   useEffect(() => {
@@ -134,6 +136,9 @@ export default function PartnerEditPage() {
       if (blockModalMode === 'manual_block') {
         payload.manual_blocked = true;
       }
+      if (blockModalMode === 'manual_unblock') {
+        payload.manual_blocked = false;
+      }
       // Обычный comment контрагента не перезаписываем — причина в block_reason.
     }
     mutate(
@@ -171,6 +176,18 @@ export default function PartnerEditPage() {
     if (willNewManualBlock) {
       pendingSaveValuesRef.current = values;
       setBlockModalMode('manual_block');
+      blockForm.resetFields();
+      setBlockConfirmOpen(true);
+      return;
+    }
+    // Снятие ручной блокировки — обязательная причина → комментарий + block_reason.
+    const willManualUnblock =
+      values.manual_blocked === false &&
+      Boolean(partner.is_manually_blocked) &&
+      blockUiMode === 'manual';
+    if (willManualUnblock) {
+      pendingSaveValuesRef.current = values;
+      setBlockModalMode('manual_unblock');
       blockForm.resetFields();
       setBlockConfirmOpen(true);
       return;
@@ -294,12 +311,24 @@ export default function PartnerEditPage() {
         </DetailPageHeader>
       ) : null}
       <Modal
-        title={blockModalMode === 'auto_reason' ? 'Причина блокировки' : 'Блокировка контрагента'}
+        title={
+          blockModalMode === 'manual_unblock'
+            ? 'Снятие блокировки'
+            : blockModalMode === 'auto_reason'
+              ? 'Причина блокировки'
+              : 'Блокировка контрагента'
+        }
         open={blockConfirmOpen}
-        okText={blockModalMode === 'auto_reason' ? 'Сохранить' : 'Заблокировать'}
+        okText={
+          blockModalMode === 'manual_unblock'
+            ? 'Снять блокировку'
+            : blockModalMode === 'auto_reason'
+              ? 'Сохранить'
+              : 'Заблокировать'
+        }
         cancelText='Отмена'
         okButtonProps={{
-          danger: blockModalMode !== 'auto_reason',
+          danger: blockModalMode === 'manual_block',
           loading: isUpdateLoading,
         }}
         onCancel={() => {
@@ -310,20 +339,43 @@ export default function PartnerEditPage() {
         destroyOnHidden
       >
         <p style={{ marginBottom: 12 }}>
-          {blockModalMode === 'auto_reason'
-            ? 'Контрагент заблокирован автоматически (средняя оценка по проектам ниже 2). Укажите причину блокировки — она отобразится на вкладке «Основное» отдельно от обычного комментария.'
-            : 'Контрагент будет переведён в статус «Заблокирован». Укажите обязательную причину — она сохранится в поле «Причина блокировки» на вкладке «Основное» и во вкладке «Комментарии».'}
+          {blockModalMode === 'manual_unblock'
+            ? 'Укажите причину снятия блокировки — она сохранится в поле «Причина блокировки/разблокировки» и во вкладке «Комментарии».'
+            : blockModalMode === 'auto_reason'
+              ? 'Контрагент заблокирован автоматически (средняя оценка по проектам ниже 2). Укажите причину блокировки — она отобразится на вкладке «Основное» отдельно от обычного комментария.'
+              : 'Контрагент будет переведён в статус «Заблокирован». Укажите обязательную причину — она сохранится в поле «Причина блокировки/разблокировки» на вкладке «Основное» и во вкладке «Комментарии».'}
         </p>
         <Form form={blockForm} layout='vertical'>
           <Form.Item
             name='block_comment'
-            label='Причина блокировки'
+            label='Причина блокировки/разблокировки'
             rules={[
-              { required: true, message: 'Укажите причину блокировки' },
-              { whitespace: true, message: 'Укажите причину блокировки' },
+              {
+                required: true,
+                message:
+                  blockModalMode === 'manual_unblock'
+                    ? 'Укажите причину снятия блокировки'
+                    : 'Укажите причину блокировки',
+              },
+              {
+                whitespace: true,
+                message:
+                  blockModalMode === 'manual_unblock'
+                    ? 'Укажите причину снятия блокировки'
+                    : 'Укажите причину блокировки',
+              },
             ]}
           >
-            <TextArea rows={4} placeholder='Почему блокируете контрагента' maxLength={2000} showCount />
+            <TextArea
+              rows={4}
+              placeholder={
+                blockModalMode === 'manual_unblock'
+                  ? 'Почему снимаете блокировку'
+                  : 'Почему блокируете контрагента'
+              }
+              maxLength={2000}
+              showCount
+            />
           </Form.Item>
         </Form>
       </Modal>
