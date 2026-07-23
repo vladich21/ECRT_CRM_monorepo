@@ -82,10 +82,46 @@ function resolveNewParentId(
 }
 
 /**
- * - project только корень (между проектами — порядок);
+ * SVAR: нативный ↑↓ при открытом соседе-summary вкладывает узел ВНУТРЬ соседа
+ * (проект→проект). Мы всегда переписываем ↑↓ в before/after к ближайшему sibling.
+ */
+export function resolveSiblingReorderMove(
+  tasks: TaskCollection,
+  id: string | number,
+  mode: 'up' | 'down',
+): { id: string | number; mode: 'before' | 'after'; target: string | number } | null {
+  const branch = tasks.getBranch?.(id);
+  const index = tasks.getIndexById?.(id);
+  if (!branch || typeof index !== 'number' || index < 0) return null;
+
+  if (mode === 'up') {
+    if (index <= 0) return null;
+    const target = branch[index - 1]?.id;
+    if (target == null) return null;
+    return { id, mode: 'before', target };
+  }
+
+  if (index >= branch.length - 1) return null;
+  const target = branch[index + 1]?.id;
+  if (target == null) return null;
+  return { id, mode: 'after', target };
+}
+
+/**
+ * SVAR: ↑ у первого / ↓ у последнего ребёнка превращает move в before/after
+ * относительно родителя → задача «выпрыгивает» на уровень выше. Это запрещаем.
+ */
+export function canReorderAmongSiblings(tasks: TaskCollection, ev: MoveEvent): boolean {
+  if (ev.mode !== 'up' && ev.mode !== 'down') return true;
+  return resolveSiblingReorderMove(tasks, ev.id, ev.mode) != null;
+}
+
+/**
+ * - project только корень, никогда не child другого project;
  * - contract нельзя вынести из своего project;
  * - stage нельзя вынести из своего contract;
- * - task / workPackage нельзя вынести за свой stage.
+ * - task / workPackage нельзя вынести за свой stage;
+ * - ↑↓ только среди siblings (без nest-into-summary).
  */
 export function canMoveWithinHierarchy(tasks: TaskCollection, ev: MoveEvent): boolean {
   if (ev.inProgress === false) return true;
@@ -93,16 +129,24 @@ export function canMoveWithinHierarchy(tasks: TaskCollection, ev: MoveEvent): bo
   const moving = tasks.byId(ev.id);
   if (!moving) return true;
 
+  if (!canReorderAmongSiblings(tasks, ev)) return false;
+
   const kind = moving.entityKind;
 
+  // Проект: только корень, только соседство с другими проектами (не child / не внутрь чужого дерева)
   if (kind === 'project') {
     if (ev.mode === 'child') return false;
     const newParentId = resolveNewParentId(tasks, ev, moving);
     if (newParentId == null) return true;
     if (!isRootId(newParentId)) return false;
+
+    const newParent = tasks.byId(newParentId);
+    if (newParent?.entityKind === 'project') return false;
+
     if ((ev.mode === 'before' || ev.mode === 'after') && ev.target != null) {
       const sibling = tasks.byId(ev.target);
-      if (sibling?.entityKind && sibling.entityKind !== 'project') return false;
+      if (!sibling || sibling.entityKind !== 'project') return false;
+      if (!isRootId(sibling.parent)) return false;
     }
     return true;
   }
@@ -117,6 +161,9 @@ export function canMoveWithinHierarchy(tasks: TaskCollection, ev: MoveEvent): bo
   const isRoot = isRootId(newParentId);
   const newParent = isRoot ? null : tasks.byId(newParentId);
   if (!isRoot && !newParent) return false;
+
+  // Никто не становится ребёнком другого project, кроме contract
+  if (newParent?.entityKind === 'project' && kind !== 'contract') return false;
 
   const parentKind = newParent?.entityKind ?? null;
   if (!isAllowedParent(kind, parentKind)) return false;
@@ -150,6 +197,27 @@ export function canMoveWithinHierarchy(tasks: TaskCollection, ev: MoveEvent): bo
   return true;
 }
 
+type PasteTempItem = { id: string | number; cut?: boolean };
+
+function getPasteClipboard(api: IApi): PasteTempItem[] {
+  const temp = (api as unknown as { _temp?: PasteTempItem[] })._temp;
+  return Array.isArray(temp) ? temp : [];
+}
+
+function resolveAddTaskParentId(
+  tasks: TaskCollection,
+  ev: { mode?: string; target?: string | number; id?: string | number },
+): string | number | null {
+  const mode = ev.mode ?? 'child';
+  const target = ev.target ?? ev.id;
+  if (target == null) return null;
+
+  if (mode === 'child') return target;
+
+  const targetTask = tasks.byId(target);
+  return targetTask?.parent ?? 0;
+}
+
 export function attachHierarchyMoveGuard(api: IApi): () => void {
   const tag = { tag: 'gantt-hierarchy-guard' };
   api.detach(tag.tag);
@@ -159,6 +227,19 @@ export function attachHierarchyMoveGuard(api: IApi): () => void {
     (ev: MoveEvent) => {
       const tasks = api.getState().tasks as unknown as TaskCollection;
       if (!tasks?.byId) return true;
+
+      // Нативный ↑↓ SVAR умеет вложить в открытого соседа-summary → project in project.
+      // Переписываем в before/after к соседней строке того же родителя.
+      if (ev.mode === 'up' || ev.mode === 'down') {
+        const safe = resolveSiblingReorderMove(tasks, ev.id, ev.mode);
+        if (!safe || !canMoveWithinHierarchy(tasks, safe)) return false;
+
+        window.queueMicrotask(() => {
+          void api.exec('move-task', safe);
+        });
+        return false;
+      }
+
       return canMoveWithinHierarchy(tasks, ev);
     },
     tag,
@@ -191,6 +272,50 @@ export function attachHierarchyMoveGuard(api: IApi): () => void {
         mode: 'after',
         target: parent.id,
       });
+    },
+    tag,
+  );
+
+  api.intercept(
+    'add-task',
+    (ev: { mode?: string; target?: string | number; id?: string | number; task?: GanttTask }) => {
+      const tasks = api.getState().tasks as unknown as TaskCollection;
+      if (!tasks?.byId) return true;
+
+      const parentId = resolveAddTaskParentId(tasks, ev);
+      if (parentId == null) return true;
+
+      if (isRootId(parentId)) {
+        // новые задачи в корень не создаём (проекты только с бэка/моков)
+        return false;
+      }
+
+      const parent = tasks.byId(parentId);
+      const childKind = (ev.task?.entityKind as EntityKind | undefined) ?? 'task';
+      return isAllowedParent(childKind, parent?.entityKind ?? null);
+    },
+    tag,
+  );
+
+  api.intercept(
+    'paste-task',
+    (ev: { id?: string | number }) => {
+      if (ev?.id == null) return false;
+      const tasks = api.getState().tasks as unknown as TaskCollection;
+      if (!tasks?.byId) return true;
+
+      const clipboard = getPasteClipboard(api);
+      if (clipboard.length === 0) return true;
+
+      for (const item of clipboard) {
+        const ok = canMoveWithinHierarchy(tasks, {
+          id: item.id,
+          mode: 'after',
+          target: ev.id,
+        });
+        if (!ok) return false;
+      }
+      return true;
     },
     tag,
   );

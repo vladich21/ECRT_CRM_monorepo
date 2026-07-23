@@ -70,7 +70,6 @@ export const departments = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     name: varchar('name', { length: 255 }),
-    /** UUID отдела во внешнем HR; для upsert при hr-sync */
     externalHrId: uuid('external_hr_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }),
@@ -132,7 +131,6 @@ export const positions = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     name: varchar('name', { length: 255 }),
-    /** UUID должности во внешнем HR; для upsert при hr-sync */
     externalHrId: uuid('external_hr_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }),
@@ -149,10 +147,6 @@ export const refGroups = pgTable('ref_groups', {
   updatedAt: timestamp('updated_at', { withTimezone: true }),
 });
 
-/**
- * RBAC: роль. Назначается пользователю через relUsersRoles. Права роли
- * описываются через relRoleSectionPermissions.
- */
 export const roles = pgTable(
   'roles',
   {
@@ -171,10 +165,6 @@ export const roles = pgTable(
   ],
 );
 
-/**
- * RBAC: раздел системы. Имеет уникальный код (admin.users, partners.list).
- * is_folder = true для группирующих узлов в UI-дереве (без прав).
- */
 export const sections = pgTable(
   'sections',
   {
@@ -193,10 +183,6 @@ export const sections = pgTable(
   ],
 );
 
-/**
- * RBAC: связка пользователь ↔ роль (M:N).
- * Права суммируются через BOOL_OR при наличии нескольких ролей.
- */
 export const relUsersRoles = pgTable(
   'rel_users_roles',
   {
@@ -212,10 +198,6 @@ export const relUsersRoles = pgTable(
   ],
 );
 
-/**
- * RBAC: права роли на раздел. Три булевых флага.
- * Зависимости (валидируются на бэке): delete → edit → read.
- */
 export const relRoleSectionPermissions = pgTable(
   'rel_role_section_permissions',
   {
@@ -331,15 +313,11 @@ export const patents = pgTable('patents', {
   intellectpropId: uuid('intellectprop_id'),
   statusId: uuid('status_id'),
   responsibleForPatentId: uuid('responsible_for_patenting_id'),
-  /** РИД, в который оформлено преобразование (статус «Преобразование»). */
   transformedIntoPatentId: uuid('transformed_into_patent_id'),
-  /** Обратная ссылка: исходный РИД, из которого пришло преобразование. */
   transformedFromPatentId: uuid('transformed_from_patent_id'),
   transformationNotificationIcZht: varchar('transformation_notification_ic_zht', { length: 255 }),
   transformationNotificationCir: varchar('transformation_notification_cir', { length: 255 }),
-  /** Решение о выдаче отмечено без файла в разделе «Положительное». */
   decisionPositiveMarked: boolean('decision_positive_marked').notNull().default(false),
-  /** Отказ в выдаче отмечен без файла в разделе «Отрицательное». */
   decisionNegativeMarked: boolean('decision_negative_marked').notNull().default(false),
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
@@ -476,21 +454,17 @@ export const files = pgTable(
     entityType: varchar('entitytype', { length: 255 }).notNull(),
     tableId: uuid('table_id'),
     name: varchar('name', { length: 255 }).notNull(),
-    /** Для патентов: application | consent | notification | requests | decision_positive | decision_negative */
     documentSection: varchar('document_section', { length: 32 }).notNull().default('default'),
     type: varchar('type', { length: 255 }).notNull(),
     size: integer('size'),
     uploadedById: uuid('uploadedby_id'),
-    /** Для раздела «Запросы» у патентов: нужен ли ответ контрагенту/в ведомство */
     responseRequired: boolean('response_required').notNull().default(false),
-    /** Крайний срок ответа (дата по Москве хранится как timestamptz начала дня UTC) */
     responseDeadline: timestamp('response_deadline', { withTimezone: true }),
     uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }),
     createdBy: uuid('created_by'),
     updatedBy: uuid('updated_by'),
-    /** Версионность (F-V0): version - номер версии/раунда; is_current - входит ли в последнюю версию набора. */
     version: integer('version').notNull().default(1),
     isCurrent: boolean('is_current').notNull().default(true),
   },
@@ -539,12 +513,10 @@ export const partners = pgTable('partners', {
   isKeySupplier: boolean('is_key_supplier').default(false),
   isTargeted: boolean('is_targeted').default(false),
   legalCheckPassed: boolean('legal_check_passed').default(false),
-  /** Явный отказ по юр. проверке («Проверка не пройдена»), вручную с вкладки verification. */
   legalCheckFailed: boolean('legal_check_failed').notNull().default(false),
   questionnaireFilled: boolean('questionnaire_filled').default(false),
   initialAssessmentDone: boolean('initial_assessment_done').default(false),
   isManuallyBlocked: boolean('is_manually_blocked').notNull().default(false),
-  /** Причина блокировки контрагента; очищается при снятии блокировки. */
   blockReason: text('block_reason'),
   rating: numeric('rating', { precision: 3, scale: 2 }),
   nextAuditDate: date('next_audit_date'),
@@ -643,7 +615,6 @@ export const syncMetadata = pgTable('sync_metadata', {
 // enum-подобные поля хранятся как varchar (в проекте pgEnum не используется).
 // ============================================================
 
-/** Типы сущностей, поддерживающие согласование (contract/partner/patent/project). */
 export const refApprovalEntityTypes = pgTable(
   'ref_approval_entity_types',
   {
@@ -658,7 +629,6 @@ export const refApprovalEntityTypes = pgTable(
   (t) => [uniqueIndex('appr_entity_types_code_uidx').on(t.code)],
 );
 
-/** Роли шагов: approver / approver_final (зашиты в логику). */
 export const refApprovalStepRoles = pgTable(
   'ref_approval_step_roles',
   {
@@ -672,7 +642,6 @@ export const refApprovalStepRoles = pgTable(
   (t) => [uniqueIndex('appr_step_roles_code_uidx').on(t.code)],
 );
 
-/** Маршрут согласования (шаблон процесса). */
 export const approvalRoutes = pgTable(
   'approval_routes',
   {
@@ -695,7 +664,6 @@ export const approvalRoutes = pgTable(
   ],
 );
 
-/** Шаги маршрута (шаблон). step_type: any|all|sequential. */
 export const approvalRouteSteps = pgTable(
   'approval_route_steps',
   {
@@ -719,7 +687,6 @@ export const approvalRouteSteps = pgTable(
   ],
 );
 
-/** Статичные согласующие шага (assignment_type='employee'). */
 export const relApprovalStepAssignees = pgTable(
   'rel_approval_step_assignees',
   {
@@ -735,7 +702,6 @@ export const relApprovalStepAssignees = pgTable(
   ],
 );
 
-/** Экземпляр согласования (рантайм). currentProcessStepId - FK добавляется в SQL (цикл). */
 export const approvalProcesses = pgTable(
   'approval_processes',
   {
@@ -765,7 +731,6 @@ export const approvalProcesses = pgTable(
   ],
 );
 
-/** СНАПШОТ шагов процесса (рантайм читает только его). */
 export const approvalProcessSteps = pgTable(
   'approval_process_steps',
   {
@@ -793,7 +758,6 @@ export const approvalProcessSteps = pgTable(
   ],
 );
 
-/** СНАПШОТ назначенцев шага (только assignment_type='employee'). */
 export const relApprovalProcessStepAssignees = pgTable(
   'rel_approval_process_step_assignees',
   {
@@ -809,7 +773,6 @@ export const relApprovalProcessStepAssignees = pgTable(
   ],
 );
 
-/** Назначения согласующих на шаг (с историей флагов pending/active). */
 export const approvalAssignments = pgTable(
   'approval_assignments',
   {
@@ -834,7 +797,6 @@ export const approvalAssignments = pgTable(
   ],
 );
 
-/** Задачи-последствия согласования (on_complete_actions, F5). Полиморфные. */
 export const tasks = pgTable(
   'tasks',
   {
@@ -860,7 +822,6 @@ export const tasks = pgTable(
   ],
 );
 
-/** Лог системных событий процесса (старт/повторная отправка/замена файла) для ленты. */
 export const approvalEvents = pgTable(
   'approval_events',
   {
@@ -874,7 +835,6 @@ export const approvalEvents = pgTable(
   (t) => [index('appr_events_process_idx').on(t.processId)],
 );
 
-/** Журнал решений согласующих. */
 export const approvalDecisions = pgTable(
   'approval_decisions',
   {

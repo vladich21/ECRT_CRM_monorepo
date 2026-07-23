@@ -4,11 +4,13 @@ import { getToolbarButtons, type IApi } from '@svar-ui/react-gantt';
 
 import { openGanttDeleteConfirm } from './lib/attachConfirmGuards';
 
-/** Кнопки, которые ломают доменную иерархию — убираем из toolbar. */
+/**
+ * Скрываем только то, что ломает Project→Contract→Stage→Task:
+ * «Новая задача» (создаём через ПКМ) и indent (меняет родителя).
+ * ↑↓ оставляем — это порядок среди siblings, guard уже проверяет.
+ */
 const HIDDEN_TOOLBAR_IDS = new Set([
   'add-task',
-  'move-task:up',
-  'move-task:down',
   'indent-task:add',
   'indent-task:remove',
 ]);
@@ -36,9 +38,31 @@ function isSeparator(button: unknown): boolean {
   return Boolean(button && typeof button === 'object' && 'comp' in button && button.comp === 'separator');
 }
 
+function canMoveUp(api: IApi | null | undefined, taskId: string | number | null | undefined): boolean {
+  if (!api || taskId == null) return false;
+  const tasks = api.getState().tasks as {
+    getBranch?: (id: string | number) => unknown[];
+    getIndexById?: (id: string | number) => number;
+  };
+  const index = tasks.getIndexById?.(taskId);
+  return typeof index === 'number' && index > 0;
+}
+
+function canMoveDown(api: IApi | null | undefined, taskId: string | number | null | undefined): boolean {
+  if (!api || taskId == null) return false;
+  const tasks = api.getState().tasks as {
+    getBranch?: (id: string | number) => unknown[];
+    getIndexById?: (id: string | number) => number;
+  };
+  const branch = tasks.getBranch?.(taskId);
+  const index = tasks.getIndexById?.(taskId);
+  return Boolean(branch && typeof index === 'number' && index >= 0 && index < branch.length - 1);
+}
+
 /**
- * Toolbar: edit / delete / copy / cut / paste (+ undo).
- * Без ↑↓ и indent — они нарушают Project→Contract→Stage→Task.
+ * Toolbar: edit / delete / ↑↓ / copy / cut / paste (+ undo).
+ * Без indent и «Новая задача» — иерархию не ломаем.
+ * ↑↓ disabled на краях ветки (иначе SVAR выносит на уровень родителя).
  */
 export function createGanttToolbarItems(
   getApi: () => IApi | null,
@@ -71,6 +95,24 @@ export function createGanttToolbarItems(
 
   return cleaned.map(button => {
     if (!button || typeof button !== 'object' || !('id' in button)) return button;
+
+    if (button.id === 'move-task:up') {
+      return {
+        ...button,
+        menuText: 'Выше',
+        isDisabled: (task: { id?: string | number } | null) =>
+          !canMoveUp(getApi(), task?.id ?? getSelectedId(getApi())),
+      };
+    }
+
+    if (button.id === 'move-task:down') {
+      return {
+        ...button,
+        menuText: 'Ниже',
+        isDisabled: (task: { id?: string | number } | null) =>
+          !canMoveDown(getApi(), task?.id ?? getSelectedId(getApi())),
+      };
+    }
 
     if (button.id === 'delete-task') {
       return {

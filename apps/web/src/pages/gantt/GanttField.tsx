@@ -28,7 +28,9 @@ import {
   attachCriticalPathHighlight,
   type CriticalPathController,
 } from './lib/attachCriticalPathHighlight';
+import { attachChartPersist, loadChartSnapshot } from './lib/chartPersist';
 import { attachHierarchyMoveGuard } from './lib/attachHierarchyMoveGuard';
+import { attachTaskTypeSync } from './lib/attachTaskTypeSync';
 import { attachTimelinePan } from './lib/attachTimelinePan';
 import { attachTodayMarker } from './lib/attachTodayMarker';
 import { exportGanttToExcel } from './lib/exportGanttToExcel';
@@ -72,7 +74,9 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   const contextMenuOptions = useMemo(() => createGanttContextMenuOptions(), []);
 
   const mapped = useMemo(() => {
-    const chart = mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS);
+    const chart =
+      (GANTT_UI.chartPersist ? loadChartSnapshot() : null) ??
+      mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS);
     const filteredTasks = filterGanttTasksByQuery(chart.tasks, searchQuery);
     const filteredLinks = filterGanttLinksByTasks(chart.links, filteredTasks);
     const scheduled = autoScheduleFs(cloneGanttTasks(filteredTasks), filteredLinks);
@@ -113,6 +117,8 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
               end: task.end,
               duration: task.duration,
             },
+            // внутренний FS-пересчёт — без confirm на каждую сдвинутую задачу
+            skipConfirm: true,
           }),
         );
       }
@@ -155,18 +161,24 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     [applyAutoSchedule],
   );
 
-  // Guards + tree persist (живут на api, без DOM)
+  // Guards + tree/chart persist (живут на api, без DOM)
   useEffect(() => {
     if (!api) return;
 
     const detachHierarchy = attachHierarchyMoveGuard(api);
+    const detachTypeSync = attachTaskTypeSync(api);
     const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
     const detachTreeOpen = GANTT_UI.treeOpenPersist ? attachTreeOpenPersist(api) : null;
+    const detachChart = GANTT_UI.chartPersist
+      ? attachChartPersist(api, () => linksFallbackRef.current)
+      : null;
 
     return () => {
       detachHierarchy();
+      detachTypeSync();
       detachConfirm();
       detachTreeOpen?.();
+      detachChart?.();
     };
   }, [api]);
 

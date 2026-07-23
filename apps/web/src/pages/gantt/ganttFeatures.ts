@@ -26,10 +26,14 @@ export const GANTT_UI = {
   workCalendarHighlight: true,
   /** Persist open/closed в localStorage */
   treeOpenPersist: true,
+  /** Persist tasks/links (add/edit/delete) в localStorage, пока нет API */
+  chartPersist: true,
   /** Excel export текущего дерева */
   excelExport: true,
   /** Critical path (наш compute + CSS) */
   criticalPath: true,
+  /** Confirm при смене дат (drag / Editor) */
+  dateChangeConfirm: true,
 } as const;
 
 export const GANTT_FEATURE_ROADMAP: GanttFeatureFlag[] = [
@@ -68,6 +72,12 @@ export const GANTT_FEATURE_ROADMAP: GanttFeatureFlag[] = [
     title: 'Persist open/closed in localStorage',
     status: 'mit-custom',
     note: 'srn.gantt.treeOpen.v1 + open-task',
+  },
+  {
+    id: 'chart-persist',
+    title: 'Persist tasks/links (add/edit) in localStorage',
+    status: 'mit-custom',
+    note: 'srn.gantt.chart.v1 пока USE_GANTT_MOCKS; потом API',
   },
   {
     id: 'critical-path',

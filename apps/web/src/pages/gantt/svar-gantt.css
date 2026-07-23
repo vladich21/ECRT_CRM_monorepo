@@ -1,4 +1,5 @@
 @import '@svar-ui/react-gantt/all.css';
+/* wxi-icons: /fonts/wxi/wx-icons.css в index.html (self-host, без CDN) */
 
 /* Производственный календарь */
 .gantt-weekend {

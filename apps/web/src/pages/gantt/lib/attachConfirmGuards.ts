@@ -2,6 +2,8 @@ import { Modal } from 'antd';
 import type { ModalFuncProps } from 'antd/es/modal/interface';
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
+import { GANTT_UI } from '../ganttFeatures';
+
 type ConfirmEvent = {
   id?: string | number;
   ids?: Array<string | number>;
@@ -9,6 +11,7 @@ type ConfirmEvent = {
   target?: string | number;
   mode?: string;
   skipConfirm?: boolean;
+  inProgress?: boolean;
 };
 
 type GanttTask = ITask & {
@@ -17,6 +20,12 @@ type GanttTask = ITask & {
 };
 
 type ConfirmFn = (props: ModalFuncProps) => void;
+
+type DateSnapshot = {
+  start?: Date;
+  end?: Date;
+  duration?: number;
+};
 
 const CONFIRM_Z_INDEX = 11000;
 
@@ -81,6 +90,57 @@ function buildDeleteCopy(api: IApi, ids: Array<string | number>) {
   return { title, content };
 }
 
+function dayKey(value: Date | undefined | null): number | null {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return null;
+  return Date.UTC(value.getFullYear(), value.getMonth(), value.getDate());
+}
+
+function cloneDate(value: Date | undefined | null): Date | undefined {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return undefined;
+  return new Date(value.getTime());
+}
+
+function snapshotDates(task: GanttTask | undefined): DateSnapshot {
+  return {
+    start: cloneDate(task?.start),
+    end: cloneDate(task?.end),
+    duration: typeof task?.duration === 'number' ? task.duration : undefined,
+  };
+}
+
+function mergeDatePatch(base: DateSnapshot, patch: Partial<ITask> | undefined): DateSnapshot {
+  const next: DateSnapshot = { ...base };
+  if (!patch) return next;
+  if ('start' in patch) next.start = cloneDate(patch.start as Date | undefined);
+  if ('end' in patch) next.end = cloneDate(patch.end as Date | undefined);
+  if ('duration' in patch) {
+    next.duration = typeof patch.duration === 'number' ? patch.duration : undefined;
+  }
+  return next;
+}
+
+function datesChanged(before: DateSnapshot, after: DateSnapshot): boolean {
+  return (
+    dayKey(before.start) !== dayKey(after.start)
+    || dayKey(before.end) !== dayKey(after.end)
+    || (before.duration ?? null) !== (after.duration ?? null)
+  );
+}
+
+function formatDateRu(value: Date | undefined): string {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '—';
+  return value.toLocaleDateString('ru-RU');
+}
+
+function formatDateRange(snapshot: DateSnapshot): string {
+  return `${formatDateRu(snapshot.start)} – ${formatDateRu(snapshot.end)}`;
+}
+
+function patchTouchesDates(patch: Partial<ITask> | undefined): boolean {
+  if (!patch) return false;
+  return 'start' in patch || 'end' in patch || 'duration' in patch;
+}
+
 /**
  * Показать confirm удаления (toolbar / ПКМ / Editor / Delete).
  * setTimeout + высокий zIndex — иначе модалка оказывается под SVAR ContextMenu/dropdown.
@@ -114,11 +174,15 @@ export function openGanttDeleteConfirm(
 }
 
 /**
- * Confirm на удаления в Gantt: задачи (toolbar / ПКМ / Delete / Backspace / Editor) и связи.
+ * Confirm на удаления и смену дат (drag на шкале / Editor).
+ * Auto-schedule и внутренние патчи — с `skipConfirm: true`.
  */
 export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confirm): () => void {
   const tag = { tag: 'gantt-confirm-guards' };
   api.detach(tag.tag);
+
+  /** Исходные даты на старте drag (`inProgress`), чтобы откатить по «Отмена». */
+  const dragOrigins = new Map<string, DateSnapshot>();
 
   api.intercept(
     'delete-task',
@@ -160,7 +224,72 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
     tag,
   );
 
+  api.intercept(
+    'update-task',
+    (ev: ConfirmEvent & { task?: Partial<ITask> }) => {
+      if (!GANTT_UI.dateChangeConfirm) return true;
+      if (ev?.skipConfirm) return true;
+      if (!patchTouchesDates(ev?.task)) return true;
+
+      const id = ev?.id;
+      if (id == null) return true;
+
+      const key = String(id);
+      const current = getTaskSafe(api, id);
+
+      // Drag preview — пускаем, запоминаем старт один раз
+      if (ev.inProgress) {
+        if (!dragOrigins.has(key)) {
+          dragOrigins.set(key, snapshotDates(current));
+        }
+        return true;
+      }
+
+      const before = dragOrigins.get(key) ?? snapshotDates(current);
+      dragOrigins.delete(key);
+
+      const after = mergeDatePatch(before, ev.task);
+      if (!datesChanged(before, after)) return true;
+
+      const label = current?.text ? `«${current.text}»` : `ID ${id}`;
+
+      window.setTimeout(() => {
+        confirm({
+          title: 'Изменить даты задачи?',
+          content: `${label}: ${formatDateRange(before)} → ${formatDateRange(after)}. Последователи со связью «Окончание — начало» могут сдвинуться автоматически.`,
+          okText: 'Изменить',
+          cancelText: 'Отмена',
+          centered: true,
+          zIndex: CONFIRM_Z_INDEX,
+          getContainer: () => document.body,
+          onOk: () =>
+            api.exec('update-task', {
+              ...ev,
+              id,
+              task: ev.task,
+              skipConfirm: true,
+            }),
+          onCancel: () => {
+            void api.exec('update-task', {
+              id,
+              task: {
+                start: before.start,
+                end: before.end,
+                duration: before.duration,
+              },
+              skipConfirm: true,
+            });
+          },
+        });
+      }, 0);
+
+      return false;
+    },
+    tag,
+  );
+
   return () => {
+    dragOrigins.clear();
     api.detach(tag.tag);
   };
 }
