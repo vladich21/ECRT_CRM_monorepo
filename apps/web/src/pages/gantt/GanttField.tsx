@@ -33,12 +33,14 @@ import {
 } from './lib/attachCriticalPathHighlight';
 import { attachChartPersist, loadChartSnapshot } from './lib/chartPersist';
 import { attachHierarchyMoveGuard } from './lib/attachHierarchyMoveGuard';
+import { attachSelectionChrome } from './lib/attachSelectionChrome';
 import { attachTaskTypeSync } from './lib/attachTaskTypeSync';
 import { attachTimelinePan } from './lib/attachTimelinePan';
 import { attachTodayMarker } from './lib/attachTodayMarker';
 import { exportGanttToExcel } from './lib/exportGanttToExcel';
 import { filterGanttLinksByTasks, filterGanttTasksByQuery } from './lib/filterGanttTasksByQuery';
 import { cloneGanttTasks, linksFromApi, scrollChartToCurrentMonth } from './lib/ganttApi';
+import { hierarchyChartKey } from './lib/hierarchyChartKey';
 import { mapApiHierarchyToGantt } from './lib/mapApiHierarchyToGantt';
 import { mapAllMockProjectsToGantt } from './lib/mapHierarchyToGantt';
 import { openLinkedBranches } from './lib/openLinkedBranches';
@@ -70,13 +72,14 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
   const [api, setApi] = useState<IApi | null>(null);
   const [chartEpoch, setChartEpoch] = useState(0);
-  /** Remount after API mutations — not on every query refetch (`dataUpdatedAt`). */
-  const [chartRevision, setChartRevision] = useState(0);
   const [criticalPathEnabled, setCriticalPathEnabled] = useState(false);
   const [excelExporting, setExcelExporting] = useState(false);
 
   const hierarchyQuery = useGanttHierarchy(!USE_GANTT_MOCKS);
   const refetchHierarchy = hierarchyQuery.refetch;
+  const chartDataKey = USE_GANTT_MOCKS
+    ? 'mocks'
+    : hierarchyChartKey(hierarchyQuery.data);
 
   const toolbarItems = useMemo(
     () => createGanttToolbarItems(() => apiRef.current, props => confirmRef.current(props)),
@@ -118,7 +121,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     if (warnings.length === 0) return;
     warningsShownRef.current = true;
     presentGanttDateWarnings(warnings, props => confirmRef.current(props), () => {
-      void refetchHierarchy().then(() => setChartRevision(r => r + 1));
+      void refetchHierarchy();
     });
   }, [hierarchyQuery.data, refetchHierarchy]);
 
@@ -192,6 +195,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   useEffect(() => {
     if (!api) return;
 
+    const detachSelection = attachSelectionChrome(api);
     const detachHierarchy = attachHierarchyMoveGuard(api);
     const detachTypeSync = attachTaskTypeSync(api);
     const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
@@ -203,11 +207,12 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     const detachApi =
       !USE_GANTT_MOCKS
         ? attachApiTaskPersist(api, () => {
-            void refetchHierarchy().then(() => setChartRevision(r => r + 1));
+            void refetchHierarchy();
           })
         : null;
 
     return () => {
+      detachSelection();
       detachHierarchy();
       detachTypeSync();
       detachConfirm();
@@ -334,19 +339,18 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
   return (
     <div className={styles.root}>
-      <Willow>
-        <Locale words={GANTT_RU_LOCALE}>
-          <ContextMenu
-            api={api ?? undefined}
-            options={contextMenuOptions}
-            filter={(option, task) => filterGanttContextMenu(option, task)}
-          >
-            <div className={styles.shell}>
-              {toolbar}
-
+      {toolbar}
+      <div className={styles.chartHost}>
+        <Willow>
+          <Locale words={GANTT_RU_LOCALE}>
+            <ContextMenu
+              api={api ?? undefined}
+              options={contextMenuOptions}
+              filter={(option, task) => filterGanttContextMenu(option, task)}
+            >
               <div ref={chartRootRef} className={styles.chart}>
                 <Gantt
-                  key={`${searchQuery.trim().toLowerCase() || 'all'}-r${chartRevision}`}
+                  key={`${searchQuery.trim().toLowerCase() || 'all'}-${chartDataKey}`}
                   tasks={mapped.tasks}
                   links={mapped.links}
                   scales={GANTT_MONTH_SCALES}
@@ -363,15 +367,14 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
                   }
                   init={handleInit}
                 />
+                {GANTT_UI.taskEditing && api ? (
+                  <Editor api={api} placement='sidebar' />
+                ) : null}
               </div>
-
-              {GANTT_UI.taskEditing && api ? (
-                <Editor api={api} placement='sidebar' />
-              ) : null}
-            </div>
-          </ContextMenu>
-        </Locale>
-      </Willow>
+            </ContextMenu>
+          </Locale>
+        </Willow>
+      </div>
     </div>
   );
 }

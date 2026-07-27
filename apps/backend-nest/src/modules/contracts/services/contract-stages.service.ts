@@ -7,6 +7,12 @@ import { contractStages } from '../../../database/schema';
 type StageRow = typeof contractStages.$inferSelect;
 type StageInsert = typeof contractStages.$inferInsert;
 
+function toMoney(value: unknown, fallback = 0): number {
+  if (value == null || value === '') return fallback;
+  const n = typeof value === 'number' ? value : parseFloat(String(value));
+  return Number.isFinite(n) ? n : fallback;
+}
+
 @Injectable()
 export class ContractStagesService {
   constructor(private readonly db: DatabaseService) {}
@@ -32,6 +38,7 @@ export class ContractStagesService {
   async create(contractId: string, data: Record<string, unknown>): Promise<unknown> {
     const insertData = this.mapRequestToColumns(data) as Partial<StageInsert>;
     insertData.contractId = contractId;
+    this.applyBudgetSplit(insertData, data);
     const [row] = await this.db.db
       .insert(contractStages)
       .values(insertData as StageInsert)
@@ -44,8 +51,12 @@ export class ContractStagesService {
     stageId: string,
     data: Record<string, unknown>,
   ): Promise<unknown | null> {
+    const existing = await this.findOne(contractId, stageId);
+    if (!existing) return null;
+
     const updateData = this.mapRequestToColumns(data) as Partial<StageInsert>;
     updateData.updatedAt = new Date();
+    this.applyBudgetSplit(updateData, data, existing as Record<string, unknown>);
     await this.db.db
       .update(contractStages)
       .set(updateData)
@@ -59,6 +70,42 @@ export class ContractStagesService {
       .where(and(eq(contractStages.id, stageId), eq(contractStages.contractId, contractId)));
   }
 
+  /**
+   * A/B заданы → planned = A + B.
+   * Только planned (legacy) → own = planned, coexecutor = 0.
+   */
+  private applyBudgetSplit(
+    columns: Partial<StageInsert>,
+    raw: Record<string, unknown>,
+    existing?: Record<string, unknown>,
+  ): void {
+    const hasSplit = raw.coexecutor_budget !== undefined || raw.own_budget !== undefined;
+
+    if (hasSplit) {
+      const a = toMoney(
+        raw.coexecutor_budget !== undefined
+          ? raw.coexecutor_budget
+          : (existing?.coexecutor_budget ?? columns.coexecutorBudget),
+      );
+      const b = toMoney(
+        raw.own_budget !== undefined
+          ? raw.own_budget
+          : (existing?.own_budget ?? columns.ownBudget),
+      );
+      columns.coexecutorBudget = String(a);
+      columns.ownBudget = String(b);
+      columns.plannedBudget = String(a + b);
+      return;
+    }
+
+    if (raw.planned_budget !== undefined) {
+      const planned = toMoney(raw.planned_budget);
+      columns.plannedBudget = String(planned);
+      columns.ownBudget = String(planned);
+      columns.coexecutorBudget = '0';
+    }
+  }
+
   private mapRequestToColumns(data: Record<string, unknown>): Record<string, unknown> {
     const fieldMap: Record<string, string> = {
       name: 'name',
@@ -70,6 +117,8 @@ export class ContractStagesService {
       actual_start_date: 'actualStartDate',
       actual_end_date: 'actualEndDate',
       planned_budget: 'plannedBudget',
+      coexecutor_budget: 'coexecutorBudget',
+      own_budget: 'ownBudget',
       forecasted_budget: 'forecastedBudget',
       actual_budget: 'actualBudget',
       is_archived: 'isArchived',
@@ -84,6 +133,14 @@ export class ContractStagesService {
   }
 
   private toResponse(row: StageRow): Record<string, unknown> {
+    const planned = parseFloat(String(row.plannedBudget ?? 0));
+    const coexecutor = parseFloat(String(row.coexecutorBudget ?? 0));
+    let own = parseFloat(String(row.ownBudget ?? 0));
+    // До миграции / пустой split: весь план = свои.
+    if (own === 0 && coexecutor === 0 && planned !== 0) {
+      own = planned;
+    }
+
     return {
       id: String(row.id),
       contract_id: String(row.contractId),
@@ -95,7 +152,9 @@ export class ContractStagesService {
       planned_end_date: row.plannedEndDate ? String(row.plannedEndDate) : '',
       actual_start_date: row.actualStartDate ? String(row.actualStartDate) : '',
       actual_end_date: row.actualEndDate ? String(row.actualEndDate) : '',
-      planned_budget: parseFloat(String(row.plannedBudget ?? 0)),
+      planned_budget: planned,
+      coexecutor_budget: coexecutor,
+      own_budget: own,
       forecasted_budget: parseFloat(String(row.forecastedBudget ?? 0)),
       actual_budget: parseFloat(String(row.actualBudget ?? 0)),
       is_archived: row.isArchived,

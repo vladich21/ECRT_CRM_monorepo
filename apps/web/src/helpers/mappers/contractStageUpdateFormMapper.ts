@@ -12,6 +12,8 @@ export const contractStageUpdateFormMapper = (stageData: ContractStage) => {
     actual_start_date: stageData.actual_start_date ? dayjs(stageData.actual_start_date) : null,
     actual_end_date: stageData.actual_end_date ? dayjs(stageData.actual_end_date) : null,
     planned_budget: stageData.planned_budget || 0,
+    coexecutor_budget: stageData.coexecutor_budget || 0,
+    own_budget: stageData.own_budget || 0,
     forecasted_budget: stageData.forecasted_budget || 0,
     actual_budget: stageData.actual_budget || 0,
     state_id: stageData.state_id || 1,

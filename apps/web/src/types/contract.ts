@@ -19,6 +19,7 @@ export interface Contract {
   date_signed: string;
   state_id: string;
   is_active: boolean;
+  plan_in_gantt?: boolean;
   is_deleted?: boolean;
   created_at: string;
   updated_at: string;
@@ -41,6 +42,8 @@ export interface ContractStage {
   actual_start_date: string;
   actual_end_date: string;
   planned_budget: number;
+  coexecutor_budget?: number;
+  own_budget?: number;
   forecasted_budget: number;
   actual_budget: number;
   state_id: string;

@@ -74,6 +74,11 @@ export function buildDetailItems(contract: Contract, refs: AsideRefs) {
       ),
     },
     {
+      key: 'plan_in_gantt',
+      label: 'В Ганте',
+      children: contract.plan_in_gantt === false ? 'Нет' : 'Да',
+    },
+    {
       key: 'state',
       label: 'Состояние',
       children: state ? (

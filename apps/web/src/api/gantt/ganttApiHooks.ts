@@ -15,8 +15,17 @@ export function useGanttHierarchy(enabled = true) {
     queryKey: ganttKeys.hierarchy(),
     queryFn: () => ganttApi.getHierarchy(),
     enabled,
-    staleTime: 60_000,
+    staleTime: 30_000,
+    // Этапы/договоры меняются вне Ганта — при заходе на страницу всегда свежие данные.
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   });
+}
+
+export function invalidateGanttQueries(queryClient: {
+  invalidateQueries: (opts: { queryKey: readonly unknown[] }) => Promise<unknown>;
+}) {
+  return queryClient.invalidateQueries({ queryKey: ganttKeys.all });
 }
 
 export function useGanttTaskMutations() {

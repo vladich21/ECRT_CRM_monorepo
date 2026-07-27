@@ -105,13 +105,19 @@ export function useContractStageManager(
   };
 
   const openEditStageModal = (stage: ContractStage) => {
+    const coexecutor = stage.coexecutor_budget ?? 0;
+    const own =
+      (stage.own_budget ?? 0) > 0 || coexecutor > 0
+        ? stage.own_budget ?? 0
+        : stage.planned_budget;
     addStageForm.setFieldsValue({
       name: stage.name,
       planned_start_date: stage.planned_start_date ? dayjs(stage.planned_start_date) : null,
       planned_end_date: stage.planned_end_date ? dayjs(stage.planned_end_date) : null,
       actual_start_date: stage.actual_start_date ? dayjs(stage.actual_start_date) : null,
       actual_end_date: stage.actual_end_date ? dayjs(stage.actual_end_date) : null,
-      planned_budget: stage.planned_budget > 0 ? stage.planned_budget : undefined,
+      coexecutor_budget: coexecutor > 0 ? coexecutor : undefined,
+      own_budget: own > 0 ? own : undefined,
       forecasted_budget: stage.forecasted_budget > 0 ? stage.forecasted_budget : undefined,
       actual_budget: stage.actual_budget > 0 ? stage.actual_budget : undefined,
       responsible_id: stage.responsible_id || undefined,
@@ -139,6 +145,9 @@ export function useContractStageManager(
     if (!contract?.id) return;
 
     const stageStates = referenceBooks?.contractStageStates ?? [];
+    const coexecutorBudget = coerceStageFormNumber(values.coexecutor_budget);
+    const ownBudget = coerceStageFormNumber(values.own_budget);
+    const plannedBudget = coexecutorBudget + ownBudget;
     const stageData: Partial<ContractStage> = {
       name: values.name,
       responsible_id: values.responsible_id ?? '',
@@ -146,8 +155,10 @@ export function useContractStageManager(
       planned_end_date: formatStageFormDateToIso(values.planned_end_date),
       actual_start_date: formatStageFormDateToIso(values.actual_start_date),
       actual_end_date: formatStageFormDateToIso(values.actual_end_date),
-      planned_budget: coerceStageFormNumber(values.planned_budget),
-      forecasted_budget: coerceStageFormNumber(values.forecasted_budget ?? values.planned_budget),
+      coexecutor_budget: coexecutorBudget,
+      own_budget: ownBudget,
+      planned_budget: plannedBudget,
+      forecasted_budget: coerceStageFormNumber(values.forecasted_budget ?? plannedBudget),
       actual_budget: coerceStageFormNumber(values.actual_budget),
     };
 

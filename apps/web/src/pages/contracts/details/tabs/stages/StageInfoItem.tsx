@@ -71,6 +71,9 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
     );
   }
   if (type === 'budget') {
+    const coexecutor = stage.coexecutor_budget ?? 0;
+    const own = (stage.own_budget ?? 0) > 0 || coexecutor > 0 ? (stage.own_budget ?? 0) : stage.planned_budget;
+
     return (
       <div className={styles.stageInfoItem}>
         <div className={styles.stageInfoHeader}>
@@ -81,14 +84,21 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
           {stage.planned_budget > 0 || stage.forecasted_budget > 0 || stage.actual_budget > 0 ? (
             <>
               {stage.planned_budget > 0 && (
-                <div className={styles.stageInfoRow}>
-                  <Text type='secondary' className={styles.stageInfoTextSecondary}>
-                    План:{' '}
-                  </Text>
-                  <Text strong className={styles.stageInfoTextStrong}>
-                    {stage.planned_budget.toLocaleString('ru-RU')} ₽
-                  </Text>
-                </div>
+                <>
+                  <div className={styles.stageInfoRow}>
+                    <Text type='secondary' className={styles.stageInfoTextSecondary}>
+                      План:{' '}
+                    </Text>
+                    <Text strong className={styles.stageInfoTextStrong}>
+                      {stage.planned_budget.toLocaleString('ru-RU')} ₽
+                    </Text>
+                  </div>
+                  <div className={styles.stageInfoRow}>
+                    <Text type='secondary' className={styles.stageInfoTextSecondary}>
+                      свои {own.toLocaleString('ru-RU')} ₽ · внешние {coexecutor.toLocaleString('ru-RU')} ₽
+                    </Text>
+                  </div>
+                </>
               )}
               {stage.forecasted_budget > 0 && (
                 <div className={styles.stageInfoRow}>

@@ -43,6 +43,14 @@ export type HierarchyTaskNode = {
   children: HierarchyTaskNode[];
 };
 
+export function isMissingRelationError(error: unknown): boolean {
+  const msg =
+    error instanceof Error
+      ? `${error.message} ${String((error as { cause?: { message?: string } }).cause?.message ?? '')}`
+      : String(error);
+  return /relation ["'].*["'] does not exist/i.test(msg);
+}
+
 export function toNum(value: unknown): number {
   if (value == null || value === '') return 0;
   const n = Number(value);

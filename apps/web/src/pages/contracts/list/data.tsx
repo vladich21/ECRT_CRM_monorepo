@@ -29,6 +29,7 @@ export const initialFormValues = {
   supplier_manager_id: null,
   project_id: null,
   state_id: null,
+  plan_in_gantt: true,
 };
 export const getColumnsData = (
   references: Pick<ReferenceData, 'contractStates' | 'contractCategories' | 'partners'>,

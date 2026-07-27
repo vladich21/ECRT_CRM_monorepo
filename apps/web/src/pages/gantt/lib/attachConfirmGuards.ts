@@ -2,7 +2,9 @@ import { Modal } from 'antd';
 import type { ModalFuncProps } from 'antd/es/modal/interface';
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
+import { USE_GANTT_MOCKS } from '../ganttConfig';
 import { GANTT_UI } from '../ganttFeatures';
+import { findAncestorByKind, isGanttWorkTask } from './ganttTaskStore';
 
 type ConfirmEvent = {
   id?: string | number;
@@ -155,30 +157,24 @@ function assertDatesWithinStage(
   taskId: string | number,
   next: DateSnapshot,
 ): string | null {
-  const tasks = api.getState().tasks as {
-    byId?: (id: string | number) => GanttTask | undefined;
-  };
-  let current = tasks.byId?.(taskId);
-  let guard = 0;
-  while (current && guard < 50) {
-    if (current.entityKind === 'stage') {
-      const stageStart = dayIso(current.start as Date | undefined);
-      const stageEnd = dayIso(current.end as Date | undefined);
-      const start = dayIso(next.start);
-      const end = dayIso(next.end);
-      if (start && stageStart && start < stageStart) {
-        return `Начало (${start}) раньше срока этапа (${stageStart})`;
-      }
-      if (end && stageEnd && end > stageEnd) {
-        return `Окончание (${end}) позже срока этапа (${stageEnd})`;
-      }
-      return null;
-    }
-    if (current.parent == null || current.parent === 0) return null;
-    current = tasks.byId?.(current.parent);
-    guard += 1;
+  const stage = findAncestorByKind(api, taskId, 'stage');
+  if (!stage) return null;
+
+  const stageStart = dayIso(stage.start as Date | undefined);
+  const stageEnd = dayIso(stage.end as Date | undefined);
+  const start = dayIso(next.start);
+  const end = dayIso(next.end);
+  if (start && stageStart && start < stageStart) {
+    return `Начало (${start}) раньше срока этапа (${stageStart})`;
+  }
+  if (end && stageEnd && end > stageEnd) {
+    return `Окончание (${end}) позже срока этапа (${stageEnd})`;
   }
   return null;
+}
+
+function isStructuralEntity(task: GanttTask | undefined): boolean {
+  return Boolean(task?.entityKind && !isGanttWorkTask(task));
 }
 
 /**
@@ -227,10 +223,29 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
   api.intercept(
     'delete-task',
     (ev: ConfirmEvent) => {
-      if (ev?.skipConfirm) return true;
-
       const ids = resolveSelectedIds(api, ev);
       if (ids.length === 0) return false;
+
+      // На API: project/contract/stage живут в своих разделах — из Ганта не удаляем.
+      if (!USE_GANTT_MOCKS && ids.some(id => isStructuralEntity(getTaskSafe(api, id)))) {
+        if (!ev?.skipConfirm) {
+          window.setTimeout(() => {
+            confirm({
+              title: 'Удаление недоступно',
+              content:
+                'Проекты, договоры и этапы нельзя удалить из диаграммы Ганта. Используйте соответствующие разделы системы.',
+              okText: 'Понятно',
+              cancelButtonProps: { style: { display: 'none' } },
+              centered: true,
+              zIndex: CONFIRM_Z_INDEX,
+              getContainer: () => document.body,
+            });
+          }, 0);
+        }
+        return false;
+      }
+
+      if (ev?.skipConfirm) return true;
 
       openGanttDeleteConfirm(api, ids, confirm);
       return false;
@@ -333,7 +348,7 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
             api.exec('update-task', {
               ...ev,
               id,
-              task: ev.task,
+              task: ev.task ?? {},
               skipConfirm: true,
             }),
           onCancel: () => {

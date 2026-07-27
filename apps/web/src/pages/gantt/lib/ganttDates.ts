@@ -22,15 +22,17 @@ export function isUuid(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
-/** Если дат нет — безопасный диапазон, чтобы бар отрисовался. */
+/** Если дат нет — безопасный диапазон от дат родителя / календарный год. */
 export function ensureDateRange(
   start: string | null | undefined,
   end: string | null | undefined,
+  fallbackStart?: string,
+  fallbackEnd?: string,
 ): { start: string; end: string } {
   const year = new Date().getFullYear();
-  const fallbackStart = `${year}-01-01`;
-  const fallbackEnd = `${year}-12-31`;
-  const s = start?.trim() || fallbackStart;
-  const e = end?.trim() || start?.trim() || fallbackEnd;
+  const defaultStart = fallbackStart?.trim() || `${year}-01-01`;
+  const defaultEnd = fallbackEnd?.trim() || fallbackStart?.trim() || `${year}-12-31`;
+  const s = start?.trim() || defaultStart;
+  const e = end?.trim() || start?.trim() || defaultEnd;
   return s <= e ? { start: s, end: e } : { start: e, end: s };
 }

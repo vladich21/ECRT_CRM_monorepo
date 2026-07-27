@@ -1,5 +1,5 @@
 import { CheckCircleOutlined } from '@ant-design/icons';
-import { Col, Divider, Form, Row, Select, Switch } from 'antd';
+import { Checkbox, Col, Divider, Form, Row, Select, Switch } from 'antd';
 
 import type { ContractFormMode, ContractFormRefs } from './contractForm.types';
 
@@ -48,6 +48,16 @@ export function ContractFormStateFields({ mode, refs, effectiveByState, requireF
               checked={effectiveByState}
               disabled
             />
+          </Form.Item>
+        </Col>
+        <Col xs={24}>
+          <Form.Item
+            name='plan_in_gantt'
+            valuePropName='checked'
+            initialValue={true}
+            style={{ marginBottom: 0 }}
+          >
+            <Checkbox>Планировать договор в диаграмме Ганта</Checkbox>
           </Form.Item>
         </Col>
       </Row>

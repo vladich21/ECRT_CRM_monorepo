@@ -40,23 +40,34 @@ function isSeparator(button: unknown): boolean {
 
 function canMoveUp(api: IApi | null | undefined, taskId: string | number | null | undefined): boolean {
   if (!api || taskId == null) return false;
-  const tasks = api.getState().tasks as {
-    getBranch?: (id: string | number) => unknown[];
-    getIndexById?: (id: string | number) => number;
-  };
-  const index = tasks.getIndexById?.(taskId);
-  return typeof index === 'number' && index > 0;
+  try {
+    const tasks = api.getState().tasks as {
+      byId?: (id: string | number) => { parent?: unknown } | undefined;
+      getIndexById?: (id: string | number) => number;
+    };
+    if (!tasks.byId?.(taskId)) return false;
+    const index = tasks.getIndexById?.(taskId);
+    return typeof index === 'number' && index > 0;
+  } catch {
+    return false;
+  }
 }
 
 function canMoveDown(api: IApi | null | undefined, taskId: string | number | null | undefined): boolean {
   if (!api || taskId == null) return false;
-  const tasks = api.getState().tasks as {
-    getBranch?: (id: string | number) => unknown[];
-    getIndexById?: (id: string | number) => number;
-  };
-  const branch = tasks.getBranch?.(taskId);
-  const index = tasks.getIndexById?.(taskId);
-  return Boolean(branch && typeof index === 'number' && index >= 0 && index < branch.length - 1);
+  try {
+    const tasks = api.getState().tasks as {
+      byId?: (id: string | number) => { parent?: unknown } | undefined;
+      getBranch?: (id: string | number) => unknown[];
+      getIndexById?: (id: string | number) => number;
+    };
+    if (!tasks.byId?.(taskId)) return false;
+    const branch = tasks.getBranch?.(taskId);
+    const index = tasks.getIndexById?.(taskId);
+    return Boolean(branch && typeof index === 'number' && index >= 0 && index < branch.length - 1);
+  } catch {
+    return false;
+  }
 }
 
 /**

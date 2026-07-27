@@ -159,14 +159,7 @@ button.wx-button.wx-danger:hover:not([disabled]) {
   min-width: auto !important;
 }
 
-/* Editor combo: не прыгать вверх/вниз */
-.wx-editor [class*='wx-content'],
-.wx-editor [class*='wx-left'],
-.wx-editor [class*='wx-right'],
-.wx-editor [class*='wx-sections'] {
-  overflow: visible !important;
-}
-
+/* Editor combo dropdowns */
 .wx-dropdown {
   z-index: 1200 !important;
 }

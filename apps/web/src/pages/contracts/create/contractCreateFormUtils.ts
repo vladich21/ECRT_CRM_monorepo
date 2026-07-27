@@ -67,5 +67,6 @@ export function buildCreateContractPayload(formValues: Record<string, unknown>):
     amount_incl_vat: numOrNull(formValues.amount_incl_vat),
     state_id: idOrNull(formValues.state_id),
     is_active: boolField(formValues.is_active),
+    plan_in_gantt: boolField(formValues.plan_in_gantt) ?? true,
   };
 }

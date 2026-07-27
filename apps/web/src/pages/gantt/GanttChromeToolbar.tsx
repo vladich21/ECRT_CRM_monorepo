@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { FileExcelOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Switch } from 'antd';
-import { Toolbar, type IApi } from '@svar-ui/react-gantt';
+import { Toolbar, Willow, type IApi } from '@svar-ui/react-gantt';
 
 import { GANTT_UI } from './ganttFeatures';
 import type { createGanttToolbarItems } from './ganttToolbar';
@@ -45,7 +45,9 @@ export function GanttChromeToolbar({
 
       {GANTT_UI.taskEditing ? (
         <div className={styles.hotkeys}>
-          <Toolbar api={api ?? undefined} items={toolbarItems} />
+          <Willow>
+            <Toolbar api={api ?? undefined} items={toolbarItems} />
+          </Willow>
         </div>
       ) : null}
 

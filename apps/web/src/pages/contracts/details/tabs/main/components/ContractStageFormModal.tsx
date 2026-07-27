@@ -1,9 +1,11 @@
-import { Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
+import { Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, Typography } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 
 import type { ReferenceData } from '@/api/hooks/useReferences';
 import { STAGE_BUDGET_INPUT_NUMBER_PROPS } from '../constants/budgetInputNumberProps';
 import styles from '../ContractMainInfoTab.module.scss';
+
+const { Text } = Typography;
 
 type ContractStageFormModalProps = {
   open: boolean;
@@ -14,6 +16,11 @@ type ContractStageFormModalProps = {
   onSubmit: () => void | Promise<void>;
   isLoading?: boolean;
 };
+
+function formatMoney(value: number): string {
+  return `${value.toLocaleString('ru-RU')} ₽`;
+}
+
 export function ContractStageFormModal({
   open,
   isEditing,
@@ -27,6 +34,13 @@ export function ContractStageFormModal({
     value: user.id,
     label: user.name,
   }));
+
+  const coexecutorBudget = Form.useWatch('coexecutor_budget', form);
+  const ownBudget = Form.useWatch('own_budget', form);
+  const plannedTotal =
+    (typeof coexecutorBudget === 'number' && Number.isFinite(coexecutorBudget) ? coexecutorBudget : 0) +
+    (typeof ownBudget === 'number' && Number.isFinite(ownBudget) ? ownBudget : 0);
+
   return (
     <Modal
       title={isEditing ? 'Редактировать этап' : 'Добавить этап'}
@@ -71,18 +85,40 @@ export function ContractStageFormModal({
           </Col>
         </Row>
 
+        <Text type='secondary' style={{ display: 'block', marginBottom: 8, color: '#000000e0' }}>
+          Плановый бюджет
+        </Text>
         <Row gutter={12}>
-          <Col xs={24} md={8}>
-            <Form.Item name='planned_budget' label='Плановый бюджет, ₽'>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name='coexecutor_budget'
+              label='Соисполнители, ₽'
+              tooltip='Внешние затраты. В диаграмму Ганта не входят.'
+            >
               <InputNumber<number> style={{ width: '100%' }} {...STAGE_BUDGET_INPUT_NUMBER_PROPS} placeholder='0' />
             </Form.Item>
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name='own_budget'
+              label='Собственные затраты + прибыль, ₽'
+              tooltip='Наш ресурсный план. Именно эта сумма отображается в Ганте.'
+            >
+              <InputNumber<number> style={{ width: '100%' }} {...STAGE_BUDGET_INPUT_NUMBER_PROPS} placeholder='0' />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Text style={{ display: 'block', marginBottom: 16 }}>
+          Итого план: <Text strong>{formatMoney(plannedTotal)}</Text>
+        </Text>
+
+        <Row gutter={12}>
+          <Col xs={24} md={12}>
             <Form.Item name='forecasted_budget' label='Прогнозный бюджет, ₽'>
               <InputNumber<number> style={{ width: '100%' }} {...STAGE_BUDGET_INPUT_NUMBER_PROPS} placeholder='0' />
             </Form.Item>
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <Form.Item name='actual_budget' label='Фактический бюджет, ₽'>
               <InputNumber<number> style={{ width: '100%' }} {...STAGE_BUDGET_INPUT_NUMBER_PROPS} placeholder='0' />
             </Form.Item>

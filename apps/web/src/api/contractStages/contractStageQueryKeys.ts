@@ -1,5 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { ganttKeys } from '../gantt/ganttApiHooks';
+
 export const contractStageQueryKeys = {
   all: ['contract-stages'] as const,
   byContract: (contractId: string) => [...contractStageQueryKeys.all, contractId] as const,
@@ -7,5 +9,8 @@ export const contractStageQueryKeys = {
 } as const;
 
 export function invalidateContractStageQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: contractStageQueryKeys.all });
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: contractStageQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: ganttKeys.all }),
+  ]);
 }

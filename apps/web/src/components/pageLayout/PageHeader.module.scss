@@ -10,16 +10,15 @@ $shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
   border-radius: 8px;
   box-shadow: $shadow;
   border: 1px solid $portal-secondary-border;
-  margin-bottom: 24px;
-  overflow: hidden;
+  margin-bottom: 16px;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .pageBlockTransparent {
   background: transparent;
   box-shadow: none;
-  border: none;
   border: 1px solid $portal-secondary-border;
-
 }
 
 .pageHeader {
@@ -29,6 +28,8 @@ $shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
   justify-content: space-between;
   gap: 24px;
   flex-wrap: wrap;
+  min-height: 56px;
+  box-sizing: border-box;
 }
 
 .pageHeaderContainer {
@@ -38,18 +39,21 @@ $shadow: 0 1px 3px rgba(30, 41, 59, 0.08);
   gap: 24px;
   flex-wrap: wrap;
   width: 100%;
+  min-width: 0;
 }
 
 .pageHeaderLeft {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .pageTitle {
   margin: 0;
   font-size: 20px;
+  line-height: 28px;
   font-weight: 600;
   color: $portal-secondary;
 }

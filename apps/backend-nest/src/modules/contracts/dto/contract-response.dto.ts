@@ -23,6 +23,7 @@ export interface ContractResponseDto {
 
   state_id: string;
   is_active: boolean;
+  plan_in_gantt?: boolean;
 
   created_at: string;
   updated_at: string;

@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { ganttKeys } from '../gantt/ganttApiHooks';
 import type { ProjectsListParams } from './projectApi';
 
 export const projectQueryKeys = {
@@ -11,5 +12,8 @@ export const projectQueryKeys = {
 } as const;
 
 export function invalidateProjectQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: projectQueryKeys.all });
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: projectQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: ganttKeys.all }),
+  ]);
 }

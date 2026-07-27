@@ -15,12 +15,10 @@ type Props = {
 };
 
 export function ContractFormMoneyFields({
-  mode,
   onAmountChange,
   onVatRateChange,
   requireFullValidation = false,
 }: Props) {
-
   return (
     <div className={layout.sectionBox}>
       <Divider orientation='left' style={{ marginTop: 0 }}>

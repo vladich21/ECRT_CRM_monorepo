@@ -2,7 +2,7 @@ import type { IApi, ITask } from '@svar-ui/react-gantt';
 
 import { ganttApi } from '../../../api/gantt/ganttApi';
 import { isUuid, toIsoDate } from './ganttDates';
-import { findAncestorByKind, getTaskStore } from './ganttTaskStore';
+import { findAncestorByKind, getTaskStore, isGanttWorkTask } from './ganttTaskStore';
 
 type GanttTask = ITask & {
   entityKind?: string;
@@ -12,25 +12,45 @@ type GanttTask = ITask & {
   status?: string;
 };
 
-function isLeafTask(task: GanttTask | undefined): task is GanttTask {
-  return Boolean(task && task.entityKind === 'task');
-}
-
+/**
+ * Только явно переданные поля — без затирания name/дат/часов соседними undefined.
+ */
 function buildUpdateBody(
   api: IApi,
   patch: Partial<GanttTask>,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {};
-  if ('text' in patch) body.name = patch.text;
-  if ('start' in patch) body.start_date = toIsoDate(patch.start);
-  if ('end' in patch) body.end_date = toIsoDate(patch.end);
-  if ('deadline' in patch) body.deadline = toIsoDate(patch.deadline);
-  if ('laborHours' in patch) body.planned_hours = patch.laborHours;
-  if ('progress' in patch) body.progress = patch.progress;
-  if ('status' in patch) body.status = patch.status;
-  if ('responsibleUserId' in patch) body.responsible_user_id = patch.responsibleUserId;
-  if ('assigneeIds' in patch) body.assignee_ids = patch.assigneeIds;
-  if ('parent' in patch) {
+
+  if (patch.text !== undefined && patch.text !== null) {
+    body.name = patch.text;
+  }
+  if (patch.start !== undefined) {
+    const iso = toIsoDate(patch.start);
+    if (iso) body.start_date = iso;
+  }
+  if (patch.end !== undefined) {
+    const iso = toIsoDate(patch.end);
+    if (iso) body.end_date = iso;
+  }
+  if (patch.deadline !== undefined) {
+    body.deadline = toIsoDate(patch.deadline);
+  }
+  if (patch.laborHours !== undefined) {
+    body.planned_hours = patch.laborHours;
+  }
+  if (patch.progress !== undefined) {
+    body.progress = patch.progress;
+  }
+  if (patch.status !== undefined) {
+    body.status = patch.status;
+  }
+  if (patch.responsibleUserId !== undefined) {
+    body.responsible_user_id = patch.responsibleUserId;
+  }
+  if (patch.assigneeIds !== undefined) {
+    body.assignee_ids = patch.assigneeIds;
+  }
+  if (patch.parent !== undefined) {
     const parent =
       patch.parent != null ? getTaskStore(api).byId?.(patch.parent as string | number) : null;
     body.parent_id = parent?.entityKind === 'task' ? parent.id : null;
@@ -67,7 +87,7 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
 
       const created = getTaskStore(api).byId?.(ev.id) ?? ev.task;
       // Контейнеры (project/contract/stage) не персистим; новые листы часто без entityKind.
-      if (created?.entityKind && created.entityKind !== 'task') return;
+      if (created && !isGanttWorkTask(created)) return;
 
       const stage =
         findAncestorByKind(api, ev.id, 'stage') ??
@@ -92,7 +112,10 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
           assignee_ids: created?.assigneeIds ?? [],
         })
         .then(notify)
-        .catch(notify);
+        .catch(err => {
+          console.error('[gantt] createTask failed', err);
+          notify();
+        });
     },
     tag,
   );
@@ -105,12 +128,16 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       if (!isUuid(id)) return;
 
       const current = getTaskStore(api).byId?.(ev.id);
-      if (!isLeafTask(current)) return;
+      // Только уже сохранённые листы с entityKind=task (новые без uuid отсекает isUuid).
+      if (!current || current.entityKind !== 'task') return;
 
       const body = buildUpdateBody(api, ev.task ?? {});
       if (Object.keys(body).length === 0) return;
 
-      void ganttApi.updateTask(id, body).then(notify).catch(notify);
+      void ganttApi.updateTask(id, body).then(notify).catch(err => {
+        console.error('[gantt] updateTask failed', err);
+        notify();
+      });
     },
     tag,
   );
@@ -121,7 +148,13 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       if (ev?.id == null) return;
       const id = String(ev.id);
       if (!isUuid(id)) return;
-      void ganttApi.deleteTask(id).then(notify).catch(notify);
+      // Не дергаем API для project/contract/stage — иначе deleteTask(uuid этапа) даст 404/мусор.
+      const current = getTaskStore(api).byId?.(ev.id);
+      if (current && current.entityKind !== 'task') return;
+      void ganttApi.deleteTask(id).then(notify).catch(err => {
+        console.error('[gantt] deleteTask failed', err);
+        notify();
+      });
     },
     tag,
   );
@@ -131,10 +164,14 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
     (ev: { link?: { source?: string | number; target?: string | number; type?: string } }) => {
       const { source, target, type } = ev?.link ?? {};
       if (source == null || target == null) return;
+      if (!isUuid(String(source)) || !isUuid(String(target))) return;
       void ganttApi
         .createLink({ source: String(source), target: String(target), type: type ?? 'e2s' })
         .then(notify)
-        .catch(notify);
+        .catch(err => {
+          console.error('[gantt] createLink failed', err);
+          notify();
+        });
     },
     tag,
   );
@@ -145,7 +182,10 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       if (ev?.id == null) return;
       const id = String(ev.id);
       if (!isUuid(id)) return;
-      void ganttApi.deleteLink(id).then(notify).catch(notify);
+      void ganttApi.deleteLink(id).then(notify).catch(err => {
+        console.error('[gantt] deleteLink failed', err);
+        notify();
+      });
     },
     tag,
   );

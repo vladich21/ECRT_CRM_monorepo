@@ -8,6 +8,17 @@
 
 Ответ: `{ projects[], links[], date_warnings[] }` — Project → Contract → Stage → Task.
 
+Этапы берутся из `contract_stages` (неархивные). Задачи — из `gantt_tasks`.
+В дерево попадают только договоры с `plan_in_gantt = true` (чекбокс в карточке договора).
+
+**Бюджет в дереве:**
+- этап = `own_budget` (собственные затраты + прибыль); если split пустой — fallback на `planned_budget`;
+- договор = сумма бюджетов этапов в Ганте (без `amount_excl_vat`);
+- проект = сумма бюджетов договоров.
+
+Разрез этапа в карточке договора: `coexecutor_budget` + `own_budget` = `planned_budget`.
+SQL: `docs/contract-stage-budget-split.sql`.
+
 ## Задачи (отдать Юрию)
 
 | Метод | Путь | Назначение |

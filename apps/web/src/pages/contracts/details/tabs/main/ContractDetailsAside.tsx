@@ -53,6 +53,13 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
   const responsibleName = getNameById(contract.responsible_id, references?.users ?? []);
   const supplierManagerName = getNameById(contract.supplier_manager_id ?? '', references?.users ?? []);
   const totalPlannedBudget = stages.reduce((sum, stage) => sum + (stage.planned_budget || 0), 0);
+  const totalOwnBudget = stages.reduce((sum, stage) => {
+    const coexecutor = stage.coexecutor_budget ?? 0;
+    const own =
+      (stage.own_budget ?? 0) > 0 || coexecutor > 0 ? stage.own_budget ?? 0 : stage.planned_budget || 0;
+    return sum + own;
+  }, 0);
+  const totalCoexecutorBudget = stages.reduce((sum, stage) => sum + (stage.coexecutor_budget || 0), 0);
   const totalActualBudget = stages.reduce((sum, stage) => sum + (stage.actual_budget || 0), 0);
   const budgetProgressPercent =
     totalPlannedBudget > 0 ? Math.min((totalActualBudget / totalPlannedBudget) * 100, 100) : 0;
@@ -109,10 +116,21 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
               <div>
                 <div className={styles.budgetRow}>
                   <Text type='secondary' className={styles.budgetLabel}>
-                    Бюджет (план)
+                    План этапов
                   </Text>
                   <Text strong className={styles.budgetLabel}>
                     {formatAmount(totalPlannedBudget)}
+                  </Text>
+                </div>
+                <Text type='secondary' style={{ fontSize: 12 }}>
+                  Свои {formatAmount(totalOwnBudget)} · Внешние {formatAmount(totalCoexecutorBudget)}
+                </Text>
+                <div className={styles.budgetRow} style={{ marginTop: 6 }}>
+                  <Text type='secondary' className={styles.budgetLabel}>
+                    В Ганте
+                  </Text>
+                  <Text strong className={styles.budgetLabel}>
+                    {formatAmount(totalOwnBudget)}
                   </Text>
                 </div>
                 <Progress percent={100} showInfo={false} strokeColor='#d9d9d9' trailColor='#ebebeb' size='small' />

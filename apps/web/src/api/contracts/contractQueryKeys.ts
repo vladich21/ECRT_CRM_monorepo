@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { ganttKeys } from '../gantt/ganttApiHooks';
 import type { ContractsListParams } from './contractApi';
 
 export const contractQueryKeys = {
@@ -12,13 +13,19 @@ export const contractQueryKeys = {
 } as const;
 
 export function invalidateContractQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: contractQueryKeys.all, exact: false });
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: contractQueryKeys.all, exact: false }),
+    queryClient.invalidateQueries({ queryKey: ganttKeys.all }),
+  ]);
 }
 
 export function invalidateContractListQueriesAfterDelete(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({
-    predicate: query =>
-      query.queryKey[0] === 'contracts' &&
-      (query.queryKey.length < 2 || typeof query.queryKey[1] !== 'string'),
-  });
+  return Promise.all([
+    queryClient.invalidateQueries({
+      predicate: query =>
+        query.queryKey[0] === 'contracts' &&
+        (query.queryKey.length < 2 || typeof query.queryKey[1] !== 'string'),
+    }),
+    queryClient.invalidateQueries({ queryKey: ganttKeys.all }),
+  ]);
 }

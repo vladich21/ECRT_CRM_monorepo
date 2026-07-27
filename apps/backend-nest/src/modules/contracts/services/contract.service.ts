@@ -288,6 +288,7 @@ export class ContractsService {
       end_date: 'endDate',
       date_signed: 'dateSigned',
       state_id: 'stateId',
+      plan_in_gantt: 'planInGantt',
     };
     const emptyMeansNull = new Set([
       'number',
@@ -316,6 +317,10 @@ export class ContractsService {
         if (emptyMeansNull.has(columnKey)) insertData[columnKey] = null;
         continue;
       }
+      if (columnKey === 'planInGantt') {
+        insertData.planInGantt = rawValue === true || rawValue === 'true';
+        continue;
+      }
       insertData[columnKey] = rawValue;
     }
     let stateId = insertData.stateId;
@@ -330,6 +335,9 @@ export class ContractsService {
     }
     insertData.stateId = stateId;
     insertData.isActive = await this.resolveIsActiveFromStateId(String(stateId));
+    if (insertData.planInGantt === undefined) {
+      insertData.planInGantt = true;
+    }
     const [row] = await this.db.db.insert(contracts).values(insertData as ContractInsert).returning();
     this.invalidateListCache();
     await this.refreshPartnerDerivedStatusForPartnerIds([row?.partnerId]);
@@ -504,10 +512,16 @@ export class ContractsService {
       end_date: 'endDate',
       date_signed: 'dateSigned',
       state_id: 'stateId',
+      plan_in_gantt: 'planInGantt',
     };
     const updatePayload: Record<string, unknown> = { updatedAt: new Date() };
     for (const [requestKey, columnKey] of Object.entries(requestFieldToColumn)) {
-      if (data[requestKey] !== undefined) updatePayload[columnKey] = data[requestKey];
+      if (data[requestKey] === undefined) continue;
+      if (columnKey === 'planInGantt') {
+        updatePayload.planInGantt = data[requestKey] === true || data[requestKey] === 'true';
+        continue;
+      }
+      updatePayload[columnKey] = data[requestKey];
     }
 
     const stateIdSentInRequest = data.state_id;
@@ -626,6 +640,7 @@ export class ContractsService {
       date_signed: row.dateSigned ? String(row.dateSigned) : '',
       state_id: String(row.stateId),
       is_active: row.isActive ?? true,
+      plan_in_gantt: row.planInGantt ?? true,
       is_deleted: row.isDeleted ?? false,
       created_at: row.createdAt ? row.createdAt.toISOString() : '',
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : '',

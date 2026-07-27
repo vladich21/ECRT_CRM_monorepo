@@ -63,7 +63,7 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
   },
   {
     id: 'budget',
-    header: 'Бюджет',
+    header: 'Бюджет, ₽',
     width: BUDGET_COL_WIDTH,
     align: 'center',
     resize: true,

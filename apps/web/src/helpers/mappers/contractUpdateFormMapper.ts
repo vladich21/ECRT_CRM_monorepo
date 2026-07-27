@@ -22,6 +22,7 @@ export const contractUpdateFormMapper = (contractData: Contract) => {
     supplier_manager_id: contractData.supplier_manager_id ?? null,
     project_id: contractData.project_id || null,
     state_id: contractData.state_id || null,
+    plan_in_gantt: contractData.plan_in_gantt ?? true,
   };
   return values;
 };

@@ -19,8 +19,11 @@ function hours(node: { planned_hours?: number; labor_hours?: number; actual_hour
   };
 }
 
-function mapTask(node: GanttApiTaskNode): GanttHierarchyNode {
-  const range = ensureDateRange(node.start, node.end);
+function mapTask(
+  node: GanttApiTaskNode,
+  parentRange: { start: string; end: string },
+): GanttHierarchyNode {
+  const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
   return {
     id: node.id,
     kind: 'task',
@@ -34,12 +37,15 @@ function mapTask(node: GanttApiTaskNode): GanttHierarchyNode {
     status: node.status,
     responsibleUserId: node.responsible_user_id,
     assigneeIds: node.assignee_ids ?? [],
-    children: (node.children ?? []).map(mapTask),
+    children: (node.children ?? []).map(child => mapTask(child, range)),
   };
 }
 
-function mapStage(node: GanttApiStageNode): GanttHierarchyNode {
-  const range = ensureDateRange(node.start, node.end);
+function mapStage(
+  node: GanttApiStageNode,
+  parentRange: { start: string; end: string },
+): GanttHierarchyNode {
+  const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
   return {
     id: node.id,
     kind: 'stage',
@@ -50,12 +56,15 @@ function mapStage(node: GanttApiStageNode): GanttHierarchyNode {
     deadline: node.deadline ?? range.end,
     ...hours(node),
     budget: node.budget ?? null,
-    children: (node.children ?? []).map(mapTask),
+    children: (node.children ?? []).map(child => mapTask(child, range)),
   };
 }
 
-function mapContract(node: GanttApiContractNode): GanttHierarchyNode {
-  const range = ensureDateRange(node.start, node.end);
+function mapContract(
+  node: GanttApiContractNode,
+  parentRange: { start: string; end: string },
+): GanttHierarchyNode {
+  const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
   return {
     id: node.id,
     kind: 'contract',
@@ -67,7 +76,7 @@ function mapContract(node: GanttApiContractNode): GanttHierarchyNode {
     deadline: node.deadline ?? range.end,
     ...hours(node),
     budget: node.budget ?? null,
-    children: (node.children ?? []).map(mapStage),
+    children: (node.children ?? []).map(child => mapStage(child, range)),
   };
 }
 
@@ -83,7 +92,7 @@ function mapProject(node: GanttApiProjectNode): GanttHierarchyNode {
     deadline: node.deadline ?? range.end,
     ...hours(node),
     budget: node.budget ?? null,
-    children: (node.children ?? []).map(mapContract),
+    children: (node.children ?? []).map(child => mapContract(child, range)),
   };
 }
 

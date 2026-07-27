@@ -4,23 +4,7 @@
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
-
-  :global(.wx-willow-theme),
-  :global(.wx-material-theme) {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    height: 100%;
-  }
-}
-
-.shell {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  height: 100%;
+  overflow: hidden;
 }
 
 .ganttToolbar {
@@ -42,9 +26,7 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  min-height: 32px;
 
-  /* SVAR Toolbar — в одну линию с поиском, без лишних отступов */
   :global(.wx-toolbar),
   :global(.wx-bar) {
     margin: 0;
@@ -52,13 +34,6 @@
     background: transparent;
     border: none;
     box-shadow: none;
-    gap: 4px;
-  }
-
-  :global(.wx-button),
-  :global(button.wx-button) {
-    min-width: 32px;
-    height: 32px;
   }
 }
 
@@ -70,32 +45,59 @@
   margin-left: auto;
 }
 
-.chart {
+/* Остаток высоты под тулбаром; без height:100% — иначе сумма с тулбаром > карточки */
+.chartHost {
   flex: 1 1 auto;
   min-height: 0;
-  height: 100%;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 
   :global(.wx-willow-theme),
-  :global(.wx-material-theme),
+  :global(.wx-material-theme) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Locale / ContextMenu — промежуточные обёртки SVAR */
+  :global(.wx-willow-theme) > :global(*),
+  :global(.wx-material-theme) > :global(*),
+  :global(.wx-willow-theme) > :global(*) > :global(*),
+  :global(.wx-material-theme) > :global(*) > :global(*) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
+
+.chart {
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+
   :global(.wx-gantt),
   :global(.wx-layout) {
-    height: 100% !important;
-    min-height: 100%;
     flex: 1 1 auto;
+    height: 100% !important;
+    max-height: 100%;
+    min-height: 0 !important;
   }
 
-  :global(.wx-chart) {
-    height: 100%;
-    min-height: 100%;
-  }
-
-  :global(.wx-area) {
-    min-height: calc(100% - 48px);
+  :global(.wx-editor) {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 20;
+    max-height: 100%;
   }
 }
 
@@ -103,4 +105,5 @@
   padding: 48px;
   text-align: center;
   color: #8c8c8c;
+  flex: 1 1 auto;
 }

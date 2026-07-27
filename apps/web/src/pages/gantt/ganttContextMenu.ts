@@ -12,10 +12,17 @@ type GanttTask = ITask & {
   entityKind?: string;
 };
 
+const HIDDEN_MENU_ROOT_IDS = new Set([
+  'convert-task',
+  'move-task',
+  'indent-task:add',
+  'indent-task:remove',
+]);
+
 /**
  * ПКМ: задачи только внутри этапа / work package / как подзадачи у задачи.
  * Проект и договор через меню не создаём (иерархия домена с бэка / моков).
- * «Преобразовать в» скрыто — путает с доменными типами Project/Contract/Stage.
+ * «Преобразовать в» / move / indent скрыты — путают с доменными типами.
  */
 export function createGanttContextMenuOptions(): MenuItem[] {
   const options = getMenuOptions({ splitTasks: false }) as MenuItem[];
@@ -36,47 +43,34 @@ export function createGanttContextMenuOptions(): MenuItem[] {
       }
       return item;
     })
-    .filter(item => item.id !== 'convert-task' && item.id !== 'move-task')
-    .filter(item => item.id !== 'indent-task:add' && item.id !== 'indent-task:remove');
+    .filter(item => item.id == null || !HIDDEN_MENU_ROOT_IDS.has(String(item.id)));
 }
 
 /** Фильтр пунктов ПКМ по entityKind. */
-export function filterGanttContextMenu(option: { id?: string | number }, task?: GanttTask): boolean {
+export function filterGanttContextMenu(
+  option: { id?: string | number },
+  task?: GanttTask,
+): boolean {
   if (!task || option?.id == null) return true;
 
-  const kind = task.entityKind;
   const id = String(option.id);
+  const kind = task.entityKind;
 
-  // Move / indent убраны — иерархия только через правила домена
-  if (id.startsWith('move-task') || id.startsWith('indent-task')) return false;
+  if (
+    id.startsWith('move-task') ||
+    id.startsWith('indent-task') ||
+    id.startsWith('convert-task')
+  ) {
+    return false;
+  }
 
-  // Проект / договор — без создания детей
   if (kind === 'project' || kind === 'contract') {
-    if (id.startsWith('add-task')) return false;
-    if (id.startsWith('convert-task')) return false;
-    return true;
+    return !id.startsWith('add-task');
   }
 
-  // Этап — только дочерняя задача
-  if (kind === 'stage') {
-    if (id === 'add-task:before' || id === 'add-task:after') return false;
-    if (id.startsWith('convert-task')) return false;
-    return true;
+  if (kind === 'stage' || kind === 'workPackage') {
+    return id !== 'add-task:before' && id !== 'add-task:after';
   }
 
-  // Пакет работ — можно добавить дочернюю задачу
-  if (kind === 'workPackage') {
-    if (id === 'add-task:before' || id === 'add-task:after') return false;
-    if (id.startsWith('convert-task')) return false;
-    return true;
-  }
-
-  // Задача — подзадача / соседние задачи
-  if (kind === 'task') {
-    if (id.startsWith('convert-task')) return false;
-    return true;
-  }
-
-  if (id.startsWith('convert-task')) return false;
   return true;
 }

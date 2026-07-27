@@ -19,6 +19,7 @@ import {
   ganttTaskTimeEntries,
   groupBy,
   inArray,
+  isMissingRelationError,
   or,
   projects,
   sum,
@@ -54,6 +55,7 @@ export class GanttService {
         and(
           eq(contracts.isDeleted, false),
           eq(contracts.isActive, true),
+          eq(contracts.planInGantt, true),
           inArray(contracts.projectId, projectIds),
         ),
       )
@@ -75,48 +77,67 @@ export class GanttService {
             .orderBy(asc(contractStages.stageNumber), asc(contractStages.name));
 
     const stageIds = stageRows.map(s => s.id);
-    const taskRows =
-      stageIds.length === 0
-        ? []
-        : await this.db.db
-            .select()
-            .from(ganttTasks)
-            .where(and(eq(ganttTasks.isDeleted, false), inArray(ganttTasks.stageId, stageIds)))
-            .orderBy(asc(ganttTasks.sortOrder), asc(ganttTasks.name));
 
-    const taskIds = taskRows.map(t => t.id);
-    const assigneeRows =
-      taskIds.length === 0
-        ? []
-        : await this.db.db
-            .select()
-            .from(ganttTaskAssignees)
-            .where(inArray(ganttTaskAssignees.taskId, taskIds));
+    // Таблицы gantt_* могут ещё не быть накатаны — дерево Project→Contract→Stage всё равно отдаём.
+    let taskRows: Array<typeof ganttTasks.$inferSelect> = [];
+    let assigneeRows: Array<typeof ganttTaskAssignees.$inferSelect> = [];
+    let hoursRows: Array<{ taskId: string; total: string | null }> = [];
+    let linkRows: Array<typeof ganttLinks.$inferSelect> = [];
 
-    const hoursRows =
-      taskIds.length === 0
-        ? []
-        : await this.db.db
-            .select({
-              taskId: ganttTaskTimeEntries.taskId,
-              total: sum(ganttTaskTimeEntries.hours),
-            })
-            .from(ganttTaskTimeEntries)
-            .where(inArray(ganttTaskTimeEntries.taskId, taskIds))
-            .groupBy(ganttTaskTimeEntries.taskId);
+    try {
+      taskRows =
+        stageIds.length === 0
+          ? []
+          : await this.db.db
+              .select()
+              .from(ganttTasks)
+              .where(and(eq(ganttTasks.isDeleted, false), inArray(ganttTasks.stageId, stageIds)))
+              .orderBy(asc(ganttTasks.sortOrder), asc(ganttTasks.name));
 
-    const linkRows =
-      taskIds.length === 0
-        ? []
-        : await this.db.db
-            .select()
-            .from(ganttLinks)
-            .where(
-              or(
-                inArray(ganttLinks.sourceTaskId, taskIds),
-                inArray(ganttLinks.targetTaskId, taskIds),
-              ),
-            );
+      const taskIds = taskRows.map(t => t.id);
+      assigneeRows =
+        taskIds.length === 0
+          ? []
+          : await this.db.db
+              .select()
+              .from(ganttTaskAssignees)
+              .where(inArray(ganttTaskAssignees.taskId, taskIds));
+
+      hoursRows =
+        taskIds.length === 0
+          ? []
+          : await this.db.db
+              .select({
+                taskId: ganttTaskTimeEntries.taskId,
+                total: sum(ganttTaskTimeEntries.hours),
+              })
+              .from(ganttTaskTimeEntries)
+              .where(inArray(ganttTaskTimeEntries.taskId, taskIds))
+              .groupBy(ganttTaskTimeEntries.taskId);
+
+      linkRows =
+        taskIds.length === 0
+          ? []
+          : await this.db.db
+              .select()
+              .from(ganttLinks)
+              .where(
+                or(
+                  inArray(ganttLinks.sourceTaskId, taskIds),
+                  inArray(ganttLinks.targetTaskId, taskIds),
+                ),
+              );
+    } catch (error) {
+      if (!isMissingRelationError(error)) throw error;
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[gantt] tables missing — run apps/backend-nest/docs/gantt-tasks.sql. Returning hierarchy without tasks.',
+      );
+      taskRows = [];
+      assigneeRows = [];
+      hoursRows = [];
+      linkRows = [];
+    }
 
     const assigneesByTask = groupBy(assigneeRows, row => row.taskId);
     const assigneesMap = new Map(
@@ -152,6 +173,13 @@ export class GanttService {
           );
           const plannedHours = taskChildren.reduce((s, t) => s + t.planned_hours, 0);
           const actualHours = taskChildren.reduce((s, t) => s + t.actual_hours, 0);
+          // В Гант — только собственные затраты + прибыль (B), не соисполнители.
+          const ownBudget = toNum(stage.ownBudget);
+          const coexecutorBudget = toNum(stage.coexecutorBudget);
+          const ganttBudget =
+            ownBudget > 0 || coexecutorBudget > 0
+              ? ownBudget
+              : toNum(stage.plannedBudget);
 
           return {
             id: stage.id,
@@ -161,7 +189,7 @@ export class GanttService {
             start: stageStart,
             end: stageEnd,
             deadline: stageEnd,
-            budget: toNum(stage.plannedBudget),
+            budget: ganttBudget,
             planned_hours: plannedHours,
             actual_hours: actualHours,
             labor_hours: plannedHours,
@@ -171,6 +199,8 @@ export class GanttService {
 
         const plannedHours = stageNodes.reduce((s, st) => s + st.planned_hours, 0);
         const actualHours = stageNodes.reduce((s, st) => s + st.actual_hours, 0);
+        // Бюджет договора в Ганте = сумма B по этапам (без fallback на сумму договора).
+        const contractBudget = stageNodes.reduce((s, st) => s + st.budget, 0);
 
         return {
           id: contract.id,
@@ -181,7 +211,7 @@ export class GanttService {
           start: cStart,
           end: cEnd,
           deadline: cEnd,
-          budget: toNum(contract.amountExclVat),
+          budget: contractBudget,
           planned_hours: plannedHours,
           actual_hours: actualHours,
           labor_hours: plannedHours,
@@ -417,15 +447,20 @@ export class GanttService {
       updatedAt: new Date(),
       updatedBy: userId ?? null,
     };
-    if (typeof body.name === 'string') patch.name = body.name.trim();
+    if (typeof body.name === 'string' && body.name.trim()) patch.name = body.name.trim();
     if ('parent_id' in body) {
       patch.parentId = typeof body.parent_id === 'string' ? body.parent_id : null;
+      if (patch.parentId) await this.assertTaskInStage(patch.parentId, existing.stageId);
     }
-    if ('start_date' in body || 'start' in body) patch.startDate = startDate;
-    if ('end_date' in body || 'end' in body) patch.endDate = endDate;
-    if ('deadline' in body) patch.deadline = toDateStr(body.deadline);
+    // Не пишем null поверх существующих дат, если клиент прислал пустое значение по ошибке.
+    if (('start_date' in body || 'start' in body) && startDate) patch.startDate = startDate;
+    if (('end_date' in body || 'end' in body) && endDate) patch.endDate = endDate;
+    if ('deadline' in body) {
+      const deadline = toDateStr(body.deadline);
+      if (deadline || body.deadline === null) patch.deadline = deadline;
+    }
     if (typeof body.progress === 'number') patch.progress = body.progress;
-    if (typeof body.status === 'string') patch.status = body.status;
+    if (typeof body.status === 'string' && body.status.trim()) patch.status = body.status;
     if ('planned_hours' in body || 'labor_hours' in body) {
       patch.plannedHours = String(toNum(body.planned_hours ?? body.labor_hours));
     }
