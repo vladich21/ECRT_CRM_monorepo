@@ -43,13 +43,11 @@ export function GanttChromeToolbar({
         onChange={event => onSearchQueryChange(event.target.value)}
       />
 
-      {GANTT_UI.taskEditing ? (
-        <div className={styles.hotkeys}>
-          <Willow>
-            <Toolbar api={api ?? undefined} items={toolbarItems} />
-          </Willow>
-        </div>
-      ) : null}
+      <div className={styles.hotkeys}>
+        <Willow>
+          <Toolbar api={api ?? undefined} items={toolbarItems} />
+        </Willow>
+      </div>
 
       <div className={styles.toolbarExtras}>
         {GANTT_UI.criticalPath ? (

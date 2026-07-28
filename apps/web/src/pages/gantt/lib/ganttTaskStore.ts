@@ -10,10 +10,18 @@ export function getTaskStore(api: IApi): TaskStore {
   return api.getState().tasks as TaskStore;
 }
 
+/** Надёжный lookup: getTask может бросать на частичных id. */
+export function getGanttTask(api: IApi, id: string | number): GanttStoreTask | undefined {
+  try {
+    return (api.getTask?.(id) as GanttStoreTask | undefined) ?? getTaskStore(api).byId?.(id);
+  } catch {
+    return getTaskStore(api).byId?.(id);
+  }
+}
+
 /**
- * Рабочая задача (лист), которую персистим в `gantt_tasks` и открываем в Editor.
- * Project/Contract/Stage/WP — доменные summary, не редактируем здесь.
- * До проставления `entityKind` (только что созданная) считаем задачей, если не summary.
+ * Рабочая задача: персистим в `gantt_tasks`, открываем в Editor.
+ * Project/Contract/Stage/WP — доменные summary.
  */
 export function isGanttWorkTask(
   task: { entityKind?: string; type?: string } | null | undefined,
@@ -24,8 +32,8 @@ export function isGanttWorkTask(
 }
 
 /**
- * Лист на шкале: можно двигать / ресайзить / progress.
- * Родительская задача с детьми (type=summary) — нет: даты только rollup с API.
+ * Лист на шкале: drag / resize / progress.
+ * Родительская задача с детьми (type=summary) — даты только rollup с API.
  */
 export function isGanttLeafTask(
   task: { entityKind?: string; type?: string } | null | undefined,
@@ -49,4 +57,9 @@ export function findAncestorByKind(
     guard += 1;
   }
   return null;
+}
+
+/** Закрыть Editor (SVAR типизирует id как string; null = close). */
+export function closeGanttEditor(api: IApi): void {
+  void api.exec('show-editor', { id: null as unknown as string });
 }

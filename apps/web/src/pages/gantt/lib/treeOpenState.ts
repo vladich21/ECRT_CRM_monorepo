@@ -1,9 +1,11 @@
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
+import { USE_GANTT_MOCKS } from '../ganttConfig';
+
 const STORAGE_KEY = 'srn.gantt.treeOpen.v1';
 
-/** Узлы DEMO критического пути — раскрыть при первом визите (пустой storage). */
-export const CRITICAL_PATH_DEMO_OPEN_IDS = [
+/** Узлы DEMO критического пути — только для mock-режима при пустом storage. */
+const CRITICAL_PATH_DEMO_OPEN_IDS = [
   'mock-critical-demo',
   'mock-cp-contract',
   'mock-cp-stage',
@@ -27,11 +29,12 @@ export function loadOpenIds(): Set<string> {
   }
 }
 
-/** При пустом storage — сразу раскрыть DEMO критического пути. */
+/** При пустом storage в mock — сразу раскрыть DEMO критического пути. */
 export function loadOpenIdsForChart(): Set<string> {
   const ids = loadOpenIds();
   if (ids.size > 0) return ids;
-  return new Set(CRITICAL_PATH_DEMO_OPEN_IDS);
+  if (USE_GANTT_MOCKS) return new Set(CRITICAL_PATH_DEMO_OPEN_IDS);
+  return new Set();
 }
 
 export function saveOpenIds(ids: Iterable<string>): void {

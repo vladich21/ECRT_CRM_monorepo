@@ -24,16 +24,14 @@ import { GANTT_GRID_COLUMNS } from './ganttGridColumns';
 import { GANTT_RU_LOCALE } from './ganttRuLocale';
 import { createGanttToolbarItems } from './ganttToolbar';
 import { GANTT_MONTH_CELL_WIDTH, GANTT_MONTH_SCALES, GANTT_ZOOM_CONFIG } from './ganttZoom';
-import { autoScheduleFs, tasksDatesEqual } from './lib/autoScheduleFs';
-import { assertTaskDatesWithinStage } from './lib/stageDateBounds';
-import { isGanttWorkTask } from './lib/ganttTaskStore';
+import { autoScheduleFs } from './lib/autoScheduleFs';
 import { attachApiTaskPersist } from './lib/attachApiTaskPersist';
 import { attachConfirmGuards } from './lib/attachConfirmGuards';
 import {
   attachCriticalPathHighlight,
   type CriticalPathController,
 } from './lib/attachCriticalPathHighlight';
-import { attachChartPersist, loadChartSnapshot } from './lib/chartPersist';
+import { attachFsAutoSchedule } from './lib/attachFsAutoSchedule';
 import { attachHierarchyMoveGuard } from './lib/attachHierarchyMoveGuard';
 import { attachSelectionChrome } from './lib/attachSelectionChrome';
 import { attachTaskTypeSync } from './lib/attachTaskTypeSync';
@@ -46,7 +44,6 @@ import { cloneGanttTasks, linksFromApi, scrollChartToCurrentMonth } from './lib/
 import { hierarchyChartKey } from './lib/hierarchyChartKey';
 import { mapApiHierarchyToGantt } from './lib/mapApiHierarchyToGantt';
 import { mapAllMockProjectsToGantt } from './lib/mapHierarchyToGantt';
-import { openLinkedBranches } from './lib/openLinkedBranches';
 import { presentGanttDateWarnings } from './lib/presentGanttDateWarnings';
 import { applyOpenState, attachTreeOpenPersist, loadOpenIdsForChart } from './lib/treeOpenState';
 import { highlightWorkCalendar } from './lib/workCalendar';
@@ -59,12 +56,10 @@ type GanttFieldProps = {
 };
 
 /**
- * Gantt chart + chrome (search / hotkeys / excel / critical path).
- * Runtime attach* вынесены в lib; этот файл только wiring.
+ * Gantt chart + chrome. Runtime-логика в attach*; здесь только wiring.
  */
 export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps) {
   const { modal, message } = App.useApp();
-  const schedulingRef = useRef(false);
   const linksFallbackRef = useRef<ILink[]>([]);
   const chartRootRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<IApi | null>(null);
@@ -80,9 +75,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
   const hierarchyQuery = useGanttHierarchy(!USE_GANTT_MOCKS);
   const refetchHierarchy = hierarchyQuery.refetch;
-  const chartDataKey = USE_GANTT_MOCKS
-    ? 'mocks'
-    : hierarchyChartKey(hierarchyQuery.data);
+  const chartDataKey = USE_GANTT_MOCKS ? 'mocks' : hierarchyChartKey(hierarchyQuery.data);
 
   const toolbarItems = useMemo(
     () => createGanttToolbarItems(() => apiRef.current, props => confirmRef.current(props)),
@@ -91,12 +84,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   const contextMenuOptions = useMemo(() => createGanttContextMenuOptions(), []);
 
   const sourceChart = useMemo(() => {
-    if (USE_GANTT_MOCKS) {
-      return (
-        (GANTT_UI.chartPersist ? loadChartSnapshot() : null) ??
-        mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS)
-      );
-    }
+    if (USE_GANTT_MOCKS) return mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS);
     if (!hierarchyQuery.data) return { tasks: [], links: [] as ILink[] };
     return mapApiHierarchyToGantt(hierarchyQuery.data);
   }, [hierarchyQuery.data]);
@@ -105,13 +93,10 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     const filteredTasks = filterGanttTasksByQuery(sourceChart.tasks, searchQuery);
     const filteredLinks = filterGanttLinksByTasks(sourceChart.links, filteredTasks);
     const scheduled = autoScheduleFs(cloneGanttTasks(filteredTasks), filteredLinks);
-    let tasks = GANTT_UI.openLinkedBranches
-      ? openLinkedBranches(scheduled, filteredLinks)
-      : scheduled;
-    if (GANTT_UI.treeOpenPersist) {
-      tasks = applyOpenState(tasks, loadOpenIdsForChart());
-    }
-    return { tasks, links: filteredLinks };
+    return {
+      tasks: applyOpenState(scheduled, loadOpenIdsForChart()),
+      links: filteredLinks,
+    };
   }, [searchQuery, sourceChart]);
 
   useEffect(() => {
@@ -128,90 +113,11 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     });
   }, [hierarchyQuery.data, refetchHierarchy]);
 
-  const applyAutoSchedule = useCallback(async (ganttApi: IApi) => {
-    if (!GANTT_UI.fsAutoSchedule || schedulingRef.current) return;
-    schedulingRef.current = true;
-    try {
-      const before = ganttApi.serialize();
-      const links = linksFromApi(ganttApi, linksFallbackRef.current);
-      linksFallbackRef.current = links;
-      const scheduled = autoScheduleFs(cloneGanttTasks(before), links);
-      const beforeById = new Map(before.map(task => [String(task.id), task]));
-
-      const updates: Promise<unknown>[] = [];
-      for (const task of scheduled) {
-        if (task.id == null || !task.start || !task.end) continue;
-        const previous = beforeById.get(String(task.id));
-        if (previous && tasksDatesEqual(previous, task)) continue;
-
-        // FS не должен уводить задачи за срок этапа → иначе API 400.
-        // Даты project/contract не трогаем — только из карточек.
-        const kind = (task as { entityKind?: string }).entityKind;
-        if (kind === 'project' || kind === 'contract' || kind === 'stage') continue;
-        if ((task as { type?: string }).type === 'summary') continue;
-
-        if (isGanttWorkTask(task)) {
-          const stageError = assertTaskDatesWithinStage(ganttApi, task.id, {
-            start: task.start,
-            end: task.end,
-          });
-          if (stageError) continue;
-        }
-
-        updates.push(
-          ganttApi.exec('update-task', {
-            id: task.id,
-            task: {
-              start: task.start,
-              end: task.end,
-              duration: task.duration,
-            },
-            skipConfirm: true,
-          }),
-        );
-      }
-
-      if (updates.length > 0) {
-        await Promise.all(updates);
-      }
-    } finally {
-      schedulingRef.current = false;
-    }
+  const handleInit = useCallback((ganttApi: IApi) => {
+    apiRef.current = ganttApi;
+    setApi(ganttApi);
+    setChartEpoch(epoch => epoch + 1);
   }, []);
-
-  const handleInit = useCallback(
-    (ganttApi: IApi) => {
-      apiRef.current = ganttApi;
-      setApi(ganttApi);
-      setChartEpoch(epoch => epoch + 1);
-
-      const tag = { tag: 'gantt-fs-all-projects' };
-      ganttApi.detach(tag.tag);
-
-      const scheduleIfIdle = () => {
-        if (schedulingRef.current) return;
-        void applyAutoSchedule(ganttApi);
-      };
-
-      ganttApi.on(
-        'update-task',
-        (ev: { inProgress?: boolean; task?: Partial<{ start?: unknown; end?: unknown; duration?: unknown }> }) => {
-          if (ev?.inProgress) return;
-          // Только сдвиг дат — не progress / text (иначе FS двигает чужие задачи).
-          const patch = ev?.task;
-          if (!patch) return;
-          if (!('start' in patch || 'end' in patch || 'duration' in patch)) return;
-          scheduleIfIdle();
-        },
-        tag,
-      );
-      ganttApi.on('add-task', scheduleIfIdle, tag);
-      ganttApi.on('add-link', scheduleIfIdle, tag);
-      ganttApi.on('update-link', scheduleIfIdle, tag);
-      ganttApi.on('delete-link', scheduleIfIdle, tag);
-    },
-    [applyAutoSchedule],
-  );
 
   useEffect(() => {
     if (!api) return;
@@ -220,25 +126,21 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     const detachHierarchy = attachHierarchyMoveGuard(api);
     const detachTypeSync = attachTaskTypeSync(api);
     const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
-    const detachTreeOpen = GANTT_UI.treeOpenPersist ? attachTreeOpenPersist(api) : null;
-    const detachChart =
-      USE_GANTT_MOCKS && GANTT_UI.chartPersist
-        ? attachChartPersist(api, () => linksFallbackRef.current)
-        : null;
-    const detachApi =
-      !USE_GANTT_MOCKS
-        ? attachApiTaskPersist(api, () => {
-            void refetchHierarchy();
-          })
-        : null;
+    const detachTreeOpen = attachTreeOpenPersist(api);
+    const detachFs = attachFsAutoSchedule(api, linksFallbackRef);
+    const detachApi = !USE_GANTT_MOCKS
+      ? attachApiTaskPersist(api, () => {
+          void refetchHierarchy();
+        })
+      : null;
 
     return () => {
       detachSelection();
       detachHierarchy();
       detachTypeSync();
       detachConfirm();
-      detachTreeOpen?.();
-      detachChart?.();
+      detachTreeOpen();
+      detachFs();
       detachApi?.();
     };
   }, [api, refetchHierarchy]);
@@ -251,16 +153,13 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     let detachToday: (() => void) | null = null;
     let detachZoom: (() => void) | null = null;
 
+    // SVAR chart DOM появляется после paint — короткая отсрочка для pan/zoom/today.
     const timer = window.setTimeout(() => {
       detachPan = attachTimelinePan(api, root);
       detachZoom = attachZoomAnchor(api, root);
       const chartEl = root.querySelector('.wx-chart') as HTMLElement | null;
-      if (chartEl) {
-        scrollChartToCurrentMonth(api, chartEl);
-      }
-      if (GANTT_UI.todayMarker) {
-        detachToday = attachTodayMarker(api);
-      }
+      if (chartEl) scrollChartToCurrentMonth(api, chartEl);
+      detachToday = attachTodayMarker(api);
     }, 80);
 
     return () => {
@@ -284,11 +183,9 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
     return () => {
       controller.detach();
-      if (criticalRef.current === controller) {
-        criticalRef.current = null;
-      }
+      if (criticalRef.current === controller) criticalRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- critical toggle handled below
   }, [api, chartEpoch, searchQuery]);
 
   useEffect(() => {
@@ -391,9 +288,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
                   }
                   init={handleInit}
                 />
-                {GANTT_UI.taskEditing && api ? (
-                  <Editor api={api} placement='sidebar' />
-                ) : null}
+                {api ? <Editor api={api} placement='sidebar' /> : null}
               </div>
             </ContextMenu>
           </Locale>

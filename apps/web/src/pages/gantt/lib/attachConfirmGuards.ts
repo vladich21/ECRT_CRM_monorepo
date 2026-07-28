@@ -1,29 +1,31 @@
 import { Modal } from 'antd';
-import type { ModalFuncProps } from 'antd/es/modal/interface';
 import { createElement } from 'react';
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
 import { USE_GANTT_MOCKS } from '../ganttConfig';
 import { GANTT_UI } from '../ganttFeatures';
-import { isGanttLeafTask, isGanttWorkTask } from './ganttTaskStore';
+import {
+  type GanttConfirmFn,
+  openGanttInfoModal,
+  runGanttConfirm,
+} from './ganttConfirm';
+import { cloneDate, dayKey, formatDateRu } from './ganttDates';
+import {
+  closeGanttEditor,
+  getGanttTask,
+  isGanttLeafTask,
+  isGanttWorkTask,
+  type GanttStoreTask,
+} from './ganttTaskStore';
 import { assertTaskDatesWithinStage } from './stageDateBounds';
 
 type ConfirmEvent = {
   id?: string | number;
   ids?: Array<string | number>;
   task?: ITask;
-  target?: string | number;
-  mode?: string;
   skipConfirm?: boolean;
   inProgress?: boolean;
 };
-
-type GanttTask = ITask & {
-  entityKind?: string;
-  data?: unknown[];
-};
-
-type ConfirmFn = (props: ModalFuncProps) => { destroy: () => void } | void;
 
 type DateSnapshot = {
   start?: Date;
@@ -31,14 +33,12 @@ type DateSnapshot = {
   duration?: number;
 };
 
-const CONFIRM_Z_INDEX = 11000;
-
-const ENTITY_LABELS: Record<string, { title: string }> = {
-  project: { title: 'Удалить проект?' },
-  contract: { title: 'Удалить договор?' },
-  stage: { title: 'Удалить этап?' },
-  workPackage: { title: 'Удалить пакет работ?' },
-  task: { title: 'Удалить задачу?' },
+const ENTITY_LABELS: Record<string, string> = {
+  project: 'Удалить проект?',
+  contract: 'Удалить договор?',
+  stage: 'Удалить этап?',
+  workPackage: 'Удалить пакет работ?',
+  task: 'Удалить задачу?',
 };
 
 function resolveSelectedIds(api: IApi, ev: ConfirmEvent): Array<string | number> {
@@ -58,28 +58,20 @@ function resolveSelectedIds(api: IApi, ev: ConfirmEvent): Array<string | number>
     .filter((id): id is string | number => id != null);
 }
 
-function getTaskSafe(api: IApi, id: string | number): GanttTask | undefined {
-  try {
-    return api.getTask?.(id) as GanttTask | undefined;
-  } catch {
-    const tasks = api.getState().tasks as { byId?: (xid: string | number) => GanttTask };
-    return tasks?.byId?.(id);
-  }
-}
-
 function buildDeleteCopy(api: IApi, ids: Array<string | number>) {
-  const tasks = ids.map(id => getTaskSafe(api, id));
+  const tasks = ids.map(id => getGanttTask(api, id));
   const labels = tasks.map((task, index) =>
     task?.text ? `«${task.text}»` : `ID ${ids[index]}`,
   );
-
-  const hasChildren = tasks.some(task => Array.isArray(task?.data) && task.data.length > 0);
+  const hasChildren = tasks.some(
+    task => Array.isArray((task as GanttStoreTask & { data?: unknown[] })?.data)
+      && ((task as GanttStoreTask & { data?: unknown[] }).data?.length ?? 0) > 0,
+  );
   const kind = tasks.length === 1 ? tasks[0]?.entityKind : undefined;
-  const entity = kind ? ENTITY_LABELS[kind] : undefined;
 
   const title =
     ids.length === 1
-      ? (entity?.title ?? 'Удалить элемент?')
+      ? (kind ? ENTITY_LABELS[kind] : undefined) ?? 'Удалить элемент?'
       : `Удалить элементы (${ids.length})?`;
 
   const content =
@@ -94,17 +86,7 @@ function buildDeleteCopy(api: IApi, ids: Array<string | number>) {
   return { title, content };
 }
 
-function dayKey(value: Date | undefined | null): number | null {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return null;
-  return Date.UTC(value.getFullYear(), value.getMonth(), value.getDate());
-}
-
-function cloneDate(value: Date | undefined | null): Date | undefined {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return undefined;
-  return new Date(value.getTime());
-}
-
-function snapshotDates(task: GanttTask | undefined): DateSnapshot {
+function snapshotDates(task: GanttStoreTask | undefined): DateSnapshot {
   return {
     start: cloneDate(task?.start),
     end: cloneDate(task?.end),
@@ -131,11 +113,6 @@ function datesChanged(before: DateSnapshot, after: DateSnapshot): boolean {
   );
 }
 
-function formatDateRu(value: Date | undefined): string {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '—';
-  return value.toLocaleDateString('ru-RU');
-}
-
 function formatDateRange(snapshot: DateSnapshot): string {
   return `${formatDateRu(snapshot.start)} – ${formatDateRu(snapshot.end)}`;
 }
@@ -145,57 +122,32 @@ function patchTouchesDates(patch: Partial<ITask> | undefined): boolean {
   return 'start' in patch || 'end' in patch || 'duration' in patch;
 }
 
-function isStructuralEntity(task: GanttTask | undefined): boolean {
+function isStructuralEntity(task: GanttStoreTask | undefined): boolean {
   return Boolean(task?.entityKind && !isGanttWorkTask(task));
 }
 
-function runConfirm(confirm: ConfirmFn, props: ModalFuncProps): void {
-  window.setTimeout(() => {
-    confirm({
-      centered: true,
-      zIndex: CONFIRM_Z_INDEX,
-      getContainer: () => document.body,
-      maskClosable: true,
-      keyboard: true,
-      ...props,
-    });
-  }, 100);
-}
-
-function openInfoModal(confirm: ConfirmFn, title: string, content: string, onClose?: () => void): void {
-  let closed = false;
-  const finish = () => {
-    if (closed) return;
-    closed = true;
-    onClose?.();
-  };
-  runConfirm(confirm, {
-    title,
-    content,
-    okText: 'Понятно',
-    cancelText: 'Отмена',
-    onOk: () => {
-      finish();
+function applyTaskDates(api: IApi, id: string | number, snapshot: DateSnapshot): void {
+  void api.exec('update-task', {
+    id,
+    task: {
+      start: snapshot.start,
+      end: snapshot.end,
+      duration: snapshot.duration,
     },
-    onCancel: () => {
-      finish();
-    },
-    afterClose: () => {
-      finish();
-    },
+    skipConfirm: true,
   });
 }
 
 export function openGanttDeleteConfirm(
   api: IApi,
   ids: Array<string | number>,
-  confirm: ConfirmFn = Modal.confirm,
+  confirm: GanttConfirmFn = Modal.confirm,
 ): void {
   if (ids.length === 0) return;
 
   const { title, content } = buildDeleteCopy(api, ids);
 
-  runConfirm(confirm, {
+  runGanttConfirm(confirm, {
     title,
     content,
     okText: 'Удалить',
@@ -212,12 +164,10 @@ export function openGanttDeleteConfirm(
 }
 
 /**
- * Confirm-логика Ганта.
- *
- * «Изменить даты задачи?» — только drag полоски рабочей задачи.
- * Полоски project/contract/stage — тихо блокируются (без модалки).
+ * Confirm / guard-логика Ганта.
+ * Drag leaf → confirm; progress → только %; summary bars — не двигаются.
  */
-export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confirm): () => void {
+export function attachConfirmGuards(api: IApi, confirm: GanttConfirmFn = Modal.confirm): () => void {
   const tag = { tag: 'gantt-confirm-guards' };
   api.detach(tag.tag);
 
@@ -230,9 +180,9 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
       const ids = resolveSelectedIds(api, ev);
       if (ids.length === 0) return false;
 
-      if (!USE_GANTT_MOCKS && ids.some(id => isStructuralEntity(getTaskSafe(api, id)))) {
+      if (!USE_GANTT_MOCKS && ids.some(id => isStructuralEntity(getGanttTask(api, id)))) {
         if (!ev?.skipConfirm) {
-          openInfoModal(
+          openGanttInfoModal(
             confirm,
             'Удаление недоступно',
             'Проекты, договоры и этапы нельзя удалить из диаграммы Ганта. Используйте соответствующие разделы системы.',
@@ -242,7 +192,6 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
       }
 
       if (ev?.skipConfirm) return true;
-
       openGanttDeleteConfirm(api, ids, confirm);
       return false;
     },
@@ -253,11 +202,10 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
     'delete-link',
     (ev: ConfirmEvent) => {
       if (ev?.skipConfirm) return true;
-
       const id = ev?.id;
       if (id == null) return false;
 
-      runConfirm(confirm, {
+      runGanttConfirm(confirm, {
         title: 'Удалить связь?',
         content: 'Связь между задачами будет удалена.',
         okText: 'Удалить',
@@ -272,31 +220,26 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
     tag,
   );
 
-  // Project / contract / stage / parent-summary — полоску не двигаем.
   api.intercept(
     'drag-task',
     (ev: { id?: string | number; top?: number }) => {
-      if (ev?.id == null) return true;
-      if (typeof ev.top !== 'undefined') return true;
-      const task = getTaskSafe(api, ev.id);
-      if (!isGanttLeafTask(task)) return false;
-      return true;
+      if (ev?.id == null || typeof ev.top !== 'undefined') return true;
+      return isGanttLeafTask(getGanttTask(api, ev.id));
     },
     tag,
   );
 
-  // Стрелки связей: только между листовыми задачами.
   api.intercept(
     'add-link',
-    (ev: { link?: { source?: string | number; target?: string | number; type?: string } }) => {
+    (ev: { link?: { source?: string | number; target?: string | number } }) => {
       const sourceId = ev?.link?.source;
       const targetId = ev?.link?.target;
       if (sourceId == null || targetId == null) return false;
 
-      const source = getTaskSafe(api, sourceId);
-      const target = getTaskSafe(api, targetId);
+      const source = getGanttTask(api, sourceId);
+      const target = getGanttTask(api, targetId);
       if (!isGanttLeafTask(source) || !isGanttLeafTask(target)) {
-        openInfoModal(
+        openGanttInfoModal(
           confirm,
           'Связь недоступна',
           'Связи (стрелки) можно строить только между задачами. Этап, договор и проект в связи не участвуют.',
@@ -314,11 +257,11 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
       if (!GANTT_UI.dateChangeConfirm) return true;
 
       const id = ev?.id;
-      const current = id != null ? getTaskSafe(api, id) : undefined;
+      const current = id != null ? getGanttTask(api, id) : undefined;
       const touchesDates = patchTouchesDates(ev?.task);
       const touchesProgress = Boolean(ev?.task && 'progress' in ev.task);
 
-      // Progress — только %. Иногда SVAR в том же патче шлёт даты → отбрасываем их.
+      // Progress: только %. SVAR иногда кладёт даты в тот же патч — отбрасываем.
       if (touchesProgress) {
         if (!isGanttLeafTask(current)) return false;
         if (touchesDates && ev.task) {
@@ -329,25 +272,15 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
         return true;
       }
 
-      // Любые summary (проект/договор/этап/родительская задача) — даты не с шкалы.
-      if (touchesDates && current && !isGanttLeafTask(current)) {
-        return false;
-      }
-
+      if (touchesDates && current && !isGanttLeafTask(current)) return false;
       if (ev?.skipConfirm) return true;
-      if (!touchesDates) return true;
-      if (id == null) return true;
+      if (!touchesDates || id == null) return true;
+      if (!isGanttLeafTask(current)) return false;
 
       const key = String(id);
 
-      if (!isGanttLeafTask(current)) {
-        return false;
-      }
-
       if (ev.inProgress) {
-        if (!dragOrigins.has(key)) {
-          dragOrigins.set(key, snapshotDates(current));
-        }
+        if (!dragOrigins.has(key)) dragOrigins.set(key, snapshotDates(current));
         return true;
       }
 
@@ -358,26 +291,13 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
       const after = mergeDatePatch(before, ev.task);
       if (!datesChanged(before, after)) return true;
 
-      const applyDates = (snapshot: DateSnapshot) => {
-        void api.exec('update-task', {
-          id,
-          task: {
-            start: snapshot.start,
-            end: snapshot.end,
-            duration: snapshot.duration,
-          },
-          skipConfirm: true,
-        });
-      };
-
       const stageError = assertTaskDatesWithinStage(api, id, after);
       if (stageError) {
-        // Всегда откатываем (drag / Editor / грид) — иначе полоска или форма остаются «за сроком».
-        applyDates(before);
-        void api.exec('show-editor', { id: null as unknown as string });
+        applyTaskDates(api, id, before);
+        closeGanttEditor(api);
         if (!dateConfirmOpen) {
           dateConfirmOpen = true;
-          openInfoModal(
+          openGanttInfoModal(
             confirm,
             'Даты вне срока этапа',
             `${stageError}\n\n«Срок» этапа задаётся в карточке этапа. «Окончание» задачи должно укладываться в этот срок.`,
@@ -392,7 +312,7 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
       if (!wasDrag) return true;
 
       if (dateConfirmOpen) {
-        applyDates(before);
+        applyTaskDates(api, id, before);
         return false;
       }
 
@@ -402,11 +322,11 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
       const finish = (snapshot: DateSnapshot) => {
         if (settled) return;
         settled = true;
-        applyDates(snapshot);
+        applyTaskDates(api, id, snapshot);
         dateConfirmOpen = false;
       };
 
-      runConfirm(confirm, {
+      runGanttConfirm(confirm, {
         title: 'Сместить даты задачи?',
         content: createElement(
           'div',
@@ -415,14 +335,9 @@ export function attachConfirmGuards(api: IApi, confirm: ConfirmFn = Modal.confir
         ),
         okText: 'Применить',
         cancelText: 'Отмена',
-        onOk: () => {
-          finish(after);
-        },
-        onCancel: () => {
-          finish(before);
-        },
+        onOk: () => finish(after),
+        onCancel: () => finish(before),
         afterClose: () => {
-          // Escape / маска — как Отмена.
           if (!settled) finish(before);
           else dateConfirmOpen = false;
         },

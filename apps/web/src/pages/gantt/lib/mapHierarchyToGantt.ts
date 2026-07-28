@@ -1,24 +1,12 @@
 import type { ILink, ITask } from '@svar-ui/react-gantt';
 
-import { parseIsoDate } from './ganttDates';
+import { durationDaysFromIso, formatDateRu, parseIsoDate } from './ganttDates';
 import {
   type GanttEntityKind,
   type GanttHierarchyNode,
   type GanttMockLink,
   type GanttMockProjectBundle,
 } from '../mock/ganttHierarchyMock';
-
-function durationDays(startIso: string, endIso: string): number {
-  const start = parseIsoDate(startIso);
-  const end = parseIsoDate(endIso);
-  if (!start || !end) return 1;
-  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
-}
-
-function formatDateRu(iso: string): string {
-  const date = parseIsoDate(iso);
-  return date ? date.toLocaleDateString('ru-RU') : iso;
-}
 
 function formatProjectLabel(node: GanttHierarchyNode): string {
   const code = node.projectCode?.trim();
@@ -88,7 +76,7 @@ export function mapHierarchyForestToGantt(
       text: title,
       start,
       end,
-      duration: durationDays(node.start, node.end),
+      duration: durationDaysFromIso(node.start, node.end),
       progress: node.progress ?? 0,
       type: toSvarType(node.kind),
       parent: parentId,
@@ -127,21 +115,6 @@ export function mapHierarchyForestToGantt(
       type: link.type,
     })),
   };
-}
-
-export function mapHierarchyToGanttTasks(tree: GanttHierarchyNode): ITask[] {
-  return mapHierarchyForestToGantt([tree]).tasks;
-}
-
-export function mapMockLinks(links: GanttMockLink[]): ILink[] {
-  return mapHierarchyForestToGantt([], links).links;
-}
-
-export function mapMockBundleToGantt(bundle: GanttMockProjectBundle): {
-  tasks: ITask[];
-  links: ILink[];
-} {
-  return mapHierarchyForestToGantt([bundle.tree], bundle.links);
 }
 
 export function mapAllMockProjectsToGantt(bundles: GanttMockProjectBundle[]): {

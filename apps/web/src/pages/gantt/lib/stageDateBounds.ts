@@ -1,6 +1,6 @@
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
-import { toIsoDate } from './ganttDates';
+import { formatDateRu, toIsoDate } from './ganttDates';
 import { findAncestorByKind } from './ganttTaskStore';
 
 type StageBoundsTask = ITask & {
@@ -9,15 +9,10 @@ type StageBoundsTask = ITask & {
   boundStart?: Date | null;
 };
 
-function formatDateRu(value: Date | undefined | null): string {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '—';
-  return value.toLocaleDateString('ru-RU');
-}
-
 /**
  * Границы «Срока» этапа для валидации задач.
- * Нижняя — planned start (boundStart), верхняя — deadline этапа (planned end из карточки).
- * Не используем start/end этапа: на шкале это «Окончание» (rollup задач), не контрактный срок.
+ * Нижняя — planned start (boundStart), верхняя — deadline (planned end из карточки).
+ * Не используем start/end этапа: на шкале это «Окончание» (rollup задач).
  */
 export function getStageDeadlineBounds(
   api: IApi,
@@ -39,7 +34,6 @@ export function assertTaskDatesWithinStage(
 ): string | null {
   const bounds = getStageDeadlineBounds(api, taskId);
   if (!bounds) return null;
-  // Без срока в карточке этапа — не блокируем на клиенте (бэкенд всё равно проверит).
   if (!bounds.start && !bounds.end) return null;
 
   const startIso = toIsoDate(next.start);

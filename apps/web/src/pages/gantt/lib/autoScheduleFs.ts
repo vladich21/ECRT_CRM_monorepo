@@ -1,25 +1,7 @@
 import type { ILink, ITask, TID } from '@svar-ui/react-gantt';
 
+import { dayKey, durationFromRange, endFromStartAndDuration } from './ganttDates';
 import { startAfterPredecessorEnd, toDayStart } from './workCalendar';
-
-const MS_PER_DAY = 86_400_000;
-
-function addDays(date: Date, days: number): Date {
-  const next = toDayStart(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-/** Inclusive calendar-day duration (как в mapHierarchyToGantt / SVAR day unit). */
-export function durationFromRange(start: Date, end: Date): number {
-  const startMs = toDayStart(start).getTime();
-  const endMs = toDayStart(end).getTime();
-  return Math.max(1, Math.round((endMs - startMs) / MS_PER_DAY) + 1);
-}
-
-export function endFromStartAndDuration(start: Date, duration: number): Date {
-  return addDays(start, Math.max(1, duration) - 1);
-}
 
 function cloneTask(task: ITask): ITask {
   return {
@@ -39,9 +21,7 @@ function taskKey(id: TID | undefined): string {
 
 /**
  * Forward-pass auto-scheduling по связям Finish-to-Start (`e2s`).
- * Старт последователя — первый рабочий день после окончания предшественника
- * (выходные и праздники РФ пропускаются).
- * Длительность остаётся в календарных днях (линейная шкала MIT SVAR).
+ * Старт последователя — первый рабочий день после окончания предшественника.
  * Двигаем только листья, которым предшественник реально мешает;
  * summary/этап на клиенте не пересчитываем (окончание этапа — с API).
  * При цикле в графе — исходный снимок без изменений.
@@ -123,7 +103,6 @@ export function autoScheduleFs(tasks: ITask[], links: ILink[]): ITask[] {
     const latestPredEnd = new Date(Math.max(...predEnds.map(date => date.getTime())));
     const minStart = startAfterPredecessorEnd(latestPredEnd);
     const start = toDayStart(task.start);
-    // Двигаем только если предшественник реально требует сдвиг — иначе чужие даты не трогаем.
     if (minStart.getTime() <= start.getTime()) continue;
 
     task.start = minStart;
@@ -131,15 +110,15 @@ export function autoScheduleFs(tasks: ITask[], links: ILink[]): ITask[] {
     task.end = endFromStartAndDuration(minStart, duration);
   }
 
-  // Client-side rollup summary/этапа отключён: иначе при любом update
-  // «разъезжаются» этап и родительские задачи. Окончание этапа — с API hierarchy.
   return next;
 }
 
+export { durationFromRange, endFromStartAndDuration } from './ganttDates';
+
 export function tasksDatesEqual(a: ITask, b: ITask): boolean {
-  const startA = a.start?.getTime() ?? null;
-  const startB = b.start?.getTime() ?? null;
-  const endA = a.end?.getTime() ?? null;
-  const endB = b.end?.getTime() ?? null;
-  return startA === startB && endA === endB && (a.duration ?? null) === (b.duration ?? null);
+  return (
+    dayKey(a.start) === dayKey(b.start)
+    && dayKey(a.end) === dayKey(b.end)
+    && (a.duration ?? null) === (b.duration ?? null)
+  );
 }

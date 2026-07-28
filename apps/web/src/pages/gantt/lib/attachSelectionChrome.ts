@@ -1,6 +1,6 @@
 import type { IApi } from '@svar-ui/react-gantt';
 
-import { getTaskStore, isGanttWorkTask } from './ganttTaskStore';
+import { closeGanttEditor, getTaskStore, isGanttWorkTask } from './ganttTaskStore';
 
 function isGanttEditorOpen(api: IApi): boolean {
   const state = api.getState() as {
@@ -10,7 +10,7 @@ function isGanttEditorOpen(api: IApi): boolean {
   return state.activeTask != null || state._activeTask != null;
 }
 
-/** Клики внутри сайдбара / порталов SVAR (datepicker, combo) / меню — не закрываем. */
+/** Клики внутри сайдбара / порталов SVAR / Ant modal — не закрываем Editor. */
 function isInsideEditorChrome(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return true;
   return Boolean(
@@ -31,8 +31,8 @@ function isInsideEditorChrome(target: EventTarget | null): boolean {
 }
 
 /**
- * Клик по строке: без автоскролла к задаче и Editor только у рабочих задач.
- * Закрытие Editor — крестик / Escape / клик вне `.wx-sidearea`.
+ * Без автоскролла к задаче; Editor только у рабочих задач.
+ * Закрытие — крестик / Escape / клик вне сайдбара.
  */
 export function attachSelectionChrome(api: IApi): () => void {
   const tag = { tag: 'gantt-selection-chrome' };
@@ -50,7 +50,6 @@ export function attachSelectionChrome(api: IApi): () => void {
   api.intercept(
     'show-editor',
     (ev: { id?: string | number | null }) => {
-      // SVAR Editor close: exec('show-editor', { id: null })
       if (ev?.id == null) return true;
       return isGanttWorkTask(getTaskStore(api).byId?.(ev.id));
     },
@@ -61,7 +60,7 @@ export function attachSelectionChrome(api: IApi): () => void {
     if (event.button !== 0) return;
     if (!isGanttEditorOpen(api)) return;
     if (isInsideEditorChrome(event.target)) return;
-    void api.exec('show-editor', { id: null as unknown as string });
+    closeGanttEditor(api);
   };
 
   document.addEventListener('pointerdown', onPointerDown, true);
