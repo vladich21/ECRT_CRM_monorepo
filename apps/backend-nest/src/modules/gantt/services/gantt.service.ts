@@ -10,6 +10,7 @@ import {
   asc,
   buildTaskTree,
   collectContractProjectWarnings,
+  rollupTaskDateRange,
   contractStages,
   contracts,
   eq,
@@ -39,7 +40,7 @@ export class GanttService {
     const projectRows = await this.db.db
       .select()
       .from(projects)
-      .where(eq(projects.isDeleted, false))
+      .where(and(eq(projects.isDeleted, false), eq(projects.planInGantt, true)))
       .orderBy(asc(projects.code), asc(projects.name));
 
     if (projectRows.length === 0) {
@@ -160,9 +161,10 @@ export class GanttService {
         const cStart = toDateStr(contract.startDate);
         const cEnd = toDateStr(contract.endDate);
         const stageNodes = (stagesByContract.get(contract.id) ?? []).map(stage => {
-          const stageStart =
+          // «Срок» этапа — плановые даты из карточки (контрактный дедлайн).
+          const stageDeadlineStart =
             toDateStr(stage.plannedStartDate) ?? toDateStr(stage.actualStartDate) ?? cStart;
-          const stageEnd =
+          const stageDeadline =
             toDateStr(stage.plannedEndDate) ?? toDateStr(stage.actualEndDate) ?? cEnd;
           const taskChildren = buildTaskTree(
             stage.id,
@@ -170,6 +172,7 @@ export class GanttService {
             tasksByStage,
             actualByTask,
             assigneesMap,
+            stageDeadline,
           );
           const plannedHours = taskChildren.reduce((s, t) => s + t.planned_hours, 0);
           const actualHours = taskChildren.reduce((s, t) => s + t.actual_hours, 0);
@@ -181,14 +184,20 @@ export class GanttService {
               ? ownBudget
               : toNum(stage.plannedBudget);
 
+          // «Окончание»/«Начало» этапа на шкале — по подзадачам; без задач — плановые.
+          const rolled = rollupTaskDateRange(taskChildren);
+
           return {
             id: stage.id,
             kind: 'stage' as const,
             name: stage.name,
             stage_number: stage.stageNumber,
-            start: stageStart,
-            end: stageEnd,
-            deadline: stageEnd,
+            // Начало/Окончание на шкале — по подзадачам; Срок — из карточки этапа.
+            start: rolled.start ?? stageDeadlineStart,
+            end: rolled.end ?? stageDeadline,
+            deadline: stageDeadline,
+            /** Нижняя граница срока этапа (для проверки дат задач). */
+            bound_start: stageDeadlineStart,
             budget: ganttBudget,
             planned_hours: plannedHours,
             actual_hours: actualHours,

@@ -96,6 +96,9 @@ export function mapHierarchyForestToGantt(
       entityKind: node.kind,
       entityName: title,
       deadline: parseIsoDate(node.deadline) ?? end,
+      ...(node.boundStart
+        ? { boundStart: parseIsoDate(node.boundStart) }
+        : {}),
       laborHours: node.laborHours ?? null,
       actualHours: node.actualHours ?? null,
       budget: node.budget ?? null,

@@ -6,7 +6,7 @@ import {
   SaveOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Button, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+import { Button, Checkbox, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
@@ -44,6 +44,7 @@ export default function ProjectCreatePage() {
         manager_id: values.manager_id ?? undefined,
         purchaser_id: values.purchaser_id ?? undefined,
         status: values.status ?? 'active',
+        plan_in_gantt: values.plan_in_gantt !== false,
       } as Parameters<typeof mutate>[0],
       {
         onSuccess: () => {
@@ -195,6 +196,11 @@ export default function ProjectCreatePage() {
                   <Select.Option value='completed'>Завершен</Select.Option>
                   <Select.Option value='cancelled'>Отменен</Select.Option>
                 </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24}>
+              <Form.Item name='plan_in_gantt' valuePropName='checked' style={{ marginBottom: 0 }}>
+                <Checkbox>Планировать в диаграмме Ганта</Checkbox>
               </Form.Item>
             </Col>
           </Row>

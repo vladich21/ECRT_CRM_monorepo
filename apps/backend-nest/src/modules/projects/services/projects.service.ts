@@ -183,10 +183,16 @@ export class ProjectsService {
       manager_id: 'managerId',
       purchaser_id: 'purchaserId',
       status: 'status',
+      plan_in_gantt: 'planInGantt',
     };
     const updateObj: Record<string, unknown> = { updatedAt: new Date() };
     for (const [snake, camel] of Object.entries(map)) {
-      if (data[snake] !== undefined) updateObj[camel] = data[snake];
+      if (data[snake] === undefined) continue;
+      if (snake === 'plan_in_gantt') {
+        updateObj[camel] = data[snake] === true || data[snake] === 'true';
+        continue;
+      }
+      updateObj[camel] = data[snake];
     }
     await this.db.db.update(projects).set(updateObj).where(eq(projects.id, id));
     return this.findOne(id);
@@ -223,6 +229,10 @@ export class ProjectsService {
     const shortName = data.short_name != null ? String(data.short_name) : null;
     const startDate = toDate(data.start_date);
     const status = data.status != null ? String(data.status) : null;
+    const planInGantt =
+      data.plan_in_gantt === undefined
+        ? true
+        : data.plan_in_gantt === true || data.plan_in_gantt === 'true';
 
     return {
       code,
@@ -234,6 +244,7 @@ export class ProjectsService {
       managerId: toUuid(data.manager_id),
       purchaserId: toUuid(data.purchaser_id),
       status,
+      planInGantt,
     };
   }
 
@@ -362,6 +373,7 @@ export class ProjectsService {
       purchaser_id: row.purchaserId ? String(row.purchaserId) : null,
       created_by: row.createdBy ? String(row.createdBy) : null,
       status: row.status ?? '',
+      plan_in_gantt: row.planInGantt ?? true,
       created_at: row.createdAt ? row.createdAt.toISOString() : null,
       updated_at: row.updatedAt ? row.updatedAt.toISOString() : null,
       is_deleted: row.isDeleted ?? false,

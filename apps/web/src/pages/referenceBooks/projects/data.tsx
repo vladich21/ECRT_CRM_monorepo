@@ -9,4 +9,5 @@ export const initialFormValues = {
   manager_id: null,
   purchaser_id: null,
   status: 'active',
+  plan_in_gantt: true,
 };

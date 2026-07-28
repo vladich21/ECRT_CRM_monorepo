@@ -22,6 +22,8 @@ function hours(node: { planned_hours?: number; labor_hours?: number; actual_hour
 function mapTask(
   node: GanttApiTaskNode,
   parentRange: { start: string; end: string },
+  /** «Срок» этапа — для задач без своего deadline. */
+  stageDeadline?: string | null,
 ): GanttHierarchyNode {
   const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
   return {
@@ -30,14 +32,14 @@ function mapTask(
     name: node.name,
     start: range.start,
     end: range.end,
-    deadline: node.deadline ?? range.end,
+    deadline: node.deadline ?? stageDeadline ?? range.end,
     ...hours(node),
     budget: null,
     progress: node.progress ?? 0,
     status: node.status,
     responsibleUserId: node.responsible_user_id,
     assigneeIds: node.assignee_ids ?? [],
-    children: (node.children ?? []).map(child => mapTask(child, range)),
+    children: (node.children ?? []).map(child => mapTask(child, range, stageDeadline)),
   };
 }
 
@@ -45,7 +47,10 @@ function mapStage(
   node: GanttApiStageNode,
   parentRange: { start: string; end: string },
 ): GanttHierarchyNode {
+  // start/end этапа на шкале = rollup подзадач; deadline = контрактный срок из карточки.
   const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
+  const stageDeadline = node.deadline ?? range.end;
+  const boundStart = node.bound_start ?? range.start;
   return {
     id: node.id,
     kind: 'stage',
@@ -53,10 +58,11 @@ function mapStage(
     stageNumber: node.stage_number,
     start: range.start,
     end: range.end,
-    deadline: node.deadline ?? range.end,
+    deadline: stageDeadline,
+    boundStart,
     ...hours(node),
     budget: node.budget ?? null,
-    children: (node.children ?? []).map(child => mapTask(child, range)),
+    children: (node.children ?? []).map(child => mapTask(child, range, stageDeadline)),
   };
 }
 

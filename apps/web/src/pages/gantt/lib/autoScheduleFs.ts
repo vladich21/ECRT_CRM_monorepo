@@ -42,7 +42,8 @@ function taskKey(id: TID | undefined): string {
  * Старт последователя — первый рабочий день после окончания предшественника
  * (выходные и праздники РФ пропускаются).
  * Длительность остаётся в календарных днях (линейная шкала MIT SVAR).
- * Summary-даты — от детей (min start / max end).
+ * Двигаем только листья, которым предшественник реально мешает;
+ * summary/этап на клиенте не пересчитываем (окончание этапа — с API).
  * При цикле в графе — исходный снимок без изменений.
  */
 export function autoScheduleFs(tasks: ITask[], links: ILink[]): ITask[] {
@@ -117,69 +118,22 @@ export function autoScheduleFs(tasks: ITask[], links: ILink[]): ITask[] {
       .filter((pred): pred is ITask => Boolean(pred?.end) && !isSummary(pred!))
       .map(pred => toDayStart(pred.end!));
 
-    let start = toDayStart(task.start);
-    if (predEnds.length > 0) {
-      const latestPredEnd = new Date(Math.max(...predEnds.map(date => date.getTime())));
-      const minStart = startAfterPredecessorEnd(latestPredEnd);
-      if (minStart.getTime() > start.getTime()) {
-        start = minStart;
-      }
-    }
+    if (predEnds.length === 0) continue;
 
-    task.start = start;
+    const latestPredEnd = new Date(Math.max(...predEnds.map(date => date.getTime())));
+    const minStart = startAfterPredecessorEnd(latestPredEnd);
+    const start = toDayStart(task.start);
+    // Двигаем только если предшественник реально требует сдвиг — иначе чужие даты не трогаем.
+    if (minStart.getTime() <= start.getTime()) continue;
+
+    task.start = minStart;
     task.duration = duration;
-    task.end = endFromStartAndDuration(start, duration);
+    task.end = endFromStartAndDuration(minStart, duration);
   }
 
-  rollupSummaryDates(next, byId);
+  // Client-side rollup summary/этапа отключён: иначе при любом update
+  // «разъезжаются» этап и родительские задачи. Окончание этапа — с API hierarchy.
   return next;
-}
-
-function rollupSummaryDates(tasks: ITask[], byId: Map<string, ITask>): void {
-  const childrenByParent = new Map<string, ITask[]>();
-
-  for (const task of tasks) {
-    const parentId = taskKey(task.parent ?? 0);
-    const list = childrenByParent.get(parentId) ?? [];
-    list.push(task);
-    childrenByParent.set(parentId, list);
-  }
-
-  const depthMemo = new Map<string, number>();
-
-  function depthOf(task: ITask): number {
-    const id = taskKey(task.id);
-    const cached = depthMemo.get(id);
-    if (cached != null) return cached;
-
-    const parentId = task.parent;
-    if (parentId == null || parentId === 0 || parentId === '0') {
-      depthMemo.set(id, 0);
-      return 0;
-    }
-
-    const parent = byId.get(taskKey(parentId));
-    const depth = parent ? depthOf(parent) + 1 : 0;
-    depthMemo.set(id, depth);
-    return depth;
-  }
-
-  const summaries = tasks.filter(isSummary).slice().sort((a, b) => depthOf(b) - depthOf(a));
-
-  for (const summary of summaries) {
-    const children = childrenByParent.get(taskKey(summary.id)) ?? [];
-    if (children.length === 0) continue;
-
-    const starts = children.map(child => child.start).filter((date): date is Date => Boolean(date));
-    const ends = children.map(child => child.end).filter((date): date is Date => Boolean(date));
-    if (starts.length === 0 || ends.length === 0) continue;
-
-    const start = new Date(Math.min(...starts.map(date => toDayStart(date).getTime())));
-    const end = new Date(Math.max(...ends.map(date => toDayStart(date).getTime())));
-    summary.start = start;
-    summary.end = end;
-    summary.duration = durationFromRange(start, end);
-  }
 }
 
 export function tasksDatesEqual(a: ITask, b: ITask): boolean {

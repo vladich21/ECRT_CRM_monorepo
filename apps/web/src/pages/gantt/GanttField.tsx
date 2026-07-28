@@ -25,6 +25,8 @@ import { GANTT_RU_LOCALE } from './ganttRuLocale';
 import { createGanttToolbarItems } from './ganttToolbar';
 import { GANTT_MONTH_CELL_WIDTH, GANTT_MONTH_SCALES, GANTT_ZOOM_CONFIG } from './ganttZoom';
 import { autoScheduleFs, tasksDatesEqual } from './lib/autoScheduleFs';
+import { assertTaskDatesWithinStage } from './lib/stageDateBounds';
+import { isGanttWorkTask } from './lib/ganttTaskStore';
 import { attachApiTaskPersist } from './lib/attachApiTaskPersist';
 import { attachConfirmGuards } from './lib/attachConfirmGuards';
 import {
@@ -37,6 +39,7 @@ import { attachSelectionChrome } from './lib/attachSelectionChrome';
 import { attachTaskTypeSync } from './lib/attachTaskTypeSync';
 import { attachTimelinePan } from './lib/attachTimelinePan';
 import { attachTodayMarker } from './lib/attachTodayMarker';
+import { attachZoomAnchor } from './lib/attachZoomAnchor';
 import { exportGanttToExcel } from './lib/exportGanttToExcel';
 import { filterGanttLinksByTasks, filterGanttTasksByQuery } from './lib/filterGanttTasksByQuery';
 import { cloneGanttTasks, linksFromApi, scrollChartToCurrentMonth } from './lib/ganttApi';
@@ -141,6 +144,20 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
         const previous = beforeById.get(String(task.id));
         if (previous && tasksDatesEqual(previous, task)) continue;
 
+        // FS не должен уводить задачи за срок этапа → иначе API 400.
+        // Даты project/contract не трогаем — только из карточек.
+        const kind = (task as { entityKind?: string }).entityKind;
+        if (kind === 'project' || kind === 'contract' || kind === 'stage') continue;
+        if ((task as { type?: string }).type === 'summary') continue;
+
+        if (isGanttWorkTask(task)) {
+          const stageError = assertTaskDatesWithinStage(ganttApi, task.id, {
+            start: task.start,
+            end: task.end,
+          });
+          if (stageError) continue;
+        }
+
         updates.push(
           ganttApi.exec('update-task', {
             id: task.id,
@@ -178,8 +195,12 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
       ganttApi.on(
         'update-task',
-        (ev: { inProgress?: boolean }) => {
+        (ev: { inProgress?: boolean; task?: Partial<{ start?: unknown; end?: unknown; duration?: unknown }> }) => {
           if (ev?.inProgress) return;
+          // Только сдвиг дат — не progress / text (иначе FS двигает чужие задачи).
+          const patch = ev?.task;
+          if (!patch) return;
+          if (!('start' in patch || 'end' in patch || 'duration' in patch)) return;
           scheduleIfIdle();
         },
         tag,
@@ -228,9 +249,11 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
     let detachPan: (() => void) | null = null;
     let detachToday: (() => void) | null = null;
+    let detachZoom: (() => void) | null = null;
 
     const timer = window.setTimeout(() => {
       detachPan = attachTimelinePan(api, root);
+      detachZoom = attachZoomAnchor(api, root);
       const chartEl = root.querySelector('.wx-chart') as HTMLElement | null;
       if (chartEl) {
         scrollChartToCurrentMonth(api, chartEl);
@@ -243,6 +266,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     return () => {
       window.clearTimeout(timer);
       detachPan?.();
+      detachZoom?.();
       detachToday?.();
     };
   }, [api, chartEpoch, searchQuery]);

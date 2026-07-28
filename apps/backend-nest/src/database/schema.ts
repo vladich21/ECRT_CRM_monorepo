@@ -258,6 +258,8 @@ export const projects = pgTable('projects', {
   managerId: uuid('manager_id'),
   purchaserId: uuid('purchaser_id'),
   status: varchar('status', { length: 255 }),
+  /** Показывать проект в диаграмме Ганта (вместе с договорами/этапами). */
+  planInGantt: boolean('plan_in_gantt').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   createdBy: uuid('created_by'),

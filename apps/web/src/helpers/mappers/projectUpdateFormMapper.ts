@@ -11,6 +11,7 @@ export const projectUpdateFormMapper = (projectData: Project) => {
     manager_id: projectData.manager_id || null,
     purchaser_id: projectData.purchaser_id ?? null,
     status: projectData.status || 'active',
+    plan_in_gantt: projectData.plan_in_gantt !== false,
   };
   return values;
 };

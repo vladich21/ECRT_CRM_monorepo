@@ -98,18 +98,39 @@ describe('autoScheduleFs', () => {
     warn.mockRestore();
   });
 
-  it('rolls summary dates from children after leaf scheduling', () => {
+  it('does not rewrite unrelated leaf ends when no FS push is needed', () => {
+    const tasks: ITask[] = [
+      task({ id: 'a', text: 'A', start: day('2026-03-02'), duration: 5 }),
+      task({ id: 'b', text: 'B', start: day('2026-03-20'), duration: 3 }),
+      task({ id: 'c', text: 'C', start: day('2026-04-01'), duration: 2 }),
+    ];
+    const links: ILink[] = [{ id: 'l1', source: 'a', target: 'b', type: 'e2s' }];
+
+    const result = autoScheduleFs(tasks, links);
+    const byId = Object.fromEntries(result.map(item => [String(item.id), item]));
+
+    expect(byId.a.end?.getTime()).toBe(day('2026-03-06').getTime());
+    expect(byId.b.start?.getTime()).toBe(day('2026-03-20').getTime());
+    expect(byId.b.end?.getTime()).toBe(day('2026-03-22').getTime());
+    expect(byId.c.start?.getTime()).toBe(day('2026-04-01').getTime());
+    expect(byId.c.end?.getTime()).toBe(day('2026-04-02').getTime());
+  });
+
+  it('does not rollup summary/stage dates on the client', () => {
+    const stageStart = day('2026-01-01');
+    const stageEnd = day('2026-01-31');
     const tasks: ITask[] = [
       {
         id: 'sum',
-        text: 'Summary',
+        text: 'Stage',
         type: 'summary',
         parent: 0,
         open: true,
-        start: day('2026-01-01'),
-        end: day('2026-01-31'),
+        start: stageStart,
+        end: stageEnd,
         duration: 31,
-      },
+        entityKind: 'stage',
+      } as ITask,
       task({ id: 'a', text: 'A', parent: 'sum', start: day('2026-03-02'), duration: 5 }),
       task({ id: 'b', text: 'B', parent: 'sum', start: day('2026-01-10'), duration: 3 }),
     ];
@@ -120,8 +141,60 @@ describe('autoScheduleFs', () => {
     const b = result.find(item => item.id === 'b');
 
     expect(b?.start?.getTime()).toBe(day('2026-03-10').getTime());
-    expect(summary?.start?.getTime()).toBe(day('2026-03-02').getTime());
-    expect(summary?.end?.getTime()).toBe(b?.end?.getTime());
-    expect(summary?.duration).toBe(durationFromRange(summary!.start!, summary!.end!));
+    expect(summary?.start?.getTime()).toBe(stageStart.getTime());
+    expect(summary?.end?.getTime()).toBe(stageEnd.getTime());
+    expect(summary?.duration).toBe(31);
+  });
+
+  it('does not change project/contract/stage dates without FS links', () => {
+    const projectStart = day('2024-04-01');
+    const projectEnd = day('2028-04-01');
+    const stageEnd = day('2027-01-02');
+    const tasks = [
+      {
+        ...task({
+          id: 'p',
+          text: 'Project',
+          type: 'summary',
+          start: projectStart,
+          end: projectEnd,
+          duration: durationFromRange(projectStart, projectEnd),
+        }),
+        entityKind: 'project',
+      },
+      {
+        ...task({
+          id: 'c',
+          text: 'Contract',
+          type: 'summary',
+          parent: 'p',
+          start: day('2024-04-01'),
+          end: day('2027-01-02'),
+        }),
+        entityKind: 'contract',
+      },
+      {
+        ...task({
+          id: 's',
+          text: 'Stage',
+          type: 'summary',
+          parent: 'c',
+          start: day('2024-04-01'),
+          end: stageEnd,
+        }),
+        entityKind: 'stage',
+      },
+      task({ id: 't', text: 'Task', parent: 's', start: day('2025-01-01'), duration: 10 }),
+    ];
+
+    const result = autoScheduleFs(tasks as ITask[], []);
+    const project = result.find(item => item.id === 'p');
+    const contract = result.find(item => item.id === 'c');
+    const stage = result.find(item => item.id === 's');
+
+    expect(project?.start?.getTime()).toBe(projectStart.getTime());
+    expect(project?.end?.getTime()).toBe(projectEnd.getTime());
+    expect(contract?.end?.getTime()).toBe(day('2027-01-02').getTime());
+    expect(stage?.end?.getTime()).toBe(stageEnd.getTime());
   });
 });

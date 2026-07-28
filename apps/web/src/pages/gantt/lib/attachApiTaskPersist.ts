@@ -1,16 +1,29 @@
 import type { IApi, ITask } from '@svar-ui/react-gantt';
+import { message } from 'antd';
+import axios from 'axios';
 
 import { ganttApi } from '../../../api/gantt/ganttApi';
 import { isUuid, toIsoDate } from './ganttDates';
 import { findAncestorByKind, getTaskStore, isGanttWorkTask } from './ganttTaskStore';
+import { assertTaskDatesWithinStage } from './stageDateBounds';
 
 type GanttTask = ITask & {
   entityKind?: string;
+  deadline?: Date | null;
   laborHours?: number | null;
   responsibleUserId?: string | null;
   assigneeIds?: string[];
   status?: string;
 };
+
+function axiosErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as { message?: string | string[] } | undefined;
+    if (typeof data?.message === 'string') return data.message;
+    if (Array.isArray(data?.message)) return data.message.join('; ');
+  }
+  return err instanceof Error ? err.message : 'Ошибка сохранения задачи';
+}
 
 /**
  * Только явно переданные поля — без затирания name/дат/часов соседними undefined.
@@ -86,7 +99,6 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       if (ev?.inProgress || ev?.id == null) return;
 
       const created = getTaskStore(api).byId?.(ev.id) ?? ev.task;
-      // Контейнеры (project/contract/stage) не персистим; новые листы часто без entityKind.
       if (created && !isGanttWorkTask(created)) return;
 
       const stage =
@@ -97,6 +109,16 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       const parent = getTaskStore(api).byId?.(created?.parent as string | number);
       const parentId = parent?.entityKind === 'task' ? String(parent.id) : null;
 
+      const stageError = assertTaskDatesWithinStage(api, ev.id, {
+        start: created?.start,
+        end: created?.end,
+      });
+      if (stageError) {
+        message.warning(stageError);
+        notify();
+        return;
+      }
+
       void ganttApi
         .createTask({
           stage_id: String(stage.id),
@@ -104,7 +126,7 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
           name: created?.text || 'Новая задача',
           start_date: toIsoDate(created?.start),
           end_date: toIsoDate(created?.end),
-          deadline: toIsoDate(created?.deadline),
+          deadline: toIsoDate(created?.deadline) ?? toIsoDate((stage as GanttTask).deadline),
           planned_hours: created?.laborHours ?? 0,
           progress: created?.progress ?? 0,
           status: created?.status ?? 'open',
@@ -114,6 +136,7 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
         .then(notify)
         .catch(err => {
           console.error('[gantt] createTask failed', err);
+          message.error(axiosErrorMessage(err));
           notify();
         });
     },
@@ -128,14 +151,26 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       if (!isUuid(id)) return;
 
       const current = getTaskStore(api).byId?.(ev.id);
-      // Только уже сохранённые листы с entityKind=task (новые без uuid отсекает isUuid).
       if (!current || current.entityKind !== 'task') return;
 
       const body = buildUpdateBody(api, ev.task ?? {});
       if (Object.keys(body).length === 0) return;
 
+      if (body.start_date != null || body.end_date != null) {
+        const stageError = assertTaskDatesWithinStage(api, ev.id, {
+          start: (ev.task?.start as Date | undefined) ?? current.start,
+          end: (ev.task?.end as Date | undefined) ?? current.end,
+        });
+        if (stageError) {
+          message.warning(stageError);
+          notify();
+          return;
+        }
+      }
+
       void ganttApi.updateTask(id, body).then(notify).catch(err => {
         console.error('[gantt] updateTask failed', err);
+        message.error(axiosErrorMessage(err));
         notify();
       });
     },
@@ -148,11 +183,11 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       if (ev?.id == null) return;
       const id = String(ev.id);
       if (!isUuid(id)) return;
-      // Не дергаем API для project/contract/stage — иначе deleteTask(uuid этапа) даст 404/мусор.
       const current = getTaskStore(api).byId?.(ev.id);
       if (current && current.entityKind !== 'task') return;
       void ganttApi.deleteTask(id).then(notify).catch(err => {
         console.error('[gantt] deleteTask failed', err);
+        message.error(axiosErrorMessage(err));
         notify();
       });
     },
@@ -170,6 +205,7 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
         .then(notify)
         .catch(err => {
           console.error('[gantt] createLink failed', err);
+          message.error(axiosErrorMessage(err));
           notify();
         });
     },
@@ -184,6 +220,7 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       if (!isUuid(id)) return;
       void ganttApi.deleteLink(id).then(notify).catch(err => {
         console.error('[gantt] deleteLink failed', err);
+        message.error(axiosErrorMessage(err));
         notify();
       });
     },

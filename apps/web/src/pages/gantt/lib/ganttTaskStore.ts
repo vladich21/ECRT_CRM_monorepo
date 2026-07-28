@@ -23,6 +23,17 @@ export function isGanttWorkTask(
   return task.type !== 'summary';
 }
 
+/**
+ * Лист на шкале: можно двигать / ресайзить / progress.
+ * Родительская задача с детьми (type=summary) — нет: даты только rollup с API.
+ */
+export function isGanttLeafTask(
+  task: { entityKind?: string; type?: string } | null | undefined,
+): boolean {
+  if (!isGanttWorkTask(task)) return false;
+  return task?.type !== 'summary';
+}
+
 export function findAncestorByKind(
   api: IApi,
   startId: string | number,

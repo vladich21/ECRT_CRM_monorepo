@@ -1,9 +1,10 @@
 import type { ModalFuncProps } from 'antd/es/modal/interface';
+import { message } from 'antd';
 
 import { projectApi } from '../../../api/projects/projectApi';
 import type { GanttDateWarning } from '../../../types/gantt';
 
-type ConfirmFn = (props: ModalFuncProps) => void;
+type ConfirmFn = (props: ModalFuncProps) => { destroy: () => void } | void;
 
 /**
  * Показывает предупреждения: сроки договора выходят за сроки проекта.
@@ -42,11 +43,12 @@ export function presentGanttDateWarnings(
 
   const list = [...byProject.values()];
   let index = 0;
+  let applied = false;
 
   const showNext = () => {
     const warning = list[index];
     if (!warning) {
-      onApplied?.();
+      if (applied) onApplied?.();
       return;
     }
 
@@ -54,25 +56,48 @@ export function presentGanttDateWarnings(
     const contractLabel = warning.contract_name ?? warning.contract_id;
 
     window.setTimeout(() => {
+      let settled = false;
+      const advance = () => {
+        if (settled) return;
+        settled = true;
+        index += 1;
+        showNext();
+      };
+
       confirm({
         title: 'Сроки договора выходят за сроки проекта',
         content: `Договор «${contractLabel}» (${warning.contract_start ?? '—'} – ${warning.contract_end ?? '—'}) не укладывается в проект «${projectLabel}» (${warning.project_start ?? '—'} – ${warning.project_end ?? '—'}). Изменить сроки проекта на ${warning.suggested_project_start ?? '—'} – ${warning.suggested_project_end ?? '—'}?`,
-        okText: 'Изменить сроки проекта',
-        cancelText: 'Оставить как есть',
+        okText: 'Изменить',
+        cancelText: 'Отмена',
         centered: true,
         zIndex: 11000,
         getContainer: () => document.body,
+        maskClosable: true,
+        keyboard: true,
         onOk: async () => {
-          await projectApi.editProject(warning.project_id, {
-            start_date: warning.suggested_project_start ?? undefined,
-            end_date: warning.suggested_project_end ?? undefined,
-          });
-          index += 1;
-          showNext();
+          try {
+            await projectApi.editProject(warning.project_id, {
+              ...(warning.suggested_project_start
+                ? { start_date: warning.suggested_project_start }
+                : {}),
+              ...(warning.suggested_project_end ? { end_date: warning.suggested_project_end } : {}),
+            });
+            applied = true;
+            message.success('Сроки проекта обновлены');
+          } catch (err) {
+            console.error('[gantt] editProject from date warning failed', err);
+            message.error(err instanceof Error ? err.message : 'Не удалось изменить сроки проекта');
+            // Не бросаем дальше — иначе Ant Design оставляет модалку в loading и кнопки «мертвые».
+          } finally {
+            advance();
+          }
         },
         onCancel: () => {
-          index += 1;
-          showNext();
+          advance();
+        },
+        afterClose: () => {
+          // Escape / клик по маске — тоже двигаем очередь.
+          advance();
         },
       });
     }, 0);

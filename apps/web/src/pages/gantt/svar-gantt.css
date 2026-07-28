@@ -183,6 +183,15 @@ button.wx-button.wx-danger:hover:not([disabled]) {
   background-color: rgba(0, 0, 0, 0.22) !important;
 }
 
+/* Маркер прогресса: больше зона захвата, чтобы не схватить move полоски */
+.wx-gantt .wx-progress-marker {
+  width: 20px !important;
+  height: 20px !important;
+  margin-left: -10px;
+  cursor: ew-resize !important;
+  z-index: 5;
+}
+
 .wx-gantt .wx-line.wx-critical {
   stroke: #cf1322 !important;
 }

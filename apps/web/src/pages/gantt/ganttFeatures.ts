@@ -35,7 +35,7 @@ export const GANTT_UI = {
   excelExport: true,
   /** Critical path (наш compute + CSS) */
   criticalPath: true,
-  /** Confirm при смене дат (drag / Editor) */
+  /** Confirm при перемещении задачи на шкале (drag) / смене дат в Editor */
   dateChangeConfirm: true,
 } as const;
 

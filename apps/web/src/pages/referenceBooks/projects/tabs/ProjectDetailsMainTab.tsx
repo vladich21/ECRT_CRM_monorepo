@@ -97,6 +97,14 @@ export default function ProjectDetailsMainTab() {
           >
             {statusLabel}
           </span>
+          <div className={styles.infoRows} style={{ marginTop: 12 }}>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>В диаграмме Ганта</span>
+              <span className={styles.infoValue}>
+                {project.plan_in_gantt === false ? 'Нет' : 'Да'}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className={styles.card}>

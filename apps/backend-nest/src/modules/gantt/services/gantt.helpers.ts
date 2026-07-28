@@ -122,19 +122,42 @@ export function collectContractProjectWarnings(
   return warnings;
 }
 
+/** Мин. начало / макс. окончание по дереву задач (для колонки «Окончание» у родителей). */
+export function rollupTaskDateRange(nodes: HierarchyTaskNode[]): {
+  start: string | null;
+  end: string | null;
+} {
+  let start: string | null = null;
+  let end: string | null = null;
+  for (const node of nodes) {
+    if (node.start && (!start || node.start < start)) start = node.start;
+    if (node.end && (!end || node.end > end)) end = node.end;
+  }
+  return { start, end };
+}
+
 export function buildTaskTree(
   stageId: string,
   parentId: string | null,
   tasksByStage: Map<string, Array<typeof ganttTasks.$inferSelect>>,
   actualByTask: Map<string, number>,
   assigneesByTask: Map<string, string[]>,
+  /** «Срок» этапа — подставляем в задачи без своего deadline. */
+  stageDeadline: string | null = null,
 ): HierarchyTaskNode[] {
   const siblings = (tasksByStage.get(stageId) ?? []).filter(t =>
     parentId == null ? t.parentId == null : t.parentId === parentId,
   );
 
   return siblings.map(task => {
-    const children = buildTaskTree(stageId, task.id, tasksByStage, actualByTask, assigneesByTask);
+    const children = buildTaskTree(
+      stageId,
+      task.id,
+      tasksByStage,
+      actualByTask,
+      assigneesByTask,
+      stageDeadline,
+    );
     const ownPlan = toNum(task.plannedHours);
     const ownFact = actualByTask.get(task.id) ?? 0;
     const plannedHours =
@@ -142,13 +165,18 @@ export function buildTaskTree(
     const actualHours =
       children.length > 0 ? children.reduce((s, c) => s + c.actual_hours, 0) : ownFact;
 
+    const ownStart = toDateStr(task.startDate);
+    const ownEnd = toDateStr(task.endDate);
+    // У родителя «Окончание»/«Начало» — по детям; у листа — свои даты.
+    const rolled = children.length > 0 ? rollupTaskDateRange(children) : null;
+
     return {
       id: task.id,
       kind: 'task' as const,
       name: task.name,
-      start: toDateStr(task.startDate),
-      end: toDateStr(task.endDate),
-      deadline: toDateStr(task.deadline),
+      start: rolled?.start ?? ownStart,
+      end: rolled?.end ?? ownEnd,
+      deadline: toDateStr(task.deadline) ?? stageDeadline,
       progress: task.progress ?? 0,
       status: task.status,
       planned_hours: plannedHours,

@@ -7,7 +7,7 @@ import {
   SaveOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Button, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+import { Button, Checkbox, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -213,6 +213,11 @@ export default function ProjectEditPage() {
                       <Select.Option value='completed'>Завершен</Select.Option>
                       <Select.Option value='cancelled'>Отменен</Select.Option>
                     </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24}>
+                  <Form.Item name='plan_in_gantt' valuePropName='checked' style={{ marginBottom: 0 }}>
+                    <Checkbox>Планировать в диаграмме Ганта</Checkbox>
                   </Form.Item>
                 </Col>
               </Row>

@@ -9,7 +9,8 @@
 Ответ: `{ projects[], links[], date_warnings[] }` — Project → Contract → Stage → Task.
 
 Этапы берутся из `contract_stages` (неархивные). Задачи — из `gantt_tasks`.
-В дерево попадают только договоры с `plan_in_gantt = true` (чекбокс в карточке договора).
+В дерево попадают только проекты с `plan_in_gantt = true` и договоры с `plan_in_gantt = true`
+(чекбоксы в карточках проекта и договора).
 
 **Бюджет в дереве:**
 - этап = `own_budget` (собственные затраты + прибыль); если split пустой — fallback на `planned_budget`;

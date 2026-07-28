@@ -28,6 +28,8 @@ export interface Project {
   purchaser_id?: string | null;
   created_by?: string | null;
   status: string;
+  /** Показывать проект в диаграмме Ганта (вместе с договорами/этапами). */
+  plan_in_gantt?: boolean;
   created_at: string;
   updated_at: string;
   is_deleted?: boolean;

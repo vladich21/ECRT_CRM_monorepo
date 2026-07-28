@@ -44,6 +44,7 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
     template: (value: unknown) => formatDateCell(value),
   },
   {
+    // Задача — вручную; этап — max по детям; проект/договор — из карточки.
     id: 'end',
     header: 'Окончание',
     width: DATE_COL_WIDTH,
@@ -53,6 +54,7 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
     template: (value: unknown) => formatDateCell(value),
   },
   {
+    // Проект/договор/этап — свой дедлайн из карточки; задача/подзадача — срок этапа.
     id: 'deadline',
     header: 'Срок',
     width: DATE_COL_WIDTH,

@@ -25,6 +25,8 @@ export type GanttApiStageNode = {
   start: string | null;
   end: string | null;
   deadline?: string | null;
+  /** Нижняя граница срока этапа (planned start) для валидации задач. */
+  bound_start?: string | null;
   budget?: number | null;
   planned_hours?: number;
   actual_hours?: number;
