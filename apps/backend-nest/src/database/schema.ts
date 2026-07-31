@@ -874,6 +874,10 @@ export const ganttTasks = pgTable(
     progress: integer('progress').notNull().default(0),
     status: varchar('status', { length: 50 }).notNull().default('open'),
     plannedHours: numeric('planned_hours', { precision: 12, scale: 2 }).notNull().default('0'),
+    taskClass: varchar('task_class', { length: 32 }).notNull().default('technical'),
+    hourlyRate: numeric('hourly_rate', { precision: 12, scale: 2 }),
+    /** Системная вспомогательная задача проекта (исполнители из technical). */
+    isAutoAuxiliary: boolean('is_auto_auxiliary').notNull().default(false),
     responsibleUserId: uuid('responsible_user_id'),
     sortOrder: integer('sort_order').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -896,6 +900,8 @@ export const ganttTaskAssignees = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     taskId: uuid('task_id').notNull(),
     userId: uuid('user_id').notNull(),
+    /** План часов, выделенный этому исполнителю. */
+    plannedHours: numeric('planned_hours', { precision: 12, scale: 2 }).notNull().default('0'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (t) => [

@@ -90,6 +90,15 @@ export function mapHierarchyForestToGantt(
       laborHours: node.laborHours ?? null,
       actualHours: node.actualHours ?? null,
       budget: node.budget ?? null,
+      planAmount: node.planAmount ?? null,
+      factAmount: node.factAmount ?? null,
+      hourlyRate: node.hourlyRate ?? null,
+      ...(node.kind === 'task'
+        ? {
+            taskClass: node.taskClass ?? 'technical',
+            isAutoAuxiliary: Boolean(node.isAutoAuxiliary),
+          }
+        : {}),
       responsibleUserId: node.responsibleUserId ?? null,
       assigneeIds: node.assigneeIds ?? [],
       status: node.status,

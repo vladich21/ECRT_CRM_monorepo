@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS gantt_tasks (
   progress integer NOT NULL DEFAULT 0,
   status varchar(50) NOT NULL DEFAULT 'open',
   planned_hours numeric(12, 2) NOT NULL DEFAULT 0,
+  task_class varchar(32) NOT NULL DEFAULT 'technical',
   responsible_user_id uuid,
   sort_order integer NOT NULL DEFAULT 0,
   created_at timestamptz DEFAULT now(),

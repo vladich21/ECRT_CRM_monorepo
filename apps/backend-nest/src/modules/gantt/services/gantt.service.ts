@@ -8,6 +8,7 @@ import { DatabaseService } from '../../../database/database.service';
 import {
   and,
   asc,
+  AUTO_AUXILIARY_TASK_NAME,
   buildTaskTree,
   collectContractProjectWarnings,
   rollupTaskDateRange,
@@ -20,8 +21,10 @@ import {
   ganttTaskTimeEntries,
   groupBy,
   inArray,
+  isGanttTaskDone,
   isMissingRelationError,
   or,
+  parseTaskClass,
   projects,
   sum,
   toDateStr,
@@ -128,11 +131,44 @@ export class GanttService {
                   inArray(ganttLinks.targetTaskId, taskIds),
                 ),
               );
+
+      // Одна вспомогательная на проект + актуальные исполнители из technical.
+      await this.syncAutoAuxiliaryForProjects(projectIds);
+
+      taskRows =
+        stageIds.length === 0
+          ? []
+          : await this.db.db
+              .select()
+              .from(ganttTasks)
+              .where(and(eq(ganttTasks.isDeleted, false), inArray(ganttTasks.stageId, stageIds)))
+              .orderBy(asc(ganttTasks.sortOrder), asc(ganttTasks.name));
+
+      const refreshedTaskIds = taskRows.map(t => t.id);
+      assigneeRows =
+        refreshedTaskIds.length === 0
+          ? []
+          : await this.db.db
+              .select()
+              .from(ganttTaskAssignees)
+              .where(inArray(ganttTaskAssignees.taskId, refreshedTaskIds));
+
+      hoursRows =
+        refreshedTaskIds.length === 0
+          ? []
+          : await this.db.db
+              .select({
+                taskId: ganttTaskTimeEntries.taskId,
+                total: sum(ganttTaskTimeEntries.hours),
+              })
+              .from(ganttTaskTimeEntries)
+              .where(inArray(ganttTaskTimeEntries.taskId, refreshedTaskIds))
+              .groupBy(ganttTaskTimeEntries.taskId);
     } catch (error) {
       if (!isMissingRelationError(error)) throw error;
       // eslint-disable-next-line no-console
       console.warn(
-        '[gantt] tables missing — run apps/backend-nest/docs/gantt-tasks.sql. Returning hierarchy without tasks.',
+        '[gantt] gantt tables/columns missing — run docs/gantt-tasks.sql, docs/gantt-rates-assignee-plans.sql, docs/gantt-auto-auxiliary.sql. Returning hierarchy without tasks.',
       );
       taskRows = [];
       assigneeRows = [];
@@ -144,7 +180,10 @@ export class GanttService {
     const assigneesMap = new Map(
       [...assigneesByTask.entries()].map(([taskId, rows]) => [
         taskId,
-        rows.map(r => r.userId),
+        rows.map(r => ({
+          userId: r.userId,
+          plannedHours: toNum(r.plannedHours),
+        })),
       ]),
     );
     const actualByTask = new Map(hoursRows.map(row => [row.taskId, toNum(row.total)]));
@@ -174,8 +213,10 @@ export class GanttService {
             assigneesMap,
             stageDeadline,
           );
-          const plannedHours = taskChildren.reduce((s, t) => s + t.planned_hours, 0);
-          const actualHours = taskChildren.reduce((s, t) => s + t.actual_hours, 0);
+          const plannedHours = taskChildren.reduce((s, t) => s + (t.planned_hours ?? 0), 0);
+          const actualHours = taskChildren.reduce((s, t) => s + (t.actual_hours ?? 0), 0);
+          const planAmount = taskChildren.reduce((s, t) => s + (t.plan_amount ?? 0), 0);
+          const factAmount = taskChildren.reduce((s, t) => s + (t.fact_amount ?? 0), 0);
           // В Гант — только собственные затраты + прибыль (B), не соисполнители.
           const ownBudget = toNum(stage.ownBudget);
           const coexecutorBudget = toNum(stage.coexecutorBudget);
@@ -202,12 +243,16 @@ export class GanttService {
             planned_hours: plannedHours,
             actual_hours: actualHours,
             labor_hours: plannedHours,
+            plan_amount: planAmount,
+            fact_amount: factAmount,
             children: taskChildren,
           };
         });
 
         const plannedHours = stageNodes.reduce((s, st) => s + st.planned_hours, 0);
         const actualHours = stageNodes.reduce((s, st) => s + st.actual_hours, 0);
+        const planAmount = stageNodes.reduce((s, st) => s + (st.plan_amount ?? 0), 0);
+        const factAmount = stageNodes.reduce((s, st) => s + (st.fact_amount ?? 0), 0);
         // Бюджет договора в Ганте = сумма B по этапам (без fallback на сумму договора).
         const contractBudget = stageNodes.reduce((s, st) => s + st.budget, 0);
 
@@ -224,12 +269,16 @@ export class GanttService {
           planned_hours: plannedHours,
           actual_hours: actualHours,
           labor_hours: plannedHours,
+          plan_amount: planAmount,
+          fact_amount: factAmount,
           children: stageNodes,
         };
       });
 
       const plannedHours = projectContracts.reduce((s, c) => s + c.planned_hours, 0);
       const actualHours = projectContracts.reduce((s, c) => s + c.actual_hours, 0);
+      const planAmount = projectContracts.reduce((s, c) => s + (c.plan_amount ?? 0), 0);
+      const factAmount = projectContracts.reduce((s, c) => s + (c.fact_amount ?? 0), 0);
       const budget = projectContracts.reduce((s, c) => s + c.budget, 0);
 
       return {
@@ -244,6 +293,8 @@ export class GanttService {
         planned_hours: plannedHours,
         actual_hours: actualHours,
         labor_hours: plannedHours,
+        plan_amount: planAmount,
+        fact_amount: factAmount,
         children: projectContracts,
       };
     });
@@ -370,10 +421,19 @@ export class GanttService {
           deadline: toDateStr(task.deadline),
           progress: task.progress,
           status: task.status,
+          task_class: parseTaskClass(task.taskClass),
+          is_auto_auxiliary: Boolean(task.isAutoAuxiliary),
           planned_hours: toNum(task.plannedHours),
           actual_hours: actualByTask.get(task.id) ?? 0,
+          hourly_rate: task.hourlyRate != null ? toNum(task.hourlyRate) : null,
           responsible_user_id: task.responsibleUserId,
           assignee_ids: assigneesByTask.get(task.id) ?? [],
+          assignee_plans: assignees
+            .filter(r => r.taskId === task.id)
+            .map(r => ({
+              user_id: r.userId,
+              planned_hours: toNum(r.plannedHours),
+            })),
           stage_name: meta?.stageName ?? null,
           contract_id: meta?.contractId ?? null,
           contract_name: meta?.contractName ?? null,
@@ -418,6 +478,11 @@ export class GanttService {
         progress: typeof body.progress === 'number' ? body.progress : 0,
         status: typeof body.status === 'string' ? body.status : 'open',
         plannedHours: String(toNum(body.planned_hours ?? body.labor_hours)),
+        taskClass: parseTaskClass(body.task_class ?? body.taskClass),
+        ...(('hourly_rate' in body || 'hourlyRate' in body) &&
+        (body.hourly_rate != null || body.hourlyRate != null)
+          ? { hourlyRate: String(toNum(body.hourly_rate ?? body.hourlyRate)) }
+          : {}),
         responsibleUserId:
           typeof body.responsible_user_id === 'string' ? body.responsible_user_id : null,
         sortOrder: typeof body.sort_order === 'number' ? body.sort_order : 0,
@@ -426,18 +491,25 @@ export class GanttService {
       })
       .returning();
 
-    const assigneeIds = Array.isArray(body.assignee_ids)
-      ? body.assignee_ids.filter((id): id is string => typeof id === 'string')
-      : [];
-    if (assigneeIds.length > 0) {
-      await this.syncAssignees(created.id, assigneeIds);
-    }
+    await this.syncAssigneesFromBody(created.id, body);
+    await this.syncProjectAutoAuxiliaryByStage(stageId);
 
     return this.getTask(created.id);
   }
 
   async updateTask(id: string, body: Record<string, unknown>, userId?: string) {
     const existing = await this.requireTask(id);
+    if (existing.isAutoAuxiliary) {
+      // Класс и исполнители у авто-вспомогательной только через sync.
+      if ('task_class' in body || 'taskClass' in body) {
+        delete body.task_class;
+        delete body.taskClass;
+      }
+      if ('assignee_ids' in body || 'assignee_plans' in body) {
+        delete body.assignee_ids;
+        delete body.assignee_plans;
+      }
+    }
 
     const startDate =
       'start_date' in body || 'start' in body
@@ -456,7 +528,9 @@ export class GanttService {
       updatedAt: new Date(),
       updatedBy: userId ?? null,
     };
-    if (typeof body.name === 'string' && body.name.trim()) patch.name = body.name.trim();
+    if (typeof body.name === 'string' && body.name.trim() && !existing.isAutoAuxiliary) {
+      patch.name = body.name.trim();
+    }
     if ('parent_id' in body) {
       patch.parentId = typeof body.parent_id === 'string' ? body.parent_id : null;
       if (patch.parentId) await this.assertTaskInStage(patch.parentId, existing.stageId);
@@ -473,6 +547,13 @@ export class GanttService {
     if ('planned_hours' in body || 'labor_hours' in body) {
       patch.plannedHours = String(toNum(body.planned_hours ?? body.labor_hours));
     }
+    if ('task_class' in body || 'taskClass' in body) {
+      patch.taskClass = parseTaskClass(body.task_class ?? body.taskClass);
+    }
+    if ('hourly_rate' in body || 'hourlyRate' in body) {
+      const raw = body.hourly_rate ?? body.hourlyRate;
+      patch.hourlyRate = raw == null || raw === '' ? null : String(toNum(raw));
+    }
     if ('responsible_user_id' in body) {
       patch.responsibleUserId =
         typeof body.responsible_user_id === 'string' ? body.responsible_user_id : null;
@@ -481,20 +562,27 @@ export class GanttService {
 
     await this.db.db.update(ganttTasks).set(patch).where(eq(ganttTasks.id, id));
 
-    if (Array.isArray(body.assignee_ids)) {
-      const assigneeIds = body.assignee_ids.filter((x): x is string => typeof x === 'string');
-      await this.syncAssignees(id, assigneeIds);
+    if ('assignee_ids' in body || 'assignee_plans' in body) {
+      await this.syncAssigneesFromBody(id, body);
     }
+
+    await this.syncProjectAutoAuxiliaryByStage(existing.stageId);
 
     return this.getTask(id);
   }
 
   async deleteTask(id: string) {
-    await this.requireTask(id);
+    const existing = await this.requireTask(id);
+    if (existing.isAutoAuxiliary) {
+      throw new BadRequestException(
+        'Системную вспомогательную задачу проекта нельзя удалить вручную',
+      );
+    }
     await this.db.db
       .update(ganttTasks)
       .set({ isDeleted: true, updatedAt: new Date() })
       .where(eq(ganttTasks.id, id));
+    await this.syncProjectAutoAuxiliaryByStage(existing.stageId);
     return { ok: true };
   }
 
@@ -685,12 +773,191 @@ export class GanttService {
     }
   }
 
-  private async syncAssignees(taskId: string, userIds: string[]) {
+  private async syncAutoAuxiliaryForProjects(projectIds: string[]) {
+    for (const projectId of projectIds) {
+      await this.syncProjectAutoAuxiliary(projectId);
+    }
+  }
+
+  private async syncProjectAutoAuxiliaryByStage(stageId: string) {
+    const [row] = await this.db.db
+      .select({ projectId: contracts.projectId })
+      .from(contractStages)
+      .innerJoin(contracts, eq(contractStages.contractId, contracts.id))
+      .where(eq(contractStages.id, stageId))
+      .limit(1);
+    if (row?.projectId) {
+      await this.syncProjectAutoAuxiliary(row.projectId);
+    }
+  }
+
+  /**
+   * Одна вспомогательная задача на проект:
+   * - исполнители = назначенные на technical, у кого ещё есть незавершённые technical;
+   * - если у сотрудника все technical завершены — он снимается со вспомогательной;
+   * - если активных исполнителей нет и technical все done — вспомогательная completed.
+   */
+  private async syncProjectAutoAuxiliary(projectId: string) {
+    const stageRows = await this.db.db
+      .select({
+        stageId: contractStages.id,
+        stageNumber: contractStages.stageNumber,
+        plannedStart: contractStages.plannedStartDate,
+        plannedEnd: contractStages.plannedEndDate,
+        actualStart: contractStages.actualStartDate,
+        actualEnd: contractStages.actualEndDate,
+        contractNumber: contracts.number,
+      })
+      .from(contractStages)
+      .innerJoin(contracts, eq(contractStages.contractId, contracts.id))
+      .where(
+        and(
+          eq(contracts.projectId, projectId),
+          eq(contracts.isDeleted, false),
+          eq(contracts.isActive, true),
+          eq(contracts.planInGantt, true),
+          eq(contractStages.isArchived, false),
+        ),
+      )
+      .orderBy(asc(contracts.number), asc(contractStages.stageNumber));
+
+    if (stageRows.length === 0) return;
+
+    const stageIds = stageRows.map(s => s.stageId);
+    const anchor = stageRows[0];
+    const startDate =
+      toDateStr(anchor.plannedStart) ?? toDateStr(anchor.actualStart);
+    const endDate = toDateStr(anchor.plannedEnd) ?? toDateStr(anchor.actualEnd);
+
+    const tasks = await this.db.db
+      .select()
+      .from(ganttTasks)
+      .where(and(eq(ganttTasks.isDeleted, false), inArray(ganttTasks.stageId, stageIds)));
+
+    const technicalTasks = tasks.filter(
+      t => parseTaskClass(t.taskClass) === 'technical' && !t.isAutoAuxiliary,
+    );
+    const technicalIds = technicalTasks.map(t => t.id);
+
+    const assigneeRows =
+      technicalIds.length === 0
+        ? []
+        : await this.db.db
+            .select()
+            .from(ganttTaskAssignees)
+            .where(inArray(ganttTaskAssignees.taskId, technicalIds));
+
+    const unfinishedByUser = new Map<string, number>();
+    for (const row of assigneeRows) {
+      const task = technicalTasks.find(t => t.id === row.taskId);
+      if (!task || isGanttTaskDone(task)) continue;
+      unfinishedByUser.set(row.userId, (unfinishedByUser.get(row.userId) ?? 0) + 1);
+    }
+    const activeAssigneeIds = [...unfinishedByUser.keys()];
+
+    const allTechnicalDone =
+      technicalTasks.length > 0 && technicalTasks.every(t => isGanttTaskDone(t));
+    const auxDone = allTechnicalDone && activeAssigneeIds.length === 0;
+
+    let aux = tasks.find(t => t.isAutoAuxiliary) ?? null;
+    // Старые дубликаты — soft-delete, оставляем одну.
+    const extras = tasks.filter(t => t.isAutoAuxiliary && t.id !== aux?.id);
+    for (const dup of extras) {
+      await this.db.db
+        .update(ganttTasks)
+        .set({ isDeleted: true, updatedAt: new Date() })
+        .where(eq(ganttTasks.id, dup.id));
+    }
+
+    if (!aux) {
+      const [created] = await this.db.db
+        .insert(ganttTasks)
+        .values({
+          stageId: anchor.stageId,
+          parentId: null,
+          name: AUTO_AUXILIARY_TASK_NAME,
+          startDate: startDate ?? undefined,
+          endDate: endDate ?? undefined,
+          deadline: endDate ?? undefined,
+          progress: auxDone ? 100 : 0,
+          status: auxDone ? 'completed' : 'open',
+          plannedHours: '0',
+          taskClass: 'auxiliary',
+          isAutoAuxiliary: true,
+          sortOrder: 0,
+          updatedAt: new Date(),
+        })
+        .returning();
+      aux = created;
+    } else {
+      await this.db.db
+        .update(ganttTasks)
+        .set({
+          name: AUTO_AUXILIARY_TASK_NAME,
+          taskClass: 'auxiliary',
+          isAutoAuxiliary: true,
+          progress: auxDone ? 100 : Math.min(aux.progress ?? 0, 99),
+          status: auxDone ? 'completed' : aux.status === 'completed' ? 'open' : aux.status,
+          updatedAt: new Date(),
+        })
+        .where(eq(ganttTasks.id, aux.id));
+    }
+
+    await this.syncAssignees(
+      aux.id,
+      activeAssigneeIds.map(userId => ({ userId, plannedHours: 0 })),
+    );
+  }
+
+  private async syncAssigneesFromBody(taskId: string, body: Record<string, unknown>) {
+    const plansRaw = Array.isArray(body.assignee_plans) ? body.assignee_plans : null;
+    if (plansRaw) {
+      const plans = plansRaw
+        .map(item => {
+          if (!item || typeof item !== 'object') return null;
+          const row = item as Record<string, unknown>;
+          const userId =
+            typeof row.user_id === 'string'
+              ? row.user_id
+              : typeof row.userId === 'string'
+                ? row.userId
+                : null;
+          if (!userId) return null;
+          return {
+            userId,
+            plannedHours: toNum(row.planned_hours ?? row.plannedHours),
+          };
+        })
+        .filter((row): row is { userId: string; plannedHours: number } => row != null);
+      await this.syncAssignees(taskId, plans);
+      return;
+    }
+
+    if (Array.isArray(body.assignee_ids)) {
+      const assigneeIds = body.assignee_ids.filter((x): x is string => typeof x === 'string');
+      await this.syncAssignees(
+        taskId,
+        assigneeIds.map(userId => ({ userId, plannedHours: 0 })),
+      );
+    }
+  }
+
+  private async syncAssignees(
+    taskId: string,
+    assignees: Array<{ userId: string; plannedHours: number }>,
+  ) {
     await this.db.db.delete(ganttTaskAssignees).where(eq(ganttTaskAssignees.taskId, taskId));
-    const unique = [...new Set(userIds)];
-    if (unique.length === 0) return;
+    const unique = new Map<string, number>();
+    for (const row of assignees) {
+      unique.set(row.userId, row.plannedHours);
+    }
+    if (unique.size === 0) return;
     await this.db.db.insert(ganttTaskAssignees).values(
-      unique.map(userId => ({ taskId, userId })),
+      [...unique.entries()].map(([userId, plannedHours]) => ({
+        taskId,
+        userId,
+        plannedHours: String(plannedHours),
+      })),
     );
   }
 }

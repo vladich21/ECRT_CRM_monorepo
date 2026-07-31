@@ -14,7 +14,17 @@ type GanttTask = ITask & {
   responsibleUserId?: string | null;
   assigneeIds?: string[];
   status?: string;
+  taskClass?: string | null;
+  hourlyRate?: number | null;
+  isAutoAuxiliary?: boolean;
 };
+
+function normalizeAssigneeIds(patch: Partial<GanttTask>): string[] | undefined {
+  if (Array.isArray(patch.assigneeIds)) {
+    return patch.assigneeIds.map(String).filter(Boolean);
+  }
+  return undefined;
+}
 
 function axiosErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
@@ -51,6 +61,18 @@ function buildUpdateBody(
   if (patch.laborHours !== undefined) {
     body.planned_hours = patch.laborHours;
   }
+  if (patch.taskClass !== undefined) {
+    body.task_class = patch.taskClass;
+  }
+  if (patch.hourlyRate !== undefined) {
+    const raw = patch.hourlyRate as unknown;
+    if (raw === null || raw === '' || raw === undefined) {
+      body.hourly_rate = null;
+    } else {
+      const n = Number(raw);
+      body.hourly_rate = Number.isFinite(n) ? n : null;
+    }
+  }
   if (patch.progress !== undefined) {
     body.progress = patch.progress;
   }
@@ -58,10 +80,14 @@ function buildUpdateBody(
     body.status = patch.status;
   }
   if (patch.responsibleUserId !== undefined) {
-    body.responsible_user_id = patch.responsibleUserId;
+    body.responsible_user_id =
+      patch.responsibleUserId === '' || patch.responsibleUserId == null
+        ? null
+        : patch.responsibleUserId;
   }
-  if (patch.assigneeIds !== undefined) {
-    body.assignee_ids = patch.assigneeIds;
+  const assigneeIds = normalizeAssigneeIds(patch);
+  if (assigneeIds !== undefined) {
+    body.assignee_ids = assigneeIds;
   }
   if (patch.parent !== undefined) {
     const parent =
@@ -128,6 +154,7 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
           end_date: toIsoDate(created?.end),
           deadline: toIsoDate(created?.deadline) ?? toIsoDate((stage as GanttTask).deadline),
           planned_hours: created?.laborHours ?? 0,
+          task_class: created?.taskClass ?? 'technical',
           progress: created?.progress ?? 0,
           status: created?.status ?? 'open',
           responsible_user_id: created?.responsibleUserId ?? null,

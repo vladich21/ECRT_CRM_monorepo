@@ -22,18 +22,40 @@ function formatBudgetCell(value: unknown): string {
   return '—';
 }
 
+const TASK_CLASS_LABELS: Record<string, string> = {
+  technical: 'Техническая',
+  coexecutor: 'Соисполнитель',
+  auxiliary: 'Вспомогательная',
+};
+
+function formatTaskClassCell(value: unknown): string {
+  if (typeof value !== 'string' || !value) return '—';
+  return TASK_CLASS_LABELS[value] ?? value;
+}
+
 /** Ширина под дату DD.MM.YYYY по центру. */
 const DATE_COL_WIDTH = 104;
 /** Ширина под часы по центру. */
-const HOURS_COL_WIDTH = 88;
+const HOURS_COL_WIDTH = 96;
 const BUDGET_COL_WIDTH = 110;
+const CLASS_COL_WIDTH = 130;
 
 /**
  * Колонки без сортировки и без «+»; добавление задач — только через ПКМ.
  * Бюджет — для Project/Contract/Stage (у task пусто).
+ * У coexecutor План/Факт (ч.) с API приходят null → «—».
  */
 export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
-  { id: 'text', header: 'Название', width: 300, align: 'left', resize: true, sort: false },
+  { id: 'text', header: 'Название', width: 280, align: 'left', resize: true, sort: false },
+  {
+    id: 'taskClass',
+    header: 'Класс',
+    width: CLASS_COL_WIDTH,
+    align: 'center',
+    resize: true,
+    sort: false,
+    template: (value: unknown) => formatTaskClassCell(value),
+  },
   {
     id: 'start',
     header: 'Начало',
@@ -44,7 +66,6 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
     template: (value: unknown) => formatDateCell(value),
   },
   {
-    // Задача — вручную; этап — max по детям; проект/договор — из карточки.
     id: 'end',
     header: 'Окончание',
     width: DATE_COL_WIDTH,
@@ -54,7 +75,6 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
     template: (value: unknown) => formatDateCell(value),
   },
   {
-    // Проект/договор/этап — свой дедлайн из карточки; задача/подзадача — срок этапа.
     id: 'deadline',
     header: 'Срок',
     width: DATE_COL_WIDTH,
@@ -73,8 +93,26 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
     template: (value: unknown) => formatBudgetCell(value),
   },
   {
+    id: 'planAmount',
+    header: 'План, ₽',
+    width: BUDGET_COL_WIDTH,
+    align: 'center',
+    resize: true,
+    sort: false,
+    template: (value: unknown) => formatBudgetCell(value),
+  },
+  {
+    id: 'factAmount',
+    header: 'Факт, ₽',
+    width: BUDGET_COL_WIDTH,
+    align: 'center',
+    resize: true,
+    sort: false,
+    template: (value: unknown) => formatBudgetCell(value),
+  },
+  {
     id: 'laborHours',
-    header: 'План',
+    header: 'План (ч.)',
     width: HOURS_COL_WIDTH,
     align: 'center',
     resize: true,
@@ -83,7 +121,7 @@ export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
   },
   {
     id: 'actualHours',
-    header: 'Факт',
+    header: 'Факт (ч.)',
     width: HOURS_COL_WIDTH,
     align: 'center',
     resize: true,
@@ -97,4 +135,10 @@ export type GanttGridTaskFields = Pick<ITask, 'start' | 'end'> & {
   laborHours?: number | null;
   actualHours?: number | null;
   budget?: number | null;
+  planAmount?: number | null;
+  factAmount?: number | null;
+  hourlyRate?: number | null;
+  taskClass?: string | null;
 };
+
+export { TASK_CLASS_LABELS };

@@ -11,16 +11,16 @@ export type GanttHierarchyNode = {
   name: string;
   start: string; // YYYY-MM-DD
   end: string; // YYYY-MM-DD
-  /** Срок (дедлайн), опционально */
   deadline?: string;
-  /** Нижняя граница срока этапа (planned start), для валидации задач */
   boundStart?: string;
-  /** Плановые трудозатраты, ч */
-  laborHours?: number;
-  /** Фактические трудозатраты, ч */
-  actualHours?: number;
-  /** Бюджет (только project/contract/stage) */
+  laborHours?: number | null;
+  actualHours?: number | null;
   budget?: number | null;
+  taskClass?: 'technical' | 'coexecutor' | 'auxiliary';
+  isAutoAuxiliary?: boolean;
+  hourlyRate?: number | null;
+  planAmount?: number | null;
+  factAmount?: number | null;
   progress?: number;
   children?: GanttHierarchyNode[];
   projectCode?: string;

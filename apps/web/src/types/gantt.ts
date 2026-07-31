@@ -7,12 +7,20 @@ export type GanttApiTaskNode = {
   deadline?: string | null;
   progress?: number;
   status?: string;
-  planned_hours?: number;
-  actual_hours?: number;
-  labor_hours?: number;
+  /** technical | coexecutor | auxiliary */
+  task_class?: 'technical' | 'coexecutor' | 'auxiliary';
+  /** Системная вспомогательная задача проекта. */
+  is_auto_auxiliary?: boolean;
+  planned_hours?: number | null;
+  actual_hours?: number | null;
+  labor_hours?: number | null;
+  hourly_rate?: number | null;
+  plan_amount?: number | null;
+  fact_amount?: number | null;
   budget?: number | null;
   responsible_user_id?: string | null;
   assignee_ids?: string[];
+  assignee_plans?: Array<{ user_id: string; planned_hours: number }>;
   sort_order?: number;
   children?: GanttApiTaskNode[];
 };
@@ -31,6 +39,8 @@ export type GanttApiStageNode = {
   planned_hours?: number;
   actual_hours?: number;
   labor_hours?: number;
+  plan_amount?: number | null;
+  fact_amount?: number | null;
   children?: GanttApiTaskNode[];
 };
 
@@ -47,6 +57,8 @@ export type GanttApiContractNode = {
   planned_hours?: number;
   actual_hours?: number;
   labor_hours?: number;
+  plan_amount?: number | null;
+  fact_amount?: number | null;
   children?: GanttApiStageNode[];
 };
 
@@ -62,6 +74,8 @@ export type GanttApiProjectNode = {
   planned_hours?: number;
   actual_hours?: number;
   labor_hours?: number;
+  plan_amount?: number | null;
+  fact_amount?: number | null;
   children?: GanttApiContractNode[];
 };
 
@@ -95,6 +109,7 @@ export type GanttTaskDto = {
   deadline: string | null;
   progress: number;
   status: string;
+  task_class?: 'technical' | 'coexecutor' | 'auxiliary';
   planned_hours: number;
   actual_hours: number;
   responsible_user_id: string | null;

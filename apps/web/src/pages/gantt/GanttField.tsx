@@ -13,6 +13,7 @@ import {
 import './svar-gantt.css';
 
 import { useGanttHierarchy } from '../../api/gantt/ganttApiHooks';
+import { useUsers } from '../../api/users/userApiHooks';
 import { GanttChromeToolbar } from './GanttChromeToolbar';
 import { USE_GANTT_MOCKS } from './ganttConfig';
 import {
@@ -41,10 +42,11 @@ import { attachZoomAnchor } from './lib/attachZoomAnchor';
 import { exportGanttToExcel } from './lib/exportGanttToExcel';
 import { filterGanttLinksByTasks, filterGanttTasksByQuery } from './lib/filterGanttTasksByQuery';
 import { cloneGanttTasks, linksFromApi, scrollChartToCurrentMonth } from './lib/ganttApi';
+import { createGanttEditorItems, formatUserLabel } from './lib/ganttEditorItems';
 import { hierarchyChartKey } from './lib/hierarchyChartKey';
 import { mapApiHierarchyToGantt } from './lib/mapApiHierarchyToGantt';
 import { mapAllMockProjectsToGantt } from './lib/mapHierarchyToGantt';
-import { presentGanttDateWarnings } from './lib/presentGanttDateWarnings';
+import { presentGanttDateWarnings, ganttDateWarningsKey } from './lib/presentGanttDateWarnings';
 import { applyOpenState, attachTreeOpenPersist, loadOpenIdsForChart } from './lib/treeOpenState';
 import { highlightWorkCalendar } from './lib/workCalendar';
 import { GANTT_MOCK_PROJECTS } from './mock/ganttHierarchyMock';
@@ -66,7 +68,8 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   const confirmRef = useRef(modal.confirm);
   confirmRef.current = modal.confirm;
   const criticalRef = useRef<CriticalPathController | null>(null);
-  const warningsShownRef = useRef(false);
+  /** Ключ последнего показанного набора warnings (fetch + содержимое) — не глушим навсегда. */
+  const warningsShownKeyRef = useRef<string | null>(null);
 
   const [api, setApi] = useState<IApi | null>(null);
   const [chartEpoch, setChartEpoch] = useState(0);
@@ -75,6 +78,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
   const hierarchyQuery = useGanttHierarchy(!USE_GANTT_MOCKS);
   const refetchHierarchy = hierarchyQuery.refetch;
+  const usersQuery = useUsers(2, true);
   const chartDataKey = USE_GANTT_MOCKS ? 'mocks' : hierarchyChartKey(hierarchyQuery.data);
 
   const toolbarItems = useMemo(
@@ -82,6 +86,14 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     [],
   );
   const contextMenuOptions = useMemo(() => createGanttContextMenuOptions(), []);
+
+  const editorItems = useMemo(() => {
+    const users = (usersQuery.data?.data ?? []).map(user => ({
+      id: user.id,
+      text: formatUserLabel(user),
+    }));
+    return createGanttEditorItems(users);
+  }, [usersQuery.data]);
 
   const sourceChart = useMemo(() => {
     if (USE_GANTT_MOCKS) return mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS);
@@ -104,14 +116,24 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   }, [mapped]);
 
   useEffect(() => {
-    if (USE_GANTT_MOCKS || !hierarchyQuery.data || warningsShownRef.current) return;
+    if (USE_GANTT_MOCKS || !hierarchyQuery.data) return;
     const warnings = hierarchyQuery.data.date_warnings ?? [];
-    if (warnings.length === 0) return;
-    warningsShownRef.current = true;
+    if (warnings.length === 0) {
+      warningsShownKeyRef.current = null;
+      return;
+    }
+
+    // Каждый fetch с превышением → показать. Тот же fetch/тот же набор — не дублировать.
+    const key = `${hierarchyQuery.dataUpdatedAt}:${ganttDateWarningsKey(warnings)}`;
+    if (warningsShownKeyRef.current === key) return;
+    warningsShownKeyRef.current = key;
+
     presentGanttDateWarnings(warnings, props => confirmRef.current(props), () => {
+      // После «Изменить» сбрасываем ключ, чтобы refetch снова проверил warnings.
+      warningsShownKeyRef.current = null;
       void refetchHierarchy();
     });
-  }, [hierarchyQuery.data, refetchHierarchy]);
+  }, [hierarchyQuery.data, hierarchyQuery.dataUpdatedAt, refetchHierarchy]);
 
   const handleInit = useCallback((ganttApi: IApi) => {
     apiRef.current = ganttApi;
@@ -288,7 +310,9 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
                   }
                   init={handleInit}
                 />
-                {api ? <Editor api={api} placement='sidebar' /> : null}
+                {api ? (
+                  <Editor api={api} placement='sidebar' items={editorItems} />
+                ) : null}
               </div>
             </ContextMenu>
           </Locale>

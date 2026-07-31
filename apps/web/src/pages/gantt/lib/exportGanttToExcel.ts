@@ -119,8 +119,8 @@ function buildGanttSheet(tasks: ITask[]): BuiltSheet {
     'Длительность',
     'Прогресс %',
     'Дедлайн',
-    'Трудозатраты',
-    'Факт',
+    'План (ч.)',
+    'Факт (ч.)',
   ];
 
   const levels: number[] = [];

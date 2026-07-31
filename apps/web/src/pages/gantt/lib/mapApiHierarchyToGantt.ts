@@ -12,10 +12,20 @@ import {
 import { ensureDateRange } from './ganttDates';
 import { mapHierarchyForestToGantt } from './mapHierarchyToGantt';
 
-function hours(node: { planned_hours?: number; labor_hours?: number; actual_hours?: number }) {
+function hours(node: {
+  planned_hours?: number | null;
+  labor_hours?: number | null;
+  actual_hours?: number | null;
+  plan_amount?: number | null;
+  fact_amount?: number | null;
+  hourly_rate?: number | null;
+}) {
   return {
-    laborHours: node.planned_hours ?? node.labor_hours ?? 0,
-    actualHours: node.actual_hours ?? 0,
+    laborHours: node.planned_hours ?? node.labor_hours ?? null,
+    actualHours: node.actual_hours ?? null,
+    planAmount: node.plan_amount ?? null,
+    factAmount: node.fact_amount ?? null,
+    hourlyRate: node.hourly_rate ?? null,
   };
 }
 
@@ -33,6 +43,8 @@ function mapTask(
     start: range.start,
     end: range.end,
     deadline: node.deadline ?? stageDeadline ?? range.end,
+    taskClass: node.task_class ?? 'technical',
+    isAutoAuxiliary: Boolean(node.is_auto_auxiliary),
     ...hours(node),
     budget: null,
     progress: node.progress ?? 0,

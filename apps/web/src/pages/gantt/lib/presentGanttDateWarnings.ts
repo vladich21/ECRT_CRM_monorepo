@@ -5,6 +5,22 @@ import { projectApi } from '../../../api/projects/projectApi';
 import type { GanttDateWarning } from '../../../types/gantt';
 import { type GanttConfirmFn, runGanttConfirm } from './ganttConfirm';
 
+export function ganttDateWarningsKey(warnings: GanttDateWarning[]): string {
+  return warnings
+    .map(
+      w =>
+        [
+          w.project_id,
+          w.contract_id,
+          w.reason,
+          w.suggested_project_start ?? '',
+          w.suggested_project_end ?? '',
+        ].join(':'),
+    )
+    .sort()
+    .join('|');
+}
+
 /**
  * Предупреждения: сроки договора выходят за сроки проекта.
  * Предлагает расширить даты проекта.

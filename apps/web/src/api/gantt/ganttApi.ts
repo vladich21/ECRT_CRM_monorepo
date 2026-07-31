@@ -33,6 +33,12 @@ export const ganttApi = {
       .post(`/gantt/tasks/${taskId}/time-entries`, body)
       .then(r => r.data),
 
+  updateTimeEntry: (id: string, body: Record<string, unknown>) =>
+    apiClient.put(`/gantt/time-entries/${id}`, body).then(r => r.data),
+
+  deleteTimeEntry: (id: string) =>
+    apiClient.delete(`/gantt/time-entries/${id}`).then(r => r.data),
+
   createLink: (body: { source: string; target: string; type?: string }) =>
     apiClient.post('/gantt/links', body).then(r => r.data),
 

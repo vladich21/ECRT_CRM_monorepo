@@ -17,8 +17,29 @@
 - договор = сумма бюджетов этапов в Ганте (без `amount_excl_vat`);
 - проект = сумма бюджетов договоров.
 
+**Класс задачи** (`task_class`, SQL: `docs/gantt-task-class.sql`):
+- `technical` — Техническая (часы доступны; План/Факт ₽ = часы × `hourly_rate`);
+- `coexecutor` — Соисполнитель (План/Факт ч. и ₽ в hierarchy = null);
+- `auxiliary` — Вспомогательная.
+
+**Ставка и раздача плана** (SQL: `docs/gantt-rates-assignee-plans.sql`):
+- `gantt_tasks.hourly_rate` — ₽/ч;
+- `gantt_task_assignees.planned_hours` — план часов на исполнителя;
+- create/update: `assignee_ids: string[]` или `assignee_plans: [{ user_id, planned_hours }]`.
+
 Разрез этапа в карточке договора: `coexecutor_budget` + `own_budget` = `planned_budget`.
 SQL: `docs/contract-stage-budget-split.sql`.
+
+## Таймшит (контракт интеграции)
+
+Клиент таймшита **должен** вызывать:
+
+1. `GET /gantt/tasks?user_id=&from=&to=&status=` — перечень задач сотрудника + `planned_hours`, `assignee_ids`, `assignee_plans`, мета проекта/договора/этапа.
+2. `POST /gantt/tasks/:id/time-entries` — списание `{ user_id, work_date, hours, comment?, external_id? }`.
+3. `PUT /gantt/time-entries/:id` / `DELETE /gantt/time-entries/:id` — правка/удаление.
+
+`actual_hours` в hierarchy и list = `SUM(gantt_task_time_entries.hours)`.
+В этом monorepo UI Ганта **не** пишет списания сам — только читает агрегаты.
 
 ## Задачи (отдать Юрию)
 

@@ -24,6 +24,30 @@ export type DateWarning = {
   suggested_project_end: string | null;
 };
 
+export type GanttTaskClass = 'technical' | 'coexecutor' | 'auxiliary';
+
+export const GANTT_TASK_CLASSES: GanttTaskClass[] = ['technical', 'coexecutor', 'auxiliary'];
+
+/** Имя системной вспомогательной задачи проекта. */
+export const AUTO_AUXILIARY_TASK_NAME = 'Вспомогательная';
+
+export function parseTaskClass(value: unknown): GanttTaskClass {
+  if (value === 'coexecutor' || value === 'auxiliary' || value === 'technical') return value;
+  return 'technical';
+}
+
+/** Задача считается завершённой для синхронизации вспомогательной. */
+export function isGanttTaskDone(task: {
+  status?: string | null;
+  progress?: number | null;
+}): boolean {
+  const status = (task.status ?? '').toLowerCase().trim();
+  if (['done', 'completed', 'closed', 'finished', 'complete'].includes(status)) {
+    return true;
+  }
+  return (task.progress ?? 0) >= 100;
+}
+
 export type HierarchyTaskNode = {
   id: string;
   kind: 'task';
@@ -33,12 +57,18 @@ export type HierarchyTaskNode = {
   deadline: string | null;
   progress: number;
   status: string;
-  planned_hours: number;
-  actual_hours: number;
-  labor_hours: number;
+  task_class: GanttTaskClass;
+  is_auto_auxiliary: boolean;
+  planned_hours: number | null;
+  actual_hours: number | null;
+  labor_hours: number | null;
+  hourly_rate: number | null;
+  plan_amount: number | null;
+  fact_amount: number | null;
   budget: null;
   responsible_user_id: string | null;
   assignee_ids: string[];
+  assignee_plans: Array<{ user_id: string; planned_hours: number }>;
   sort_order: number;
   children: HierarchyTaskNode[];
 };
@@ -141,7 +171,7 @@ export function buildTaskTree(
   parentId: string | null,
   tasksByStage: Map<string, Array<typeof ganttTasks.$inferSelect>>,
   actualByTask: Map<string, number>,
-  assigneesByTask: Map<string, string[]>,
+  assigneesByTask: Map<string, Array<{ userId: string; plannedHours: number }>>,
   /** «Срок» этапа — подставляем в задачи без своего deadline. */
   stageDeadline: string | null = null,
 ): HierarchyTaskNode[] {
@@ -158,16 +188,43 @@ export function buildTaskTree(
       assigneesByTask,
       stageDeadline,
     );
+    const taskClass = parseTaskClass(task.taskClass);
+    const hoursHidden = taskClass === 'coexecutor';
+    const rate = task.hourlyRate != null ? toNum(task.hourlyRate) : null;
+
     const ownPlan = toNum(task.plannedHours);
     const ownFact = actualByTask.get(task.id) ?? 0;
+    const childPlan = children.reduce((s, c) => s + (c.planned_hours ?? 0), 0);
+    const childFact = children.reduce((s, c) => s + (c.actual_hours ?? 0), 0);
     const plannedHours =
-      children.length > 0 ? children.reduce((s, c) => s + c.planned_hours, 0) : ownPlan;
+      hoursHidden ? null : children.length > 0 ? childPlan : ownPlan;
     const actualHours =
-      children.length > 0 ? children.reduce((s, c) => s + c.actual_hours, 0) : ownFact;
+      hoursHidden ? null : children.length > 0 ? childFact : ownFact;
+
+    const childPlanRub = children.reduce((s, c) => s + (c.plan_amount ?? 0), 0);
+    const childFactRub = children.reduce((s, c) => s + (c.fact_amount ?? 0), 0);
+    // Technical: ₽ = ч × ставка. У родителей — сумма детей. Coexecutor: ₽ null.
+    let planAmount: number | null = null;
+    let factAmount: number | null = null;
+    if (hoursHidden) {
+      planAmount = null;
+      factAmount = null;
+    } else if (children.length > 0) {
+      planAmount = childPlanRub;
+      factAmount = childFactRub;
+    } else if (rate != null && rate > 0) {
+      planAmount = Math.round(ownPlan * rate * 100) / 100;
+      factAmount = Math.round(ownFact * rate * 100) / 100;
+    }
+
+    const assigneeRows = assigneesByTask.get(task.id) ?? [];
+    const assigneePlans = assigneeRows.map(row => ({
+      user_id: row.userId,
+      planned_hours: row.plannedHours,
+    }));
 
     const ownStart = toDateStr(task.startDate);
     const ownEnd = toDateStr(task.endDate);
-    // У родителя «Окончание»/«Начало» — по детям; у листа — свои даты.
     const rolled = children.length > 0 ? rollupTaskDateRange(children) : null;
 
     return {
@@ -179,12 +236,18 @@ export function buildTaskTree(
       deadline: toDateStr(task.deadline) ?? stageDeadline,
       progress: task.progress ?? 0,
       status: task.status,
+      task_class: taskClass,
+      is_auto_auxiliary: Boolean(task.isAutoAuxiliary),
       planned_hours: plannedHours,
       actual_hours: actualHours,
       labor_hours: plannedHours,
+      hourly_rate: rate,
+      plan_amount: planAmount,
+      fact_amount: factAmount,
       budget: null,
       responsible_user_id: task.responsibleUserId,
-      assignee_ids: assigneesByTask.get(task.id) ?? [],
+      assignee_ids: assigneeRows.map(row => row.userId),
+      assignee_plans: assigneePlans,
       sort_order: task.sortOrder,
       children,
     };
