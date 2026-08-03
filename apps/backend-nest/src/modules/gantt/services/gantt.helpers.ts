@@ -28,8 +28,17 @@ export type GanttTaskClass = 'technical' | 'coexecutor' | 'auxiliary';
 
 export const GANTT_TASK_CLASSES: GanttTaskClass[] = ['technical', 'coexecutor', 'auxiliary'];
 
+/** Классы, доступные при ручном создании задачи в этапе. */
+export const MANUAL_GANTT_TASK_CLASSES: GanttTaskClass[] = ['technical', 'coexecutor'];
+
 /** Имя системной вспомогательной задачи проекта. */
 export const AUTO_AUXILIARY_TASK_NAME = 'Вспомогательная';
+
+export function formatAutoAuxiliaryTaskName(projectCode: string | null | undefined): string {
+  const code = projectCode?.trim();
+  if (!code) return AUTO_AUXILIARY_TASK_NAME;
+  return `${code} — ${AUTO_AUXILIARY_TASK_NAME}`;
+}
 
 export function parseTaskClass(value: unknown): GanttTaskClass {
   if (value === 'coexecutor' || value === 'auxiliary' || value === 'technical') return value;
@@ -203,12 +212,14 @@ export function buildTaskTree(
 
     const childPlanRub = children.reduce((s, c) => s + (c.plan_amount ?? 0), 0);
     const childFactRub = children.reduce((s, c) => s + (c.fact_amount ?? 0), 0);
-    // Technical: ₽ = ч × ставка. У родителей — сумма детей. Coexecutor: ₽ null.
+    const ownPlanRub = task.planAmount != null ? toNum(task.planAmount) : null;
+    const ownFactRub = task.factAmount != null ? toNum(task.factAmount) : null;
+    // Technical: ₽ = ч × ставка. Coexecutor: ₽ вручную. У родителей — сумма детей.
     let planAmount: number | null = null;
     let factAmount: number | null = null;
     if (hoursHidden) {
-      planAmount = null;
-      factAmount = null;
+      planAmount = children.length > 0 ? childPlanRub : ownPlanRub;
+      factAmount = children.length > 0 ? childFactRub : ownFactRub;
     } else if (children.length > 0) {
       planAmount = childPlanRub;
       factAmount = childFactRub;

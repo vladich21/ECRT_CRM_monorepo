@@ -122,4 +122,88 @@ describe('mapApiHierarchyToGantt', () => {
     expect(tasks.find(t => t.id === 's2')?.budget).toBe(500);
     expect(tasks.find(t => t.id === 'c1')?.budget).toBe(800);
   });
+
+  it('shows project name without duplicate code in title', () => {
+    const { tasks } = mapApiHierarchyToGantt({
+      projects: [
+        {
+          id: 'p1',
+          kind: 'project',
+          name: '240015 - ВСМ Москва',
+          project_code: '240015',
+          start: '2026-01-01',
+          end: '2026-12-31',
+          children: [],
+        },
+      ],
+      links: [],
+      date_warnings: [],
+    });
+
+    expect(tasks.find(t => t.id === 'p1')?.text).toBe('ВСМ Москва');
+    expect(tasks.find(t => t.id === 'p1')?.projectCode).toBe('240015');
+  });
+
+  it('hoists auto auxiliary task to project level', () => {
+    const { tasks } = mapApiHierarchyToGantt({
+      projects: [
+        {
+          id: 'p1',
+          kind: 'project',
+          name: 'Проект',
+          project_code: '240015',
+          start: '2026-01-01',
+          end: '2026-12-31',
+          children: [
+            {
+              id: 'c1',
+              kind: 'contract',
+              name: 'Договор',
+              start: '2026-02-01',
+              end: '2026-06-01',
+              children: [
+                {
+                  id: 's1',
+                  kind: 'stage',
+                  name: 'Этап',
+                  stage_number: 1,
+                  start: '2026-02-01',
+                  end: '2026-03-01',
+                  children: [
+                    {
+                      id: 'aux1',
+                      kind: 'task',
+                      name: 'Вспомогательная',
+                      start: '2026-02-01',
+                      end: '2026-03-01',
+                      task_class: 'auxiliary',
+                      is_auto_auxiliary: true,
+                      children: [],
+                    },
+                    {
+                      id: 't1',
+                      kind: 'task',
+                      name: 'Задача',
+                      start: '2026-02-05',
+                      end: '2026-02-20',
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      links: [],
+      date_warnings: [],
+    });
+
+    const aux = tasks.find(t => t.id === 'aux1');
+    expect(aux?.parent).toBe('p1');
+    expect(aux?.isAutoAuxiliary).toBe(true);
+    expect(aux?.text).toBe('240015 — Вспомогательная');
+    expect(tasks.find(t => t.id === 's1')?.parent).toBe('c1');
+    expect(tasks.filter(t => t.parent === 's1').map(t => t.id)).toEqual(['t1']);
+  });
 });

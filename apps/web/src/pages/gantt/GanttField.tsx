@@ -20,12 +20,15 @@ import {
   createGanttContextMenuOptions,
   filterGanttContextMenu,
 } from './ganttContextMenu';
+import { GANTT_TASK_TYPES } from './ganttTaskTypes';
 import { GANTT_UI } from './ganttFeatures';
 import { GANTT_GRID_COLUMNS } from './ganttGridColumns';
 import { GANTT_RU_LOCALE } from './ganttRuLocale';
 import { createGanttToolbarItems } from './ganttToolbar';
 import { GANTT_MONTH_CELL_WIDTH, GANTT_MONTH_SCALES, GANTT_ZOOM_CONFIG } from './ganttZoom';
 import { autoScheduleFs } from './lib/autoScheduleFs';
+import { captureDomainTimelinePins, attachDomainSummaryDatePin } from './lib/attachDomainSummaryDatePin';
+import { attachDomainBarStyle } from './lib/attachDomainBarStyle';
 import { attachApiTaskPersist } from './lib/attachApiTaskPersist';
 import { attachConfirmGuards } from './lib/attachConfirmGuards';
 import {
@@ -139,12 +142,14 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     apiRef.current = ganttApi;
     setApi(ganttApi);
     setChartEpoch(epoch => epoch + 1);
+    window.setTimeout(() => captureDomainTimelinePins(ganttApi), 0);
   }, []);
 
   useEffect(() => {
     if (!api) return;
 
     const detachSelection = attachSelectionChrome(api);
+    const detachSummaryPin = attachDomainSummaryDatePin(api);
     const detachHierarchy = attachHierarchyMoveGuard(api);
     const detachTypeSync = attachTaskTypeSync(api);
     const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
@@ -158,6 +163,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
 
     return () => {
       detachSelection();
+      detachSummaryPin();
       detachHierarchy();
       detachTypeSync();
       detachConfirm();
@@ -174,11 +180,13 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     let detachPan: (() => void) | null = null;
     let detachToday: (() => void) | null = null;
     let detachZoom: (() => void) | null = null;
+    let detachDomainBarStyle: (() => void) | null = null;
 
     // SVAR chart DOM появляется после paint — короткая отсрочка для pan/zoom/today.
     const timer = window.setTimeout(() => {
       detachPan = attachTimelinePan(api, root);
       detachZoom = attachZoomAnchor(api, root);
+      detachDomainBarStyle = attachDomainBarStyle(api, root);
       const chartEl = root.querySelector('.wx-chart') as HTMLElement | null;
       if (chartEl) scrollChartToCurrentMonth(api, chartEl);
       detachToday = attachTodayMarker(api);
@@ -188,6 +196,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
       window.clearTimeout(timer);
       detachPan?.();
       detachZoom?.();
+      detachDomainBarStyle?.();
       detachToday?.();
     };
   }, [api, chartEpoch, searchQuery]);
@@ -296,6 +305,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
                   key={`${searchQuery.trim().toLowerCase() || 'all'}-${chartDataKey}`}
                   tasks={mapped.tasks}
                   links={mapped.links}
+                  taskTypes={GANTT_TASK_TYPES}
                   scales={GANTT_MONTH_SCALES}
                   columns={GANTT_GRID_COLUMNS}
                   cellWidth={GANTT_MONTH_CELL_WIDTH}

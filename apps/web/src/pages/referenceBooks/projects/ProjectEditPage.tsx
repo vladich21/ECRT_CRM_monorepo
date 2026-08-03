@@ -7,7 +7,7 @@ import {
   SaveOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Button, Checkbox, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+import { Button, Checkbox, Col, DatePicker, Divider, Form, Input, Row, Select, App } from 'antd';
 import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -29,6 +29,7 @@ const { TextArea } = Input;
 export default function ProjectEditPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { modal } = App.useApp();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -63,18 +64,37 @@ export default function ProjectEditPage() {
     if (payload.end_date && dayjs.isDayjs(payload.end_date)) {
       payload.end_date = payload.end_date.format('YYYY-MM-DD');
     }
-    mutate(
-      { id: projectId!, data: payload },
-      {
-        onSuccess: () => {
-          showNotification('success', 'Успех', 'Проект успешно изменен');
-          setTimeout(() => navigate(-1), 1000);
+
+    const submit = () => {
+      mutate(
+        { id: projectId!, data: payload },
+        {
+          onSuccess: () => {
+            showNotification('success', 'Успех', 'Проект успешно изменен');
+            setTimeout(() => navigate(-1), 1000);
+          },
+          onError: () => {
+            showNotification('error', 'Ошибка', 'Не удалось изменить проект');
+          },
         },
-        onError: () => {
-          showNotification('error', 'Ошибка', 'Не удалось изменить проект');
-        },
-      },
-    );
+      );
+    };
+
+    const enablingGantt =
+      payload.plan_in_gantt === true && project.plan_in_gantt === false;
+    if (enablingGantt) {
+      modal.confirm({
+        title: 'Планирование в диаграмме Ганта',
+        content:
+          'Для проекта будет создана системная задача «Вспомогательная» с классом «Вспомогательная». Исполнители будут синхронизироваться автоматически из технических задач. Продолжить?',
+        okText: 'Продолжить',
+        cancelText: 'Отмена',
+        onOk: submit,
+      });
+      return;
+    }
+
+    submit();
   };
   const statusBadge = (() => {
     const statusCode = (wStatus ?? (project as any)?.status) as string | undefined;

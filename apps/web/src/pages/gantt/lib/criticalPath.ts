@@ -1,5 +1,6 @@
 import type { ILink, ITask, TID } from '@svar-ui/react-gantt';
 
+import { GANTT_DOMAIN_TASK_TYPE } from '../ganttTaskTypes';
 import { durationFromRange } from './autoScheduleFs';
 import { toDayStart } from './workCalendar';
 
@@ -12,8 +13,9 @@ function taskKey(id: TID | undefined): string {
   return String(id ?? '');
 }
 
-function isLeaf(task: ITask): boolean {
-  return task.type !== 'summary';
+function isLeaf(task: ITask & { entityKind?: string }): boolean {
+  if (task.entityKind && task.entityKind !== 'task') return false;
+  return task.type !== 'summary' && task.type !== GANTT_DOMAIN_TASK_TYPE;
 }
 
 function taskDuration(task: ITask): number {

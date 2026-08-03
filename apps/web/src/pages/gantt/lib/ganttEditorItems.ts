@@ -13,9 +13,11 @@ function toSelectOptions(users: GanttEditorUserOption[]) {
   return users.map(user => ({ id: user.id, label: user.text }));
 }
 
-const TASK_CLASS_OPTIONS = (
+const MANUAL_TASK_CLASS_OPTIONS = (
   Object.entries(TASK_CLASS_LABELS) as Array<[string, string]>
-).map(([id, label]) => ({ id, label }));
+)
+  .filter(([id]) => id !== 'auxiliary')
+  .map(([id, label]) => ({ id, label }));
 
 /**
  * Поля Editor для рабочей задачи.
@@ -39,7 +41,7 @@ export function createGanttEditorItems(users: GanttEditorUserOption[]) {
       key: 'taskClass',
       label: 'Класс',
       comp: 'select',
-      options: TASK_CLASS_OPTIONS,
+      options: MANUAL_TASK_CLASS_OPTIONS,
       isDisabled: (values: { isAutoAuxiliary?: boolean }) =>
         values.isAutoAuxiliary === true,
     },
@@ -61,6 +63,19 @@ export function createGanttEditorItems(users: GanttEditorUserOption[]) {
       key: 'hourlyRate',
       label: 'Ставка, ₽/ч',
       comp: 'text',
+      isDisabled: (values: { taskClass?: string }) => values.taskClass === 'coexecutor',
+    },
+    {
+      key: 'planAmount',
+      label: 'План, ₽',
+      comp: 'text',
+      isDisabled: (values: { taskClass?: string }) => values.taskClass !== 'coexecutor',
+    },
+    {
+      key: 'factAmount',
+      label: 'Факт, ₽',
+      comp: 'text',
+      isDisabled: (values: { taskClass?: string }) => values.taskClass !== 'coexecutor',
     },
   ];
 

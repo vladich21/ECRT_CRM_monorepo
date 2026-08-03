@@ -9,7 +9,13 @@ import {
   openGanttInfoModal,
   runGanttConfirm,
 } from './ganttConfirm';
-import { cloneDate, dayKey, formatDateRu } from './ganttDates';
+import { dayKey, formatDateRu } from './ganttDates';
+import {
+  applyGanttTaskDates,
+  patchTouchesTaskDates,
+  snapshotTaskDates,
+  type TaskDateSnapshot,
+} from './ganttTaskDatePatch';
 import {
   closeGanttEditor,
   getGanttTask,
@@ -17,7 +23,7 @@ import {
   isGanttWorkTask,
   type GanttStoreTask,
 } from './ganttTaskStore';
-import { assertTaskDatesWithinStage } from './stageDateBounds';
+import { assertTaskDatesWithinStage, getStageDeadlineBounds } from './stageDateBounds';
 
 type ConfirmEvent = {
   id?: string | number;
@@ -27,11 +33,42 @@ type ConfirmEvent = {
   inProgress?: boolean;
 };
 
-type DateSnapshot = {
-  start?: Date;
-  end?: Date;
-  duration?: number;
-};
+type DateSnapshot = TaskDateSnapshot;
+
+function snapshotDates(task: GanttStoreTask | undefined): DateSnapshot {
+  return snapshotTaskDates(task);
+}
+
+function mergeDatePatch(base: DateSnapshot, patch: Partial<ITask> | undefined): DateSnapshot {
+  const next: DateSnapshot = { ...base };
+  if (!patch) return next;
+  if ('start' in patch) next.start = snapshotTaskDates({ start: patch.start as Date }).start;
+  if ('end' in patch) next.end = snapshotTaskDates({ end: patch.end as Date }).end;
+  if ('duration' in patch) {
+    next.duration = typeof patch.duration === 'number' ? patch.duration : undefined;
+  }
+  return next;
+}
+
+function datesChanged(before: DateSnapshot, after: DateSnapshot): boolean {
+  return (
+    dayKey(before.start) !== dayKey(after.start)
+    || dayKey(before.end) !== dayKey(after.end)
+    || (before.duration ?? null) !== (after.duration ?? null)
+  );
+}
+
+function formatDateRange(snapshot: DateSnapshot): string {
+  return `${formatDateRu(snapshot.start)} – ${formatDateRu(snapshot.end)}`;
+}
+
+function isStructuralEntity(task: GanttStoreTask | undefined): boolean {
+  return Boolean(task?.entityKind && !isGanttWorkTask(task));
+}
+
+function applyTaskDates(api: IApi, id: string | number, snapshot: DateSnapshot): void {
+  applyGanttTaskDates(api, id, snapshot);
+}
 
 const ENTITY_LABELS: Record<string, string> = {
   project: 'Удалить проект?',
@@ -86,58 +123,6 @@ function buildDeleteCopy(api: IApi, ids: Array<string | number>) {
   return { title, content };
 }
 
-function snapshotDates(task: GanttStoreTask | undefined): DateSnapshot {
-  return {
-    start: cloneDate(task?.start),
-    end: cloneDate(task?.end),
-    duration: typeof task?.duration === 'number' ? task.duration : undefined,
-  };
-}
-
-function mergeDatePatch(base: DateSnapshot, patch: Partial<ITask> | undefined): DateSnapshot {
-  const next: DateSnapshot = { ...base };
-  if (!patch) return next;
-  if ('start' in patch) next.start = cloneDate(patch.start as Date | undefined);
-  if ('end' in patch) next.end = cloneDate(patch.end as Date | undefined);
-  if ('duration' in patch) {
-    next.duration = typeof patch.duration === 'number' ? patch.duration : undefined;
-  }
-  return next;
-}
-
-function datesChanged(before: DateSnapshot, after: DateSnapshot): boolean {
-  return (
-    dayKey(before.start) !== dayKey(after.start)
-    || dayKey(before.end) !== dayKey(after.end)
-    || (before.duration ?? null) !== (after.duration ?? null)
-  );
-}
-
-function formatDateRange(snapshot: DateSnapshot): string {
-  return `${formatDateRu(snapshot.start)} – ${formatDateRu(snapshot.end)}`;
-}
-
-function patchTouchesDates(patch: Partial<ITask> | undefined): boolean {
-  if (!patch) return false;
-  return 'start' in patch || 'end' in patch || 'duration' in patch;
-}
-
-function isStructuralEntity(task: GanttStoreTask | undefined): boolean {
-  return Boolean(task?.entityKind && !isGanttWorkTask(task));
-}
-
-function applyTaskDates(api: IApi, id: string | number, snapshot: DateSnapshot): void {
-  void api.exec('update-task', {
-    id,
-    task: {
-      start: snapshot.start,
-      end: snapshot.end,
-      duration: snapshot.duration,
-    },
-    skipConfirm: true,
-  });
-}
-
 export function openGanttDeleteConfirm(
   api: IApi,
   ids: Array<string | number>,
@@ -159,6 +144,49 @@ export function openGanttDeleteConfirm(
           await api.exec('delete-task', { id, skipConfirm: true });
         }
       })();
+    },
+  });
+}
+
+function openStageExceedConfirm(
+  confirm: GanttConfirmFn,
+  opts: {
+    api: IApi;
+    id: string | number;
+    label: string;
+    before: DateSnapshot;
+    after: DateSnapshot;
+    stageError: string;
+    onSettled: () => void;
+  },
+): void {
+  const bounds = getStageDeadlineBounds(opts.api, opts.id);
+  const stageRange = bounds
+    ? `${formatDateRu(bounds.start)} – ${formatDateRu(bounds.end)}`
+    : '—';
+
+  let settled = false;
+  const finish = (snapshot: DateSnapshot) => {
+    if (settled) return;
+    settled = true;
+    applyTaskDates(opts.api, opts.id, snapshot);
+    opts.onSettled();
+  };
+
+  runGanttConfirm(confirm, {
+    title: 'Даты выходят за срок этапа',
+    content: createElement(
+      'div',
+      { style: { whiteSpace: 'pre-line' } },
+      `${opts.label}\n\nПеренести с ${formatDateRange(opts.before)} на ${formatDateRange(opts.after)}?\n\nСрок этапа: ${stageRange}.\n${opts.stageError}`,
+    ),
+    okText: 'Продолжить',
+    cancelText: 'Отмена',
+    onOk: () => finish(opts.after),
+    onCancel: () => finish(opts.before),
+    afterClose: () => {
+      if (!settled) finish(opts.before);
+      else opts.onSettled();
     },
   });
 }
@@ -186,6 +214,20 @@ export function attachConfirmGuards(api: IApi, confirm: GanttConfirmFn = Modal.c
             confirm,
             'Удаление недоступно',
             'Проекты, договоры и этапы нельзя удалить из диаграммы Ганта. Используйте соответствующие разделы системы.',
+          );
+        }
+        return false;
+      }
+
+      if (
+        !USE_GANTT_MOCKS &&
+        ids.some(id => (getGanttTask(api, id) as { isAutoAuxiliary?: boolean })?.isAutoAuxiliary)
+      ) {
+        if (!ev?.skipConfirm) {
+          openGanttInfoModal(
+            confirm,
+            'Удаление недоступно',
+            'Системную задачу «Вспомогательная» нельзя удалить вручную.',
           );
         }
         return false;
@@ -258,7 +300,7 @@ export function attachConfirmGuards(api: IApi, confirm: GanttConfirmFn = Modal.c
 
       const id = ev?.id;
       const current = id != null ? getGanttTask(api, id) : undefined;
-      const touchesDates = patchTouchesDates(ev?.task);
+      const touchesDates = patchTouchesTaskDates(ev?.task);
       const touchesProgress = Boolean(ev?.task && 'progress' in ev.task);
 
       // Progress: только %. SVAR иногда кладёт даты в тот же патч — отбрасываем.
@@ -292,20 +334,26 @@ export function attachConfirmGuards(api: IApi, confirm: GanttConfirmFn = Modal.c
       if (!datesChanged(before, after)) return true;
 
       const stageError = assertTaskDatesWithinStage(api, id, after);
+      const label = current?.text ? `«${current.text}»` : `ID ${id}`;
+
       if (stageError) {
-        applyTaskDates(api, id, before);
-        closeGanttEditor(api);
-        if (!dateConfirmOpen) {
-          dateConfirmOpen = true;
-          openGanttInfoModal(
-            confirm,
-            'Даты вне срока этапа',
-            `${stageError}\n\n«Срок» этапа задаётся в карточке этапа. «Окончание» задачи должно укладываться в этот срок.`,
-            () => {
-              dateConfirmOpen = false;
-            },
-          );
+        if (dateConfirmOpen) {
+          applyTaskDates(api, id, before);
+          return false;
         }
+        dateConfirmOpen = true;
+        closeGanttEditor(api);
+        openStageExceedConfirm(confirm, {
+          api,
+          id,
+          label,
+          before,
+          after,
+          stageError,
+          onSettled: () => {
+            dateConfirmOpen = false;
+          },
+        });
         return false;
       }
 
@@ -317,7 +365,6 @@ export function attachConfirmGuards(api: IApi, confirm: GanttConfirmFn = Modal.c
       }
 
       dateConfirmOpen = true;
-      const label = current?.text ? `«${current.text}»` : `ID ${id}`;
       let settled = false;
       const finish = (snapshot: DateSnapshot) => {
         if (settled) return;

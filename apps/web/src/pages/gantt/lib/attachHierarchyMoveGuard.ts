@@ -2,7 +2,7 @@ import type { IApi, ITask } from '@svar-ui/react-gantt';
 
 type EntityKind = 'project' | 'contract' | 'stage' | 'workPackage' | 'task' | string;
 
-type GanttTask = ITask & { entityKind?: EntityKind };
+type GanttTask = ITask & { entityKind?: EntityKind; isAutoAuxiliary?: boolean };
 
 type MoveEvent = {
   id: string | number;
@@ -126,10 +126,12 @@ export function canReorderAmongSiblings(tasks: TaskCollection, ev: MoveEvent): b
 export function canMoveWithinHierarchy(tasks: TaskCollection, ev: MoveEvent): boolean {
   if (ev.inProgress === false) return true;
 
-  const moving = tasks.byId(ev.id);
-  if (!moving) return true;
+      const moving = tasks.byId(ev.id);
+      if (!moving) return true;
 
-  if (!canReorderAmongSiblings(tasks, ev)) return false;
+      if (moving.isAutoAuxiliary) return false;
+
+      if (!canReorderAmongSiblings(tasks, ev)) return false;
 
   const kind = moving.entityKind;
 
@@ -185,6 +187,10 @@ export function canMoveWithinHierarchy(tasks: TaskCollection, ev: MoveEvent): bo
   }
 
   if (kind === 'workPackage' || kind === 'task' || !kind) {
+    if (moving.isAutoAuxiliary) {
+      return String(newParentId) === String(moving.parent ?? 0);
+    }
+
     const stageNow =
       findAncestorOfKind(tasks, moving.id, 'stage') ??
       findAncestorOfKind(tasks, moving.parent, 'stage');

@@ -43,7 +43,7 @@ const CLASS_COL_WIDTH = 130;
 /**
  * Колонки без сортировки и без «+»; добавление задач — только через ПКМ.
  * Бюджет — для Project/Contract/Stage (у task пусто).
- * У coexecutor План/Факт (ч.) с API приходят null → «—».
+ * У coexecutor План/Факт (ч.) с API приходят null → «—»; План/Факт ₽ — вручную.
  */
 export const GANTT_GRID_COLUMNS: IColumnConfig[] = [
   { id: 'text', header: 'Название', width: 280, align: 'left', resize: true, sort: false },

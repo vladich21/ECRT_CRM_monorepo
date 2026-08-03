@@ -10,6 +10,7 @@ import {
   type GanttMockLink,
 } from '../mock/ganttHierarchyMock';
 import { ensureDateRange } from './ganttDates';
+import { withAutoAuxiliaryProjectCode } from './ganttAuxiliary';
 import { mapHierarchyForestToGantt } from './mapHierarchyToGantt';
 
 function hours(node: {
@@ -32,8 +33,8 @@ function hours(node: {
 function mapTask(
   node: GanttApiTaskNode,
   parentRange: { start: string; end: string },
-  /** «Срок» этапа — для задач без своего deadline. */
   stageDeadline?: string | null,
+  stageId?: string,
 ): GanttHierarchyNode {
   const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
   return {
@@ -45,61 +46,104 @@ function mapTask(
     deadline: node.deadline ?? stageDeadline ?? range.end,
     taskClass: node.task_class ?? 'technical',
     isAutoAuxiliary: Boolean(node.is_auto_auxiliary),
+    ganttStageId: stageId,
     ...hours(node),
     budget: null,
     progress: node.progress ?? 0,
     status: node.status,
     responsibleUserId: node.responsible_user_id,
     assigneeIds: node.assignee_ids ?? [],
-    children: (node.children ?? []).map(child => mapTask(child, range, stageDeadline)),
+    children: (node.children ?? [])
+      .filter(child => !child.is_auto_auxiliary)
+      .map(child => mapTask(child, range, stageDeadline, stageId)),
   };
 }
 
-function mapStage(
+function mapStageTasks(
   node: GanttApiStageNode,
   parentRange: { start: string; end: string },
-): GanttHierarchyNode {
-  // start/end этапа на шкале = rollup подзадач; deadline = контрактный срок из карточки.
+): { stage: GanttHierarchyNode; auxiliaryTasks: GanttHierarchyNode[] } {
   const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
   const stageDeadline = node.deadline ?? range.end;
   const boundStart = node.bound_start ?? range.start;
+  const auxiliaryTasks: GanttHierarchyNode[] = [];
+  const taskChildren: GanttHierarchyNode[] = [];
+
+  for (const child of node.children ?? []) {
+    if (child.is_auto_auxiliary) {
+      auxiliaryTasks.push(mapTask(child, range, stageDeadline, node.id));
+      continue;
+    }
+    taskChildren.push(mapTask(child, range, stageDeadline, node.id));
+  }
+
   return {
-    id: node.id,
-    kind: 'stage',
-    name: node.name,
-    stageNumber: node.stage_number,
-    start: range.start,
-    end: range.end,
-    deadline: stageDeadline,
-    boundStart,
-    ...hours(node),
-    budget: node.budget ?? null,
-    children: (node.children ?? []).map(child => mapTask(child, range, stageDeadline)),
+    stage: {
+      id: node.id,
+      kind: 'stage',
+      name: node.name,
+      stageNumber: node.stage_number,
+      start: range.start,
+      end: range.end,
+      deadline: stageDeadline,
+      boundStart,
+      ...hours(node),
+      budget: node.budget ?? null,
+      children: taskChildren,
+    },
+    auxiliaryTasks,
   };
 }
 
 function mapContract(
   node: GanttApiContractNode,
   parentRange: { start: string; end: string },
-): GanttHierarchyNode {
+): { contract: GanttHierarchyNode; auxiliaryTasks: GanttHierarchyNode[] } {
   const range = ensureDateRange(node.start, node.end, parentRange.start, parentRange.end);
+  const auxiliaryTasks: GanttHierarchyNode[] = [];
+  const stageChildren: GanttHierarchyNode[] = [];
+
+  for (const stage of node.children ?? []) {
+    const mapped = mapStageTasks(stage, range);
+    stageChildren.push(mapped.stage);
+    auxiliaryTasks.push(...mapped.auxiliaryTasks);
+  }
+
   return {
-    id: node.id,
-    kind: 'contract',
-    name: node.name,
-    contractNumber: node.contract_number ?? undefined,
-    contractDateSigned: node.contract_date_signed ?? undefined,
-    start: range.start,
-    end: range.end,
-    deadline: node.deadline ?? range.end,
-    ...hours(node),
-    budget: node.budget ?? null,
-    children: (node.children ?? []).map(child => mapStage(child, range)),
+    contract: {
+      id: node.id,
+      kind: 'contract',
+      name: node.name,
+      contractNumber: node.contract_number ?? undefined,
+      contractDateSigned: node.contract_date_signed ?? undefined,
+      start: range.start,
+      end: range.end,
+      deadline: node.deadline ?? range.end,
+      ...hours(node),
+      budget: node.budget ?? null,
+      children: stageChildren,
+    },
+    auxiliaryTasks,
   };
 }
 
 function mapProject(node: GanttApiProjectNode): GanttHierarchyNode {
   const range = ensureDateRange(node.start, node.end);
+  const auxiliaryTasks: GanttHierarchyNode[] = [];
+  const contractChildren: GanttHierarchyNode[] = [];
+
+  for (const contract of node.children ?? []) {
+    const mapped = mapContract(contract, range);
+    contractChildren.push(mapped.contract);
+    auxiliaryTasks.push(...mapped.auxiliaryTasks);
+  }
+
+  // Одна вспомогательная на проект — показываем на уровне проекта, не внутри этапа.
+  const projectAuxiliary = auxiliaryTasks.slice(0, 1).map(task => ({
+    ...task,
+    name: withAutoAuxiliaryProjectCode(task.name, node.project_code, task.isAutoAuxiliary),
+  }));
+
   return {
     id: node.id,
     kind: 'project',
@@ -110,7 +154,7 @@ function mapProject(node: GanttApiProjectNode): GanttHierarchyNode {
     deadline: node.deadline ?? range.end,
     ...hours(node),
     budget: node.budget ?? null,
-    children: (node.children ?? []).map(child => mapContract(child, range)),
+    children: [...projectAuxiliary, ...contractChildren],
   };
 }
 

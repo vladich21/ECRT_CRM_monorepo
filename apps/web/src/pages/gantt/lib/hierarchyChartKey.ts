@@ -1,34 +1,29 @@
 import type { GanttHierarchyResponse } from '../../../types/gantt';
 
+type HierarchyWalkNode = {
+  id: string;
+  children?: HierarchyWalkNode[];
+};
+
 /**
- * Сигнатура дерева для remount SVAR: меняется при появлении/исчезновении
- * узлов, смене бюджетов и часов — без лишних remount при том же составе.
+ * Сигнатура дерева для remount SVAR: только состав узлов и связей.
+ * Часы/бюджеты меняются без полного remount диаграммы.
  */
 export function hierarchyChartKey(data: GanttHierarchyResponse | undefined): string {
   if (!data?.projects?.length) return 'empty';
 
   const parts: string[] = [];
 
-  const walkTasks = (
-    nodes: Array<{
-      id: string;
-      budget?: number | null;
-      planned_hours?: number;
-      actual_hours?: number;
-      children?: unknown[];
-    }>,
-  ) => {
+  const walk = (nodes: HierarchyWalkNode[]) => {
     for (const node of nodes) {
-      parts.push(
-        `${node.id}:${node.budget ?? 0}:${node.planned_hours ?? 0}:${node.actual_hours ?? 0}`,
-      );
+      parts.push(String(node.id));
       if (Array.isArray(node.children) && node.children.length > 0) {
-        walkTasks(node.children as typeof nodes);
+        walk(node.children);
       }
     }
   };
 
-  walkTasks(data.projects);
+  walk(data.projects);
   parts.push(`l${data.links?.length ?? 0}`);
   return parts.join('|');
 }

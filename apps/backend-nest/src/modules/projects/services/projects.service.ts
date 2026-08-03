@@ -6,6 +6,7 @@ import { projects } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
+import { GanttService } from '../../gantt/services/gantt.service';
 
 const REQUIRED_CREATE_FIELDS = ['code', 'name', 'short_name', 'start_date', 'status'] as const;
 
@@ -53,7 +54,10 @@ export type ProjectsFindAllResult =
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly ganttService: GanttService,
+  ) {}
 
   private mergeWhereParts(parts: SQL[]): SQL {
     if (parts.length === 0) {
@@ -169,10 +173,21 @@ export class ProjectsService {
 
     const insertData = this.mapToDb(data);
     const [row] = await this.db.db.insert(projects).values(insertData).returning();
+    if (row && insertData.planInGantt) {
+      try {
+        await this.ganttService.ensureProjectAutoAuxiliary(String(row.id));
+      } catch (error) {
+        this.logger.warn(
+          `[projects] ensureProjectAutoAuxiliary after create failed for ${row.id}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
     return row ? this.toResponse(row) : null;
   }
 
   async update(id: string, data: Record<string, unknown>) {
+    const before = await this.findOne(id);
     const map: Record<string, string> = {
       code: 'code',
       name: 'name',
@@ -195,6 +210,22 @@ export class ProjectsService {
       updateObj[camel] = data[snake];
     }
     await this.db.db.update(projects).set(updateObj).where(eq(projects.id, id));
+
+    const enablingGantt =
+      data.plan_in_gantt !== undefined &&
+      (data.plan_in_gantt === true || data.plan_in_gantt === 'true') &&
+      before?.plan_in_gantt === false;
+    if (enablingGantt) {
+      try {
+        await this.ganttService.ensureProjectAutoAuxiliary(id);
+      } catch (error) {
+        this.logger.warn(
+          `[projects] ensureProjectAutoAuxiliary after update failed for ${id}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+
     return this.findOne(id);
   }
 

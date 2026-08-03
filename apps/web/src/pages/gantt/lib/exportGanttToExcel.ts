@@ -49,13 +49,20 @@ function entityLabel(task: ITask): string {
   const kind = typeof task.entityKind === 'string' ? task.entityKind : '';
   if (kind && ENTITY_KIND_LABELS[kind]) return ENTITY_KIND_LABELS[kind];
   if (task.type === 'summary') return 'Сводка';
+  if (task.type === 'domain') return ENTITY_KIND_LABELS[kind] || 'Этап';
   if (task.type === 'milestone') return 'Веха';
   return 'Задача';
 }
 
 function isBranch(task: ITask): boolean {
-  return task.type === 'summary' || task.entityKind === 'project' || task.entityKind === 'contract'
-    || task.entityKind === 'stage' || task.entityKind === 'workPackage';
+  return (
+    task.type === 'summary'
+    || task.type === 'domain'
+    || task.entityKind === 'project'
+    || task.entityKind === 'contract'
+    || task.entityKind === 'stage'
+    || task.entityKind === 'workPackage'
+  );
 }
 
 /** Отступ прямо в тексте «Название» (как в MS Project) — видно в любом Excel. */

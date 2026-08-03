@@ -8,10 +8,9 @@ import { DatabaseService } from '../../../database/database.service';
 import {
   and,
   asc,
-  AUTO_AUXILIARY_TASK_NAME,
+  formatAutoAuxiliaryTaskName,
   buildTaskTree,
   collectContractProjectWarnings,
-  rollupTaskDateRange,
   contractStages,
   contracts,
   eq,
@@ -132,8 +131,8 @@ export class GanttService {
                 ),
               );
 
-      // Одна вспомогательная на проект + актуальные исполнители из technical.
-      await this.syncAutoAuxiliaryForProjects(projectIds);
+      // Синхронизация исполнителей у уже созданных вспомогательных (без автосоздания).
+      await this.syncExistingAutoAuxiliaryForProjects(projectIds);
 
       taskRows =
         stageIds.length === 0
@@ -225,17 +224,14 @@ export class GanttService {
               ? ownBudget
               : toNum(stage.plannedBudget);
 
-          // «Окончание»/«Начало» этапа на шкале — по подзадачам; без задач — плановые.
-          const rolled = rollupTaskDateRange(taskChildren);
-
+          // Шкала этапа — плановые даты из карточки (не rollup задач).
           return {
             id: stage.id,
             kind: 'stage' as const,
             name: stage.name,
             stage_number: stage.stageNumber,
-            // Начало/Окончание на шкале — по подзадачам; Срок — из карточки этапа.
-            start: rolled.start ?? stageDeadlineStart,
-            end: rolled.end ?? stageDeadline,
+            start: stageDeadlineStart,
+            end: stageDeadline,
             deadline: stageDeadline,
             /** Нижняя граница срока этапа (для проверки дат задач). */
             bound_start: stageDeadlineStart,
@@ -466,6 +462,13 @@ export class GanttService {
     const endDate = toDateStr(body.end_date) ?? toDateStr(body.end);
     await this.assertDatesWithinStage(stageId, startDate, endDate);
 
+    const taskClass = parseTaskClass(body.task_class ?? body.taskClass);
+    if (taskClass === 'auxiliary') {
+      throw new BadRequestException(
+        'Класс «Вспомогательная» создаётся автоматически при включении планирования проекта в Ганте',
+      );
+    }
+
     const [created] = await this.db.db
       .insert(ganttTasks)
       .values({
@@ -478,7 +481,7 @@ export class GanttService {
         progress: typeof body.progress === 'number' ? body.progress : 0,
         status: typeof body.status === 'string' ? body.status : 'open',
         plannedHours: String(toNum(body.planned_hours ?? body.labor_hours)),
-        taskClass: parseTaskClass(body.task_class ?? body.taskClass),
+        taskClass,
         ...(('hourly_rate' in body || 'hourlyRate' in body) &&
         (body.hourly_rate != null || body.hourlyRate != null)
           ? { hourlyRate: String(toNum(body.hourly_rate ?? body.hourlyRate)) }
@@ -486,13 +489,21 @@ export class GanttService {
         responsibleUserId:
           typeof body.responsible_user_id === 'string' ? body.responsible_user_id : null,
         sortOrder: typeof body.sort_order === 'number' ? body.sort_order : 0,
+        ...(('plan_amount' in body || 'planAmount' in body) &&
+        (body.plan_amount != null || body.planAmount != null)
+          ? { planAmount: String(toNum(body.plan_amount ?? body.planAmount)) }
+          : {}),
+        ...(('fact_amount' in body || 'factAmount' in body) &&
+        (body.fact_amount != null || body.factAmount != null)
+          ? { factAmount: String(toNum(body.fact_amount ?? body.factAmount)) }
+          : {}),
         createdBy: userId ?? null,
         updatedAt: new Date(),
       })
       .returning();
 
     await this.syncAssigneesFromBody(created.id, body);
-    await this.syncProjectAutoAuxiliaryByStage(stageId);
+    await this.syncExistingAutoAuxiliaryByStage(stageId);
 
     return this.getTask(created.id);
   }
@@ -548,11 +559,25 @@ export class GanttService {
       patch.plannedHours = String(toNum(body.planned_hours ?? body.labor_hours));
     }
     if ('task_class' in body || 'taskClass' in body) {
-      patch.taskClass = parseTaskClass(body.task_class ?? body.taskClass);
+      const nextClass = parseTaskClass(body.task_class ?? body.taskClass);
+      if (nextClass === 'auxiliary' && !existing.isAutoAuxiliary) {
+        throw new BadRequestException(
+          'Класс «Вспомогательная» назначается только системной задаче проекта',
+        );
+      }
+      patch.taskClass = nextClass;
     }
     if ('hourly_rate' in body || 'hourlyRate' in body) {
       const raw = body.hourly_rate ?? body.hourlyRate;
       patch.hourlyRate = raw == null || raw === '' ? null : String(toNum(raw));
+    }
+    if ('plan_amount' in body || 'planAmount' in body) {
+      const raw = body.plan_amount ?? body.planAmount;
+      patch.planAmount = raw == null || raw === '' ? null : String(toNum(raw));
+    }
+    if ('fact_amount' in body || 'factAmount' in body) {
+      const raw = body.fact_amount ?? body.factAmount;
+      patch.factAmount = raw == null || raw === '' ? null : String(toNum(raw));
     }
     if ('responsible_user_id' in body) {
       patch.responsibleUserId =
@@ -566,7 +591,7 @@ export class GanttService {
       await this.syncAssigneesFromBody(id, body);
     }
 
-    await this.syncProjectAutoAuxiliaryByStage(existing.stageId);
+    await this.syncExistingAutoAuxiliaryByStage(existing.stageId);
 
     return this.getTask(id);
   }
@@ -582,8 +607,13 @@ export class GanttService {
       .update(ganttTasks)
       .set({ isDeleted: true, updatedAt: new Date() })
       .where(eq(ganttTasks.id, id));
-    await this.syncProjectAutoAuxiliaryByStage(existing.stageId);
+    await this.syncExistingAutoAuxiliaryByStage(existing.stageId);
     return { ok: true };
+  }
+
+  /** Создать вспомогательную задачу проекта (при включении plan_in_gantt). */
+  async ensureProjectAutoAuxiliary(projectId: string) {
+    await this.syncProjectAutoAuxiliary(projectId, { createIfMissing: true });
   }
 
   async createTimeEntry(taskId: string, body: Record<string, unknown>) {
@@ -746,40 +776,18 @@ export class GanttService {
     start: string | null,
     end: string | null,
   ) {
-    const [stage] = await this.db.db
-      .select()
-      .from(contractStages)
-      .where(eq(contractStages.id, stageId))
-      .limit(1);
-    if (!stage) throw new BadRequestException('Этап не найден');
-
-    const stageStart =
-      toDateStr(stage.plannedStartDate) ?? toDateStr(stage.actualStartDate);
-    const stageEnd =
-      toDateStr(stage.plannedEndDate) ?? toDateStr(stage.actualEndDate);
-
-    if (start && stageStart && start < stageStart) {
-      throw new BadRequestException(
-        `Начало задачи (${start}) раньше срока этапа (${stageStart})`,
-      );
-    }
-    if (end && stageEnd && end > stageEnd) {
-      throw new BadRequestException(
-        `Окончание задачи (${end}) позже срока этапа (${stageEnd})`,
-      );
-    }
     if (start && end && start > end) {
       throw new BadRequestException('Начало задачи позже окончания');
     }
   }
 
-  private async syncAutoAuxiliaryForProjects(projectIds: string[]) {
+  private async syncExistingAutoAuxiliaryForProjects(projectIds: string[]) {
     for (const projectId of projectIds) {
-      await this.syncProjectAutoAuxiliary(projectId);
+      await this.syncProjectAutoAuxiliary(projectId, { createIfMissing: false });
     }
   }
 
-  private async syncProjectAutoAuxiliaryByStage(stageId: string) {
+  private async syncExistingAutoAuxiliaryByStage(stageId: string) {
     const [row] = await this.db.db
       .select({ projectId: contracts.projectId })
       .from(contractStages)
@@ -787,7 +795,7 @@ export class GanttService {
       .where(eq(contractStages.id, stageId))
       .limit(1);
     if (row?.projectId) {
-      await this.syncProjectAutoAuxiliary(row.projectId);
+      await this.syncProjectAutoAuxiliary(row.projectId, { createIfMissing: false });
     }
   }
 
@@ -797,7 +805,10 @@ export class GanttService {
    * - если у сотрудника все technical завершены — он снимается со вспомогательной;
    * - если активных исполнителей нет и technical все done — вспомогательная completed.
    */
-  private async syncProjectAutoAuxiliary(projectId: string) {
+  private async syncProjectAutoAuxiliary(
+    projectId: string,
+    options: { createIfMissing: boolean },
+  ) {
     const stageRows = await this.db.db
       .select({
         stageId: contractStages.id,
@@ -822,6 +833,13 @@ export class GanttService {
       .orderBy(asc(contracts.number), asc(contractStages.stageNumber));
 
     if (stageRows.length === 0) return;
+
+    const [projectRow] = await this.db.db
+      .select({ code: projects.code })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    const auxiliaryName = formatAutoAuxiliaryTaskName(projectRow?.code);
 
     const stageIds = stageRows.map(s => s.stageId);
     const anchor = stageRows[0];
@@ -870,12 +888,14 @@ export class GanttService {
     }
 
     if (!aux) {
+      if (!options.createIfMissing) return;
+
       const [created] = await this.db.db
         .insert(ganttTasks)
         .values({
           stageId: anchor.stageId,
           parentId: null,
-          name: AUTO_AUXILIARY_TASK_NAME,
+          name: auxiliaryName,
           startDate: startDate ?? undefined,
           endDate: endDate ?? undefined,
           deadline: endDate ?? undefined,
@@ -893,7 +913,7 @@ export class GanttService {
       await this.db.db
         .update(ganttTasks)
         .set({
-          name: AUTO_AUXILIARY_TASK_NAME,
+          name: auxiliaryName,
           taskClass: 'auxiliary',
           isAutoAuxiliary: true,
           progress: auxDone ? 100 : Math.min(aux.progress ?? 0, 99),

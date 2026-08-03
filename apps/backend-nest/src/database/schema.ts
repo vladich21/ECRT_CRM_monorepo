@@ -860,7 +860,6 @@ export const approvalDecisions = pgTable(
   (t) => [index('appr_decisions_process_idx').on(t.processId)],
 );
 
-/** Листовые задачи / подзадачи диаграммы Ганта (под этапом договора). */
 export const ganttTasks = pgTable(
   'gantt_tasks',
   {
@@ -876,7 +875,8 @@ export const ganttTasks = pgTable(
     plannedHours: numeric('planned_hours', { precision: 12, scale: 2 }).notNull().default('0'),
     taskClass: varchar('task_class', { length: 32 }).notNull().default('technical'),
     hourlyRate: numeric('hourly_rate', { precision: 12, scale: 2 }),
-    /** Системная вспомогательная задача проекта (исполнители из technical). */
+    planAmount: numeric('plan_amount', { precision: 19, scale: 2 }),
+    factAmount: numeric('fact_amount', { precision: 19, scale: 2 }),
     isAutoAuxiliary: boolean('is_auto_auxiliary').notNull().default(false),
     responsibleUserId: uuid('responsible_user_id'),
     sortOrder: integer('sort_order').notNull().default(0),
@@ -900,7 +900,6 @@ export const ganttTaskAssignees = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     taskId: uuid('task_id').notNull(),
     userId: uuid('user_id').notNull(),
-    /** План часов, выделенный этому исполнителю. */
     plannedHours: numeric('planned_hours', { precision: 12, scale: 2 }).notNull().default('0'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },

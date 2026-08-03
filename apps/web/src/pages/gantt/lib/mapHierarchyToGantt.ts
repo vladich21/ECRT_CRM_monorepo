@@ -1,5 +1,6 @@
 import type { ILink, ITask } from '@svar-ui/react-gantt';
 
+import { GANTT_DOMAIN_TASK_TYPE } from '../ganttTaskTypes';
 import { durationDaysFromIso, formatDateRu, parseIsoDate } from './ganttDates';
 import {
   type GanttEntityKind,
@@ -10,9 +11,17 @@ import {
 
 function formatProjectLabel(node: GanttHierarchyNode): string {
   const code = node.projectCode?.trim();
-  const name = node.name.trim();
-  if (code && name) return `${code} - ${name}`;
-  return name || code || '-';
+  let name = node.name.trim();
+  if (code && name) {
+    const prefix = `${code} - `;
+    if (name.startsWith(prefix)) {
+      name = name.slice(prefix.length).trim();
+    }
+    if (name === code) {
+      name = '';
+    }
+  }
+  return name || '-';
 }
 
 function formatContractLabel(node: GanttHierarchyNode): string {
@@ -50,7 +59,8 @@ function formatNodeTitle(node: GanttHierarchyNode): string {
 }
 
 function toSvarType(kind: GanttEntityKind): ITask['type'] {
-  return kind === 'task' ? 'task' : 'summary';
+  if (kind === 'task') return 'task';
+  return GANTT_DOMAIN_TASK_TYPE;
 }
 
 /**
@@ -83,9 +93,19 @@ export function mapHierarchyForestToGantt(
       ...(children.length > 0 ? { open: false as const } : {}),
       entityKind: node.kind,
       entityName: title,
+      ...(node.kind === 'project' && node.projectCode
+        ? { projectCode: node.projectCode }
+        : {}),
       deadline: parseIsoDate(node.deadline) ?? end,
       ...(node.boundStart
         ? { boundStart: parseIsoDate(node.boundStart) }
+        : {}),
+      ...(node.kind !== 'task'
+        ? {
+            timelineStart: start,
+            timelineEnd: end,
+            css: 'gantt-domain-bar',
+          }
         : {}),
       laborHours: node.laborHours ?? null,
       actualHours: node.actualHours ?? null,
@@ -97,6 +117,7 @@ export function mapHierarchyForestToGantt(
         ? {
             taskClass: node.taskClass ?? 'technical',
             isAutoAuxiliary: Boolean(node.isAutoAuxiliary),
+            ...(node.ganttStageId ? { ganttStageId: node.ganttStageId } : {}),
           }
         : {}),
       responsibleUserId: node.responsibleUserId ?? null,

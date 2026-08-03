@@ -6,7 +6,7 @@ import {
   SaveOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Button, Checkbox, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
+import { Button, Checkbox, Col, DatePicker, Divider, Form, Input, Row, Select, App } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
@@ -22,6 +22,7 @@ import styles from './ProjectFormPage.module.scss';
 const { TextArea } = Input;
 export default function ProjectCreatePage() {
   const navigate = useNavigate();
+  const { modal } = App.useApp();
   const { showNotification, contextHolder } = useNotification();
   const [form] = Form.useForm();
   const { mutate, isPending: isCreateLoading } = useCreateProject();
@@ -33,20 +34,21 @@ export default function ProjectCreatePage() {
   const handleCreate = async (values: any) => {
     const start_date = values.start_date ? values.start_date.format('YYYY-MM-DD') : '';
     const end_date = values.end_date ? values.end_date.format('YYYY-MM-DD') : '';
-    mutate(
-      {
-        code: values.code != null ? String(values.code) : '',
-        name: values.name ?? '',
-        short_name: values.short_name ?? '',
-        description: values.description ?? undefined,
-        start_date,
-        end_date: end_date || undefined,
-        manager_id: values.manager_id ?? undefined,
-        purchaser_id: values.purchaser_id ?? undefined,
-        status: values.status ?? 'active',
-        plan_in_gantt: values.plan_in_gantt !== false,
-      } as Parameters<typeof mutate>[0],
-      {
+    const payload = {
+      code: values.code != null ? String(values.code) : '',
+      name: values.name ?? '',
+      short_name: values.short_name ?? '',
+      description: values.description ?? undefined,
+      start_date,
+      end_date: end_date || undefined,
+      manager_id: values.manager_id ?? undefined,
+      purchaser_id: values.purchaser_id ?? undefined,
+      status: values.status ?? 'active',
+      plan_in_gantt: values.plan_in_gantt !== false,
+    } as Parameters<typeof mutate>[0];
+
+    const submit = () => {
+      mutate(payload, {
         onSuccess: () => {
           showNotification('success', 'Успех', 'Проект успешно создан');
           setTimeout(() => navigate(-1), 1000);
@@ -54,8 +56,22 @@ export default function ProjectCreatePage() {
         onError: () => {
           showNotification('error', 'Ошибка', 'Не удалось создать проект');
         },
-      },
-    );
+      });
+    };
+
+    if (payload.plan_in_gantt) {
+      modal.confirm({
+        title: 'Планирование в диаграмме Ганта',
+        content:
+          'Для проекта будет создана системная задача «Вспомогательная». Исполнители будут синхронизироваться автоматически из технических задач. Продолжить?',
+        okText: 'Создать',
+        cancelText: 'Отмена',
+        onOk: submit,
+      });
+      return;
+    }
+
+    submit();
   };
   if (isReferencesLoading) {
     return <Loader />;

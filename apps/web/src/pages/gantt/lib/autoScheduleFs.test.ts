@@ -116,14 +116,14 @@ describe('autoScheduleFs', () => {
     expect(byId.c.end?.getTime()).toBe(day('2026-04-02').getTime());
   });
 
-  it('does not rollup summary/stage dates on the client', () => {
+  it('does not rollup domain/stage dates on the client', () => {
     const stageStart = day('2026-01-01');
     const stageEnd = day('2026-01-31');
     const tasks: ITask[] = [
       {
         id: 'sum',
         text: 'Stage',
-        type: 'summary',
+        type: 'domain',
         parent: 0,
         open: true,
         start: stageStart,

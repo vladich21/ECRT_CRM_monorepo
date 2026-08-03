@@ -102,9 +102,9 @@ describe('isAllowedParent', () => {
 });
 
 describe('resolveSvarType', () => {
-  it('keeps domain containers as summary', () => {
-    expect(resolveSvarType({ entityKind: 'stage', type: 'task' }, 0)).toBe('summary');
-    expect(resolveSvarType({ entityKind: 'project', type: 'task' }, 0)).toBe('summary');
+  it('keeps domain containers as domain type (fixed timeline, no child rollup)', () => {
+    expect(resolveSvarType({ entityKind: 'stage', type: 'task' }, 3)).toBe('domain');
+    expect(resolveSvarType({ entityKind: 'project', type: 'task' }, 1)).toBe('domain');
   });
 
   it('promotes parent with children to summary', () => {

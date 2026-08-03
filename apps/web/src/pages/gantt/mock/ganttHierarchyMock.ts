@@ -18,6 +18,8 @@ export type GanttHierarchyNode = {
   budget?: number | null;
   taskClass?: 'technical' | 'coexecutor' | 'auxiliary';
   isAutoAuxiliary?: boolean;
+  /** stage_id в БД для системной вспомогательной (отображается под проектом). */
+  ganttStageId?: string;
   hourlyRate?: number | null;
   planAmount?: number | null;
   factAmount?: number | null;

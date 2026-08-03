@@ -27,7 +27,10 @@ export function filterGanttTasksByQuery(tasks: ITask[], query: string): ITask[] 
   for (const task of tasks) {
     if (task.id == null) continue;
     const text = String(task.text ?? task.entityName ?? '').toLowerCase();
-    if (text.includes(normalized)) {
+    const code = String(
+      (task as ITask & { projectCode?: string }).projectCode ?? '',
+    ).toLowerCase();
+    if (text.includes(normalized) || (code && code.includes(normalized))) {
       matched.add(String(task.id));
     }
   }

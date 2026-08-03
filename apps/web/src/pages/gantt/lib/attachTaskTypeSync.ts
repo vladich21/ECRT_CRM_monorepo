@@ -1,23 +1,20 @@
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
+import { GANTT_DOMAIN_TASK_TYPE, isGanttDomainEntityKind } from '../ganttTaskTypes';
+
 type EntityKind = 'project' | 'contract' | 'stage' | 'workPackage' | 'task' | string;
 
 type GanttTask = ITask & { entityKind?: EntityKind };
-
-/** Доменные узлы-контейнеры всегда type=summary. */
-const DOMAIN_SUMMARY_KINDS = new Set<EntityKind>([
-  'project',
-  'contract',
-  'stage',
-  'workPackage',
-]);
 
 export function resolveSvarType(
   task: Pick<GanttTask, 'type' | 'entityKind'>,
   childCount: number,
 ): ITask['type'] {
   if (task.type === 'milestone') return 'milestone';
-  if (DOMAIN_SUMMARY_KINDS.has(task.entityKind ?? '') || childCount > 0) {
+  if (isGanttDomainEntityKind(task.entityKind)) {
+    return GANTT_DOMAIN_TASK_TYPE;
+  }
+  if (childCount > 0) {
     return 'summary';
   }
   return 'task';
@@ -25,7 +22,7 @@ export function resolveSvarType(
 
 /**
  * Родитель с детьми → сводная; лист (задача) → task.
- * Этап/договор/проект/пакет всегда summary.
+ * Этап/договор/проект/пакет — type domain (фиксированные даты на шкале).
  * Вызывать после add / paste / copy / delete / move.
  */
 export function syncTaskTypesAfterStructuralChange(api: IApi): void {

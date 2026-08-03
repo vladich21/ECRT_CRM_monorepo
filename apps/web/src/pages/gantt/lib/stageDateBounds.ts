@@ -1,12 +1,13 @@
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
 import { formatDateRu, toIsoDate } from './ganttDates';
-import { findAncestorByKind } from './ganttTaskStore';
+import { findAncestorByKind, getGanttTask } from './ganttTaskStore';
 
 type StageBoundsTask = ITask & {
   entityKind?: string;
   deadline?: Date | null;
   boundStart?: Date | null;
+  isAutoAuxiliary?: boolean;
 };
 
 /**
@@ -32,6 +33,9 @@ export function assertTaskDatesWithinStage(
   taskId: string | number,
   next: { start?: Date | null; end?: Date | null },
 ): string | null {
+  const current = getGanttTask(api, taskId);
+  if (current?.isAutoAuxiliary) return null;
+
   const bounds = getStageDeadlineBounds(api, taskId);
   if (!bounds) return null;
   if (!bounds.start && !bounds.end) return null;

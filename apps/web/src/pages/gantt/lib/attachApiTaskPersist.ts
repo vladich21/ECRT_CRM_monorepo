@@ -5,7 +5,6 @@ import axios from 'axios';
 import { ganttApi } from '../../../api/gantt/ganttApi';
 import { isUuid, toIsoDate } from './ganttDates';
 import { findAncestorByKind, getTaskStore, isGanttWorkTask } from './ganttTaskStore';
-import { assertTaskDatesWithinStage } from './stageDateBounds';
 
 type GanttTask = ITask & {
   entityKind?: string;
@@ -16,6 +15,8 @@ type GanttTask = ITask & {
   status?: string;
   taskClass?: string | null;
   hourlyRate?: number | null;
+  planAmount?: number | null;
+  factAmount?: number | null;
   isAutoAuxiliary?: boolean;
 };
 
@@ -71,6 +72,24 @@ function buildUpdateBody(
     } else {
       const n = Number(raw);
       body.hourly_rate = Number.isFinite(n) ? n : null;
+    }
+  }
+  if (patch.planAmount !== undefined) {
+    const raw = patch.planAmount as unknown;
+    if (raw === null || raw === '' || raw === undefined) {
+      body.plan_amount = null;
+    } else {
+      const n = Number(raw);
+      body.plan_amount = Number.isFinite(n) ? n : null;
+    }
+  }
+  if (patch.factAmount !== undefined) {
+    const raw = patch.factAmount as unknown;
+    if (raw === null || raw === '' || raw === undefined) {
+      body.fact_amount = null;
+    } else {
+      const n = Number(raw);
+      body.fact_amount = Number.isFinite(n) ? n : null;
     }
   }
   if (patch.progress !== undefined) {
@@ -135,16 +154,6 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       const parent = getTaskStore(api).byId?.(created?.parent as string | number);
       const parentId = parent?.entityKind === 'task' ? String(parent.id) : null;
 
-      const stageError = assertTaskDatesWithinStage(api, ev.id, {
-        start: created?.start,
-        end: created?.end,
-      });
-      if (stageError) {
-        message.warning(stageError);
-        notify();
-        return;
-      }
-
       void ganttApi
         .createTask({
           stage_id: String(stage.id),
@@ -155,6 +164,8 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
           deadline: toIsoDate(created?.deadline) ?? toIsoDate((stage as GanttTask).deadline),
           planned_hours: created?.laborHours ?? 0,
           task_class: created?.taskClass ?? 'technical',
+          ...(created?.planAmount != null ? { plan_amount: created.planAmount } : {}),
+          ...(created?.factAmount != null ? { fact_amount: created.factAmount } : {}),
           progress: created?.progress ?? 0,
           status: created?.status ?? 'open',
           responsible_user_id: created?.responsibleUserId ?? null,
@@ -183,19 +194,7 @@ export function attachApiTaskPersist(api: IApi, onChanged?: () => void): () => v
       const body = buildUpdateBody(api, ev.task ?? {});
       if (Object.keys(body).length === 0) return;
 
-      if (body.start_date != null || body.end_date != null) {
-        const stageError = assertTaskDatesWithinStage(api, ev.id, {
-          start: (ev.task?.start as Date | undefined) ?? current.start,
-          end: (ev.task?.end as Date | undefined) ?? current.end,
-        });
-        if (stageError) {
-          message.warning(stageError);
-          notify();
-          return;
-        }
-      }
-
-      void ganttApi.updateTask(id, body).then(notify).catch(err => {
+      void ganttApi.updateTask(id, body).catch(err => {
         console.error('[gantt] updateTask failed', err);
         message.error(axiosErrorMessage(err));
         notify();
