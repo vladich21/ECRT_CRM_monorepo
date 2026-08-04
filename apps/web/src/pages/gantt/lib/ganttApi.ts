@@ -2,18 +2,30 @@ import type { IApi, ILink, ITask } from '@svar-ui/react-gantt';
 
 import { getCurrentMonthRange, monthToScrollLeft } from './currentMonthView';
 
+function cloneDate(value: unknown): Date | null | undefined {
+  if (value == null) return value as null | undefined;
+  if (value instanceof Date) return new Date(value.getTime());
+  const parsed = new Date(value as string | number);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
 export function cloneGanttTasks(tasks: ITask[]): ITask[] {
-  return tasks.map(task => ({
-    ...task,
-    start: task.start ? new Date(task.start) : task.start,
-    end: task.end ? new Date(task.end) : task.end,
-    deadline:
-      task.deadline instanceof Date
-        ? new Date(task.deadline)
-        : task.deadline
-          ? new Date(task.deadline as string | number)
-          : task.deadline,
-  }));
+  return tasks.map(task => {
+    const extra = task as ITask & {
+      boundStart?: unknown;
+      timelineStart?: unknown;
+      timelineEnd?: unknown;
+    };
+    return {
+      ...task,
+      start: cloneDate(task.start) ?? task.start,
+      end: cloneDate(task.end) ?? task.end,
+      deadline: cloneDate(task.deadline) ?? task.deadline,
+      boundStart: cloneDate(extra.boundStart) ?? extra.boundStart,
+      timelineStart: cloneDate(extra.timelineStart) ?? extra.timelineStart,
+      timelineEnd: cloneDate(extra.timelineEnd) ?? extra.timelineEnd,
+    };
+  });
 }
 
 /** Links в store — DataArray с serialize(), не всегда plain array. */

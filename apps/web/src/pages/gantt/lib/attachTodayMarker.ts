@@ -20,7 +20,6 @@ function markerLeft(api: IApi, today: Date): number | null {
   if (minUnit === 'month' || minUnit === 'year') {
     const { daysInMonth } = getCurrentMonthRange(today);
     const monthLeft = monthToScrollLeft(today, scaleStart, cellWidth);
-    // внутри месяца — пропорционально дню
     const dayOffset = ((today.getDate() - 1) / daysInMonth) * cellWidth;
     return monthLeft + dayOffset;
   }
@@ -28,10 +27,6 @@ function markerLeft(api: IApi, today: Date): number | null {
   return dateToScrollLeft(today, scaleStart, cellWidth);
 }
 
-/**
- * Линия «сегодня»: MIT-store не считает `_markers` из `markers`,
- * поэтому пишем готовую позицию в `_markers` и обновляем при zoom/scroll-scale.
- */
 export function attachTodayMarker(api: IApi): () => void {
   const tag = { tag: 'gantt-today-marker' };
   api.detach(tag.tag);
@@ -53,7 +48,6 @@ export function attachTodayMarker(api: IApi): () => void {
 
   apply();
 
-  // пересчёт после смены масштаба / ширины ячейки
   for (const event of ['zoom-scale', 'expand-scale', 'scroll-chart'] as const) {
     api.on(event, () => apply(), tag);
   }

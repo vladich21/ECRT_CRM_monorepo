@@ -1,6 +1,7 @@
 import type { IApi, ITask } from '@svar-ui/react-gantt';
 
 import { GANTT_DOMAIN_TASK_TYPE, isGanttDomainEntityKind } from '../ganttTaskTypes';
+import { findStageForTask } from './ganttTaskStore';
 
 type EntityKind = 'project' | 'contract' | 'stage' | 'workPackage' | 'task' | string;
 
@@ -20,11 +21,6 @@ export function resolveSvarType(
   return 'task';
 }
 
-/**
- * Родитель с детьми → сводная; лист (задача) → task.
- * Этап/договор/проект/пакет — type domain (фиксированные даты на шкале).
- * Вызывать после add / paste / copy / delete / move.
- */
 export function syncTaskTypesAfterStructuralChange(api: IApi): void {
   let tasks: GanttTask[];
   try {
@@ -55,10 +51,6 @@ export function syncTaskTypesAfterStructuralChange(api: IApi): void {
 
 type StructuralEvent = { inProgress?: boolean };
 
-/**
- * После структурных изменений поддерживает type summary/task.
- * На add-task задаёт entityKind=task и type=task у новой строки.
- */
 export function attachTaskTypeSync(api: IApi): () => void {
   const tag = { tag: 'gantt-task-type-sync' };
   api.detach(tag.tag);
@@ -85,6 +77,15 @@ export function attachTaskTypeSync(api: IApi): () => void {
         if (!ev.task.entityKind) ev.task.entityKind = 'task';
         if (ev.task.entityKind === 'task' && ev.task.type !== 'milestone') {
           ev.task.type = 'task';
+        }
+        if (!ev.task.ganttStageId) {
+          const anchorId = ev.target ?? ev.task.parent;
+          if (anchorId != null) {
+            const stage = findStageForTask(api, anchorId);
+            if (stage?.id != null) {
+              ev.task.ganttStageId = String(stage.id);
+            }
+          }
         }
       }
       return true;

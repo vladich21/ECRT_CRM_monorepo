@@ -5,10 +5,7 @@ import type {
   GanttApiTaskNode,
   GanttHierarchyResponse,
 } from '../../../types/gantt';
-import {
-  type GanttHierarchyNode,
-  type GanttMockLink,
-} from '../mock/ganttHierarchyMock';
+import { type GanttHierarchyLink, type GanttHierarchyNode } from './ganttHierarchyTypes';
 import { ensureDateRange } from './ganttDates';
 import { withAutoAuxiliaryProjectCode } from './ganttAuxiliary';
 import { mapHierarchyForestToGantt } from './mapHierarchyToGantt';
@@ -161,11 +158,11 @@ function mapProject(node: GanttApiProjectNode): GanttHierarchyNode {
 /** API hierarchy → flat SVAR tasks/links. */
 export function mapApiHierarchyToGantt(response: GanttHierarchyResponse) {
   const roots = (response.projects ?? []).map(mapProject);
-  const links: GanttMockLink[] = (response.links ?? []).map(link => ({
+  const links: GanttHierarchyLink[] = (response.links ?? []).map(link => ({
     id: link.id,
     source: link.source,
     target: link.target,
-    type: (link.type as GanttMockLink['type']) || 'e2s',
+    type: (link.type as GanttHierarchyLink['type']) || 'e2s',
   }));
   return mapHierarchyForestToGantt(roots, links);
 }

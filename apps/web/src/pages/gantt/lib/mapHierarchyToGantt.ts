@@ -4,10 +4,9 @@ import { GANTT_DOMAIN_TASK_TYPE } from '../ganttTaskTypes';
 import { durationDaysFromIso, formatDateRu, parseIsoDate } from './ganttDates';
 import {
   type GanttEntityKind,
+  type GanttHierarchyLink,
   type GanttHierarchyNode,
-  type GanttMockLink,
-  type GanttMockProjectBundle,
-} from '../mock/ganttHierarchyMock';
+} from './ganttHierarchyTypes';
 
 function formatProjectLabel(node: GanttHierarchyNode): string {
   const code = node.projectCode?.trim();
@@ -69,7 +68,7 @@ function toSvarType(kind: GanttEntityKind): ITask['type'] {
  */
 export function mapHierarchyForestToGantt(
   roots: GanttHierarchyNode[],
-  links: GanttMockLink[] = [],
+  links: GanttHierarchyLink[] = [],
 ): { tasks: ITask[]; links: ILink[] } {
   const tasks: ITask[] = [];
   const orderCounter = { value: 0 };
@@ -147,12 +146,3 @@ export function mapHierarchyForestToGantt(
   };
 }
 
-export function mapAllMockProjectsToGantt(bundles: GanttMockProjectBundle[]): {
-  tasks: ITask[];
-  links: ILink[];
-} {
-  return mapHierarchyForestToGantt(
-    bundles.map(b => b.tree),
-    bundles.flatMap(b => b.links),
-  );
-}

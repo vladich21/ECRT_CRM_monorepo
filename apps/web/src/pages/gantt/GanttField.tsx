@@ -15,7 +15,6 @@ import './svar-gantt.css';
 import { useGanttHierarchy } from '../../api/gantt/ganttApiHooks';
 import { useUsers } from '../../api/users/userApiHooks';
 import { GanttChromeToolbar } from './GanttChromeToolbar';
-import { USE_GANTT_MOCKS } from './ganttConfig';
 import {
   createGanttContextMenuOptions,
   filterGanttContextMenu,
@@ -31,6 +30,7 @@ import { captureDomainTimelinePins, attachDomainSummaryDatePin } from './lib/att
 import { attachDomainBarStyle } from './lib/attachDomainBarStyle';
 import { attachApiTaskPersist } from './lib/attachApiTaskPersist';
 import { attachConfirmGuards } from './lib/attachConfirmGuards';
+import { attachStageExceedGuard } from './lib/attachStageExceedGuard';
 import {
   attachCriticalPathHighlight,
   type CriticalPathController,
@@ -48,11 +48,9 @@ import { cloneGanttTasks, linksFromApi, scrollChartToCurrentMonth } from './lib/
 import { createGanttEditorItems, formatUserLabel } from './lib/ganttEditorItems';
 import { hierarchyChartKey } from './lib/hierarchyChartKey';
 import { mapApiHierarchyToGantt } from './lib/mapApiHierarchyToGantt';
-import { mapAllMockProjectsToGantt } from './lib/mapHierarchyToGantt';
 import { presentGanttDateWarnings, ganttDateWarningsKey } from './lib/presentGanttDateWarnings';
 import { applyOpenState, attachTreeOpenPersist, loadOpenIdsForChart } from './lib/treeOpenState';
 import { highlightWorkCalendar } from './lib/workCalendar';
-import { GANTT_MOCK_PROJECTS } from './mock/ganttHierarchyMock';
 import styles from './GanttField.module.scss';
 
 type GanttFieldProps = {
@@ -79,10 +77,10 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   const [criticalPathEnabled, setCriticalPathEnabled] = useState(false);
   const [excelExporting, setExcelExporting] = useState(false);
 
-  const hierarchyQuery = useGanttHierarchy(!USE_GANTT_MOCKS);
+  const hierarchyQuery = useGanttHierarchy();
   const refetchHierarchy = hierarchyQuery.refetch;
   const usersQuery = useUsers(2, true);
-  const chartDataKey = USE_GANTT_MOCKS ? 'mocks' : hierarchyChartKey(hierarchyQuery.data);
+  const chartDataKey = hierarchyChartKey(hierarchyQuery.data);
 
   const toolbarItems = useMemo(
     () => createGanttToolbarItems(() => apiRef.current, props => confirmRef.current(props)),
@@ -99,7 +97,6 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   }, [usersQuery.data]);
 
   const sourceChart = useMemo(() => {
-    if (USE_GANTT_MOCKS) return mapAllMockProjectsToGantt(GANTT_MOCK_PROJECTS);
     if (!hierarchyQuery.data) return { tasks: [], links: [] as ILink[] };
     return mapApiHierarchyToGantt(hierarchyQuery.data);
   }, [hierarchyQuery.data]);
@@ -119,7 +116,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   }, [mapped]);
 
   useEffect(() => {
-    if (USE_GANTT_MOCKS || !hierarchyQuery.data) return;
+    if (!hierarchyQuery.data) return;
     const warnings = hierarchyQuery.data.date_warnings ?? [];
     if (warnings.length === 0) {
       warningsShownKeyRef.current = null;
@@ -152,24 +149,24 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     const detachSummaryPin = attachDomainSummaryDatePin(api);
     const detachHierarchy = attachHierarchyMoveGuard(api);
     const detachTypeSync = attachTaskTypeSync(api);
-    const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
     const detachTreeOpen = attachTreeOpenPersist(api);
     const detachFs = attachFsAutoSchedule(api, linksFallbackRef);
-    const detachApi = !USE_GANTT_MOCKS
-      ? attachApiTaskPersist(api, () => {
-          void refetchHierarchy();
-        })
-      : null;
+    const detachApi = attachApiTaskPersist(api, () => {
+      void refetchHierarchy();
+    });
+    const detachConfirm = attachConfirmGuards(api, props => confirmRef.current(props));
+    const detachStageExceed = attachStageExceedGuard(api, props => confirmRef.current(props));
 
     return () => {
       detachSelection();
       detachSummaryPin();
       detachHierarchy();
       detachTypeSync();
-      detachConfirm();
       detachTreeOpen();
       detachFs();
-      detachApi?.();
+      detachApi();
+      detachConfirm();
+      detachStageExceed();
     };
   }, [api, refetchHierarchy]);
 
@@ -256,7 +253,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     />
   );
 
-  if (!USE_GANTT_MOCKS && hierarchyQuery.isLoading) {
+  if (hierarchyQuery.isLoading) {
     return (
       <div className={styles.root}>
         {toolbar}
@@ -267,7 +264,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
     );
   }
 
-  if (!USE_GANTT_MOCKS && hierarchyQuery.isError) {
+  if (hierarchyQuery.isError) {
     return (
       <div className={styles.root}>
         {toolbar}

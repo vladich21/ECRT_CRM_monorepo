@@ -12,9 +12,7 @@ function findTableScroll(root: HTMLElement): HTMLElement | null {
   );
 }
 
-/** Мёртвая зона вокруг точки нажатия. */
 const DEAD_ZONE_PX = 10;
-/** Макс. скорость прокрутки, px/кадр. */
 const MAX_SPEED = 28;
 
 type ScrollDir = 'none' | 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -67,10 +65,6 @@ function speedFromDelta(delta: number): number {
   return Math.sign(delta) * (2 + eased * (MAX_SPEED - 2));
 }
 
-/**
- * AutoScroll только пока зажата СКМ: скорость и курсор-стрелка
- * по направлению от точки нажатия. ЛКМ/ПКМ — обычный курсор `default`.
- */
 export function attachTimelinePan(api: IApi, root: HTMLElement): () => void {
   let chart: HTMLElement | null = null;
   let disposed = false;
