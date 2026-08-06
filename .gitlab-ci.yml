@@ -8,7 +8,9 @@ variables:
   # Секреты берутся из GitLab CI/CD Variables:
   # DATABASE_URL, JWT_SECRET, SMTP_PASSWORD, DATANEWTON_API_KEY
   # THESIS_DB_URL, PARTNER_SYNC_INTERVAL_MINUTES, PARTNER_CREATE_RESTRICTED
+  # ONLYOFFICE_URL, ONLYOFFICE_JWT_SECRET (OnlyOffice Document Server)
   # STAGE_DATABASE_URL, STAGE_JWT_SECRET (для стейджа)
+  # STAGE_ONLYOFFICE_URL, STAGE_ONLYOFFICE_JWT_SECRET (для стейджа)
 
 # =====================================================
 # PRODUCTION (branch release/v1, port 3001)
@@ -89,6 +91,9 @@ prod:deploy:
       export THESIS_DB_URL="${THESIS_DB_URL:-}"
       export PARTNER_SYNC_INTERVAL_MINUTES="${PARTNER_SYNC_INTERVAL_MINUTES:-15}"
       export PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-true}"
+      # OnlyOffice Document Server (секрет — в CI/CD Variables)
+      export ONLYOFFICE_URL="${ONLYOFFICE_URL:-}"
+      export ONLYOFFICE_JWT_SECRET="${ONLYOFFICE_JWT_SECRET:-}"
       # Если пусто — compose подставит пустую строку в контейнер → 503 на /partners/inn-lookup
       if [ -z "${DATANEWTON_API_KEY:-}" ]; then
         echo "ERROR: DATANEWTON_API_KEY пустая или не видна этой джобе."
@@ -168,6 +173,9 @@ stage:deploy:
       export JWT_SECRET="${STAGE_JWT_SECRET:-${JWT_SECRET}}"
       export FRONTEND_URL="http://192.0.2.12:3002,http://localhost:3002"
       export FILE_UPLOAD_URL="http://192.0.2.12:3002/api"
+      # OnlyOffice Document Server стейджа (секрет — в CI/CD Variables)
+      export ONLYOFFICE_URL="${STAGE_ONLYOFFICE_URL:-http://192.0.2.12:8090}"
+      export ONLYOFFICE_JWT_SECRET="${STAGE_ONLYOFFICE_JWT_SECRET:-${ONLYOFFICE_JWT_SECRET:-}}"
       # Стейдж шлёт письма в MailHog (192.0.2.12:1025), боевой SMTP — только прод.
       # При необходимости переопределяется через STAGE_SMTP_* в CI/CD Variables.
       export SMTP_HOST="${STAGE_SMTP_HOST:-192.0.2.12}"

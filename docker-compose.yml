@@ -40,6 +40,9 @@ services:
       - THESIS_DB_URL=${THESIS_DB_URL:-}
       - PARTNER_SYNC_INTERVAL_MINUTES=${PARTNER_SYNC_INTERVAL_MINUTES:-15}
       - PARTNER_CREATE_RESTRICTED=${PARTNER_CREATE_RESTRICTED:-true}
+      # OnlyOffice Document Server (общий сервис platform/onlyoffice)
+      - ONLYOFFICE_URL=${ONLYOFFICE_URL:-}
+      - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
     volumes:
       - /data/pmdb/uploads:/app/apps/backend-nest/uploads
     restart: unless-stopped
