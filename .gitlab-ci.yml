@@ -183,10 +183,13 @@ stage:deploy:
       export SMTP_PASSWORD="${STAGE_SMTP_PASSWORD:-}"
       export SMTP_FROM="${STAGE_SMTP_FROM:-pmdb-stage@test.local}"
       export DATANEWTON_API_KEY="${DATANEWTON_API_KEY}"
-      export EXTERNAL_HR_USERS_URL="${EXTERNAL_HR_USERS_URL:-}"
-      export EXTERNAL_HR_API_TOKEN="${EXTERNAL_HR_API_TOKEN:-}"
-      export EXTERNAL_HR_ASSET_BASE_URL="${EXTERNAL_HR_ASSET_BASE_URL:-}"
-      export HR_USERS_SYNC_SECRET="${HR_USERS_SYNC_SECRET:-}"
+      # Фид сотрудников: стенд обязан ходить в стенд портала, иначе тестовый
+      # контур тянет данные из боевого. Общие EXTERNAL_HR_* указывают на прод —
+      # для стенда есть STAGE_-версии.
+      export EXTERNAL_HR_USERS_URL="${STAGE_EXTERNAL_HR_USERS_URL:-http://$STAGE_DEPLOY_HOST:8347/api/sync/pmdb-users}"
+      export EXTERNAL_HR_API_TOKEN="${STAGE_EXTERNAL_HR_API_TOKEN:-${EXTERNAL_HR_API_TOKEN:-}}"
+      export EXTERNAL_HR_ASSET_BASE_URL="${STAGE_EXTERNAL_HR_ASSET_BASE_URL:-http://$STAGE_DEPLOY_HOST:8347}"
+      export HR_USERS_SYNC_SECRET="${STAGE_HR_USERS_SYNC_SECRET:-${HR_USERS_SYNC_SECRET:-}}"
       export HR_SYNC_INTERVAL_MINUTES=0
       export PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=true
       export THESIS_DB_URL="${STAGE_THESIS_DB_URL:-${THESIS_DB_URL:-}}"
