@@ -4,6 +4,8 @@ stages:
 
 variables:
   DEPLOY_HOST: "192.0.2.12"
+  # Стенды переехали на jarvis; прод остаётся на .207.
+  STAGE_DEPLOY_HOST: "192.0.2.19"
   GIT_SSL_NO_VERIFY: "true"
   # Секреты берутся из GitLab CI/CD Variables:
   # DATABASE_URL, JWT_SECRET, SMTP_PASSWORD, DATANEWTON_API_KEY
@@ -118,8 +120,7 @@ stage:build:api:
   image: docker:25.0.5-git
   timeout: 20m
   tags:
-    - docker
-    - nextjs
+    - stands_jarvis
   script:
     - docker compose -p pmdb-stage -f docker-compose.stage.yml build api
   only:
@@ -130,8 +131,7 @@ stage:build:web-assets:
   image: node:20-alpine
   timeout: 20m
   tags:
-    - docker
-    - nextjs
+    - stands_jarvis
   script:
     - npm ci
     - export VITE_PARTNER_CREATE_RESTRICTED="${STAGE_PARTNER_CREATE_RESTRICTED:-true}"
@@ -147,8 +147,7 @@ stage:build:web:
   stage: build
   image: docker:25.0.5-git
   tags:
-    - docker
-    - nextjs
+    - stands_jarvis
   needs:
     - stage:build:web-assets
   script:
@@ -160,8 +159,7 @@ stage:deploy:
   stage: deploy
   image: docker:25.0.5-git
   tags:
-    - docker
-    - nextjs
+    - stands_jarvis
   needs:
     - stage:build:api
     - stage:build:web
@@ -171,14 +169,14 @@ stage:deploy:
       export WEB_PORT=3002
       export DATABASE_URL="${STAGE_DATABASE_URL}"
       export JWT_SECRET="${STAGE_JWT_SECRET:-${JWT_SECRET}}"
-      export FRONTEND_URL="http://192.0.2.12:3002,http://localhost:3002"
-      export FILE_UPLOAD_URL="http://192.0.2.12:3002/api"
+      export FRONTEND_URL="http://192.0.2.19:3002,http://localhost:3002"
+      export FILE_UPLOAD_URL="http://192.0.2.19:3002/api"
       # OnlyOffice Document Server стейджа (секрет — в CI/CD Variables)
       export ONLYOFFICE_URL="${STAGE_ONLYOFFICE_URL:-http://192.0.2.12:8090}"
       export ONLYOFFICE_JWT_SECRET="${STAGE_ONLYOFFICE_JWT_SECRET:-${ONLYOFFICE_JWT_SECRET:-}}"
-      # Стейдж шлёт письма в MailHog (192.0.2.12:1025), боевой SMTP — только прод.
+      # Стейдж шлёт письма в MailHog стенда (192.0.2.10:1025 внутри jarvis), боевой SMTP — только прод.
       # При необходимости переопределяется через STAGE_SMTP_* в CI/CD Variables.
-      export SMTP_HOST="${STAGE_SMTP_HOST:-192.0.2.12}"
+      export SMTP_HOST="${STAGE_SMTP_HOST:-192.0.2.10}"
       export SMTP_PORT="${STAGE_SMTP_PORT:-1025}"
       export SMTP_SECURE="${STAGE_SMTP_SECURE:-false}"
       export SMTP_USER="${STAGE_SMTP_USER:-}"
@@ -199,6 +197,6 @@ stage:deploy:
       docker image prune -f || true
   environment:
     name: staging
-    url: http://$DEPLOY_HOST:3002
+    url: http://$STAGE_DEPLOY_HOST:3002
   only:
     - stage
