@@ -41,6 +41,8 @@ prod:build:web-assets:
     - nextjs
   script:
     - npm ci
+    - export VITE_API_URL=/api
+    - export VITE_FILE_URL=/api
     - export VITE_PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-true}"
     - cd apps/web && npx vite build
   artifacts:
@@ -136,6 +138,8 @@ stage:build:web-assets:
     - stands_jarvis
   script:
     - npm ci
+    - export VITE_API_URL=/api
+    - export VITE_FILE_URL=/api
     - export VITE_PARTNER_CREATE_RESTRICTED="${STAGE_PARTNER_CREATE_RESTRICTED:-true}"
     - cd apps/web && npx vite build
   artifacts:
