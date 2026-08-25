@@ -50,6 +50,9 @@ services:
       # Пусто = файлы как раньше в UPLOAD_PATH. На стейдже CI задаёт URL files-service на jarvis.
       - FILES_SERVICE_URL=${FILES_SERVICE_URL:-}
       - FILES_API_KEY=${FILES_API_KEY:-}
+      # Пока ловим вылет сессии: не банить стенд после нескольких логинов/2FA.
+      - AUTH_RATE_LIMIT_MAX=${AUTH_RATE_LIMIT_MAX:-50}
+      - AUTH_RATE_LIMIT_WINDOW_MS=${AUTH_RATE_LIMIT_WINDOW_MS:-900000}
     volumes:
       - /data/pmdb-stage/uploads:/app/apps/backend-nest/uploads
     restart: unless-stopped

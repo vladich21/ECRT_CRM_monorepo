@@ -58,8 +58,7 @@ export class ImpersonationService {
     }
 
     // 1. Backup-cookie: свежий JWT для админа, чтобы по «выйти» вернуться без БД-запроса.
-    const adminPerms = await this.permissions.getUserSectionPermissions(adminId);
-    const adminToken = await this.auth.signJwtForUser(adminId, adminPerms);
+    const adminToken = await this.auth.signJwtForUser(adminId);
     res.cookie(ADMIN_BACKUP_COOKIE, adminToken, {
       httpOnly: true,
       secure: false,
@@ -69,7 +68,7 @@ export class ImpersonationService {
     });
 
     // 2. Основной auth-token: подписываем под target c claim impersonatedBy=adminId.
-    const targetToken = await this.auth.signJwtForUser(targetUserId, targetPerms, adminId);
+    const targetToken = await this.auth.signJwtForUser(targetUserId, adminId);
     res.cookie(AUTH_COOKIE, targetToken, {
       httpOnly: true,
       secure: false,
@@ -104,8 +103,7 @@ export class ImpersonationService {
       throw new ForbiddenException('Учетная запись администратора деактивирована');
     }
 
-    const adminPerms = await this.permissions.getUserSectionPermissions(adminId);
-    const token = await this.auth.signJwtForUser(adminId, adminPerms);
+    const token = await this.auth.signJwtForUser(adminId);
     res.cookie(AUTH_COOKIE, token, {
       httpOnly: true,
       secure: false,

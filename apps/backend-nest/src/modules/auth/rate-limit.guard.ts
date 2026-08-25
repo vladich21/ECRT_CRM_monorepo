@@ -4,13 +4,15 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  OnModuleDestroy,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
-/** Общий счетчик на IP для POST login, verify-2fa и resend-code (каждый запрос увеличивает счетчик). */
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 минут
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // очистка каждые 5 минут
+/** Прод по умолчанию: 5 попыток / 15 мин. Стейдж задаёт мягче через AUTH_RATE_LIMIT_*. */
+const DEFAULT_MAX_ATTEMPTS = 5;
+const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 interface Attempt {
   count: number;
@@ -18,11 +20,26 @@ interface Attempt {
 }
 
 @Injectable()
-export class RateLimitGuard implements CanActivate {
+export class RateLimitGuard implements CanActivate, OnModuleDestroy {
   private readonly attempts = new Map<string, Attempt>();
+  private readonly maxAttempts: number;
+  private readonly windowMs: number;
+  private readonly cleanupTimer: ReturnType<typeof setInterval>;
 
-  constructor() {
-    setInterval(() => this.cleanup(), CLEANUP_INTERVAL_MS);
+  constructor(config: ConfigService) {
+    this.maxAttempts = Math.max(
+      1,
+      parseInt(config.get('AUTH_RATE_LIMIT_MAX') ?? '', 10) || DEFAULT_MAX_ATTEMPTS,
+    );
+    this.windowMs = Math.max(
+      1000,
+      parseInt(config.get('AUTH_RATE_LIMIT_WINDOW_MS') ?? '', 10) || DEFAULT_WINDOW_MS,
+    );
+    this.cleanupTimer = setInterval(() => this.cleanup(), CLEANUP_INTERVAL_MS);
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.cleanupTimer);
   }
 
   canActivate(ctx: ExecutionContext): boolean {
@@ -32,13 +49,13 @@ export class RateLimitGuard implements CanActivate {
 
     const attempt = this.attempts.get(ip);
 
-    if (!attempt || now - attempt.firstAttemptAt > WINDOW_MS) {
+    if (!attempt || now - attempt.firstAttemptAt > this.windowMs) {
       this.attempts.set(ip, { count: 1, firstAttemptAt: now });
       return true;
     }
 
-    if (attempt.count >= MAX_ATTEMPTS) {
-      const retryAfterMs = WINDOW_MS - (now - attempt.firstAttemptAt);
+    if (attempt.count >= this.maxAttempts) {
+      const retryAfterMs = this.windowMs - (now - attempt.firstAttemptAt);
       const retryAfterSec = Math.ceil(retryAfterMs / 1000);
       const text = `Слишком много попыток. Повторите через ${retryAfterSec} сек.`;
       throw new HttpException(
@@ -68,7 +85,7 @@ export class RateLimitGuard implements CanActivate {
   private cleanup(): void {
     const now = Date.now();
     for (const [ip, attempt] of this.attempts) {
-      if (now - attempt.firstAttemptAt > WINDOW_MS) {
+      if (now - attempt.firstAttemptAt > this.windowMs) {
         this.attempts.delete(ip);
       }
     }

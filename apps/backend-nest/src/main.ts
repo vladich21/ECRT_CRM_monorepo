@@ -11,7 +11,9 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  app.use(helmet());
+  // HTTP LAN: HSTS и upgrade-insecure-requests из дефолтного helmet ломают cookie.
+  // CSP на JSON API не нужен — HTML отдаёт nginx.
+  app.use(helmet({ hsts: false, contentSecurityPolicy: false }));
   app.use(cookieParser());
 
   app.enableCors({

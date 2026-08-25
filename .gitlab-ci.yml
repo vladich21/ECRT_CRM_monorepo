@@ -14,6 +14,7 @@ variables:
   # STAGE_DATABASE_URL, STAGE_JWT_SECRET (для стейджа)
   # STAGE_ONLYOFFICE_URL, STAGE_ONLYOFFICE_JWT_SECRET (для стейджа)
   # STAGE_FILES_SERVICE_URL, STAGE_FILES_API_KEY (мост на files-service стейджа)
+  # STAGE_AUTH_RATE_LIMIT_MAX / WINDOW_MS (стейдж мягче, прод — дефолт 5/15мин)
 
 # =====================================================
 # PRODUCTION (branch release/v1, port 3001)
@@ -199,6 +200,8 @@ stage:deploy:
       # files-service на том же jarvis (nginx :3080). 127.0.0.1 из контейнера API — это сам API.
       export FILES_SERVICE_URL="${STAGE_FILES_SERVICE_URL:-http://192.0.2.10:3080}"
       export FILES_API_KEY="${STAGE_FILES_API_KEY:-}"
+      export AUTH_RATE_LIMIT_MAX="${STAGE_AUTH_RATE_LIMIT_MAX:-50}"
+      export AUTH_RATE_LIMIT_WINDOW_MS="${STAGE_AUTH_RATE_LIMIT_WINDOW_MS:-900000}"
       docker compose -p pmdb-stage -f docker-compose.stage.yml down || true
       docker compose -p pmdb-stage -f docker-compose.stage.yml up -d
       docker image prune -f || true

@@ -136,7 +136,6 @@ export class AuthService {
   async verifyJwt(token: string): Promise<{
     user_id: string;
     exp?: number;
-    sectionPermissions?: SectionPermission[];
     pv?: number;
     impersonatedBy?: string;
   }> {
@@ -144,14 +143,17 @@ export class AuthService {
     return {
       user_id: payload['user_id'] as string,
       exp: payload.exp,
-      sectionPermissions: payload['sectionPermissions'] as SectionPermission[] | undefined,
       pv: payload['pv'] as number | undefined,
       impersonatedBy: payload['impersonatedBy'] as string | undefined,
     };
   }
 
+  loadSectionPermissions(userId: string): Promise<SectionPermission[]> {
+    return this.permissions.getUserSectionPermissions(userId);
+  }
+
   async renewToken(userId: string, res: Response, impersonatedBy?: string): Promise<void> {
-    await this.setAuthCookie(userId, res, undefined, impersonatedBy);
+    await this.setAuthCookie(userId, res, impersonatedBy);
   }
 
   /**
@@ -165,7 +167,7 @@ export class AuthService {
     impersonatedBy?: string,
   ): Promise<SectionPermission[]> {
     const fresh = await this.permissions.getUserSectionPermissions(userId);
-    await this.setAuthCookie(userId, res, fresh, impersonatedBy);
+    await this.setAuthCookie(userId, res, impersonatedBy);
     return fresh;
   }
 
@@ -177,14 +179,11 @@ export class AuthService {
   }
 
   /**
-   * Используется ImpersonationService для подписания токенов с custom claims.
+   * Используется ImpersonationService. Права в JWT не кладём — cookie иначе
+   * превышает лимит браузера (~4 КБ) и теряется (GitLab/Jira на том же IP).
    */
-  async signJwtForUser(
-    userId: string,
-    sectionPermissions: SectionPermission[],
-    impersonatedBy?: string,
-  ): Promise<string> {
-    return this.signJwt(userId, sectionPermissions, impersonatedBy);
+  async signJwtForUser(userId: string, impersonatedBy?: string): Promise<string> {
+    return this.signJwt(userId, impersonatedBy);
   }
 
   /**
@@ -195,11 +194,9 @@ export class AuthService {
   private async setAuthCookie(
     userId: string,
     res: Response,
-    sectionPermissions?: SectionPermission[],
     impersonatedBy?: string,
   ): Promise<void> {
-    const perms = sectionPermissions ?? await this.permissions.getUserSectionPermissions(userId);
-    const token = await this.signJwt(userId, perms, impersonatedBy);
+    const token = await this.signJwt(userId, impersonatedBy);
     res.cookie(JWT_COOKIE, token, {
       httpOnly: true,
       secure: false, // TODO: включить когда продакшен переедет на HTTPS
@@ -209,14 +206,9 @@ export class AuthService {
     });
   }
 
-  private async signJwt(
-    userId: string,
-    sectionPermissions: SectionPermission[],
-    impersonatedBy?: string,
-  ): Promise<string> {
+  private async signJwt(userId: string, impersonatedBy?: string): Promise<string> {
     const claims: Record<string, unknown> = {
       user_id: userId,
-      sectionPermissions,
       pv: this.permissionsVersion.get(),
     };
     if (impersonatedBy) claims.impersonatedBy = impersonatedBy;

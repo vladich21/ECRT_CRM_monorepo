@@ -46,7 +46,6 @@ export class JwtGuard implements CanActivate {
     let payload: {
       user_id: string;
       exp?: number;
-      sectionPermissions?: SectionPermission[];
       pv?: number;
       impersonatedBy?: string;
     };
@@ -64,18 +63,15 @@ export class JwtGuard implements CanActivate {
       throw new UnauthorizedException('Недействительный токен');
     }
 
-    let sectionPermissions = payload.sectionPermissions ?? [];
-
-    // Если pv в токене не совпадает с серверным - перевыпускаем токен
-    // с актуальным snapshot прав. Также покрывает старые токены без pv.
-    // impersonatedBy сохраняем, чтобы не сломать активную сессию имперсонации.
     if (payload.pv !== this.permissionsVersion.get()) {
-      sectionPermissions = await this.authService.refreshTokenPermissions(
+      await this.authService.refreshTokenPermissions(
         payload.user_id,
         res,
         payload.impersonatedBy,
       );
     }
+
+    const sectionPermissions = await this.authService.loadSectionPermissions(payload.user_id);
 
     req.user = {
       user_id: payload.user_id,
