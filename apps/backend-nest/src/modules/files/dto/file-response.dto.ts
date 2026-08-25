@@ -11,6 +11,9 @@ export interface FileResponseDto {
   response_deadline: string | null;
   version: number;
   is_current: boolean;
+  /** local | files_service — откуда отдаются байты. */
+  storage_backend: string;
+  external_file_id: string | null;
 }
 
 export interface UploadItemDto {

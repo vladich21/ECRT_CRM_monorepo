@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FilesModule } from '../files/files.module';
 import { ApprovalRoutesController } from './controllers/approval-routes.controller';
 import { ApprovalProcessesController } from './controllers/approval-processes.controller';
 import { ApprovalTasksController } from './controllers/approval-tasks.controller';
@@ -22,6 +23,7 @@ import { ProjectEntityHandler } from './entity-handlers/project.handler';
  * Модуль «Согласования документов». DatabaseModule и PermissionsModule - глобальные.
  */
 @Module({
+  imports: [FilesModule],
   controllers: [ApprovalRoutesController, ApprovalProcessesController, ApprovalTasksController],
   providers: [
     ApprovalRoutesService,

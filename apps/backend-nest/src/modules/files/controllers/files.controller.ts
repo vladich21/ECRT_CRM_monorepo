@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Delete,
   ForbiddenException,
@@ -26,6 +27,7 @@ import { ALLOWED_MIME_TYPES } from '../constants/file-formats';
 import { Public } from '../../auth/public.decorator';
 import { EntityParams } from '../decorators/entity-params.decorator';
 import type { EntityParamsDto } from '../dto';
+import { PrepareUploadDto } from '../dto/prepare-upload.dto';
 import { UpdateFileMetaDto } from '../dto/update-file-meta.dto';
 @Controller()
 export class FilesController {
@@ -48,6 +50,42 @@ export class FilesController {
     const errors = validateSync(dto, { whitelist: true, forbidNonWhitelisted: false });
     if (errors.length > 0) {
       const messages = errors.flatMap(e => (e.constraints ? Object.values(e.constraints) : []));
+      throw new BadRequestException(
+        messages.length > 0 ? messages.join('; ') : 'Некорректное тело запроса',
+      );
+    }
+    return dto;
+  }
+
+  /**
+   * Новый контур (files-service): метаданные + tus-реквизиты.
+   * Legacy POST /upload (multer → диск) остаётся рядом — strangler, не big-bang.
+   */
+  @Post('upload/prepare')
+  async prepareUpload(
+    @Body() body: PrepareUploadDto | { body?: PrepareUploadDto },
+    @Req() req: Request & { user?: { user_id?: string } },
+  ) {
+    const dto = this.parsePrepareUploadBody(body);
+    return this.service.prepareRemoteUpload(dto, req.user?.user_id);
+  }
+
+  @Post('upload/complete/:fileId')
+  async completeUpload(@Param('fileId') fileId: string) {
+    return this.service.completeRemoteUpload(fileId);
+  }
+
+  private parsePrepareUploadBody(
+    body: PrepareUploadDto | { body?: PrepareUploadDto },
+  ): PrepareUploadDto {
+    const raw =
+      body != null && typeof body === 'object' && 'body' in body && body.body != null
+        ? body.body
+        : body;
+    const dto = plainToInstance(PrepareUploadDto, raw ?? {});
+    const errors = validateSync(dto, { whitelist: true, forbidNonWhitelisted: false });
+    if (errors.length > 0) {
+      const messages = errors.flatMap((e) => (e.constraints ? Object.values(e.constraints) : []));
       throw new BadRequestException(
         messages.length > 0 ? messages.join('; ') : 'Некорректное тело запроса',
       );
@@ -122,6 +160,10 @@ export class FilesController {
 
   @Get('files/:fileId')
   async getFile(@Param('fileId') fileId: string, @Res() res: Response) {
+    const remote = await this.service.resolveRemoteDownloadUrl(fileId);
+    if (remote) {
+      return res.redirect(remote.url);
+    }
     const file = await this.service.resolvePublicFileDownload(fileId);
     if (!file) throw new NotFoundException(`Файл ${fileId} не найден`);
     return this.sendDownloadResponse(res, file);
@@ -141,6 +183,10 @@ export class FilesController {
       throw new ForbiddenException('Ссылка на файл недействительна или устарела');
     }
 
+    const remote = await this.service.resolveRemoteDownloadUrl(fileId);
+    if (remote) {
+      return res.redirect(remote.url);
+    }
     const file = await this.service.resolvePublicFileDownload(fileId);
     if (!file) throw new NotFoundException('Файл не найден');
     return this.sendDownloadResponse(res, file);

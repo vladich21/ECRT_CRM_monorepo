@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { and, eq } from 'drizzle-orm';
 import * as fs from 'fs';
@@ -10,6 +10,7 @@ import {
   resolveStoredFilePath,
   writeFileToIdStorage,
 } from '../../files/file-storage-path';
+import { FilesRemoteClient } from '../../files/services/files-remote.client';
 import type { DrizzleTx } from '../types/approval.types';
 
 export interface SnapshotResult {
@@ -23,33 +24,23 @@ export interface SnapshotResult {
  * Версионность документов согласования (F-V2): round-snapshot поверх общей files.
  *
  * При повторной отправке после доработки создаём НОВУЮ версию набора файлов
- * (секция 'approval' сущности): неизменные - физически копируем под новым id,
- * заменённые/добавленные - пишем как новые, старую версию помечаем is_current=false.
- * Работает строго внутри транзакции движка; физические операции идут вместе с
- * вставкой строк (откат транзакции оставит лишь безвредные файлы-сироты на диске).
+ * (секция 'approval' сущности). Если files-service включён — байты и keep-копии
+ * идут туда (дедуп по SHA); иначе legacy-диск UPLOAD_PATH.
  *
- * Живёт в модуле approvals (НЕ импортируем FilesModule, чтобы не задеть порядок
- * регистрации роутов - catch-all FilesController), переиспользуя pure-хелперы путей.
+ * Живёт в модуле approvals (не импортирует FilesController), клиент — FilesRemoteClient.
  */
 @Injectable()
 export class ApprovalFilesService {
-  constructor(private readonly config: ConfigService) {}
+  private readonly logger = new Logger(ApprovalFilesService.name);
 
-  /**
-   * @param keepFileIds id текущих (is_current) файлов, переносимых в новую версию.
-   *   `null` = перенести все текущие (безопасный дефолт для повторной отправки без правок).
-   *   Файл, имя которого совпало с именем загруженного, НЕ копируется (его заменяет загрузка).
-   * @param uploadedFiles новые/заменяющие файлы версии N+1.
-   * @returns описание снапшота или `null`, если версионировать нечего (нет ни текущих, ни новых).
-   */
+  constructor(
+    private readonly config: ConfigService,
+    private readonly filesRemote: FilesRemoteClient,
+  ) {}
+
   /**
    * Удаляет ВСЕ документы секции (по умолчанию 'approval') сущности - строки в БД
    * (внутри транзакции) + возвращает физические пути для удаления ПОСЛЕ коммита.
-   *
-   * Документы согласования привязаны к сущности (не к процессу), поэтому при старте
-   * НОВОГО согласования прежние документы (от уже терминальных отменён/отклонён
-   * процессов) обсолетны и должны быть убраны, иначе они накапливаются и попадают
-   * в новый процесс.
    */
   async clearEntityDocuments(
     tx: DrizzleTx,
@@ -65,9 +56,19 @@ export class ApprovalFilesService {
     const rows = await tx.select().from(files).where(where);
     if (!rows.length) return [];
     const uploadPath = getUploadPath(this.config);
-    const paths = rows
-      .map((r) => resolveStoredFilePath(uploadPath, r))
-      .filter((p): p is string => !!p);
+    const paths: string[] = [];
+    for (const r of rows) {
+      if (r.storageBackend === 'files_service' && r.externalFileId && this.filesRemote.isEnabled()) {
+        await this.filesRemote.deleteFile(String(r.externalFileId)).catch((err) => {
+          this.logger.warn(
+            `files-service delete ${r.externalFileId} failed: ${err instanceof Error ? err.message : err}`,
+          );
+        });
+      } else {
+        const p = resolveStoredFilePath(uploadPath, r);
+        if (p) paths.push(p);
+      }
+    }
     await tx.delete(files).where(where);
     return paths;
   }
@@ -107,9 +108,9 @@ export class ApprovalFilesService {
     if (current.length === 0 && uploadedFiles.length === 0) return null;
 
     const nextVersion = current.reduce((max, f) => Math.max(max, f.version ?? 1), 0) + 1;
+    const useRemote = this.filesRemote.isEnabled();
     const uploadPath = getUploadPath(this.config);
 
-    // Архивируем текущий набор секции (в т.ч. на случай рассинхрона версий).
     await tx
       .update(files)
       .set({ isCurrent: false, updatedAt: new Date() })
@@ -127,66 +128,145 @@ export class ApprovalFilesService {
     const kept: string[] = [];
     const removed: string[] = [];
 
-    // Переносим неизменные файлы как физические копии под новым id.
     for (const f of current) {
       const isKept = keepSet === null || keepSet.has(String(f.id));
       if (!isKept) {
         removed.push(f.name);
         continue;
       }
-      // Заменяется одноимённой загрузкой - не копируем (иначе конфликт unique по версии).
       if (uploadedNames.has(f.name)) {
         removed.push(f.name);
         continue;
       }
-      const srcPath = resolveStoredFilePath(uploadPath, f);
-      const [row] = await tx
-        .insert(files)
-        .values({
+
+      if (useRemote) {
+        const body = await this.readSourceBytes(f, uploadPath);
+        if (!body) {
+          this.logger.warn(`skip keep ${f.id}: bytes not found`);
+          removed.push(f.name);
+          continue;
+        }
+        const remote = await this.filesRemote.ingestBuffer({
+          filename: f.name,
+          contentType: f.type ?? 'application/octet-stream',
           entityType,
-          tableId: entityId,
-          name: f.name,
-          documentSection,
-          type: f.type,
-          size: f.size ?? undefined,
-          uploadedById: f.uploadedById ?? undefined,
-          version: nextVersion,
-          isCurrent: true,
-        })
-        .returning({ id: files.id });
-      if (srcPath && row?.id) {
-        copyFileToIdStorage(uploadPath, srcPath, String(row.id), f.name);
+          entityId,
+          createdBy: f.uploadedById ? String(f.uploadedById) : uploadedById,
+          body,
+        });
+        try {
+          await tx.insert(files).values({
+            entityType,
+            tableId: entityId,
+            name: f.name,
+            documentSection,
+            type: f.type,
+            size: remote.sizeBytes ?? f.size ?? undefined,
+            uploadedById: f.uploadedById ?? undefined,
+            version: nextVersion,
+            isCurrent: true,
+            storageBackend: 'files_service',
+            externalFileId: remote.fileId,
+            externalVersionId: remote.versionId,
+          });
+        } catch (err) {
+          await this.filesRemote.deleteFile(remote.fileId).catch(() => undefined);
+          throw err;
+        }
+      } else {
+        const srcPath = resolveStoredFilePath(uploadPath, f);
+        const [row] = await tx
+          .insert(files)
+          .values({
+            entityType,
+            tableId: entityId,
+            name: f.name,
+            documentSection,
+            type: f.type,
+            size: f.size ?? undefined,
+            uploadedById: f.uploadedById ?? undefined,
+            version: nextVersion,
+            isCurrent: true,
+          })
+          .returning({ id: files.id });
+        if (srcPath && row?.id) {
+          copyFileToIdStorage(uploadPath, srcPath, String(row.id), f.name);
+        }
       }
       kept.push(f.name);
     }
 
-    // Добавляем загруженные (новые/заменяющие) файлы версии N+1.
     const added: string[] = [];
     const seenUploadNames = new Set<string>();
     for (const file of uploadedFiles) {
-      // Защита от дублей имён в одной версии (нарушили бы unique-индекс).
       if (seenUploadNames.has(file.originalname)) continue;
       seenUploadNames.add(file.originalname);
-      const [row] = await tx
-        .insert(files)
-        .values({
+
+      if (useRemote) {
+        const remote = await this.filesRemote.ingestBuffer({
+          filename: file.originalname,
+          contentType: file.mimetype || 'application/octet-stream',
           entityType,
-          tableId: entityId,
-          name: file.originalname,
-          documentSection,
-          type: file.mimetype || 'application/octet-stream',
-          size: file.size,
-          uploadedById: uploadedById || undefined,
-          version: nextVersion,
-          isCurrent: true,
-        })
-        .returning({ id: files.id });
-      if (row?.id) {
-        writeFileToIdStorage(uploadPath, String(row.id), file.originalname, file.buffer);
+          entityId,
+          createdBy: uploadedById,
+          body: file.buffer,
+        });
+        try {
+          await tx.insert(files).values({
+            entityType,
+            tableId: entityId,
+            name: file.originalname,
+            documentSection,
+            type: file.mimetype || 'application/octet-stream',
+            size: remote.sizeBytes ?? file.size,
+            uploadedById: uploadedById || undefined,
+            version: nextVersion,
+            isCurrent: true,
+            storageBackend: 'files_service',
+            externalFileId: remote.fileId,
+            externalVersionId: remote.versionId,
+          });
+        } catch (err) {
+          await this.filesRemote.deleteFile(remote.fileId).catch(() => undefined);
+          throw err;
+        }
+      } else {
+        const [row] = await tx
+          .insert(files)
+          .values({
+            entityType,
+            tableId: entityId,
+            name: file.originalname,
+            documentSection,
+            type: file.mimetype || 'application/octet-stream',
+            size: file.size,
+            uploadedById: uploadedById || undefined,
+            version: nextVersion,
+            isCurrent: true,
+          })
+          .returning({ id: files.id });
+        if (row?.id) {
+          writeFileToIdStorage(uploadPath, String(row.id), file.originalname, file.buffer);
+        }
       }
       added.push(file.originalname);
     }
 
     return { version: nextVersion, kept, added, removed };
+  }
+
+  private async readSourceBytes(
+    row: typeof files.$inferSelect,
+    uploadPath: string,
+  ): Promise<Buffer | null> {
+    if (row.storageBackend === 'files_service' && row.externalFileId && this.filesRemote.isEnabled()) {
+      const link = await this.filesRemote.createSignedLink(String(row.externalFileId), 600);
+      const res = await fetch(link.url, { signal: AbortSignal.timeout(120_000) });
+      if (!res.ok) return null;
+      return Buffer.from(await res.arrayBuffer());
+    }
+    const srcPath = resolveStoredFilePath(uploadPath, row);
+    if (!srcPath) return null;
+    return fs.readFileSync(srcPath);
   }
 }

@@ -47,6 +47,9 @@ services:
       # OnlyOffice Document Server (общий сервис platform/onlyoffice)
       - ONLYOFFICE_URL=${ONLYOFFICE_URL:-}
       - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
+      # Пусто = файлы как раньше в UPLOAD_PATH. На стейдже CI задаёт URL files-service на jarvis.
+      - FILES_SERVICE_URL=${FILES_SERVICE_URL:-}
+      - FILES_API_KEY=${FILES_API_KEY:-}
     volumes:
       - /data/pmdb-stage/uploads:/app/apps/backend-nest/uploads
     restart: unless-stopped

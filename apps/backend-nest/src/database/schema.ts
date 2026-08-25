@@ -8,6 +8,7 @@ import {
   date,
   numeric,
   integer,
+  bigint,
   jsonb,
   uniqueIndex,
   index,
@@ -464,7 +465,7 @@ export const files = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     documentSection: varchar('document_section', { length: 32 }).notNull().default('default'),
     type: varchar('type', { length: 255 }).notNull(),
-    size: integer('size'),
+    size: bigint('size', { mode: 'number' }),
     uploadedById: uuid('uploadedby_id'),
     responseRequired: boolean('response_required').notNull().default(false),
     responseDeadline: timestamp('response_deadline', { withTimezone: true }),
@@ -475,6 +476,10 @@ export const files = pgTable(
     updatedBy: uuid('updated_by'),
     version: integer('version').notNull().default(1),
     isCurrent: boolean('is_current').notNull().default(true),
+    /** local — байты в UPLOAD_PATH; files_service — байты во внешнем files-service. */
+    storageBackend: varchar('storage_backend', { length: 32 }).notNull().default('local'),
+    externalFileId: uuid('external_file_id'),
+    externalVersionId: uuid('external_version_id'),
   },
   (table) => [
     uniqueIndex('files_entity_section_name_version').on(

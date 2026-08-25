@@ -1,5 +1,5 @@
-import { and, count, desc, eq } from 'drizzle-orm';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -8,9 +8,11 @@ import { files, partners } from '../../../database/schema';
 import { buildFileDownloadUrl } from '../file-download-url';
 import { getUploadPath } from '../files-config';
 import { resolveStoredFilePath, writeFileToIdStorage } from '../file-storage-path';
-import type { FileResponseDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
+import type { FileResponseDto, PrepareUploadDto, UpdateFileMetaDto, UploadItemDto } from '../dto';
 import { syncPatentAutoStatus } from '../../patents/services/patent-auto-status';
 import { PartnersService } from '../../partners/services/partners.service';
+import { FilesRemoteClient } from './files-remote.client';
+import type { FilesServicePrepareResponse } from '../files-remote.types';
 
 /** entityType файла → булева колонка статуса проверки контрагента, выводимая из наличия файлов. */
 const PARTNER_VERIFICATION_FLAG_BY_ENTITY_TYPE = {
@@ -68,7 +70,13 @@ export class FilesService {
     private readonly db: DatabaseService,
     private readonly config: ConfigService,
     private readonly partnersService: PartnersService,
+    private readonly filesRemote: FilesRemoteClient,
   ) {}
+
+  /** Включён ли мост к files-service (иначе только legacy multer → диск). */
+  isFilesServiceEnabled(): boolean {
+    return this.filesRemote.isEnabled();
+  }
 
   /**
    * Деривация статусов проверки контрагента (юрпроверка / анкета) от наличия файлов.
@@ -116,6 +124,187 @@ export class FilesService {
     await this.db.db.update(partners).set(patch).where(eq(partners.id, entityId));
 
     await this.partnersService.refreshPartnerDerivedStatus(entityId);
+  }
+
+  /**
+   * Strangler-шаг 1: зарегистрировать файл в files-service + строку в pmdb.files.
+   * Байты клиент льёт сам по tus (ответ.upload). Старый POST /upload не трогаем.
+   */
+  async prepareRemoteUpload(
+    dto: PrepareUploadDto,
+    uploadedById?: string,
+  ): Promise<{
+    file: FileResponseDto;
+    remote: FilesServicePrepareResponse;
+  }> {
+    const documentSection = normalizeDocumentSection(dto.entityType, dto.documentSection);
+    const contentType = dto.contentType?.trim() || 'application/octet-stream';
+    let responseDeadline: Date | null = null;
+    if (dto.responseDeadline != null && String(dto.responseDeadline).trim() !== '') {
+      const parsed = new Date(String(dto.responseDeadline));
+      if (!Number.isNaN(parsed.getTime())) responseDeadline = parsed;
+    }
+
+    const remote = await this.filesRemote.prepareFile({
+      filename: dto.filename,
+      contentType,
+      entityType: dto.entityType,
+      entityId: dto.entityId,
+      createdBy: uploadedById,
+      expectedSha256: dto.expectedSha256,
+    });
+
+    try {
+      const localId = await this.insertRemoteCatalogRow({
+        entityType: dto.entityType,
+        entityId: dto.entityId,
+        filename: dto.filename,
+        contentType,
+        uploadedById,
+        documentSection,
+        responseRequired: Boolean(dto.responseRequired),
+        responseDeadline,
+        remoteFileId: remote.fileId,
+        remoteVersionId: remote.versionId,
+      });
+
+      const file = await this.findOne(dto.entityType, dto.entityId, localId);
+      if (!file) {
+        throw new BadRequestException('Не удалось сохранить метаданные файла');
+      }
+      return { file, remote };
+    } catch (err) {
+      await this.filesRemote.deleteFile(remote.fileId).catch(() => undefined);
+      throw err;
+    }
+  }
+
+  /**
+   * Новая строка каталога под files-service. Не используем upsert: конфликт
+   * имени не должен переклеивать существующую local-строку.
+   */
+  private async insertRemoteCatalogRow(input: {
+    entityType: string;
+    entityId: string;
+    filename: string;
+    contentType: string;
+    uploadedById?: string;
+    documentSection: string;
+    responseRequired: boolean;
+    responseDeadline: Date | null;
+    remoteFileId: string;
+    remoteVersionId: string;
+  }): Promise<string> {
+    const sameName = and(
+      eq(files.entityType, input.entityType),
+      eq(files.tableId, input.entityId),
+      eq(files.documentSection, input.documentSection),
+      eq(files.name, input.filename),
+    );
+
+    const [agg] = await this.db.db
+      .select({ maxVersion: sql<number>`coalesce(max(${files.version}), 0)` })
+      .from(files)
+      .where(sameName);
+    const nextVersion = Number(agg?.maxVersion ?? 0) + 1;
+
+    await this.db.db
+      .update(files)
+      .set({ isCurrent: false, updatedAt: new Date() })
+      .where(and(sameName, eq(files.isCurrent, true)));
+
+    const [row] = await this.db.db
+      .insert(files)
+      .values({
+        entityType: input.entityType,
+        tableId: input.entityId,
+        name: input.filename,
+        documentSection: input.documentSection,
+        type: input.contentType,
+        size: 0,
+        uploadedById: input.uploadedById || undefined,
+        responseRequired: input.responseRequired,
+        responseDeadline: input.responseDeadline,
+        version: nextVersion,
+        isCurrent: true,
+        storageBackend: 'files_service',
+        externalFileId: input.remoteFileId,
+        externalVersionId: input.remoteVersionId,
+      })
+      .returning({ id: files.id });
+
+    if (!row?.id) {
+      throw new BadRequestException('Не удалось сохранить метаданные файла');
+    }
+    return String(row.id);
+  }
+
+  /**
+   * После tus-upload: сверить статус в files-service, обновить size в pmdb.
+   * Пока pending — вернём status; ready — signed URL для проверки скачивания.
+   */
+  async completeRemoteUpload(localFileId: string): Promise<{
+    file: FileResponseDto;
+    remoteStatus: string;
+    downloadUrl?: string;
+    rejectReason?: string | null;
+  }> {
+    const [row] = await this.db.db.select().from(files).where(eq(files.id, localFileId)).limit(1);
+    if (!row) throw new NotFoundException(`Файл ${localFileId} не найден`);
+    if (row.storageBackend !== 'files_service' || !row.externalFileId) {
+      throw new BadRequestException('Файл не привязан к files-service');
+    }
+
+    const remote = await this.filesRemote.getFile(row.externalFileId);
+    const version = remote.currentVersion;
+    const remoteStatus = version?.status ?? 'pending';
+
+    if (remoteStatus === 'ready' && version) {
+      await this.db.db
+        .update(files)
+        .set({
+          size: version.sizeBytes ?? row.size,
+          type: version.contentType || row.type,
+          externalVersionId: version.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(files.id, localFileId));
+
+      if (row.entityType === 'patent' && row.tableId) {
+        await syncPatentAutoStatus(this.db, String(row.tableId));
+      }
+      if (row.entityType && row.tableId) {
+        await this.syncPartnerVerificationFlags(row.entityType, String(row.tableId));
+      }
+
+      const link = await this.filesRemote.createSignedLink(row.externalFileId, 3600);
+      const file = await this.findById(localFileId);
+      if (!file) throw new NotFoundException(`Файл ${localFileId} не найден`);
+      return { file, remoteStatus, downloadUrl: link.url };
+    }
+
+    const file = await this.findById(localFileId);
+    if (!file) throw new NotFoundException(`Файл ${localFileId} не найден`);
+    return {
+      file,
+      remoteStatus,
+      rejectReason: version?.rejectReason ?? null,
+    };
+  }
+
+  /** Для GET /files/:id — если байты во внешнем сервисе, отдать signed URL. */
+  async resolveRemoteDownloadUrl(
+    fileId: string,
+  ): Promise<{ url: string; filename: string } | null> {
+    const [row] = await this.db.db.select().from(files).where(eq(files.id, fileId)).limit(1);
+    if (!row || row.storageBackend !== 'files_service' || !row.externalFileId) {
+      return null;
+    }
+    if (!this.filesRemote.isEnabled()) {
+      throw new BadRequestException('files-service не настроен, удалённый файл недоступен');
+    }
+    const link = await this.filesRemote.createSignedLink(row.externalFileId, 3600);
+    return { url: link.url, filename: row.name };
   }
 
   async upload(
@@ -314,8 +503,27 @@ export class FilesService {
     entityId: string,
     fileId: string,
   ): Promise<FileResponseDto | null> {
-    const row = await this.findOne(entityType, entityId, fileId);
-    if (!row) return null;
+    const [stored] = await this.db.db
+      .select()
+      .from(files)
+      .where(
+        and(
+          eq(files.entityType, entityType),
+          eq(files.tableId, entityId),
+          eq(files.id, fileId),
+        ),
+      )
+      .limit(1);
+    if (!stored) return null;
+
+    if (
+      stored.storageBackend === 'files_service' &&
+      stored.externalFileId &&
+      this.filesRemote.isEnabled()
+    ) {
+      await this.filesRemote.deleteFile(String(stored.externalFileId));
+    }
+
     await this.db.db
       .delete(files)
       .where(
@@ -329,7 +537,7 @@ export class FilesService {
       await syncPatentAutoStatus(this.db, entityId);
     }
     // Деривация статусов проверки - upgrade-only, удаление файла флаг не понижает.
-    return row;
+    return this.toResponse(stored);
   }
 
   getFilePath(entityType: string, entityId: string, filename: string): string | null {
@@ -398,6 +606,8 @@ export class FilesService {
       response_deadline: r.responseDeadline ? r.responseDeadline.toISOString() : null,
       version: r.version ?? 1,
       is_current: r.isCurrent ?? true,
+      storage_backend: r.storageBackend ?? 'local',
+      external_file_id: r.externalFileId ? String(r.externalFileId) : null,
     };
   }
 }
