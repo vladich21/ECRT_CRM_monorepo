@@ -13,7 +13,8 @@ variables:
   # ONLYOFFICE_URL, ONLYOFFICE_JWT_SECRET (OnlyOffice Document Server)
   # STAGE_DATABASE_URL, STAGE_JWT_SECRET (для стейджа)
   # STAGE_ONLYOFFICE_URL, STAGE_ONLYOFFICE_JWT_SECRET (для стейджа)
-  # STAGE_FILES_SERVICE_URL, STAGE_FILES_API_KEY (мост на files-service стейджа)
+  # FILES_SERVICE_URL, FILES_API_KEY (прод: files-service на 207)
+  # STAGE_FILES_SERVICE_URL, STAGE_FILES_API_KEY (стейдж: files-service на 74)
   # STAGE_AUTH_RATE_LIMIT_MAX / WINDOW_MS (стейдж мягче, прод — дефолт 5/15мин)
 
 # =====================================================
@@ -100,6 +101,8 @@ prod:deploy:
       # OnlyOffice Document Server (секрет — в CI/CD Variables)
       export ONLYOFFICE_URL="${ONLYOFFICE_URL:-}"
       export ONLYOFFICE_JWT_SECRET="${ONLYOFFICE_JWT_SECRET:-}"
+      export FILES_SERVICE_URL="${FILES_SERVICE_URL:-}"
+      export FILES_API_KEY="${FILES_API_KEY:-}"
       # Если пусто — compose подставит пустую строку в контейнер → 503 на /partners/inn-lookup
       if [ -z "${DATANEWTON_API_KEY:-}" ]; then
         echo "ERROR: DATANEWTON_API_KEY пустая или не видна этой джобе."

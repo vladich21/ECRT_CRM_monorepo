@@ -43,6 +43,9 @@ services:
       # OnlyOffice Document Server (общий сервис platform/onlyoffice)
       - ONLYOFFICE_URL=${ONLYOFFICE_URL:-}
       - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-}
+      # Пусто = только /data/pmdb/uploads. После выката моста — URL files-service на этой же 207.
+      - FILES_SERVICE_URL=${FILES_SERVICE_URL:-}
+      - FILES_API_KEY=${FILES_API_KEY:-}
     volumes:
       - /data/pmdb/uploads:/app/apps/backend-nest/uploads
     restart: unless-stopped
