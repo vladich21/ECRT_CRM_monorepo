@@ -18,6 +18,7 @@ import { MailService } from './mail.service';
 import { PermissionsService } from '../permissions/services/permissions.service';
 import { PermissionsVersionService } from '../permissions/services/permissions-version.service';
 import type { SectionPermission } from '../../shared/permissions';
+import { ADMIN_BACKUP_COOKIE, AUTH_COOKIE } from './auth-cookies';
 
 const ARGON2_OPTIONS: argon2.Options = {
   type: argon2.argon2id,
@@ -26,8 +27,6 @@ const ARGON2_OPTIONS: argon2.Options = {
   parallelism: 4,
 };
 
-const JWT_COOKIE = 'auth_token';
-const ADMIN_BACKUP_COOKIE = 'admin_token';
 const JWT_TTL_SECONDS = 3 * 24 * 60 * 60;
 
 @Injectable()
@@ -122,7 +121,7 @@ export class AuthService {
   }
 
   logout(res: Response) {
-    res.clearCookie(JWT_COOKIE, { path: '/' });
+    res.clearCookie(AUTH_COOKIE, { path: '/' });
     res.clearCookie(ADMIN_BACKUP_COOKIE, { path: '/' });
     return { success: true };
   }
@@ -197,7 +196,7 @@ export class AuthService {
     impersonatedBy?: string,
   ): Promise<void> {
     const token = await this.signJwt(userId, impersonatedBy);
-    res.cookie(JWT_COOKIE, token, {
+    res.cookie(AUTH_COOKIE, token, {
       httpOnly: true,
       secure: false, // TODO: включить когда продакшен переедет на HTTPS
       sameSite: 'lax',

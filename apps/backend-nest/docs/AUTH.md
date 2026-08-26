@@ -10,7 +10,7 @@
 |------|---------|
 | Хеширование паролей и кодов | `argon2id` (memoryCost 64MB, timeCost 3, parallelism 4) |
 | JWT | `jose` (HS256), срок 3 дня |
-| Хранение JWT | httpOnly cookie `auth_token` |
+| Хранение JWT | httpOnly cookie `pmdb_auth_token` |
 | Email | `nodemailer` + SMTP (Mailhog в dev) |
 | Rate limiting | in-memory Map, 5 попыток / 15 мин по IP |
 
@@ -74,7 +74,7 @@
 
 ## Сессия
 
-- Cookie `auth_token`, httpOnly, sameSite=lax, maxAge 3 дня
+- Cookie `pmdb_auth_token`, httpOnly, sameSite=lax, maxAge 3 дня
 - Автопродление: если до истечения < 24 ч — `JwtGuard` перевыпускает токен на 3 дня (`renewToken`)
 - При выходе (`POST /api/auth/logout`) cookie очищается
 

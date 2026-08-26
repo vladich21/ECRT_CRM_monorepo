@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { PermissionsVersionService } from '../permissions/services/permissions-version.service';
 import type { SectionPermission } from '../../shared/permissions';
+import { AUTH_COOKIE } from './auth-cookies';
 
 const RENEW_THRESHOLD_SEC = 24 * 60 * 60; // обновить токен если осталось < 24 часов
 
@@ -40,7 +41,7 @@ export class JwtGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<Request & { user: AuthRequestUser }>();
     const res = ctx.switchToHttp().getResponse<Response>();
 
-    const token = req.cookies?.['auth_token'];
+    const token = req.cookies?.[AUTH_COOKIE];
     if (!token) throw new UnauthorizedException('Токен отсутствует');
 
     let payload: {

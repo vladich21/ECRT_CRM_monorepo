@@ -9,9 +9,8 @@ import { AuthService } from '../../auth/auth.service';
 import { UsersService } from '../../users/services/users.service';
 import { PermissionsService } from '../../permissions/services/permissions.service';
 import { SECTIONS } from '../../../shared/permissions';
+import { ADMIN_BACKUP_COOKIE, AUTH_COOKIE } from '../../auth/auth-cookies';
 
-const AUTH_COOKIE = 'auth_token';
-const ADMIN_BACKUP_COOKIE = 'admin_token';
 const BACKUP_TTL_SECONDS = 3 * 24 * 60 * 60;
 
 @Injectable()
@@ -141,7 +140,7 @@ export class ImpersonationService {
   }
 
   /**
-   * Утилита: дочитать `req.cookies.admin_token` пытаясь верифицировать.
+   * Утилита: дочитать backup-cookie пытаясь верифицировать.
    * Используется только если потребуется fallback - сейчас не нужно.
    */
   async tryDecodeBackup(req: Request): Promise<string | null> {

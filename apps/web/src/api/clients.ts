@@ -21,7 +21,6 @@ export const loginClient = apiClient;
 
 let sessionTerminationStarted = false;
 
-/** Один сценарий выхода: очистить cookie на сервере, затем localStorage и полный переход на форму входа. */
 export function terminateSessionAndRedirect(): void {
   if (sessionTerminationStarted) return;
   sessionTerminationStarted = true;
@@ -34,36 +33,10 @@ export function terminateSessionAndRedirect(): void {
     });
 }
 
-function resolveRequestUrl(error: AxiosError): string {
-  const cfg = error.config;
-  if (!cfg) return '';
-  const raw = cfg.url ?? '';
-  try {
-    return new URL(raw, cfg.baseURL || window.location.origin).href;
-  } catch {
-    return raw;
-  }
-}
-
-/**
- * 401 files-service / чужого хоста / logout не означает «сессия PMDB мертва».
- * Иначе аватар или /api/v1/files/{uuid} сносит auth_token и кидает на /auth.
- */
+/** Сессия жива, пока /auth/me отвечает не 401. Остальные 401 (файлы, контракты) не логинят. */
 export function shouldTerminateSessionOn401(error: AxiosError): boolean {
   if (error.response?.status !== 401) return false;
-  const url = resolveRequestUrl(error);
-  if (!url) return false;
-  if (/\/auth\/logout(?:\?|$)/.test(url)) return false;
-  if (/:3080\b/.test(url) || /\/api\/v1\/files\b/.test(url) || /\/(?:files|dl)\//.test(url)) {
-    return false;
-  }
-  try {
-    const requestOrigin = new URL(url).origin;
-    const pageOrigin = typeof window !== 'undefined' ? window.location.origin : requestOrigin;
-    if (requestOrigin !== pageOrigin) return false;
-  } catch {
-    return false;
-  }
+  const url = `${error.config?.baseURL ?? ''}${error.config?.url ?? ''}`;
   return /\/auth\/me(?:\?|$)/.test(url);
 }
 
