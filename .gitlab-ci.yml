@@ -36,12 +36,23 @@ prod:build:api:
 prod:build:web-assets:
   stage: build
   image: node:20-alpine
-  timeout: 20m
+  timeout: 40m
+  variables:
+    npm_config_cache: "$CI_PROJECT_DIR/.npm"
+    # Иначе runner режет step_script на 10m, даже если timeout джобы 20m+.
+    RUNNER_SCRIPT_TIMEOUT: 35m
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
   tags:
     - docker
     - nextjs
   script:
-    - npm ci
+    # ignore-scripts: не собираем argon2 бэкенда — для vite он не нужен и на alpine часто съедает весь лимит.
+    - npm ci --ignore-scripts --no-audit --no-fund --progress=false
     - export VITE_API_URL=/api
     - export VITE_FILE_URL=/api
     - export VITE_PARTNER_CREATE_RESTRICTED="${PARTNER_CREATE_RESTRICTED:-true}"
@@ -136,11 +147,20 @@ stage:build:api:
 stage:build:web-assets:
   stage: build
   image: node:20-alpine
-  timeout: 20m
+  timeout: 40m
+  variables:
+    npm_config_cache: "$CI_PROJECT_DIR/.npm"
+    RUNNER_SCRIPT_TIMEOUT: 35m
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
   tags:
     - stands_jarvis
   script:
-    - npm ci
+    - npm ci --ignore-scripts --no-audit --no-fund --progress=false
     - export VITE_API_URL=/api
     - export VITE_FILE_URL=/api
     - export VITE_PARTNER_CREATE_RESTRICTED="${STAGE_PARTNER_CREATE_RESTRICTED:-true}"
