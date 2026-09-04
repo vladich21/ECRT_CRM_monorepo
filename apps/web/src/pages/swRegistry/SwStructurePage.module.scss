@@ -1,0 +1,411 @@
+@use '../../styles/variables' as v;
+@use '../../components/pageLayout/listPageShared' as lp;
+
+.wrap {
+  padding: 0;
+}
+
+.filterSection   { @include lp.filterSection; }
+.filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
+.filterTabsRight { @include lp.filterTabsRight; }
+.searchInTabsRow { @include lp.searchInput; }
+.searchIcon      { @include lp.searchIcon; }
+.resultCount     { @include lp.resultCount; }
+.filterTabs      { @include lp.filterTabs; }
+.filterTab       { @include lp.filterTab; }
+.filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
+.filterTabCount  { @include lp.filterTabCount; }
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.showArchived {
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.splitLayout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.treePanel {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 8px 0;
+  max-height: calc(100vh - 280px);
+  overflow: auto;
+}
+
+.detailPanel {
+  min-width: 0;
+}
+
+.detailEmpty {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.treeNode {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px 8px 8px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: #fafafa;
+  }
+}
+
+.treeNodeSelected {
+  background: #e6f4ff;
+  border-left-color: #1677ff;
+}
+
+.treeExpand {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+}
+
+.treeExpandPlaceholder {
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.treeLabel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.treeName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.treeTypeBadge {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 1px 7px;
+  margin-inline-end: 0;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  background: #fafafa;
+  color: #8c8c8c;
+}
+
+.treeArchivedTag {
+  flex-shrink: 0;
+  font-size: 11px;
+  margin-inline-end: 0;
+}
+
+.treeChildren {
+  /* indent handled inline per depth */
+}
+
+.detailStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detailHeaderCard {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.detailTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.detailTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #141414;
+  line-height: 1.35;
+}
+
+.detailBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.detailActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid #f0f0f0;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cardTitle {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #141414;
+}
+
+.cardTitleCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  margin-left: 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(0, 47, 85, 0.1);
+  color: #002f55;
+}
+
+.infoRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.infoLabel {
+  font-size: 14px;
+  color: #8c8c8c;
+  flex-shrink: 0;
+}
+
+.infoValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  text-align: right;
+  max-width: 62%;
+  word-break: break-word;
+}
+
+.infoValuePlain {
+  font-weight: 600;
+}
+
+.infoValueMultiline {
+  font-weight: 400;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.infoCodeTag {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  background: #fafafa;
+  color: #595959;
+}
+
+.infoLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1677ff;
+  text-align: right;
+  max-width: 62%;
+  word-break: break-word;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.ridSoftwareLabel {
+  font-size: 14px;
+  color: #8c8c8c;
+  flex-shrink: 0;
+  max-width: 38%;
+  word-break: break-word;
+  text-align: left;
+
+  &:hover {
+    color: #1677ff;
+  }
+}
+
+.ridDeletedHint {
+  font-size: 13px;
+  font-weight: 400;
+  color: #bfbfbf;
+}
+
+.descriptionText {
+  font-size: 14px;
+  color: #262626;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.responsibleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.responsibleMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.responsibleAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: #e6f4ff;
+  color: #1677ff;
+  border: 1px solid #91caff;
+  flex-shrink: 0;
+}
+
+.responsibleText {
+  min-width: 0;
+}
+
+.responsibleName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.responsibleRole {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.removeLink {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #ff4d4f;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.emptyHint {
+  font-size: 14px;
+  color: #bfbfbf;
+}
+
+.loading {
+  padding: v.$spacing-4xl;
+  text-align: center;
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 0;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.itemLink {
+  color: #1677ff;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

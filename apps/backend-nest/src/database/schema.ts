@@ -950,3 +950,5 @@ export const ganttLinks = pgTable(
     index('gantt_links_target_idx').on(t.targetTaskId),
   ],
 );
+
+export * from '../modules/sw-registry/sw-registry.schema';

@@ -38,6 +38,7 @@ import { AdminRbacModule } from './modules/admin-rbac/admin-rbac.module';
 import { ImpersonationModule } from './modules/impersonation/impersonation.module';
 import { ApprovalsModule } from './modules/approvals/approvals.module';
 import { GanttModule } from './modules/gantt/gantt.module';
+import { SwRegistryModule } from './modules/sw-registry/sw-registry.module';
 
 @Module({
   imports: [
@@ -75,10 +76,12 @@ import { GanttModule } from './modules/gantt/gantt.module';
     PartnerEconomicCategoriesModule,
     // ВАЖНО: до FilesModule. У FilesController пустой префикс и жадный
     // @Get(':entityType/:entityId/:filename') - он перехватывает любые
-    // 3-сегментные GET /api/X/Y/Z. Approvals (references/*, routes/:id,
-    // processes/:id) должен зарегистрировать роуты раньше files-catch-all.
+    // 3-сегментные GET /api/X/Y/Z (например /sw/items/:id, /sw/references/:kind).
+    // SW: GET только через 4+ сегмента — /sw/items/detail/:id, /sw/references/kind/:kind.
+    // POST/PATCH тоже под detail/ для единообразия (3-сегментные GET ловит files-catch-all).
     ApprovalsModule,
     GanttModule,
+    SwRegistryModule,
     FilesModule,
     CommentsModule,
     SupplierEvaluationsModule,

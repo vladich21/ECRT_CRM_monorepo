@@ -11,6 +11,7 @@ import type {
   FilesServiceListResponse,
   FilesServicePrepareResponse,
   FilesServiceSignedLinkResponse,
+  FilesServiceVersionListResponse,
   PrepareRemoteFileInput,
 } from '../files-remote.types';
 
@@ -114,6 +115,21 @@ export class FilesRemoteClient {
     if (query.limit != null) q.set('limit', String(query.limit));
     const suffix = q.size > 0 ? `?${q}` : '';
     return this.request<FilesServiceListResponse>('GET', `/api/v1/files${suffix}`);
+  }
+
+  prepareVersion(
+    remoteFileId: string,
+    input: { filename?: string; contentType?: string; createdBy?: string },
+  ): Promise<FilesServicePrepareResponse> {
+    return this.request<FilesServicePrepareResponse>('POST', `/api/v1/files/${remoteFileId}/versions`, {
+      filename: input.filename,
+      contentType: input.contentType,
+      createdBy: input.createdBy,
+    });
+  }
+
+  listVersions(remoteFileId: string): Promise<FilesServiceVersionListResponse> {
+    return this.request<FilesServiceVersionListResponse>('GET', `/api/v1/files/${remoteFileId}/versions`);
   }
 
   /**

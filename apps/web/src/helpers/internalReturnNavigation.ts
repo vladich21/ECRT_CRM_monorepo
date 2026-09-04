@@ -18,6 +18,18 @@ export function getInternalReturnBackLabel(returnPath: string, defaultLabel: str
   if (returnPath.startsWith('/patents/')) {
     return 'К РИД';
   }
+  if (returnPath.startsWith('/sw/summary')) {
+    return 'К сводке';
+  }
+  if (returnPath.startsWith('/sw/structure')) {
+    return 'К структуре изделий';
+  }
+  if (returnPath.startsWith('/sw/items')) {
+    return 'К реестру программного обеспечения';
+  }
+  if (returnPath.startsWith('/sw/')) {
+    return 'Реестр программного обеспечения';
+  }
   if (returnPath.includes('/partners/') && returnPath.includes('/contracts')) {
     return 'К договорам контрагента';
   }

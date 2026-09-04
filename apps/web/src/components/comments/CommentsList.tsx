@@ -24,10 +24,22 @@ import styles from './CommentsList.module.scss';
 
 interface CommentsListProps {
   entityType: string;
+  /** Явный id, если param роута не `{entityType}Id` (напр. sw_document + :documentId). */
+  entityId?: string;
+  /** Только просмотр ленты без поля ввода. */
+  readOnly?: boolean;
+  /** Встроенный блок на карточке (не отдельная вкладка роута). */
+  embedded?: boolean;
 }
 
-export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
-  const { [`${entityType}Id`]: entityId } = useParams();
+export const CommentsList: React.FC<CommentsListProps> = ({
+  entityType,
+  entityId: entityIdProp,
+  readOnly,
+  embedded,
+}) => {
+  const params = useParams();
+  const entityId = entityIdProp ?? (params[`${entityType}Id`] as string);
   const { showNotification, contextHolder } = useNotification();
   const { data: comments, isLoading, isError } = useComments(entityType, entityId);
   const queryClient = useQueryClient();
@@ -234,7 +246,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
   return (
     <div className={styles.commentsContainer}>
       {contextHolder}
-      <div className={styles.commentsScrollArea}>
+      <div className={embedded ? styles.embeddedScrollArea : styles.commentsScrollArea}>
         <div className={styles.commentsContent}>
           {isLoading || isReferencesLoading ? (
             <Loader />
@@ -265,6 +277,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
         </div>
       </div>
 
+      {!readOnly ? (
       <div className={styles.inputContainer}>
         <div className={styles.inputWrapper}>
           <CommentInput
@@ -278,6 +291,7 @@ export const CommentsList: React.FC<CommentsListProps> = ({ entityType }) => {
           />
         </div>
       </div>
+      ) : null}
     </div>
   );
 };

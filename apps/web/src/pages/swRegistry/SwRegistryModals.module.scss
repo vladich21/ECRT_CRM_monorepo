@@ -1,0 +1,36 @@
+.formCompact {
+  :global(.ant-form-item) {
+    margin-bottom: 12px;
+  }
+
+  :global(.ant-form-item-label > label) {
+    font-size: 13px;
+  }
+}
+
+.alert {
+  margin-bottom: 12px;
+}
+
+.docHeader {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #595959;
+  line-height: 1.45;
+}
+
+.checkboxRow {
+  margin-bottom: 4px;
+}
+
+.checkboxHint {
+  color: #8c8c8c;
+  font-weight: 400;
+}
+
+.fieldHint {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #8c8c8c;
+}

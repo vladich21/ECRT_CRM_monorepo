@@ -46,6 +46,12 @@ export const SECTIONS = {
   PATENTS_LIST: 'patents.list',
   PATENTS_GRANTS: 'patents.grants',
 
+  // Реестр ПО
+  SW_STRUCTURE: 'sw.structure',
+  SW_ITEMS: 'sw.items',
+  SW_SUMMARY: 'sw.summary',
+  SW_REFERENCES: 'sw.references',
+
   // Системные
   SYSTEM_FILES: 'system.files',
   SYSTEM_HR_SYNC: 'system.hr_sync',

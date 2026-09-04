@@ -13,6 +13,15 @@
   scrollbar-width: thin;
 }
 
+.embeddedScrollArea {
+  width: 100%;
+  background: #ffffff;
+  overflow-y: auto;
+  padding: 8px 0;
+  max-height: 360px;
+  scrollbar-width: thin;
+}
+
 .commentsContent {
   max-width: 1200px;
   margin: 0 auto;

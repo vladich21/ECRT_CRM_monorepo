@@ -1,0 +1,93 @@
+.sectionBlock {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  margin-bottom: 4px !important;
+}
+
+.sectionHint {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.fileCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.fileMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.fileSubline {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.fileMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fileActions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.versionList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+.versionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+  padding: 2px 0;
+}
+
+.uploadDragger {
+  margin-top: 8px;
+}
+
+.iconPdf { color: #ff4d4f; font-size: 24px; }
+.iconWord { color: #1677ff; font-size: 24px; }
+.iconExcel { color: #52c41a; font-size: 24px; }
+.iconImage { color: #722ed1; font-size: 24px; }
+.iconDefault { color: #8c8c8c; font-size: 24px; }

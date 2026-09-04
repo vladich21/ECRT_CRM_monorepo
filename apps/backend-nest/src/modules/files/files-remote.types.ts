@@ -76,3 +76,20 @@ export type FilesServiceListResponse = {
   page: number;
   limit: number;
 };
+
+export type FilesServiceVersionListItem = {
+  id: string;
+  version: number;
+  status: FilesServiceVersionStatus;
+  originalName: string;
+  contentType: string | null;
+  sha256: string | null;
+  sizeBytes: number | null;
+  rejectReason: string | null;
+  createdAt?: string;
+  createdBy?: string | null;
+};
+
+export type FilesServiceVersionListResponse = {
+  items: FilesServiceVersionListItem[];
+};

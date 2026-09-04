@@ -1,6 +1,10 @@
 function normalizeNestMessage(message: unknown): string | undefined {
   if (typeof message === 'string' && message.trim()) return message.trim();
   if (Array.isArray(message) && message.length > 0) return message.map(String).join(', ');
+  if (message && typeof message === 'object' && 'message' in message) {
+    const nested = (message as { message?: unknown }).message;
+    if (typeof nested === 'string' && nested.trim()) return nested.trim();
+  }
   return undefined;
 }
 

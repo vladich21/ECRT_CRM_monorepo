@@ -1,4 +1,5 @@
 import {
+  ApartmentOutlined,
   AuditOutlined,
   CopyrightOutlined,
   HomeOutlined,
@@ -99,6 +100,28 @@ const RAW_MENU: RawMenuItem[] = [
         key: 'gantts',
         label: <Link to='/gantts'>Диаграмма ганта</Link>,
         requiredSections: [SECTIONS.PROJECTS_GANTT],
+      },
+    ],
+  },
+  {
+    key: 'sw_registry',
+    icon: <ApartmentOutlined />,
+    label: 'Реестр ПО',
+    children: [
+      {
+        key: 'sw_items',
+        label: <Link to='/sw/items'>Реестр программ</Link>,
+        requiredSections: [SECTIONS.SW_ITEMS],
+      },
+      {
+        key: 'sw_structure',
+        label: <Link to='/sw/structure'>Структура изделий</Link>,
+        requiredSections: [SECTIONS.SW_STRUCTURE],
+      },
+      {
+        key: 'sw_summary',
+        label: <Link to='/sw/summary'>Сводка</Link>,
+        requiredSections: [SECTIONS.SW_SUMMARY],
       },
     ],
   },

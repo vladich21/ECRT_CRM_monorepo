@@ -83,6 +83,8 @@ export type EntityFileSectionDef = {
 
 interface EntityFilesTabProps {
   entityType: string;
+  /** Явный id, если param роута не `{entityType}Id` (напр. sw-item + :itemId). */
+  entityId?: string;
   patentFileSections?: boolean;
   /** Категории документов; ключ = document_section на сервере (как у патентов). */
   documentSections?: readonly EntityFileSectionDef[];
@@ -130,11 +132,16 @@ function resolveGenericSectionKey(
   return allowedKeys[0]!;
 }
 
-export function EntityFilesTab({ entityType, patentFileSections, documentSections }: EntityFilesTabProps) {
+export function EntityFilesTab({
+  entityType,
+  entityId: entityIdProp,
+  patentFileSections,
+  documentSections,
+}: EntityFilesTabProps) {
   const { token } = theme.useToken();
   const params = useParams();
   const navigate = useNavigate();
-  const entityId = params[`${entityType}Id`] as string;
+  const entityId = entityIdProp ?? (params[`${entityType}Id`] as string);
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const pendingDeleteId = useRef<string>('');
