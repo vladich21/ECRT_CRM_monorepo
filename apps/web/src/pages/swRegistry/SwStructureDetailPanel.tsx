@@ -148,15 +148,15 @@ export function SwStructureDetailPanel({
                     loading={markDeletedLoading}
                     onClick={() =>
                       modal.confirm({
-                        title: 'Пометить ветку удалённой?',
+                        title: 'Пометить ветку удаленной?',
                         content: 'Элементы, программы и документы исчезнут из реестра и свода. Действие необратимо.',
-                        okText: 'Пометить удалённым',
+                        okText: 'Пометить удаленным',
                         okButtonProps: { danger: true },
                         onOk: () => actions.onMarkDeleted(node),
                       })
                     }
                   >
-                    Пометить удалённым
+                    Пометить удаленным
                   </Button>
                 </>
               )}

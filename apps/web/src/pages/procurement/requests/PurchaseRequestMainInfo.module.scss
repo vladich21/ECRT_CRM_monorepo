@@ -1,0 +1,187 @@
+@use '../../../styles/variables' as v;
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  width: 100%;
+  background: v.$bg-primary;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid v.$border-tertiary;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: v.$font-lg;
+  font-weight: 700;
+  color: v.$text-secondary;
+  letter-spacing: -0.01em;
+}
+
+.sectionTitleIcon {
+  font-size: 18px;
+  color: v.$primary-color;
+  flex-shrink: 0;
+}
+
+.subject {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: v.$text-secondary;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.justificationBlock {
+  padding-top: 14px;
+  border-top: 1px solid v.$border-tertiary;
+}
+
+.justificationLabel {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.justification {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: v.$text-secondary;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fieldCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: v.$bg-secondary;
+  border: 1px solid v.$border-tertiary;
+  min-height: 64px;
+  justify-content: center;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.fieldValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: v.$text-secondary;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.contractLink {
+  color: #1677ff;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.amountBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid v.$border-tertiary;
+}
+
+.amountLabel {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.amountValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: v.$text-secondary;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.metaList {
+  display: flex;
+  flex-direction: column;
+}
+
+.metaRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid v.$border-tertiary;
+
+  &:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+.metaLabel {
+  font-size: 14px;
+  color: v.$text-quaternary;
+  flex-shrink: 0;
+}
+
+.metaValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: v.$text-secondary;
+  text-align: right;
+  word-break: break-word;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .fieldsGrid {
+    grid-template-columns: 1fr;
+  }
+}

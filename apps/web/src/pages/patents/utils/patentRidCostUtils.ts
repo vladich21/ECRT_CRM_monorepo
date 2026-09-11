@@ -1,5 +1,7 @@
 import type { FormInstance } from 'antd/es/form/Form';
 
+import { formatRub } from '@/helpers/numberFormatters';
+
 export const PATENT_DEFAULT_RID_VAT_RATE = 22;
 
 export function applyPatentRidVatAmounts(
@@ -15,10 +17,7 @@ export function applyPatentRidVatAmounts(
   });
 }
 
-export function formatPatentMoney(amount: number | null | undefined): string {
-  if (amount == null || Number.isNaN(Number(amount))) return '-';
-  return `${Number(amount).toLocaleString('ru-RU')} ₽`;
-}
+export const formatPatentMoney = formatRub;
 
 export function calcPatentRidVatAmount(
   amountExcl: number | null | undefined,

@@ -262,7 +262,7 @@ export default function PartnerVerificationTab() {
         onSuccess: () => {
           showNotification(
             'success',
-            'Статус обновлён',
+            'Статус обновлен',
             failed ? 'Установлен статус «Проверка не пройдена»' : 'Статус «Проверка не пройдена» снят',
           );
         },

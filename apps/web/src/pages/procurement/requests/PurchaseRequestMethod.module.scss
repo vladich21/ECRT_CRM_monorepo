@@ -1,0 +1,135 @@
+@use '../../../styles/variables' as v;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.card {
+  background: v.$bg-primary;
+  border-radius: 10px;
+  padding: 22px 24px;
+  border: 1px solid v.$border-tertiary;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: v.$text-secondary;
+}
+
+.amountBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid v.$border-tertiary;
+}
+
+.amountLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: v.$text-quaternary;
+}
+
+.amountValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: v.$text-secondary;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.amountHint {
+  font-size: 13px;
+  line-height: 1.45;
+  color: v.$text-tertiary;
+}
+
+.methodList {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.methodCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid v.$border-tertiary;
+  border-radius: 10px;
+  background: v.$bg-primary;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: #91caff;
+  }
+}
+
+.methodCardActive {
+  border-color: v.$primary-color;
+  background: #e6f4ff;
+}
+
+.methodCardDisabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: v.$border-tertiary;
+  }
+}
+
+.methodBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  padding-top: 1px;
+}
+
+.methodName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: v.$text-secondary;
+}
+
+.bounds {
+  font-size: 13px;
+  color: v.$text-quaternary;
+}
+
+.actions {
+  margin-top: 4px;
+}
+
+.justification {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.5;
+  color: v.$text-secondary;
+}
+
+.hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: v.$text-tertiary;
+}

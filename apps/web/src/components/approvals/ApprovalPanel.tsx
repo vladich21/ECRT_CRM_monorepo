@@ -1,15 +1,25 @@
 import { PrinterOutlined } from '@ant-design/icons';
-import { App, Badge, Button, Card, Col, Collapse, Empty, Modal, Popconfirm, Row, Space, Spin, Table, Tabs, Typography } from 'antd';
-import { useState } from 'react';
+import { App, Badge, Button, Card, Collapse, Empty, Modal, Popconfirm, Space, Spin, Table, Tabs, Typography } from 'antd';
+import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useApprovalProcess, useApprovalState, useCancelProcess } from '@/api/approvals/approvalApiHooks';
 import { useModalStore } from '@/store/ModalStore';
-import { APPROVAL_STATUS_LABELS, DECISION_LABELS, type ApprovalProcessStatus } from '@/types/approval';
+import {
+  APPROVAL_STATUS_LABELS,
+  DECISION_LABELS,
+  type ApprovalDecisionType,
+  type ApprovalProcessStatus,
+  type ApprovalProcessView,
+} from '@/types/approval';
 
+import { formatApprovalDateTime } from './approvalFormat';
 import { ApprovalDocuments } from './ApprovalDocuments';
 import { ApprovalFeed } from './ApprovalFeed';
+import { ApprovalJournalTable } from './ApprovalJournalTable';
 import { ApprovalStepsBoard } from './ApprovalStepsBoard';
+import { DEFAULT_APPROVAL_VOCABULARY, type ApprovalVocabulary } from './approvalVocabulary';
+import styles from './ApprovalPanel.module.scss';
 
 type BadgeStatus = 'success' | 'processing' | 'error' | 'warning' | 'default';
 
@@ -27,42 +37,90 @@ interface ApprovalPanelProps {
   entityType: string;
   entityId?: string;
   variant?: 'card' | 'compact';
+  decisionLabels?: Partial<Record<ApprovalDecisionType, string>>;
+  vocabulary?: ApprovalVocabulary;
+  approveBlockedReason?: string | null;
+  emptyDescription?: string;
+  /** Старт процесса снаружи (кнопка «Отправить» в шапке карточки) — не дублировать здесь. */
+  hideGenericStart?: boolean;
 }
 
-/** Детали архивного (завершённого) процесса - подгружаются по разворачиванию.
- *  Документы не показываем: они привязаны к сущности и очищаются при старте нового
- *  согласования. Архив хранит ход (шаги) и ленту (решения/комментарии). */
-function ArchiveProcessDetail({ processId, active }: { processId: string; active: boolean }) {
-  const { data: proc, isLoading } = useApprovalProcess(active ? processId : undefined);
-  if (!active) return null;
-  if (isLoading || !proc) return <Spin />;
+function ProcessLayout({
+  process,
+  toolbarExtra,
+  documents,
+  editable,
+  vocabulary,
+}: {
+  process: ApprovalProcessView;
+  toolbarExtra?: ReactNode;
+  documents?: ReactNode;
+  editable: boolean;
+  vocabulary: ApprovalVocabulary;
+}) {
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size="middle">
-      {proc.completion_comment ? (
-        <Typography.Text type={proc.status === 'rejected' ? 'danger' : 'secondary'}>
-          Комментарий: {proc.completion_comment}
+    <div className={styles.shell}>
+      {toolbarExtra ? <div className={styles.top}>{toolbarExtra}</div> : null}
+      {(process.status === 'revision' || process.status === 'rejected') && process.completion_comment ? (
+        <Typography.Text type={process.status === 'rejected' ? 'danger' : 'warning'}>
+          Комментарий: {process.completion_comment}
         </Typography.Text>
       ) : null}
-      <ApprovalStepsBoard steps={proc.steps} decisions={proc.decisions} />
-      <Card size="small" title="Лента согласования">
-        <ApprovalFeed
-          processId={proc.id}
-          decisions={proc.decisions}
-          events={proc.events}
-          initiatedAt={proc.initiated_at}
-          initiatorName={proc.initiator_name}
-          editable={false}
-        />
-      </Card>
-    </Space>
+      <div className={styles.grid}>
+        <div className={styles.left}>
+          <ApprovalJournalTable
+            routeName={process.route_name}
+            initiatedAt={process.initiated_at}
+            steps={process.steps}
+            decisions={process.decisions}
+            taskCurrentLabel={vocabulary.taskCurrent}
+            approvedLabel={vocabulary.assigneeApproved}
+            rejectedLabel={vocabulary.assigneeRejected}
+            returnedLabel={vocabulary.assigneeReturned}
+          />
+          <Card size='small' title='Обсуждение' className={styles.discussion}>
+            <ApprovalFeed processId={process.id} events={process.events} editable={editable} />
+          </Card>
+          {documents}
+        </div>
+        <div className={styles.route}>
+          <ApprovalStepsBoard steps={process.steps} decisions={process.decisions} vocabulary={vocabulary} />
+        </div>
+      </div>
+    </div>
   );
 }
 
-export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'card' }: ApprovalPanelProps) {
+/** Архив: ход в журнале, документы сущности уже относятся к новому кругу. */
+function ArchiveProcessDetail({
+  processId,
+  active,
+  vocabulary,
+}: {
+  processId: string;
+  active: boolean;
+  vocabulary: ApprovalVocabulary;
+}) {
+  const { data: proc, isLoading } = useApprovalProcess(active ? processId : undefined);
+  if (!active) return null;
+  if (isLoading || !proc) return <Spin />;
+  return <ProcessLayout process={proc} vocabulary={vocabulary} editable={false} />;
+}
+
+export function ApprovalPanel({
+  entityType,
+  entityId: entityIdProp,
+  variant = 'card',
+  decisionLabels,
+  vocabulary = DEFAULT_APPROVAL_VOCABULARY,
+  approveBlockedReason,
+  emptyDescription,
+  hideGenericStart,
+}: ApprovalPanelProps) {
   const params = useParams();
   const entityId = entityIdProp ?? (params[`${entityType}Id`] as string | undefined);
   const { message } = App.useApp();
-  const openModal = useModalStore((s) => s.openModal);
+  const openModal = useModalStore(s => s.openModal);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [archiveKey, setArchiveKey] = useState<string | undefined>();
@@ -74,13 +132,10 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   if (isLoading || !state) return <Spin />;
 
   const process = state.process;
-  // Отменённый процесс свёрнут в строку (история сохраняется, разворачивается по клику);
-  // согласованные/текущие - на весь экран.
   const isCancelled = process?.status === 'cancelled';
   const collapsed = isCancelled && !expanded;
-  // Документы и обсуждение редактируемы только пока согласование идёт; после финала - блокировка.
   const editable = process ? process.status === 'active' || process.status === 'revision' : false;
-  const currentStep = process?.steps.find((s) => s.state === 'current');
+  const currentStep = process?.steps.find(s => s.state === 'current');
 
   const openStart = () =>
     openModal({
@@ -105,8 +160,8 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
   const openDecision = () => {
     if (!process) return;
     const previousSteps = process.steps
-      .filter((s) => s.state !== 'skipped' && s.step_order < process.current_step_order)
-      .map((s) => ({ step_order: s.step_order, name: s.name }));
+      .filter(s => s.state !== 'skipped' && s.step_order < process.current_step_order)
+      .map(s => ({ step_order: s.step_order, name: s.name }));
     openModal({
       type: 'approvalDecision',
       title: 'Принятие решения',
@@ -116,25 +171,35 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
         canDelegate: currentStep?.can_delegate ?? false,
         canReturnToPrevious: currentStep?.can_return_to_previous ?? false,
         previousSteps,
+        labels: decisionLabels,
+        approveBlockedReason,
       },
       onConfirm: () => {},
       onCancel: () => {},
     });
   };
 
-  const actions = process ? (
+  const toolbarExtra = process ? (
     <Space wrap>
-      {state.can_resubmit && (
-        <Button onClick={openResubmit}>Отправить повторно</Button>
-      )}
-      {process.decisions.length > 0 && (
+      {isCancelled ? (
+        <Button type='link' size='small' onClick={() => setExpanded(false)}>
+          Свернуть
+        </Button>
+      ) : null}
+      {state.can_approve ? (
+        <Button type='primary' onClick={openDecision}>
+          Принять решение
+        </Button>
+      ) : null}
+      {state.can_resubmit ? <Button onClick={openResubmit}>Отправить повторно</Button> : null}
+      {process.decisions.length > 0 ? (
         <Button icon={<PrinterOutlined />} onClick={() => setSheetOpen(true)}>
           Лист согласования
         </Button>
-      )}
-      {state.can_cancel && (
+      ) : null}
+      {state.can_cancel ? (
         <Popconfirm
-          title="Отменить согласование?"
+          title='Отменить согласование?'
           okButtonProps={{ danger: true }}
           onConfirm={async () => {
             await cancel.mutateAsync({ processId: process.id });
@@ -145,108 +210,82 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
             Отменить
           </Button>
         </Popconfirm>
-      )}
+      ) : null}
     </Space>
   ) : null;
 
+  const showStartInPanel = !hideGenericStart && !process && state.can_start_approval;
+
   const content = (
-    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+    <Space direction='vertical' style={{ width: '100%' }} size='middle'>
       {process && collapsed && (
         <Space wrap>
-          <Badge status="default" text={APPROVAL_STATUS_LABELS.cancelled} />
-          <Typography.Text type="secondary">
-            · Согласование отменено
-            {process.completed_at ? ` ${new Date(process.completed_at).toLocaleDateString('ru-RU')}` : ''}
-          </Typography.Text>
-          <Button type="link" size="small" onClick={() => setExpanded(true)}>
+          <Badge status='default' text={APPROVAL_STATUS_LABELS.cancelled} />
+          {process.completed_at ? (
+            <Typography.Text type='secondary'>{formatApprovalDateTime(process.completed_at)}</Typography.Text>
+          ) : null}
+          <Button type='link' size='small' onClick={() => setExpanded(true)}>
             Подробнее
           </Button>
         </Space>
       )}
 
-      {process && !collapsed && (
-        <>
-          {/* Сводка-бар */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <Space wrap>
-              <Badge status={STATUS_BADGE[process.status] ?? 'default'} text={APPROVAL_STATUS_LABELS[process.status]} />
-              {process.route_name ? <Typography.Text type="secondary">· {process.route_name}</Typography.Text> : null}
-              {isCancelled ? (
-                <Button type="link" size="small" onClick={() => setExpanded(false)}>
-                  Свернуть
-                </Button>
-              ) : null}
-            </Space>
-            {actions}
-          </div>
+      {process && !collapsed ? (
+        <ProcessLayout
+          process={process}
+          vocabulary={vocabulary}
+          editable={editable}
+          toolbarExtra={toolbarExtra}
+          documents={
+            <ApprovalDocuments entityType={entityType} entityId={entityId} hideWhenEmpty />
+          }
+        />
+      ) : null}
 
-          {(process.status === 'revision' || process.status === 'rejected') && process.completion_comment ? (
-            <Typography.Text type={process.status === 'rejected' ? 'danger' : 'warning'}>
-              Комментарий: {process.completion_comment}
-            </Typography.Text>
-          ) : null}
-
-          {/* Маршрут - доска компактных карточек */}
-          <ApprovalStepsBoard
-            steps={process.steps}
-            decisions={process.decisions}
-            canApprove={state.can_approve}
-            onDecide={openDecision}
-          />
-
-          {/* 2 колонки: документы / лента */}
-          <Row gutter={16}>
-            <Col xs={24} md={9}>
-              <Card size="small" title="Документы на согласовании">
-                <ApprovalDocuments entityType={entityType} entityId={entityId} />
-              </Card>
-            </Col>
-            <Col xs={24} md={15}>
-              <Card size="small" title="Лента согласования">
-                <ApprovalFeed
-                  processId={process.id}
-                  decisions={process.decisions}
-                  events={process.events}
-                  initiatedAt={process.initiated_at}
-                  initiatorName={process.initiator_name}
-                  editable={editable}
-                />
-              </Card>
-            </Col>
-          </Row>
-        </>
-      )}
-
-      {!process && state.can_start_approval ? (
+      {showStartInPanel ? (
         state.available_routes.length > 0 ? (
-          <Button type="primary" onClick={openStart}>
+          <Button type='primary' onClick={openStart}>
             Отправить на согласование
           </Button>
         ) : (
-          <Typography.Text type="secondary">Нет доступных маршрутов согласования</Typography.Text>
+          <Typography.Text type='secondary'>Нет доступных маршрутов согласования</Typography.Text>
         )
       ) : null}
 
-      {!process && !state.can_start_approval ? (
-        <Empty description="Согласование не запущено" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      {!process && !showStartInPanel ? (
+        <Empty
+          description={emptyDescription ?? 'Согласование не запущено'}
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
       ) : null}
 
       <Modal
         open={sheetOpen}
-        title="Лист согласования"
+        title='Лист согласования'
         footer={null}
         width={760}
         onCancel={() => setSheetOpen(false)}
       >
         <Table
-          size="small"
-          rowKey="id"
+          size='small'
+          rowKey='id'
           pagination={false}
           dataSource={process?.decisions ?? []}
           columns={[
             { title: 'Согласующий', dataIndex: 'decided_by_name' },
-            { title: 'Решение', dataIndex: 'decision_type', render: (t: keyof typeof DECISION_LABELS) => DECISION_LABELS[t] },
-            { title: 'Дата', dataIndex: 'decided_at', render: (v: string) => new Date(v).toLocaleString('ru-RU') },
+            {
+              title: 'Решение',
+              dataIndex: 'decision_type',
+              render: (t: keyof typeof DECISION_LABELS) => {
+                if (t === 'approved') return vocabulary.assigneeApproved;
+                if (t === 'rejected') return vocabulary.assigneeRejected;
+                if (t === 'returned_to_initiator' || t === 'returned_to_step') {
+                  return vocabulary.assigneeReturned;
+                }
+                return DECISION_LABELS[t];
+              },
+            },
+            { title: 'Дата', dataIndex: 'decided_at', render: (v: string) => formatApprovalDateTime(v) },
             { title: 'Комментарий', dataIndex: 'comment', render: (c: string | null) => c ?? '-' },
           ]}
         />
@@ -256,13 +295,11 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
 
   if (variant === 'compact') return content;
 
-  // Архив = завершённые процессы, кроме показанного в «Текущем».
-  const archive = (state.completed_processes ?? []).filter((p) => p.id !== process?.id);
+  const archive = (state.completed_processes ?? []).filter(p => p.id !== process?.id);
 
-  // «Новое согласование» - в шапке карточки, когда есть процесс и можно запустить новый.
   const headerExtra =
-    process && state.can_start_approval && state.available_routes.length > 0 ? (
-      <Button type="primary" onClick={openStart}>
+    !hideGenericStart && process && state.can_start_approval && state.available_routes.length > 0 ? (
+      <Button type='primary' onClick={openStart}>
         Новое согласование
       </Button>
     ) : undefined;
@@ -272,30 +309,36 @@ export function ApprovalPanel({ entityType, entityId: entityIdProp, variant = 'c
       <Collapse
         accordion
         activeKey={archiveKey}
-        onChange={(k) => setArchiveKey(Array.isArray(k) ? k[0] : k)}
-        items={archive.map((p) => ({
+        onChange={k => setArchiveKey(Array.isArray(k) ? k[0] : k)}
+        items={archive.map(p => ({
           key: p.id,
           label: (
             <Space wrap>
               <Badge status={STATUS_BADGE[p.status] ?? 'default'} text={APPROVAL_STATUS_LABELS[p.status]} />
-              <Typography.Text type="secondary">
+              <Typography.Text type='secondary'>
                 {p.completed_at
-                  ? new Date(p.completed_at).toLocaleString('ru-RU')
-                  : new Date(p.initiated_at).toLocaleDateString('ru-RU')}
+                  ? formatApprovalDateTime(p.completed_at)
+                  : formatApprovalDateTime(p.initiated_at)}
               </Typography.Text>
             </Space>
           ),
-          children: <ArchiveProcessDetail processId={p.id} active={archiveKey === p.id} />,
+          children: (
+            <ArchiveProcessDetail
+              processId={p.id}
+              active={archiveKey === p.id}
+              vocabulary={vocabulary}
+            />
+          ),
         }))}
       />
     ) : (
-      <Empty description="Архив пуст" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      <Empty description='Архив пуст' image={Empty.PRESENTED_IMAGE_SIMPLE} />
     );
 
   const showTabs = !!process || archive.length > 0;
 
   return (
-    <Card title="Согласование" extra={headerExtra}>
+    <Card title='Согласование' extra={headerExtra}>
       {showTabs ? (
         <Tabs
           items={[

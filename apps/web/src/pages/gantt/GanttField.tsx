@@ -223,7 +223,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
   const handleExcelExport = useCallback(async () => {
     const ganttApi = apiRef.current;
     if (!ganttApi) {
-      message.warning('Диаграмма ещё не готова');
+      message.warning('Диаграмма еще не готова');
       return;
     }
     setExcelExporting(true);
@@ -231,7 +231,7 @@ export function GanttField({ searchQuery, onSearchQueryChange }: GanttFieldProps
       const tasks = ganttApi.serialize();
       const links = linksFromApi(ganttApi, linksFallbackRef.current);
       await exportGanttToExcel(tasks, links);
-      message.success('Excel сохранён');
+      message.success('Excel сохранен');
     } catch {
       message.error('Не удалось выгрузить Excel');
     } finally {

@@ -23,6 +23,7 @@ import {
   supplierPartnerProjectBlocks,
 } from '../../../database/schema';
 import { computePartnerIsApproved, inferPartnerCategoryKind } from '../domain/partner-approval.rules';
+import type { PartnerProcurementCandidate, PartnerProcurementFlags } from '../domain/partner-procurement-flags';
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope } from '../../../common/deleted-scope';
 import { CommentsService } from '../../comments/services/comments.service';
@@ -31,7 +32,12 @@ import { getFileBaseUrl } from '../../files/files-config';
 import { PartnerExportService, type PartnersExportPayload } from './partner-export.service';
 import { PartnerDerivedStatusService } from './partner-derived-status.service';
 import { PartnerListQueryService } from './partner-list-query.service';
+import { PartnerProcurementFlagsService } from './partner-procurement-flags.service';
 
+export type {
+  PartnerProcurementCandidate,
+  PartnerProcurementFlags,
+} from '../domain/partner-procurement-flags';
 export type { PartnersExportPayload, PartnerExportFileLinkPayload, PartnerExportExtrasPayload } from './partner-export.service';
 export type {
   PartnerEvaluationCategoryFilterToken,
@@ -60,6 +66,7 @@ export class PartnersService {
     private readonly derivedStatus: PartnerDerivedStatusService,
     private readonly listQueryService: PartnerListQueryService,
     private readonly commentsService: CommentsService,
+    private readonly procurementFlags: PartnerProcurementFlagsService,
   ) {}
 
   async findAll(
@@ -772,8 +779,39 @@ export class PartnersService {
     return this.derivedStatus.isPartnerInArchiveStatus(partnerId);
   }
 
+  /**
+   * ПрИ-1.1: флаги для закупки одним ответом (одобрен, A–D, переоценка, блок по проекту).
+   * Батч — чтобы подбор не ходил N+1. SQL — PartnerProcurementFlagsService.
+   */
+  async getProcurementFlags(
+    partnerId: string,
+    projectId: string,
+  ): Promise<PartnerProcurementFlags | null> {
+    return this.procurementFlags.getOne(partnerId, projectId);
+  }
+
+  async getForProcurement(
+    partnerId: string,
+    projectId: string,
+  ): Promise<PartnerProcurementCandidate | null> {
+    return this.procurementFlags.getRecord(partnerId, projectId);
+  }
+
+  async searchForProcurement(params: {
+    search: string;
+    projectId: string;
+    excludePartnerIds?: string[];
+    limit?: number;
+  }): Promise<PartnerProcurementCandidate[]> {
+    return this.procurementFlags.search(params);
+  }
+
   private partnerApprovalExtras(
-    row: typeof partners.$inferSelect,
+    row: {
+      legalCheckPassed: boolean | null;
+      questionnaireFilled: boolean | null;
+      initialAssessmentDone: boolean | null;
+    },
     categoryName: string | null,
     hasActiveEvaluationBlock: boolean,
     hasInitialEvalRecord: boolean,

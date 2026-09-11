@@ -1,0 +1,252 @@
+@use '../../../styles/variables' as v;
+@use '../../../components/pageLayout/listPageShared' as lp;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.filterTabs {
+  @include lp.filterTabs;
+  border-bottom: 1px solid v.$border-tertiary;
+}
+
+.filterTab {
+  @include lp.filterTab;
+  margin-bottom: -1px;
+}
+
+.filterTabActive {
+  @include lp.filterTab;
+  @include lp.filterTabActive;
+  margin-bottom: -1px;
+}
+
+.filterTabCount {
+  @include lp.filterTabCount;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+  background: v.$bg-primary;
+  border-radius: 10px;
+  padding: 20px 22px;
+  border: 1px solid v.$border-tertiary;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.quotesPane {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.leadLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.leadCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.leadIcon {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: v.$bg-secondary;
+  color: v.$text-tertiary;
+  font-size: 20px;
+}
+
+.leadBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.leadRole {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: v.$text-quaternary;
+}
+
+.leadName {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: v.$text-secondary;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.muted {
+  color: v.$text-quaternary;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: v.$text-quaternary;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid v.$border-tertiary;
+}
+
+.progressTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: v.$text-secondary;
+}
+
+.flow {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+  padding: 8px 0 4px;
+  list-style: none;
+  width: 100%;
+}
+
+.flowNode {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.flowLine {
+  position: absolute;
+  top: 12px;
+  right: 50%;
+  left: -50%;
+  height: 3px;
+  border-radius: 99px;
+  background: v.$border-secondary;
+  pointer-events: none;
+}
+
+.flowLineDone {
+  background: #52c41a;
+}
+
+.flowStep {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 240px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  text-align: center;
+}
+
+.flowDot {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  border: 2px solid v.$border-secondary;
+  background: v.$bg-primary;
+  color: v.$text-quaternary;
+}
+
+.flowDotDone {
+  background: #52c41a;
+  border-color: #52c41a;
+  color: #fff;
+}
+
+.flowDotCurrent {
+  border-color: #52c41a;
+  color: #389e0d;
+  box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.18);
+}
+
+.flowTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: v.$text-secondary;
+  line-height: 1.3;
+}
+
+.flowDetail {
+  font-size: 12px;
+  line-height: 1.4;
+  color: v.$text-quaternary;
+}
+
+@media (max-width: 720px) {
+  .flow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .flowNode {
+    flex: none;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .flowLine {
+    top: -12px;
+    left: 12px;
+    right: auto;
+    width: 3px;
+    height: 24px;
+  }
+
+  .flowStep {
+    flex-direction: row;
+    max-width: none;
+    text-align: left;
+    gap: 12px;
+    padding: 10px 0;
+  }
+
+  .flowTitle,
+  .flowDetail {
+    text-align: left;
+  }
+
+  .pane {
+    padding: 16px;
+  }
+}

@@ -76,7 +76,7 @@ export default function PartnerEvaluationsExportModal({
 
   const handleOk = async () => {
     if (!report) {
-      message.error('Не удалось загрузить данные отчёта');
+      message.error('Не удалось загрузить данные отчета');
       return;
     }
 

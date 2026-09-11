@@ -12,7 +12,8 @@ export type ApprovalAssignmentType =
   | 'initiator_head'
   | 'department_head'
   | 'document_owner'
-  | 'select_on_start';
+  | 'select_on_start'
+  | 'owner_or_head';
 
 /** Источник назначения (история). */
 export type ApprovalAssigneeType =

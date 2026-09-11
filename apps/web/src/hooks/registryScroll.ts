@@ -19,6 +19,7 @@ const REGISTRY_PATHS = new Set([
   '/patent-grants',
   '/supplier-evaluations',
   '/sw/items',
+  '/procurement/requests',
 ]);
 
 function isRegistryPath(pathname: string): boolean {

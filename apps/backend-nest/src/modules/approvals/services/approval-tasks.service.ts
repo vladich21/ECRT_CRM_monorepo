@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { DatabaseService } from '../../../database/database.service';
 import { tasks } from '../../../database/schema';
 
@@ -23,7 +23,10 @@ export class ApprovalTasksService {
       })
       .from(tasks)
       .where(and(eq(tasks.assigneeId, userId), eq(tasks.status, status)))
-      .orderBy(asc(tasks.dueDate));
+      .orderBy(
+        sql`case ${tasks.priority} when 'urgent' then 0 when 'high' then 1 when 'normal' then 2 else 3 end`,
+        asc(tasks.dueDate),
+      );
   }
 
   async complete(taskId: string, userId: string): Promise<{ id: string }> {

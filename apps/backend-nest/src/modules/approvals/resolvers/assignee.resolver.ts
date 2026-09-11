@@ -17,13 +17,9 @@ interface ProcessStepLike {
 interface ResolveContext {
   initiatedBy: string;
   runtimeData: ApprovalRuntimeData;
-  /** Владелец сущности - вычисляется ядром через EntityHandler для document_owner. */
   ownerId: string | null;
 }
 
-/**
- * Резолвер согласующих шага (§4.3). Читает назначенцев из СНАПШОТА, не из шаблона.
- */
 @Injectable()
 export class AssigneeResolver {
   private readonly logger = new Logger(AssigneeResolver.name);
@@ -44,6 +40,9 @@ export class AssigneeResolver {
         break;
       case 'document_owner':
         assignees = this.resolveDocumentOwner(ctx.ownerId);
+        break;
+      case 'owner_or_head':
+        assignees = await this.resolveOwnerOrHead(tx, ctx);
         break;
       case 'select_on_start':
         assignees = this.resolveSelectOnStart(step.stepOrder, ctx.runtimeData);
@@ -79,7 +78,6 @@ export class AssigneeResolver {
     }));
   }
 
-  /** Руководитель сотрудника по цепочке users.supervisor_id (первый вверх). Общий helper. */
   async findSupervisor(tx: DrizzleTx, userId: string): Promise<string | null> {
     const result = await tx.execute(sql`
       WITH RECURSIVE chain AS (
@@ -99,7 +97,6 @@ export class AssigneeResolver {
   private async resolveInitiatorHead(tx: DrizzleTx, initiatedBy: string): Promise<ResolvedAssignee[]> {
     const headId = await this.findSupervisor(tx, initiatedBy);
     if (!headId) {
-      // Self-approval guard (§0.6): fallback на инициатора, логируем.
       this.logger.warn(`initiator_head не найден для ${initiatedBy} - fallback на самого инициатора`);
       return [{ assigneeId: initiatedBy, sourceType: 'initiator_head', position: 0 }];
     }
@@ -111,6 +108,30 @@ export class AssigneeResolver {
       throw new BadRequestException('Не удалось определить владельца документа для шага');
     }
     return [{ assigneeId: ownerId, sourceType: 'document_owner', position: 0 }];
+  }
+
+  private async resolveOwnerOrHead(tx: DrizzleTx, ctx: ResolveContext): Promise<ResolvedAssignee[]> {
+    const byId = new Map<string, ResolvedAssignee>();
+    if (ctx.ownerId) {
+      byId.set(ctx.ownerId, { assigneeId: ctx.ownerId, sourceType: 'document_owner', position: 0 });
+    }
+    const headId = await this.findSupervisor(tx, ctx.initiatedBy);
+    const secondId = headId ?? ctx.initiatedBy;
+    if (!byId.has(secondId)) {
+      byId.set(secondId, {
+        assigneeId: secondId,
+        sourceType: 'initiator_head',
+        position: byId.size,
+      });
+    }
+    if (!byId.size) {
+      byId.set(ctx.initiatedBy, {
+        assigneeId: ctx.initiatedBy,
+        sourceType: 'initiator_head',
+        position: 0,
+      });
+    }
+    return [...byId.values()];
   }
 
   private resolveSelectOnStart(

@@ -1,7 +1,7 @@
 import { CalculatorOutlined } from '@ant-design/icons';
 import { Col, Divider, Form, Input, InputNumber, Row, Space } from 'antd';
 
-import { numberFormatter, parseThousandSeparatedNumber } from '@/helpers/numberFormatters';
+import { MONEY_INPUT_NUMBER_PROPS } from '@/helpers/numberFormatters';
 
 import type { ContractFormMode } from './contractForm.types';
 
@@ -31,16 +31,7 @@ export function ContractFormMoneyFields({
             name='amount_excl_vat'
             rules={requireFullValidation ? [{ required: true, message: 'Введите сумму без НДС' }] : undefined}
           >
-            <InputNumber
-              placeholder='0.00'
-              style={{ width: '100%' }}
-              min={0}
-              step={0.01}
-              precision={2}
-              onChange={onAmountChange}
-              formatter={value => numberFormatter(value)}
-              parser={parseThousandSeparatedNumber}
-            />
+            <InputNumber {...MONEY_INPUT_NUMBER_PROPS} onChange={onAmountChange} />
           </Form.Item>
         </Col>
         <Col xs={24}>
@@ -76,16 +67,7 @@ export function ContractFormMoneyFields({
         </Col>
         <Col xs={24}>
           <Form.Item label='Сумма с НДС' name='amount_incl_vat'>
-            <InputNumber
-              placeholder='0.00'
-              style={{ width: '100%' }}
-              min={0}
-              step={0.01}
-              precision={2}
-              disabled
-              formatter={value => numberFormatter(value)}
-              parser={parseThousandSeparatedNumber}
-            />
+            <InputNumber {...MONEY_INPUT_NUMBER_PROPS} disabled />
           </Form.Item>
         </Col>
       </Row>

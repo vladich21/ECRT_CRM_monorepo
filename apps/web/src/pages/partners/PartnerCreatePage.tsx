@@ -93,8 +93,12 @@ export default function PartnerCreatePage() {
         title='Создание нового контрагента'
         titleWeight='medium'
         titleSuffix={<span style={{ fontSize: 14, opacity: 0.85 }}>Заполните данные контрагента</span>}
-        backLabel='Контрагенты'
+        backLabel={locationState?.fromPurchaseRequest ? 'К запросу на закупку' : 'Контрагенты'}
         onBack={() => {
+          if (locationState?.fromPurchaseRequest) {
+            navigate(locationState.returnPath ?? '/procurement/requests');
+            return;
+          }
           if (locationState?.fromContractCreate) {
             navigate(locationState.returnPath ?? '/contracts/create', {
               state: locationState.contractCreateState,

@@ -1,9 +1,9 @@
 import type { SQL } from 'drizzle-orm';
 import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
-import { DatabaseService } from '../../../database/database.service';
+import { DatabaseService, type DrizzleDb } from '../../../database/database.service';
 import { PartnersService } from '../../partners/services/partners.service';
-import { contracts, patents, refContractStates } from '../../../database/schema';
+import { contracts, contractStages, patents, refContractStates } from '../../../database/schema';
 import { PaginationParams } from '../../../common/pagination';
 import type { DeletedScope, DeletionTabCounts } from '../../../common/deleted-scope';
 import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
@@ -11,6 +11,28 @@ import { sqlPartsForDeletedScope } from '../../../common/deleted-scope';
 type ContractRow = typeof contracts.$inferSelect;
 type ContractInsert = typeof contracts.$inferInsert;
 type ContractPreviewRow = Pick<ContractRow, 'id' | 'name' | 'number'>;
+type ContractWriteDb = Pick<DrizzleDb, 'insert' | 'select'>;
+
+export type PurchaseRequestContractDraftInput = {
+  name: string;
+  description: string | null;
+  projectId: string;
+  partnerId: string | null;
+  responsibleId: string | null;
+  amountExclVat: string | null;
+  vatRate: string | null;
+  amountVat: string | null;
+  amountInclVat: string | null;
+  endDate: string | null;
+  createdBy: string;
+  stage: {
+    name: string;
+    plannedStartDate: string | null;
+    plannedEndDate: string | null;
+    plannedBudget: string;
+    responsibleId: string | null;
+  } | null;
+};
 
 export type ContractListTab = 'all' | 'active' | 'draft' | 'inactive';
 
@@ -155,8 +177,9 @@ export class ContractsService {
     return Number(result[0]?.value ?? 0);
   }
 
-  private async getDraftStateIds(): Promise<string[]> {
-    const rows = await this.db.db
+  private async getDraftStateIds(db?: Pick<DrizzleDb, 'select'>): Promise<string[]> {
+    const executor = db ?? this.db.db;
+    const rows = await executor
       .select({ id: refContractStates.id })
       .from(refContractStates)
       .where(
@@ -342,6 +365,83 @@ export class ContractsService {
     this.invalidateListCache();
     await this.refreshPartnerDerivedStatusForPartnerIds([row?.partnerId]);
     return row ? this.toResponse(row) : null;
+  }
+
+  /**
+   * S13: черновик расходного из запроса. Пишет в переданный tx, чтобы связь
+   * с запросом не осталась без документа при откате.
+   */
+  async createFromRequest(
+    input: PurchaseRequestContractDraftInput,
+    db?: ContractWriteDb,
+  ): Promise<{ id: string; partnerId: string | null }> {
+    const executor = db ?? this.db.db;
+    const draftIds = await this.getDraftStateIds(executor);
+    const stateId = draftIds[0];
+    if (!stateId) {
+      throw new BadRequestException(
+        'Не задано состояние договора и в справочнике не найдено состояние с кодом draft (черновик)',
+      );
+    }
+    const isActive = await this.resolveIsActiveFromStateId(stateId);
+    const now = new Date();
+    const [row] = await executor
+      .insert(contracts)
+      .values({
+        name: input.name,
+        description: input.description,
+        projectId: input.projectId,
+        partnerId: input.partnerId,
+        responsibleId: input.responsibleId,
+        amountExclVat: input.amountExclVat,
+        vatRate: input.vatRate,
+        amountVat: input.amountVat,
+        amountInclVat: input.amountInclVat,
+        endDate: input.endDate,
+        stateId,
+        isActive,
+        planInGantt: true,
+        createdBy: input.createdBy,
+        updatedBy: input.createdBy,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning({ id: contracts.id, partnerId: contracts.partnerId });
+    if (!row?.id) {
+      throw new BadRequestException('Не удалось создать договор');
+    }
+    if (input.stage) {
+      await executor.insert(contractStages).values({
+        contractId: row.id,
+        name: input.stage.name.slice(0, 500),
+        stageNumber: 1,
+        plannedStartDate: input.stage.plannedStartDate,
+        plannedEndDate: input.stage.plannedEndDate,
+        plannedBudget: input.stage.plannedBudget,
+        ownBudget: input.stage.plannedBudget,
+        responsibleId: input.stage.responsibleId,
+      });
+    }
+    return { id: String(row.id), partnerId: row.partnerId ? String(row.partnerId) : null };
+  }
+
+  notifyCreated(partnerId: string | null): void {
+    this.invalidateListCache();
+    void this.refreshPartnerDerivedStatusForPartnerIds([partnerId]);
+  }
+
+  async getActivity(id: string): Promise<{ id: string; isActive: boolean; isDeleted: boolean } | null> {
+    const [row] = await this.db.db
+      .select({
+        id: contracts.id,
+        isActive: contracts.isActive,
+        isDeleted: contracts.isDeleted,
+      })
+      .from(contracts)
+      .where(eq(contracts.id, id))
+      .limit(1);
+    if (!row) return null;
+    return { id: String(row.id), isActive: row.isActive, isDeleted: row.isDeleted };
   }
 
   async findAll(

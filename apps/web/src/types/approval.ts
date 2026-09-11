@@ -153,6 +153,7 @@ export interface MyTaskItem {
   current_step_order: number;
   step_name?: string | null;
   initiated_at: string;
+  is_urgent?: boolean;
 }
 
 export interface MyProcessItem {
@@ -171,7 +172,8 @@ export type ApprovalAssignmentType =
   | 'initiator_head'
   | 'department_head'
   | 'document_owner'
-  | 'select_on_start';
+  | 'select_on_start'
+  | 'owner_or_head';
 
 export interface ApprovalEntityTypeRef {
   id: string;
@@ -241,10 +243,10 @@ export const APPROVAL_STATUS_LABELS: Record<ApprovalProcessStatus, string> = {
   active: 'На согласовании',
   revision: 'На доработке',
   approved: 'Согласован',
-  ratified: 'Утверждён',
-  rejected: 'Отклонён',
-  cancelled: 'Отменён',
-  returned: 'Возвращён',
+  ratified: 'Утвержден',
+  rejected: 'Отклонен',
+  cancelled: 'Отменен',
+  returned: 'Возвращен',
 };
 
 export const DECISION_LABELS: Record<ApprovalDecisionType, string> = {

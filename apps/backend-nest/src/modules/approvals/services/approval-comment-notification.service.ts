@@ -20,6 +20,8 @@ const ROUTE_SEGMENT: Record<string, string> = {
   partner: 'partners',
   patent: 'patents',
   project: 'projects',
+  purchase_request: 'procurement/requests',
+  purchase_request_agreement: 'procurement/requests',
 };
 
 /**

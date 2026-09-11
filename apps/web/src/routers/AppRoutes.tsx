@@ -33,6 +33,10 @@ const PartnerVerificationTab = lazy(() => import('../pages/partners/detailsTabs/
 const PartnerEvaluationsTab = lazy(() => import('../pages/partners/evaluations/PartnerEvaluationsTab'));
 const PartnerEvaluationReportPage = lazy(() => import('../pages/partners/evaluations/PartnerEvaluationReportPage'));
 const SupplierEvaluationsRegistryPage = lazy(() => import('../pages/supplierEvaluations/SupplierEvaluationsRegistryPage'));
+const PurchaseRequestsListPage = lazy(() => import('../pages/procurement/requests/PurchaseRequestsListPage'));
+const PurchaseRequestCreatePage = lazy(() => import('../pages/procurement/requests/PurchaseRequestCreatePage'));
+const PurchaseRequestCardPage = lazy(() => import('../pages/procurement/requests/PurchaseRequestCardPage'));
+const PurchaseRequestEditPage = lazy(() => import('../pages/procurement/requests/PurchaseRequestEditPage'));
 const PartnerTypesListPage = lazy(() => import('../pages/referenceBooks/partnerTypes/PartnerTypesListPage'));
 const PartnerStatusesListPage = lazy(() => import('../pages/referenceBooks/partnerStatuses/PartnerStatusesListPage'));
 const ContractsListPage = lazy(() => import('../pages/contracts/list/ContractsListPage'));
@@ -239,6 +243,10 @@ export default function AppRoutes() {
           </Route>
         </Route>
 
+        <Route path="procurement/requests" element={<Guarded section={SECTIONS.PROCUREMENT_REQUESTS}><PurchaseRequestsListPage /></Guarded>} />
+        <Route path="procurement/requests/create" element={<Guarded section={SECTIONS.PROCUREMENT_REQUESTS}><PurchaseRequestCreatePage /></Guarded>} />
+        <Route path="procurement/requests/:requestId/edit" element={<Guarded section={SECTIONS.PROCUREMENT_REQUESTS}><PurchaseRequestEditPage /></Guarded>} />
+        <Route path="procurement/requests/:requestId" element={<PurchaseRequestCardPage />} />
         <Route path="supplier-evaluations" element={<Guarded section={SECTIONS.PARTNERS_EVALUATIONS}><SupplierEvaluationsRegistryPage /></Guarded>} />
 
         <Route path="contracts">

@@ -99,7 +99,6 @@ export const contracts = pgTable('contracts', {
   supplierManagerId: uuid('supplier_manager_id'),
   projectId: uuid('project_id'),
   isActive: boolean('is_active').notNull().default(true),
-  /** Показывать договор в диаграмме Ганта. */
   planInGantt: boolean('plan_in_gantt').notNull().default(true),
   stateId: uuid('state_id').notNull(),
   contractTypeId: uuid('contract_type_id'),
@@ -122,9 +121,7 @@ export const contractStages = pgTable('contract_stages', {
   actualStartDate: date('actual_start_date'),
   actualEndDate: date('actual_end_date'),
   plannedBudget: numeric('planned_budget', { precision: 19, scale: 2 }).notNull().default('0'),
-  /** Соисполнители (A) — в Гант не идёт. */
   coexecutorBudget: numeric('coexecutor_budget', { precision: 19, scale: 2 }).notNull().default('0'),
-  /** Собственные затраты + прибыль (B) — бюджет этапа в Ганте. */
   ownBudget: numeric('own_budget', { precision: 19, scale: 2 }).notNull().default('0'),
   forecastedBudget: numeric('forecasted_budget', { precision: 19, scale: 2 }).notNull().default('0'),
   actualBudget: numeric('actual_budget', { precision: 19, scale: 2 }).notNull().default('0'),
@@ -952,3 +949,4 @@ export const ganttLinks = pgTable(
 );
 
 export * from '../modules/sw-registry/sw-registry.schema';
+export * from '../modules/procurement-requests/procurement-requests.schema';

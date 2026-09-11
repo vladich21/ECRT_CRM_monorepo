@@ -2,6 +2,7 @@ import { Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, Typograp
 import type { FormInstance } from 'antd/es/form';
 
 import type { ReferenceData } from '@/api/hooks/useReferences';
+import { formatRub } from '@/helpers/numberFormatters';
 import { STAGE_BUDGET_INPUT_NUMBER_PROPS } from '../constants/budgetInputNumberProps';
 import styles from '../ContractMainInfoTab.module.scss';
 
@@ -16,10 +17,6 @@ type ContractStageFormModalProps = {
   onSubmit: () => void | Promise<void>;
   isLoading?: boolean;
 };
-
-function formatMoney(value: number): string {
-  return `${value.toLocaleString('ru-RU')} ₽`;
-}
 
 export function ContractStageFormModal({
   open,
@@ -109,7 +106,7 @@ export function ContractStageFormModal({
           </Col>
         </Row>
         <Text style={{ display: 'block', marginBottom: 16 }}>
-          Итого план: <Text strong>{formatMoney(plannedTotal)}</Text>
+          Итого план: <Text strong>{formatRub(plannedTotal)}</Text>
         </Text>
 
         <Row gutter={12}>

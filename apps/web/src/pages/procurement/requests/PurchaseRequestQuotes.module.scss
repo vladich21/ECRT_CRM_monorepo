@@ -1,0 +1,116 @@
+@use '../../../styles/variables' as v;
+
+.form {
+  :global(.ant-form-item) {
+    margin-bottom: 8px;
+  }
+
+  :global(.ant-form-item-label) {
+    padding-bottom: 2px;
+
+    > label {
+      height: auto;
+      font-size: 13px;
+    }
+  }
+
+  :global(.ant-picker),
+  :global(.ant-input-number) {
+    width: 100%;
+  }
+}
+
+.payHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 6px;
+}
+
+.payTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: v.$text-secondary;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: v.$text-secondary;
+}
+
+.shareHint {
+  margin: 0;
+  font-size: 12px;
+  color: v.$text-quaternary;
+  white-space: nowrap;
+}
+
+.shareError {
+  color: #cf1322;
+}
+
+.termRow {
+  display: flex;
+  width: 100%;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-bottom: 6px;
+  align-items: flex-start;
+}
+
+.termShare {
+  flex: 0 0 120px;
+  width: 120px;
+}
+
+.termType {
+  flex: 1 1 180px;
+  min-width: 150px;
+}
+
+.termDays {
+  flex: 0 0 96px;
+  width: 96px;
+}
+
+.termKind {
+  flex: 1.4 1 240px;
+  min-width: 220px;
+}
+
+.termType :global(.ant-select),
+.termKind :global(.ant-select) {
+  width: 100%;
+}
+
+.termRemove {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.addTerm {
+  margin-top: 2px;
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}

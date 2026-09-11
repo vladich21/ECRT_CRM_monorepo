@@ -3,6 +3,7 @@ import { CalendarOutlined, DollarOutlined, UserOutlined } from '@ant-design/icon
 import { Tag, Typography } from 'antd';
 
 import { getNameById } from '@/helpers/getNameById';
+import { formatRub } from '@/helpers/numberFormatters';
 import { ContractStage } from '@/types/contract';
 import styles from '../../ContractDetails.module.scss';
 import { formatDate } from './data';
@@ -90,12 +91,12 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
                       План:{' '}
                     </Text>
                     <Text strong className={styles.stageInfoTextStrong}>
-                      {stage.planned_budget.toLocaleString('ru-RU')} ₽
+                      {formatRub(stage.planned_budget)}
                     </Text>
                   </div>
                   <div className={styles.stageInfoRow}>
                     <Text type='secondary' className={styles.stageInfoTextSecondary}>
-                      свои {own.toLocaleString('ru-RU')} ₽ · внешние {coexecutor.toLocaleString('ru-RU')} ₽
+                      свои {formatRub(own)} · внешние {formatRub(coexecutor)}
                     </Text>
                   </div>
                 </>
@@ -105,7 +106,7 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
                   <Text type='secondary' className={styles.stageInfoTextSecondary}>
                     Прогноз:{' '}
                   </Text>
-                  <Text className={styles.stageInfoText}>{stage.forecasted_budget.toLocaleString('ru-RU')} ₽</Text>
+                  <Text className={styles.stageInfoText}>{formatRub(stage.forecasted_budget)}</Text>
                 </div>
               )}
               {stage.actual_budget > 0 && (
@@ -114,7 +115,7 @@ export const StageInfoItem: React.FC<StageInfoItemProps> = ({
                     Факт:{' '}
                   </Text>
                   <Text strong className={styles.stageInfoTextStrong}>
-                    {stage.actual_budget.toLocaleString('ru-RU')} ₽
+                    {formatRub(stage.actual_budget)}
                   </Text>
                   {budgetDeviation !== null && (
                     <Tag

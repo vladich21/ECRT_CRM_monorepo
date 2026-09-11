@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { App, Button, Form, Input, Radio, Select, Space } from 'antd';
+import { App, Alert, Button, Form, Input, Radio, Select, Space } from 'antd';
 
 import { useMakeDecision } from '@/api/approvals/approvalApiHooks';
 import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
@@ -20,6 +20,8 @@ type ApprovalDecisionModalData = {
   canDelegate?: boolean;
   canReturnToPrevious?: boolean;
   previousSteps?: { step_order: number; name: string }[];
+  labels?: Partial<Record<ApprovalDecisionType, string>>;
+  approveBlockedReason?: string | null;
 };
 
 export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, modalData: rawModalData }) => {
@@ -38,17 +40,21 @@ export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, 
   const canDelegate: boolean = modalData?.canDelegate ?? false;
   const canReturnToPrevious: boolean = modalData?.canReturnToPrevious ?? false;
   const previousSteps: { step_order: number; name: string }[] = modalData?.previousSteps ?? [];
+  const labels = modalData?.labels ?? {};
+  const approveBlockedReason = modalData?.approveBlockedReason ?? null;
 
   const options = [
-    { label: 'Согласовать', value: 'approved' },
-    { label: 'Отклонить', value: 'rejected' },
-    { label: 'На доработку', value: 'returned_to_initiator' },
+    { label: labels.approved ?? 'Согласовать', value: 'approved' },
+    { label: labels.rejected ?? 'Отклонить', value: 'rejected' },
+    { label: labels.returned_to_initiator ?? 'На доработку', value: 'returned_to_initiator' },
     ...(canReturnToPrevious ? [{ label: 'Вернуть на шаг', value: 'returned_to_step' }] : []),
     ...(canDelegate ? [{ label: 'Делегировать', value: 'delegated' }] : []),
   ];
 
   const needComment = COMMENT_REQUIRED.includes(decisionType);
+  const approveBlocked = decisionType === 'approved' && Boolean(approveBlockedReason);
   const valid =
+    !approveBlocked &&
     (!needComment || comment.trim().length > 0) &&
     (decisionType !== 'returned_to_step' || returnToStep != null) &&
     (decisionType !== 'delegated' || !!delegatedTo);
@@ -77,6 +83,9 @@ export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, 
   return (
     <BaseModal open={open} title={title} onCancel={handleClose} footer={null} width={520}>
       <Form layout='vertical'>
+        {approveBlockedReason ? (
+          <Alert type='warning' showIcon style={{ marginBottom: 16 }} message={approveBlockedReason} />
+        ) : null}
         <Form.Item label='Решение'>
           <Radio.Group
             optionType='button'

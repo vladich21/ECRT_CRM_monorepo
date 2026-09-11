@@ -10,6 +10,7 @@ import { PartnerScoringService } from './services/partner-scoring.service';
 import { PartnerExportService } from './services/partner-export.service';
 import { PartnerDerivedStatusService } from './services/partner-derived-status.service';
 import { PartnerListQueryService } from './services/partner-list-query.service';
+import { PartnerProcurementFlagsService } from './services/partner-procurement-flags.service';
 
 @Module({
   imports: [forwardRef(() => SupplierEvaluationsModule), CommentsModule],
@@ -22,6 +23,7 @@ import { PartnerListQueryService } from './services/partner-list-query.service';
     PartnerExportService,
     PartnerDerivedStatusService,
     PartnerListQueryService,
+    PartnerProcurementFlagsService,
   ],
   exports: [PartnersService],
 })

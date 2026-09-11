@@ -20,6 +20,7 @@ const ASSIGNMENT_TYPES: ApprovalAssignmentType[] = [
   'department_head',
   'document_owner',
   'select_on_start',
+  'owner_or_head',
 ];
 
 export class RouteStepDto {

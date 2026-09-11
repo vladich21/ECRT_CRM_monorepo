@@ -5,12 +5,6 @@ import { SECTIONS } from '../../../shared/permissions';
 import { contracts, refContractStates } from '../../../database/schema';
 import type { ApprovalEntity, EntityHandler } from './entity-handler.interface';
 
-/**
- * Договоры. Решение (2026-06-16): согласование - ОТДЕЛЬНЫЙ трек («согласован/
- * не согласован»), статус договора НЕ меняет (как у партнёров/патентов).
- * Запуск разрешён на любом статусе; результат живёт в approval_processes
- * (approved/ratified vs rejected/cancelled) и показывается в панели.
- */
 @Injectable()
 export class ContractEntityHandler implements EntityHandler {
   readonly entityType = 'contract';

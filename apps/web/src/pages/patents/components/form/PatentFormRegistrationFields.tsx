@@ -1,7 +1,7 @@
 import { BankOutlined, CalculatorOutlined, CalendarOutlined, NumberOutlined } from '@ant-design/icons';
 import { Col, DatePicker, Divider, Form, Input, InputNumber, Row, Space } from 'antd';
 
-import { numberFormatter, parseThousandSeparatedNumber } from '@/helpers/numberFormatters';
+import { MONEY_INPUT_NUMBER_PROPS } from '@/helpers/numberFormatters';
 
 import styles from '../../PatentFormPage.module.scss';
 
@@ -82,16 +82,7 @@ export function PatentFormRegistrationFields({ onRidCostChange, onRidVatRateChan
       <Row gutter={16}>
         <Col xs={24} md={8}>
           <Form.Item label='Без НДС' name='rid_cost_excl_vat'>
-            <InputNumber
-              placeholder='0.00'
-              style={{ width: '100%' }}
-              min={0}
-              step={0.01}
-              precision={2}
-              onChange={onRidCostChange}
-              formatter={value => numberFormatter(value)}
-              parser={parseThousandSeparatedNumber}
-            />
+            <InputNumber {...MONEY_INPUT_NUMBER_PROPS} onChange={onRidCostChange} />
           </Form.Item>
         </Col>
         <Col xs={24} md={8}>
@@ -123,16 +114,7 @@ export function PatentFormRegistrationFields({ onRidCostChange, onRidVatRateChan
         </Col>
         <Col xs={24} md={8}>
           <Form.Item label='С НДС' name='rid_cost_incl_vat'>
-            <InputNumber
-              placeholder='0.00'
-              style={{ width: '100%' }}
-              min={0}
-              step={0.01}
-              precision={2}
-              disabled
-              formatter={value => numberFormatter(value)}
-              parser={parseThousandSeparatedNumber}
-            />
+            <InputNumber {...MONEY_INPUT_NUMBER_PROPS} disabled />
           </Form.Item>
         </Col>
       </Row>

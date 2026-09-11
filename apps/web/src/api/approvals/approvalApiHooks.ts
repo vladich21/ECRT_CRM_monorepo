@@ -11,6 +11,7 @@ import type {
 } from '../../types/approval';
 import { approvalApi } from './approvalApi';
 import { fileQueryKeys } from '../files/fileQueryKeys';
+import { procurementRequestQueryKeys } from '../procurement/requests/procurementRequestQueryKeys';
 import { approvalQueryKeys, invalidateApprovalQueries } from './approvalQueryKeys';
 
 // Согласование меняют другие пользователи → глобальный staleTime 30мин здесь вреден.

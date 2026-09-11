@@ -49,6 +49,11 @@ const RAW_MENU: RawMenuItem[] = [
         requiredSections: [SECTIONS.CONTRACTS_LIST],
       },
       {
+        key: 'procurement_requests',
+        label: <Link to='/procurement/requests'>Запросы</Link>,
+        requiredSections: [SECTIONS.PROCUREMENT_REQUESTS],
+      },
+      {
         key: 'supplier_evaluations',
         label: <Link to='/supplier-evaluations'>Реестр оценок</Link>,
         requiredSections: [SECTIONS.PARTNERS_EVALUATIONS],

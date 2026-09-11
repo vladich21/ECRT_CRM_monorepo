@@ -1,36 +1,18 @@
-import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  RedoOutlined,
-  RollbackOutlined,
-  SendOutlined,
-  SwapOutlined,
-} from '@ant-design/icons';
-import { App, Avatar, Button, Empty, Space, Spin, Tag, Typography } from 'antd';
+import { RedoOutlined } from '@ant-design/icons';
+import { App, Avatar, Button, Empty, Spin, Typography } from 'antd';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { useComments, useCreateComment } from '@/api/comments/commentApiHooks';
 import CommentInput from '@/components/comments/CommentInput/CommentInput';
 import { useCurrentSrmUserId } from '@/hooks/useCurrentSrmUserId';
-import {
-  DECISION_LABELS,
-  type ApprovalDecisionType,
-  type ApprovalDecisionView,
-  type ApprovalEventView,
-} from '@/types/approval';
+import type { ApprovalEventView } from '@/types/approval';
 import type { Comment } from '@/types/comments';
+
+import { formatApprovalDateTime } from './approvalFormat';
+import styles from './ApprovalFeed.module.scss';
 
 /** Обсуждение согласования привязано к процессу (у каждого круга своя лента). */
 const ENTITY = 'approval_process';
-
-const fmt = (iso: string) =>
-  new Date(iso).toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 
 /** Текст комментария без html-разметки для цитаты ответа. */
 function plainText(html: string | undefined, message: string): string {
@@ -43,35 +25,9 @@ function plainText(html: string | undefined, message: string): string {
     .trim();
 }
 
-function decisionIcon(t: ApprovalDecisionType): ReactNode {
-  switch (t) {
-    case 'approved':
-      return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-    case 'rejected':
-      return <CloseCircleOutlined style={{ color: '#cf1322' }} />;
-    case 'delegated':
-      return <SwapOutlined style={{ color: '#1677ff' }} />;
-    default:
-      return <RollbackOutlined style={{ color: '#d46b08' }} />;
-  }
-}
-
-function FeedRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-  return (
-    <div style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
-      <div style={{ flex: 'none', width: 24, textAlign: 'center', paddingTop: 2 }}>{icon}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
-    </div>
-  );
-}
-
 interface ApprovalFeedProps {
   processId: string;
-  decisions: ApprovalDecisionView[];
   events?: ApprovalEventView[];
-  initiatedAt: string;
-  initiatorName?: string | null;
-  /** Идёт ли согласование (можно ли писать комментарии). */
   editable: boolean;
 }
 
@@ -80,7 +36,7 @@ const EVENT_LABEL: Record<string, string> = {
   file_replaced: 'заменил(а) документ',
 };
 
-export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, initiatorName, editable }: ApprovalFeedProps) {
+export function ApprovalFeed({ processId, events = [], editable }: ApprovalFeedProps) {
   const { message } = App.useApp();
   const userId = useCurrentSrmUserId();
   const { data: comments = [], isLoading } = useComments(ENTITY, processId);
@@ -90,9 +46,9 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
 
   const commentById = useMemo(() => {
-    const m = new Map<string, Comment>();
-    (comments as Comment[]).forEach((c) => m.set(c.id, c));
-    return m;
+    const map = new Map<string, Comment>();
+    (comments as Comment[]).forEach(c => map.set(c.id, c));
+    return map;
   }, [comments]);
 
   const [highlightId, setHighlightId] = useState<string | null>(null);
@@ -110,107 +66,87 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setHighlightId(id);
-    window.setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 2000);
+    window.setTimeout(() => setHighlightId(cur => (cur === id ? null : cur)), 2000);
   };
 
-  const items: { ts: number; node: ReactNode }[] = [];
+  const items: { key: string; ts: number; node: ReactNode }[] = [];
 
-  items.push({
-    ts: new Date(initiatedAt).getTime(),
-    node: (
-      <FeedRow icon={<SendOutlined style={{ color: '#1677ff' }} />}>
-        <Typography.Text strong>{initiatorName ?? 'Инициатор'}</Typography.Text> отправил на согласование{' '}
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(initiatedAt)}</Typography.Text>
-      </FeedRow>
-    ),
-  });
-
-  decisions.forEach((d) =>
+  events.forEach(e =>
     items.push({
-      ts: new Date(d.decided_at).getTime(),
-      node: (
-        <FeedRow icon={decisionIcon(d.decision_type)}>
-          <div>
-            <Typography.Text strong>{d.decided_by_name}</Typography.Text> - <Tag>{DECISION_LABELS[d.decision_type]}</Tag>
-            {d.delegated_to_name ? <Typography.Text> → {d.delegated_to_name}</Typography.Text> : null}{' '}
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(d.decided_at)}</Typography.Text>
-          </div>
-          {d.comment ? <Typography.Text type="secondary">{d.comment}</Typography.Text> : null}
-        </FeedRow>
-      ),
-    }),
-  );
-
-  events.forEach((e) =>
-    items.push({
+      key: `event-${e.id}`,
       ts: new Date(e.created_at).getTime(),
       node: (
-        <FeedRow icon={<RedoOutlined style={{ color: '#1677ff' }} />}>
-          <Typography.Text strong>{e.actor_name ?? 'Инициатор'}</Typography.Text>{' '}
-          {EVENT_LABEL[e.event_type] ?? e.event_type}{' '}
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(e.created_at)}</Typography.Text>
-        </FeedRow>
+        <div className={styles.comment}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <RedoOutlined style={{ color: '#1677ff', marginTop: 4 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className={styles.commentHead}>
+                <span>
+                  <Typography.Text strong>{e.actor_name ?? 'Инициатор'}</Typography.Text>{' '}
+                  {EVENT_LABEL[e.event_type] ?? e.event_type}
+                </span>
+                <time className={styles.commentTime}>{formatApprovalDateTime(e.created_at)}</time>
+              </div>
+            </div>
+          </div>
+        </div>
       ),
     }),
   );
 
-  (comments as Comment[]).forEach((c) =>
+  (comments as Comment[]).forEach(c =>
     items.push({
+      key: `comment-${c.id}`,
       ts: new Date(c.created_at).getTime(),
       node: (
         <div
           id={`appr-cmt-${c.id}`}
+          className={styles.comment}
           style={{
             borderRadius: 6,
             transition: 'background 0.4s ease',
             background: highlightId === c.id ? '#fffbe6' : undefined,
           }}
         >
-          <FeedRow
-            icon={
-              <Avatar size={22} src={c.created_by_avatar}>
-                {(c.created_by_fio ?? '?').slice(0, 1)}
-              </Avatar>
-            }
-          >
-            <div>
-              <Typography.Text strong>{c.created_by_fio ?? 'Пользователь'}</Typography.Text>{' '}
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>· {fmt(c.created_at)}</Typography.Text>
-            </div>
-            {c.parent_id
-              ? (() => {
-                  const parent = commentById.get(c.parent_id);
-                  const quoted = parent ? plainText(parent.html, parent.message) : '';
-                  return (
-                    <div
-                      onClick={() => scrollToComment(c.parent_id as string)}
-                      title="Перейти к комментарию"
-                      style={{
-                        margin: '2px 0 6px',
-                        paddingLeft: 8,
-                        borderLeft: '2px solid #d9d9d9',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                        ↳ в ответ {parent?.created_by_fio ?? 'комментарию'}
-                      </Typography.Text>
-                      {quoted ? (
-                        <Typography.Text type="secondary" italic style={{ fontSize: 12 }}>
-                          {quoted.length > 140 ? `${quoted.slice(0, 140)}…` : quoted}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Avatar size={22} src={c.created_by_avatar}>
+              {(c.created_by_fio ?? '?').slice(0, 1)}
+            </Avatar>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className={styles.commentHead}>
+                <Typography.Text strong>{c.created_by_fio ?? 'Пользователь'}</Typography.Text>
+                <time className={styles.commentTime}>{formatApprovalDateTime(c.created_at)}</time>
+              </div>
+              {c.parent_id
+                ? (() => {
+                    const parent = commentById.get(c.parent_id);
+                    const quoted = parent ? plainText(parent.html, parent.message) : '';
+                    return (
+                      <div
+                        className={styles.quote}
+                        onClick={() => scrollToComment(c.parent_id as string)}
+                        title='Перейти к комментарию'
+                      >
+                        <Typography.Text type='secondary' style={{ fontSize: 12, display: 'block' }}>
+                          ↳ в ответ {parent?.created_by_fio ?? 'комментарию'}
                         </Typography.Text>
-                      ) : null}
-                    </div>
-                  );
-                })()
-              : null}
-            <div dangerouslySetInnerHTML={{ __html: c.html || c.message }} />
-            {editable ? (
-              <Button type="link" size="small" style={{ padding: 0, height: 'auto', fontSize: 12 }} onClick={() => startReply(c)}>
-                Ответить
-              </Button>
-            ) : null}
-          </FeedRow>
+                        {quoted ? (
+                          <Typography.Text type='secondary' italic style={{ fontSize: 12 }}>
+                            {quoted.length > 140 ? `${quoted.slice(0, 140)}…` : quoted}
+                          </Typography.Text>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                : null}
+              <div dangerouslySetInnerHTML={{ __html: c.html || c.message }} />
+              {editable ? (
+                <Button type='link' size='small' style={{ padding: 0, height: 'auto', fontSize: 12 }} onClick={() => startReply(c)}>
+                  Ответить
+                </Button>
+              ) : null}
+            </div>
+          </div>
         </div>
       ),
     }),
@@ -242,16 +178,14 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+    <div className={styles.feed}>
       {isLoading ? (
         <Spin />
-      ) : items.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Пока нет событий" />
+      ) : items.length > 0 ? (
+        <div>{items.map(it => <div key={it.key}>{it.node}</div>)}</div>
       ) : (
-        <div>
-          {items.map((it, i) => (
-            <div key={i}>{it.node}</div>
-          ))}
+        <div className={styles.empty}>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description='Пока нет сообщений' />
         </div>
       )}
       {editable ? (
@@ -260,11 +194,11 @@ export function ApprovalFeed({ processId, decisions, events = [], initiatedAt, i
           action={action}
           replyingToComment={replyingTo}
           onCancel={cancelReply}
-          placeholder="Написать комментарий…"
+          placeholder='Написать комментарий…'
         />
       ) : (
-        <Typography.Text type="secondary">Согласование завершено - обсуждение закрыто.</Typography.Text>
+        <Typography.Text type='secondary'>Процесс завершен — обсуждение закрыто.</Typography.Text>
       )}
-    </Space>
+    </div>
   );
 }

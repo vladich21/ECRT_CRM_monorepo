@@ -39,6 +39,7 @@ import { ImpersonationModule } from './modules/impersonation/impersonation.modul
 import { ApprovalsModule } from './modules/approvals/approvals.module';
 import { GanttModule } from './modules/gantt/gantt.module';
 import { SwRegistryModule } from './modules/sw-registry/sw-registry.module';
+import { ProcurementRequestsModule } from './modules/procurement-requests/procurement-requests.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { SwRegistryModule } from './modules/sw-registry/sw-registry.module';
     ApprovalsModule,
     GanttModule,
     SwRegistryModule,
+    ProcurementRequestsModule,
     FilesModule,
     CommentsModule,
     SupplierEvaluationsModule,

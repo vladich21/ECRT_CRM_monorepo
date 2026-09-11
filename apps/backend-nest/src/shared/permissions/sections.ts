@@ -38,6 +38,13 @@ export const SECTIONS = {
   PARTNERS_CONTACTS: 'partners.contacts',
   PARTNERS_EVALUATIONS: 'partners.evaluations',
 
+  // Закупки: запросы (ФС-1). Не вешать UI на contracts.list.
+  PROCUREMENT_REQUESTS: 'procurement.requests',
+  /** S5 заведено; ветка «после заключённого расходного» — ФС-2, не этот слайс. */
+  PROCUREMENT_CORRECTION: 'procurement.correction',
+  /** ЗАП-9: назначить ведущего ОУП. Не путать с edit на запросах — обычный ОУП карточку до lead не пишет. */
+  PROCUREMENT_LEAD: 'procurement.lead',
+
   // Договоры
   CONTRACTS_LIST: 'contracts.list',
   CONTRACTS_STAGES: 'contracts.stages',

@@ -4,6 +4,9 @@ import { Button, Col, DatePicker, Form, Input, InputNumber, Row, Select, Space, 
 import { useForm } from 'antd/es/form/Form';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { MONEY_INPUT_NUMBER_PROPS } from '@/helpers/numberFormatters';
+import { useNotification } from '@/hooks/notifications/useNotification';
+
 import { useCreateContractRevision } from '../../api/contractRevisions/contractRevisionsApiHooks';
 import { useContractById } from '../../api/contracts/contractApiHooks';
 import { useContractStages } from '../../api/contractStages/contractStagesApiHooks';
@@ -13,7 +16,6 @@ import BasicTable from '../../components/basicTable/BasicTable';
 import { Loader } from '../../components/loader/Loader';
 import { NotFound } from '../../components/notFound/NotFound';
 import { PageHeader } from '../../components/pageLayout/PageHeader';
-import { useNotification } from '@/hooks/notifications/useNotification';
 import { getEntityById } from '../../helpers/getEntityById';
 import type { ContractStage } from '../../types/contract';
 import { getStageColumnsData } from '../contracts/details/tabs/stages/data';
@@ -176,11 +178,7 @@ export default function CreateContractRevisionPage() {
 
             <Col span={8}>
               <Form.Item name='amount_excl_vat' label='Сумма без НДС'>
-                <InputNumber
-                  style={{ width: '100%' }}
-                  min={0}
-                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                />
+                <InputNumber {...MONEY_INPUT_NUMBER_PROPS} />
               </Form.Item>
             </Col>
 
@@ -192,11 +190,7 @@ export default function CreateContractRevisionPage() {
 
             <Col span={8}>
               <Form.Item name='amount_incl_vat' label='Сумма с НДС'>
-                <InputNumber
-                  style={{ width: '100%' }}
-                  min={0}
-                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                />
+                <InputNumber {...MONEY_INPUT_NUMBER_PROPS} />
               </Form.Item>
             </Col>
 

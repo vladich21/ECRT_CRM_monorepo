@@ -155,6 +155,9 @@ export type SwDocumentDetail = {
   archivedByCascade?: boolean;
 };
 
+/** POST/PATCH документа: карточка + мягкие предупреждения (префикс обозначения). */
+export type SwDocumentWriteResult = SwDocumentDetail & { warnings?: string[] };
+
 export type SwApplicableStatus = {
   code: string;
   name: string;

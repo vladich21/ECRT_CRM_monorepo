@@ -7,6 +7,7 @@ import type {
   CreateSwItemPayload,
   SwDocumentDetail,
   SwDocumentStatusesResponse,
+  SwDocumentWriteResult,
   SwFileLinkResponse,
   SwItemDetail,
   SwItemListRow,
@@ -134,7 +135,7 @@ export const swRegistryApi = {
   createDocument: async (
     itemId: string,
     payload: CreateSwDocumentPayload,
-  ): Promise<SwDocumentDetail & { warnings?: string[] }> => {
+  ): Promise<SwDocumentWriteResult> => {
     const { data } = await apiClient.post(`/sw/items/detail/${itemId}/documents`, payload);
     return data;
   },
@@ -154,7 +155,7 @@ export const swRegistryApi = {
     return data;
   },
 
-  updateDocument: async (id: string, payload: UpdateSwDocumentPayload): Promise<SwDocumentDetail> => {
+  updateDocument: async (id: string, payload: UpdateSwDocumentPayload): Promise<SwDocumentWriteResult> => {
     const { data } = await apiClient.patch(`/sw/documents/detail/${id}`, payload);
     return data;
   },

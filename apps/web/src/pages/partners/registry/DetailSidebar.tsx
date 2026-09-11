@@ -32,7 +32,7 @@ function scoringLevelMeta(level: string): { label: string; color: string } {
 function shortScoringModelName(name: string): string {
   const lower = name.toLowerCase();
   if (lower.includes('налогов')) return 'Налоговая проверка';
-  if (lower.includes('благонад')) return 'Благонадёжность';
+  if (lower.includes('благонад')) return 'Благонадежность';
   if (lower.includes('финанс')) return 'Фин. состояние';
   return name;
 }

@@ -469,7 +469,7 @@ export default function PartnerEvaluationsTab() {
               icon={<BarChartOutlined />}
               onClick={() => navigate(`/partners/${partner.id}/evaluation-report`)}
             >
-              Отчёт
+              Отчет
             </Button>
             <Button icon={<FileExcelOutlined />} onClick={() => setExportModalOpen(true)}>
               Выгрузить в Excel

@@ -5,12 +5,8 @@ import { ReferenceData } from '@/api/hooks/useReferences';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { getTagColorByData } from '@/helpers/getTagColorByData';
+import { formatRub } from '@/helpers/numberFormatters';
 import { Contract } from '@/types/contract';
-
-const formatMoney = (amount: number | null | undefined) => {
-  if (amount == null) return '-';
-  return `${amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`;
-};
 
 export const initialFormValues = {
   number: '',
@@ -77,7 +73,7 @@ export const getColumnsData = (
     dataIndex: 'amount_incl_vat',
     key: 'amount_incl_vat',
     width: 130,
-    render: (amount: number | null | undefined) => formatMoney(amount),
+    render: (amount: number | null | undefined) => formatRub(amount),
   },
   {
     title: 'Статус',

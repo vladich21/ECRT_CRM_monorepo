@@ -184,7 +184,7 @@ export default function PartnerEvaluationReportPage() {
   const headerProps = {
     title: supplierName,
     titleWeight: 'medium' as const,
-    subtitle: 'Отчёт по оценкам поставщика',
+    subtitle: 'Отчет по оценкам поставщика',
     backLabel: 'К оценкам',
     onBack: handleBack,
     hideNavigationOnPrint: true,
@@ -235,7 +235,7 @@ export default function PartnerEvaluationReportPage() {
   if (isError) {
     return (
       <DetailPageHeader {...headerProps}>
-        <Alert type='error' showIcon message='Не удалось загрузить отчёт' />
+        <Alert type='error' showIcon message='Не удалось загрузить отчет' />
       </DetailPageHeader>
     );
   }
@@ -247,7 +247,7 @@ export default function PartnerEvaluationReportPage() {
           type='info'
           showIcon
           message='Нет проектных оценок'
-          description='Для построения отчёта нужна хотя бы одна проектная оценка поставщика.'
+          description='Для построения отчета нужна хотя бы одна проектная оценка поставщика.'
         />
       </DetailPageHeader>
     );

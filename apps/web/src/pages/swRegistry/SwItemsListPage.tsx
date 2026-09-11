@@ -196,7 +196,7 @@ export default function SwItemsListPage() {
       <PageHeader
         title='Реестр программного обеспечения'
         titleWeight='medium'
-        subtitle='учёт программ и программной документации по ЕСПД'
+        subtitle='учет программ и программной документации по ЕСПД'
         actions={
           <>
             <Button

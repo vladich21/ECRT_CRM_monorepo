@@ -1,5 +1,5 @@
 import { DownloadOutlined, FileOutlined } from '@ant-design/icons';
-import { App, Button, List, Space, Spin, Tooltip, Typography } from 'antd';
+import { App, Button, Card, List, Space, Spin, Tooltip, Typography } from 'antd';
 
 import { apiClient } from '@/api/clients';
 import { useFilesByEntity } from '@/api/files/fileApiHooks';
@@ -21,9 +21,10 @@ function formatSize(size: string | null): string {
 interface ApprovalDocumentsProps {
   entityType: string;
   entityId: string;
+  hideWhenEmpty?: boolean;
 }
 
-export function ApprovalDocuments({ entityType, entityId }: ApprovalDocumentsProps) {
+export function ApprovalDocuments({ entityType, entityId, hideWhenEmpty }: ApprovalDocumentsProps) {
   const { message } = App.useApp();
   const { data: files = [], isLoading } = useFilesByEntity(entityType, entityId);
 
@@ -56,10 +57,13 @@ export function ApprovalDocuments({ entityType, entityId }: ApprovalDocumentsPro
     }
   };
 
-  if (isLoading) return <Spin />;
-  if (docs.length === 0) return <Typography.Text type="secondary">Документы не приложены</Typography.Text>;
+  if (isLoading) return hideWhenEmpty ? null : <Spin />;
+  if (docs.length === 0) {
+    return hideWhenEmpty ? null : <Typography.Text type="secondary">Документы не приложены</Typography.Text>;
+  }
 
   return (
+    <Card size="small" title="Документы на согласовании">
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
       {versions.map((v) => {
         const isCurrent = byVersion.get(v)!.some((f) => f.is_current ?? true);
@@ -68,7 +72,7 @@ export function ApprovalDocuments({ entityType, entityId }: ApprovalDocumentsPro
             {hasMultiple ? (
               <Typography.Text type={isCurrent ? undefined : 'secondary'} strong={isCurrent} style={{ fontSize: 12 }}>
                 Версия {v}
-                {isCurrent ? ' · текущая' : ' · архив'}
+                {isCurrent ? ' (текущая)' : ' (архив)'}
               </Typography.Text>
             ) : null}
             <List
@@ -87,8 +91,9 @@ export function ApprovalDocuments({ entityType, entityId }: ApprovalDocumentsPro
                     title={<Typography.Link onClick={() => handleDownload(f)}>{f.name}</Typography.Link>}
                     description={
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {formatSize(f.size)}
-                        {f.uploaded_at ? ` · ${new Date(f.uploaded_at).toLocaleDateString('ru-RU')}` : ''}
+                        {[formatSize(f.size), f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString('ru-RU') : '']
+                          .filter(Boolean)
+                          .join(', ')}
                       </Typography.Text>
                     }
                   />
@@ -99,5 +104,6 @@ export function ApprovalDocuments({ entityType, entityId }: ApprovalDocumentsPro
         );
       })}
     </Space>
+    </Card>
   );
 }

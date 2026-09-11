@@ -39,6 +39,7 @@ import {
 /** Что разослать после коммита транзакции (§5, уведомления только после commit). */
 interface NotifyIntent {
   assigned?: string[];
+  informed?: string[];
   finalInitiator?: string;
   revisionInitiator?: { userId: string; comment: string | null };
   rejectedInitiator?: { userId: string; comment: string | null };
@@ -88,6 +89,11 @@ export class ApprovalEngineService {
         .notifyAssigned(processId, intent.assigned)
         .catch((e) => this.logger.error(`notifyAssigned: ${e instanceof Error ? e.message : e}`));
     }
+    if (intent.informed?.length) {
+      void this.mail
+        .notifyInformed(processId, intent.informed)
+        .catch((e) => this.logger.error(`notifyInformed: ${e instanceof Error ? e.message : e}`));
+    }
     if (intent.finalInitiator) {
       void this.mail
         .notifyApproved(processId, intent.finalInitiator)
@@ -117,15 +123,18 @@ export class ApprovalEngineService {
       const entity = await handler.loadEntity(dto.entity_id);
       if (!entity) throw new NotFoundException('Сущность не найдена');
 
-      // Право на запуск: владелец ИЛИ edit-право на раздел.
-      const ownerId = handler.resolveOwnerId(entity);
-      const isOwner = ownerId != null && ownerId === userId;
-      const canEdit = this.perms.hasSectionPermission(permissions, handler.requiredSection, 'edit');
-      if (!isOwner && !canEdit) {
-        throw new ForbiddenException('Недостаточно прав для запуска согласования');
-      }
-
       handler.assertCanStartByStatus(entity);
+      // Handler с assertCanStart сам решает кто стартует (ведущий ОУП без edit раздела — урок Абрамова).
+      if (handler.assertCanStart) {
+        handler.assertCanStart(entity, userId);
+      } else {
+        const ownerId = handler.resolveOwnerId(entity);
+        const isOwner = ownerId != null && ownerId === userId;
+        const canEdit = this.perms.hasSectionPermission(permissions, handler.requiredSection, 'edit');
+        if (!isOwner && !canEdit) {
+          throw new ForbiddenException('Недостаточно прав для запуска согласования');
+        }
+      }
 
       // Коллизия: один активный/revision процесс на сущность.
       const existing = await tx
@@ -266,8 +275,12 @@ export class ApprovalEngineService {
       // Статус сущности.
       await handler.onStart(tx, entity);
 
+      const informed = (handler.resolveStartNotifyUserIds?.(entity) ?? []).filter(
+        (id) => id && !assigned.includes(id),
+      );
+
       this.logger.log(`Запущен процесс ${processId} (${dto.entity_type}/${dto.entity_id})`);
-      return { id: processId, intent: { assigned } as NotifyIntent, clearedFilePaths };
+      return { id: processId, intent: { assigned, informed } as NotifyIntent, clearedFilePaths };
     });
 
     // Физически удаляем прежние документы только после успешного коммита.
@@ -426,6 +439,10 @@ export class ApprovalEngineService {
       );
       await handler.onStart(tx, entity);
 
+      const informed = (handler.resolveStartNotifyUserIds?.(entity) ?? []).filter(
+        (id) => id && !assigned.includes(id),
+      );
+
       // Версионный снапшот документов: переносим/заменяем набор в версию N+1.
       if (attachments) {
         const snap = await this.approvalFiles.snapshotToNextVersion(
@@ -450,7 +467,7 @@ export class ApprovalEngineService {
       // Событие для ленты: повторная отправка после доработки.
       await tx.insert(approvalEvents).values({ processId, eventType: 'resubmitted', actorId: userId });
 
-      return { id: processId, intent: { assigned } as NotifyIntent };
+      return { id: processId, intent: { assigned, informed } as NotifyIntent };
     });
 
     this.dispatchNotifications(result.id, result.intent);
@@ -777,7 +794,7 @@ export class ApprovalEngineService {
     entity: ApprovalEntity,
     step: StepForAssign,
   ): Promise<string[]> {
-    const ownerId = step.assignmentType === 'document_owner' ? handler.resolveOwnerId(entity) : null;
+    const ownerId = handler.resolveOwnerId(entity);
     const resolved = await this.resolver.resolve(
       tx,
       { id: step.id, stepOrder: step.stepOrder, name: step.name, assignmentType: step.assignmentType },
@@ -933,7 +950,11 @@ export class ApprovalEngineService {
         description: cfg.description_template ? this.applyTemplate(cfg.description_template, ctx) : null,
         assigneeId,
         dueDate,
-        priority: cfg.priority ?? 'normal',
+        // Только поднимаем срочность; `normal` с хендлера не должен затирать task_config.
+        priority:
+          handler.resolveTaskPriority?.(entity) === 'urgent'
+            ? 'urgent'
+            : (cfg.priority ?? 'normal'),
         status: 'open',
       });
     }

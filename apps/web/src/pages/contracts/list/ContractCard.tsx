@@ -4,6 +4,7 @@ import { Tag } from 'antd';
 import type { ReferenceData } from '@/api/hooks/useReferences';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
+import { formatRub } from '@/helpers/numberFormatters';
 import { Contract } from '@/types/contract';
 import {
   formatContractRegistryCardHeading,
@@ -20,11 +21,6 @@ type Refs =
 
 function formatDate(dateStr: string) {
   return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '-';
-}
-
-function formatMoney(amount: number | null | undefined) {
-  if (amount == null) return '-';
-  return `${amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`;
 }
 type Props = {
   contract: Contract;
@@ -43,8 +39,8 @@ export function ContractCard({ contract, refs, onClick }: Props) {
     contract.start_date || contract.end_date
       ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' - ')
       : '-';
-  const amountExclStr = formatMoney(contract.amount_excl_vat);
-  const amountInclStr = formatMoney(contract.amount_incl_vat);
+  const amountExclStr = formatRub(contract.amount_excl_vat);
+  const amountInclStr = formatRub(contract.amount_incl_vat);
   const heading = formatContractRegistryCardHeading(contract);
 
   return (

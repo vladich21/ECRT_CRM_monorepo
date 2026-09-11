@@ -3,6 +3,8 @@ import { ContractEntityHandler } from './contract.handler';
 import { PartnerEntityHandler } from './partner.handler';
 import { PatentEntityHandler } from './patent.handler';
 import { ProjectEntityHandler } from './project.handler';
+import { PurchaseRequestAgreementHandler } from './purchase-request-agreement.handler';
+import { PurchaseRequestEntityHandler } from './purchase-request.handler';
 import type { EntityHandler } from './entity-handler.interface';
 
 /** Реестр стратегий по коду типа сущности. */
@@ -15,9 +17,14 @@ export class EntityHandlerRegistry {
     partner: PartnerEntityHandler,
     patent: PatentEntityHandler,
     project: ProjectEntityHandler,
+    purchaseRequest: PurchaseRequestEntityHandler,
+    purchaseRequestAgreement: PurchaseRequestAgreementHandler,
   ) {
     this.handlers = new Map(
-      [contract, partner, patent, project].map((h) => [h.entityType, h]),
+      [contract, partner, patent, project, purchaseRequest, purchaseRequestAgreement].map((h) => [
+        h.entityType,
+        h,
+      ]),
     );
   }
 

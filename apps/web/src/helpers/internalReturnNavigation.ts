@@ -18,6 +18,9 @@ export function getInternalReturnBackLabel(returnPath: string, defaultLabel: str
   if (returnPath.startsWith('/patents/')) {
     return 'К РИД';
   }
+  if (returnPath.startsWith('/procurement/requests')) {
+    return 'К запросу на закупку';
+  }
   if (returnPath.startsWith('/sw/summary')) {
     return 'К сводке';
   }

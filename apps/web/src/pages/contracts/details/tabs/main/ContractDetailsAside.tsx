@@ -3,6 +3,7 @@ import { Alert, Avatar, Card, Descriptions, Divider, Progress, Space, Statistic,
 
 import type { ReferenceData } from '@/api/hooks/useReferences';
 import { getNameById } from '@/helpers/getNameById';
+import { formatMoneyNumber, formatRub } from '@/helpers/numberFormatters';
 import type { Contract, ContractStage } from '@/types/contract';
 import detailStyles from '../../ContractDetails.module.scss';
 import styles from './ContractDetailsAside.module.scss';
@@ -15,10 +16,6 @@ type ContractDetailsAsideProps = {
   stages?: ContractStage[];
   references?: AsideReferences | null;
 };
-function formatAmount(amount: number | null | undefined): string {
-  if (amount == null) return '-';
-  return `${amount.toLocaleString('ru-RU')} ₽`;
-}
 function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
@@ -76,7 +73,7 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
       <Card size='small' title='Финансы'>
         <Statistic
           value={contract.amount_incl_vat ?? 0}
-          formatter={val => Number(val).toLocaleString('ru-RU')}
+          formatter={val => formatMoneyNumber(Number(val)) ?? '0,00'}
           suffix='₽'
           valueStyle={{ fontSize: 22, fontWeight: 800 }}
           className={styles.amountStatistic}
@@ -93,12 +90,12 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
             {
               key: 'excl',
               label: 'Без НДС',
-              children: <Text strong>{formatAmount(contract.amount_excl_vat)}</Text>,
+              children: <Text strong>{formatRub(contract.amount_excl_vat)}</Text>,
             },
             {
               key: 'vat_sum',
               label: 'Сумма НДС',
-              children: <Text strong>{formatAmount(vatSum)}</Text>,
+              children: <Text strong>{formatRub(vatSum)}</Text>,
             },
             {
               key: 'vat_rate',
@@ -119,18 +116,18 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
                     План этапов
                   </Text>
                   <Text strong className={styles.budgetLabel}>
-                    {formatAmount(totalPlannedBudget)}
+                    {formatRub(totalPlannedBudget)}
                   </Text>
                 </div>
                 <Text type='secondary' style={{ fontSize: 12 }}>
-                  Свои {formatAmount(totalOwnBudget)} · Внешние {formatAmount(totalCoexecutorBudget)}
+                  Свои {formatRub(totalOwnBudget)} · Внешние {formatRub(totalCoexecutorBudget)}
                 </Text>
                 <div className={styles.budgetRow} style={{ marginTop: 6 }}>
                   <Text type='secondary' className={styles.budgetLabel}>
                     В Ганте
                   </Text>
                   <Text strong className={styles.budgetLabel}>
-                    {formatAmount(totalOwnBudget)}
+                    {formatRub(totalOwnBudget)}
                   </Text>
                 </div>
                 <Progress percent={100} showInfo={false} strokeColor='#d9d9d9' trailColor='#ebebeb' size='small' />
@@ -142,7 +139,7 @@ export function ContractDetailsAside({ contract, stages = [], references }: Cont
                     Освоено (факт)
                   </Text>
                   <Text strong className={styles.budgetLabel}>
-                    {formatAmount(totalActualBudget)}
+                    {formatRub(totalActualBudget)}
                   </Text>
                 </div>
                 <Progress percent={Math.round(budgetProgressPercent)} showInfo={false} size='small' />

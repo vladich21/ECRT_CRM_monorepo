@@ -62,6 +62,21 @@ export class ApprovalMailService {
     }
   }
 
+  /** Информирование без задачи на шаге (техприёмщик закупки). */
+  async notifyInformed(processId: string, userIds: string[]): Promise<void> {
+    if (!userIds.length) return;
+    const ctx = await this.loadProcessContext(processId);
+    if (!ctx) return;
+    const recipients = await this.loadUsers(userIds);
+    for (const u of recipients) {
+      await this.send(
+        u.email,
+        `Уведомление: ${ctx.routeName}`,
+        this.buildInformedHtml(ctx, u.name),
+      );
+    }
+  }
+
   /** Финал успешного согласования - инициатору (§5 document_approved). */
   async notifyApproved(processId: string, initiatorId: string): Promise<void> {
     const ctx = await this.loadProcessContext(processId);
@@ -123,6 +138,17 @@ export class ApprovalMailService {
        Инициатор: ${this.esc(ctx.initiatorName)}<br/>
        Объект: ${this.esc(ctx.entityType)} (${this.esc(ctx.entityId)})</p>
        <p>Откройте PMDB, чтобы принять решение.</p>`,
+    );
+  }
+
+  buildInformedHtml(ctx: ApprovalMailContext, recipientName: string): string {
+    return this.wrap(
+      'Документ отправлен на утверждение',
+      `<p>Здравствуйте, ${this.esc(recipientName)}!</p>
+       <p>Документ по маршруту <b>${this.esc(ctx.routeName)}</b> отправлен на утверждение.</p>
+       <p>Инициатор: ${this.esc(ctx.initiatorName)}<br/>
+       Объект: ${this.esc(ctx.entityType)} (${this.esc(ctx.entityId)})</p>
+       <p>Решение принимать не нужно — это уведомление.</p>`,
     );
   }
 

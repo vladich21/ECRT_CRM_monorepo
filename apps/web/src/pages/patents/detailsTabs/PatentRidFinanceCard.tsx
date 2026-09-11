@@ -1,5 +1,6 @@
 import { Card, Descriptions, Statistic, Typography } from 'antd';
 
+import { formatMoneyNumber, formatRub } from '@/helpers/numberFormatters';
 import type { Patent } from '@/types/patent';
 import {
   calcPatentRidVatAmount,
@@ -9,11 +10,6 @@ import {
 import styles from './PatentRidFinanceCard.module.scss';
 
 const { Text } = Typography;
-
-function formatAmount(amount: number | null | undefined): string {
-  if (amount == null) return '-';
-  return `${amount.toLocaleString('ru-RU')} ₽`;
-}
 
 type Props = {
   patent: Patent;
@@ -30,7 +26,7 @@ export function PatentRidFinanceCard({ patent }: Props) {
     <Card size='small' title='Финансы' className={styles.card}>
       <Statistic
         value={patent.rid_cost_incl_vat ?? 0}
-        formatter={val => Number(val).toLocaleString('ru-RU')}
+        formatter={val => formatMoneyNumber(Number(val)) ?? '0,00'}
         suffix='₽'
         valueStyle={{ fontSize: 22, fontWeight: 800 }}
         className={styles.amountStatistic}
@@ -47,12 +43,12 @@ export function PatentRidFinanceCard({ patent }: Props) {
           {
             key: 'excl',
             label: 'Без НДС',
-            children: <Text strong>{formatAmount(patent.rid_cost_excl_vat)}</Text>,
+            children: <Text strong>{formatRub(patent.rid_cost_excl_vat)}</Text>,
           },
           {
             key: 'vat_sum',
             label: 'Сумма НДС',
-            children: <Text strong>{formatAmount(ridVatAmount > 0 ? ridVatAmount : null)}</Text>,
+            children: <Text strong>{formatRub(ridVatAmount > 0 ? ridVatAmount : null)}</Text>,
           },
           {
             key: 'vat_rate',

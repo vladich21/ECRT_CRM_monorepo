@@ -34,7 +34,7 @@ export default function ApprovalRoutesListPage() {
   const handleDelete = async (id: string) => {
     try {
       await del.mutateAsync(id);
-      message.success('Маршрут удалён');
+      message.success('Маршрут удален');
     } catch (e) {
       message.error(extractError(e) ?? 'Не удалось удалить маршрут');
     }

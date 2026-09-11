@@ -8,5 +8,6 @@ import { ContractStagesService } from './services/contract-stages.service';
   imports: [PartnersModule],
   controllers: [ContractsController],
   providers: [ContractsService, ContractStagesService],
+  exports: [ContractsService],
 })
 export class ContractsModule {}

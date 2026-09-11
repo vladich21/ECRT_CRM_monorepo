@@ -152,7 +152,7 @@ export default function SwItemDetailsPage() {
       { id: docId, payload },
       {
         onSuccess: () => {
-          message.success(payload.statusCode === 'in_ips' ? 'Размещение в IPS зафиксировано' : 'Статус изменён');
+          message.success(payload.statusCode === 'in_ips' ? 'Размещение в IPS зафиксировано' : 'Статус изменен');
           setStatusModal(null);
           setIpsModalDoc(null);
         },
@@ -187,14 +187,14 @@ export default function SwItemDetailsPage() {
   const handleMarkDeleted = () => {
     if (!itemId || !item) return;
     modal.confirm({
-      title: 'Пометить программу удалённой?',
+      title: 'Пометить программу удаленной?',
       content: 'Запись исчезнет из реестра и свода. Действие необратимо.',
-      okText: 'Пометить удалённым',
+      okText: 'Пометить удаленным',
       okButtonProps: { danger: true },
       onOk: () =>
         markDeletedMut.mutate(itemId, {
           onSuccess: () => {
-            message.success('Программа помечена удалённой');
+            message.success('Программа помечена удаленной');
             navigate(backPath);
           },
           onError: fail,
@@ -271,7 +271,7 @@ export default function SwItemDetailsPage() {
                 loading={markDeletedMut.isPending}
                 onClick={handleMarkDeleted}
               >
-                Пометить удалённым
+                Пометить удаленным
               </Button>
             </>
           ) : undefined

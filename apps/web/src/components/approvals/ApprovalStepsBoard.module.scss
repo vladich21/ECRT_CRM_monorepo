@@ -1,9 +1,37 @@
 @use '../../styles/variables' as v;
 
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 280px;
+  padding: 14px 16px 8px;
+  background: v.$bg-primary;
+  border: 1px solid v.$border-tertiary;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.panelHead {
+  margin-bottom: 8px;
+}
+
+.panelTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: v.$text-secondary;
+}
+
+.panelMeta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: v.$text-quaternary;
+}
+
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 /* ===== мини-рельс ===== */
@@ -35,23 +63,19 @@
   color: v.$text-quaternary;
   border: 2px solid #fff;
   cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: opacity 0.15s ease;
 
   &:hover {
-    transform: translateY(-1px);
+    transform: none;
+    opacity: 0.9;
   }
   &.done {
-    background: v.$success;
+    background: #8c8c8c;
     color: #fff;
   }
   &.current {
-    width: 34px;
-    height: 34px;
     background: v.$primary-color;
     color: #fff;
-    box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.18);
   }
   &.skipped {
     background: #f8fafc;
@@ -68,105 +92,27 @@
   flex: none;
 
   &.connDone {
-    background: v.$success;
+    background: v.$border-primary;
   }
 }
 
 .counter {
   flex: none;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: v.$text-tertiary;
 }
 
-/* ===== спотлайт текущего шага ===== */
-.spot {
-  border: 1.5px solid v.$primary-color;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #f3f8ff, #fff);
-  padding: 18px;
-}
-
-.kicker {
-  font-size: 11px;
-  font-weight: 700;
-  color: v.$primary-color;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.spotTitle {
-  margin: 4px 0 14px;
-  font-size: 20px;
-  line-height: 1.25;
-  font-weight: 700;
-}
-
-.spotRow {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.whoWait {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.whoName {
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.whoRole {
-  font-size: 12.5px;
-  color: v.$text-tertiary;
-}
-
-.chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.chip {
-  font-size: 12px;
-  color: v.$text-tertiary;
-  background: #fff;
-  border: 1px solid v.$border-tertiary;
-  padding: 4px 10px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-
-  &.chipOver {
-    color: v.$error;
-    border-color: #ffccc7;
-    background: #fff1f0;
-  }
-}
-
-.acts {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-}
-
-.counterLg {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.nowName {
   font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  background: v.$primary-dark;
-  flex: none;
+  font-weight: 600;
+  color: v.$text-secondary;
+  min-width: 0;
+}
+
+.waiting {
+  font-size: 13px;
+  color: v.$text-tertiary;
 }
 
 /* ===== аватары ===== */
@@ -178,24 +124,12 @@
   font-weight: 700;
   color: #fff;
   flex: none;
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
 
-  &.sm {
-    width: 18px;
-    height: 18px;
-    font-size: 9px;
-  }
-  &.md {
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
-  }
-  &.lg {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
-  }
   &.done {
-    background: v.$success;
+    background: #8c8c8c;
   }
   &.wait {
     background: v.$primary-light;
@@ -237,6 +171,14 @@
 
   &.done {
     color: v.$success;
+    font-weight: 600;
+  }
+  &.reject {
+    color: v.$error;
+    font-weight: 600;
+  }
+  &.return {
+    color: #d48806;
     font-weight: 600;
   }
   &.wait {
@@ -282,58 +224,14 @@
 
 .dstep {
   position: relative;
-  padding: 14px 0 8px 34px;
+  padding: 12px 0;
 
   &.skippedStep {
     opacity: 0.72;
   }
 
-  &:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: 12px;
-    top: 34px;
-    bottom: -2px;
-    width: 2px;
-    background: v.$border-tertiary;
-  }
-  &:not(:last-child).done::before {
-    background: v.$success;
-  }
-}
-
-.dnode {
-  position: absolute;
-  left: 0;
-  top: 10px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  background: #eef0f3;
-  color: v.$text-quaternary;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px v.$border-tertiary;
-
-  &.done {
-    background: v.$success;
-    color: #fff;
-    box-shadow: 0 0 0 1px v.$success;
-  }
-  &.current {
-    background: v.$primary-color;
-    color: #fff;
-    box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.18);
-  }
-  &.skipped {
-    background: #f8fafc;
-    color: #94a3b8;
-    border: 1px dashed #cbd5e1;
-    box-shadow: none;
+  &:not(:last-child) {
+    border-bottom: 1px solid v.$border-tertiary;
   }
 }
 
@@ -354,7 +252,6 @@
   font-weight: 700;
   padding: 1px 8px;
   border-radius: 6px;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
 
   &.bDone {
@@ -399,21 +296,5 @@
     color: v.$error;
     border-color: #ffccc7;
     background: #fff1f0;
-  }
-}
-
-.dcmt {
-  margin-top: 8px;
-  background: #f8fafc;
-  border: 1px solid v.$border-tertiary;
-  border-left: 3px solid v.$success;
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 12.5px;
-  color: v.$text-tertiary;
-
-  b {
-    color: v.$text-secondary;
-    font-weight: 600;
   }
 }

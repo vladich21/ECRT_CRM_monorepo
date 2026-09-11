@@ -72,7 +72,7 @@ export function SwIpsPlacementModal({ open, document, confirmLoading, onCancel, 
               После сохранения идентификатор и дата <strong>не изменяются</strong>. Документ и его лист
               утверждения перейдут в финальный статус{' '}
               <span className={swStatusBadgeClass('in_ips', pageStyles)}>
-                {formatSwStatusLabel('размещён в IPS', 'in_ips')}
+                {formatSwStatusLabel('размещен в IPS', 'in_ips')}
               </span>{' '}
               — переход из него невозможен. Ответственный за ПО получит уведомление.
             </>

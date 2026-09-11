@@ -7,6 +7,7 @@ import { APP_COLOR_ERROR, APP_COLOR_PRIMARY } from '@/constants/appColors';
 import { getEntityById } from '@/helpers/getEntityById';
 import { getNameById } from '@/helpers/getNameById';
 import { getTagColorByData } from '@/helpers/getTagColorByData';
+import { formatRub } from '@/helpers/numberFormatters';
 import { ContractRevision, ContractStage } from '@/types/contract';
 import styles from './data.module.scss';
 
@@ -193,13 +194,7 @@ export const getStageColumnsData = (
     render: (date: string) => formatDate(date, 'DD.MM.YYYY HH:mm'),
   },
 ];
-export const formatCurrency = (amount: number | null | undefined): string => {
-  if (!amount && amount !== 0) return '-';
-  return `${amount.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} ₽`;
-};
+export const formatCurrency = formatRub;
 export const formatDate = (dateString: string | null | undefined, format: string = 'DD.MM.YYYY'): string => {
   if (!dateString) return '-';
   const date = new Date(dateString);

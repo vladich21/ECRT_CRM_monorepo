@@ -173,7 +173,7 @@ export default function SwStructurePage() {
       onMarkDeleted: node =>
         markDeletedMut.mutate(node.id, {
           onSuccess: () => {
-            message.success('Ветка помечена удалённой');
+            message.success('Ветка помечена удаленной');
             setSelectedId(null);
             const next = new URLSearchParams(searchParams);
             next.delete('elementId');
@@ -198,7 +198,7 @@ export default function SwStructurePage() {
         { elementId: modalState.node.id, userId: values.userId, roleCode: values.roleCode },
         {
           onSuccess: () => {
-            message.success('Ответственный закреплён');
+            message.success('Ответственный закреплен');
             setModalState(null);
           },
           onError: fail,
@@ -218,7 +218,7 @@ export default function SwStructurePage() {
         { id: modalState.node.id, payload },
         {
           onSuccess: () => {
-            message.success('Элемент обновлён');
+            message.success('Элемент обновлен');
             setModalState(null);
           },
           onError: fail,

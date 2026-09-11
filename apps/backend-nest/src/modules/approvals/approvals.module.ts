@@ -18,6 +18,8 @@ import { ContractEntityHandler } from './entity-handlers/contract.handler';
 import { PartnerEntityHandler } from './entity-handlers/partner.handler';
 import { PatentEntityHandler } from './entity-handlers/patent.handler';
 import { ProjectEntityHandler } from './entity-handlers/project.handler';
+import { PurchaseRequestAgreementHandler } from './entity-handlers/purchase-request-agreement.handler';
+import { PurchaseRequestEntityHandler } from './entity-handlers/purchase-request.handler';
 
 /**
  * Модуль «Согласования документов». DatabaseModule и PermissionsModule - глобальные.
@@ -41,6 +43,8 @@ import { ProjectEntityHandler } from './entity-handlers/project.handler';
     PartnerEntityHandler,
     PatentEntityHandler,
     ProjectEntityHandler,
+    PurchaseRequestEntityHandler,
+    PurchaseRequestAgreementHandler,
   ],
   exports: [ApprovalEngineService, ApprovalStateService],
 })

@@ -1,5 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { procurementRequestQueryKeys } from '../procurement/requests/procurementRequestQueryKeys';
+
 export const approvalQueryKeys = {
   all: ['approvals'] as const,
   state: (entityType: string, entityId?: string) =>
@@ -17,5 +19,8 @@ export const approvalQueryKeys = {
 };
 
 export function invalidateApprovalQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: approvalQueryKeys.all });
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: approvalQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: procurementRequestQueryKeys.all }),
+  ]);
 }

@@ -10,6 +10,7 @@ import {
   approvalProcesses,
   approvalProcessSteps,
   approvalRoutes,
+  purchaseRequests,
   relApprovalProcessStepAssignees,
   users,
 } from '../../../database/schema';
@@ -90,7 +91,12 @@ export class ApprovalStateService {
           .orderBy(desc(approvalProcesses.completedAt))
           .limit(1);
         const lockedByApproved = lastDone[0]?.status === 'approved' || lastDone[0]?.status === 'ratified';
-        canStart = !active && statusOk && !lockedByApproved && (isOwner || canEdit);
+        canStart =
+          !active &&
+          statusOk &&
+          !lockedByApproved &&
+          (isOwner || canEdit) &&
+          !handler.hideGenericStart;
       }
       availableRoutes = await this.routesService.availableRoutes(entityType);
     }
@@ -446,11 +452,19 @@ export class ApprovalStateService {
         current_step_order: approvalProcesses.currentStepOrder,
         step_name: approvalProcessSteps.name,
         initiated_at: approvalProcesses.initiatedAt,
+        is_urgent: sql<boolean>`coalesce(${purchaseRequests.isUrgent}, false)`,
       })
       .from(approvalAssignments)
       .innerJoin(approvalProcesses, eq(approvalAssignments.processId, approvalProcesses.id))
       .leftJoin(approvalRoutes, eq(approvalProcesses.routeId, approvalRoutes.id))
       .leftJoin(approvalProcessSteps, eq(approvalAssignments.processStepId, approvalProcessSteps.id))
+      .leftJoin(
+        purchaseRequests,
+        and(
+          inArray(approvalProcesses.entityType, ['purchase_request', 'purchase_request_agreement']),
+          eq(purchaseRequests.id, approvalProcesses.entityId),
+        ),
+      )
       .where(
         and(
           eq(approvalAssignments.assigneeId, userId),
@@ -459,7 +473,10 @@ export class ApprovalStateService {
           eq(approvalProcesses.status, 'active'),
         ),
       )
-      .orderBy(desc(approvalProcesses.initiatedAt));
+      .orderBy(
+        sql`case when ${purchaseRequests.isUrgent} then 0 else 1 end`,
+        desc(approvalProcesses.initiatedAt),
+      );
   }
 
   async myTasksCount(userId: string): Promise<number> {

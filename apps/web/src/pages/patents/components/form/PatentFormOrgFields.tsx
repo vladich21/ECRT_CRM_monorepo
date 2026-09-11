@@ -2,6 +2,7 @@ import { ProjectOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import { Col, Divider, Form, Input, Row, Select } from 'antd';
 
 import { buildLicenseePartnerOptions, LicenseeEntriesEditor } from '@/components/licensee/LicenseeEntriesEditor';
+import { formatIncomeContractLabel } from '@/helpers/contractLabels';
 import type { Contract } from '@/types/contract';
 import type { Reference } from '@/types/referenceTypes';
 
@@ -143,15 +144,11 @@ export function PatentFormOrgFields({ refs, incomeContracts, partnerOptions, onP
               placeholder='Выберите договор'
               allowClear
             >
-              {incomeContracts.map(row => {
-                const base = row.number || row.name || row.id;
-                const label = row.is_active === false ? `${base} (закрыт)` : base;
-                return (
-                  <Select.Option key={row.id} value={row.id}>
-                    {label}
-                  </Select.Option>
-                );
-              })}
+              {incomeContracts.map(row => (
+                <Select.Option key={row.id} value={row.id}>
+                  {formatIncomeContractLabel(row)}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
         </Col>

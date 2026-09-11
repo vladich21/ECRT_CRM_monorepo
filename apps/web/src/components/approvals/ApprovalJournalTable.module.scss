@@ -1,0 +1,29 @@
+@use '../../styles/variables' as v;
+
+.table {
+  :global(.ant-table-tbody > tr.ant-table-row:hover > td),
+  :global(.ant-table-tbody > tr > td.ant-table-cell-row-hover) {
+    background: transparent !important;
+  }
+}
+
+.status {
+  font-weight: 600;
+
+  &.done {
+    color: v.$success;
+  }
+  &.reject {
+    color: v.$error;
+  }
+  &.return {
+    color: #d48806;
+  }
+  &.wait {
+    color: v.$primary-color;
+  }
+  &.idle {
+    color: v.$text-quaternary;
+    font-weight: 400;
+  }
+}

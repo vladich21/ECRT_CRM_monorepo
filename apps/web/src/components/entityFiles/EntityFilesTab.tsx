@@ -615,8 +615,8 @@ export function EntityFilesTab({
             )}
             <Text className={styles.requestStatusText}>
               {isNegativeDecision
-                ? 'Отказ в выдаче отмечен без прикреплённого документа'
-                : 'Положительное решение отмечено без прикреплённого документа'}
+                ? 'Отказ в выдаче отмечен без прикрепленного документа'
+                : 'Положительное решение отмечено без прикрепленного документа'}
             </Text>
           </div>
         ) : null}
@@ -804,7 +804,7 @@ export function EntityFilesTab({
           destroyOnHidden
         >
           <Text style={{ display: 'block', marginBottom: 10 }}>
-            Отмечено отрицательное решение. Можно создать новую карточку-копию и связать её с текущей.
+            Отмечено отрицательное решение. Можно создать новую карточку-копию и связать ее с текущей.
           </Text>
           <Checkbox
             checked={copyPromptStayCurrent}

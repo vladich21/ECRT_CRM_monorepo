@@ -1,5 +1,6 @@
 import { MetricRow } from '@/components/ui/MetricCard';
 import { getTagColorByData } from '@/helpers/getTagColorByData';
+import { formatRub } from '@/helpers/numberFormatters';
 import { Contract, ContractStage } from '@/types/contract';
 import { formatDate } from '../data';
 
@@ -33,12 +34,12 @@ const createAmountMetric = (contract: Contract): MetricRow[] => {
   return [
     {
       label: 'Сумма: ',
-      value: `${contract.amount_incl_vat?.toLocaleString('ru-RU') || 0} ₽`,
+      value: formatRub(contract.amount_incl_vat ?? 0),
       isStrong: true,
     },
     {
       label: 'Без НДС: ',
-      value: `${contract.amount_excl_vat?.toLocaleString('ru-RU') || 0} ₽`,
+      value: formatRub(contract.amount_excl_vat ?? 0),
     },
   ];
 };
@@ -47,8 +48,8 @@ const createBudgetMetric = (stages: ContractStage[]): MetricRow[] => {
   const totalActualBudget = calculateTotalActualBudget(stages);
   const deviation = calculateBudgetDeviation(totalPlannedBudget, totalActualBudget);
   const rows: MetricRow[] = [
-    { label: 'План: ', value: `${totalPlannedBudget.toLocaleString('ru-RU')} ₽`, isStrong: true },
-    { label: 'Факт: ', value: `${totalActualBudget.toLocaleString('ru-RU')} ₽` },
+    { label: 'План: ', value: formatRub(totalPlannedBudget), isStrong: true },
+    { label: 'Факт: ', value: formatRub(totalActualBudget) },
   ];
   if (deviation !== null) {
     rows.push({

@@ -23,6 +23,7 @@ const ASSIGNMENT_OPTIONS: { value: ApprovalAssignmentType; label: string }[] = [
   { value: 'employee', label: 'Выбранные сотрудники' },
   { value: 'initiator_head', label: 'Руководитель инициатора' },
   { value: 'document_owner', label: 'Владелец документа' },
+  { value: 'owner_or_head', label: 'Владелец или руководитель инициатора' },
   { value: 'select_on_start', label: 'Укажет инициатор при запуске' },
 ];
 

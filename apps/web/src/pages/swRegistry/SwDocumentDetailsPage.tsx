@@ -93,7 +93,7 @@ export default function SwDocumentDetailsPage() {
       { id: documentId, payload },
       {
         onSuccess: () => {
-          message.success(payload.statusCode === 'in_ips' ? 'Размещение в IPS зафиксировано' : 'Статус изменён');
+          message.success(payload.statusCode === 'in_ips' ? 'Размещение в IPS зафиксировано' : 'Статус изменен');
           invalidateComments();
           setStatusOpen(false);
           setIpsOpen(false);
@@ -110,7 +110,7 @@ export default function SwDocumentDetailsPage() {
       {
         onSuccess: data => {
           if (data.warnings?.length) message.warning(data.warnings.join(' '));
-          else message.success('Документ обновлён');
+          else message.success('Документ обновлен');
           setEditOpen(false);
         },
         onError: fail,
