@@ -19,6 +19,7 @@ export const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({ visible })
         clearTimeout(fadeOutTimerRef.current);
         fadeOutTimerRef.current = null;
       }
+      //33333
       setShouldRender(true);
       setIsFadingOut(false);
     } else if (shouldRender && !hasStartedFadeOutRef.current) {
