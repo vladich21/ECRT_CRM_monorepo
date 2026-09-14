@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   CalendarOutlined,
   DollarOutlined,
@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Alert, Button, Modal, Space } from 'antd';
 import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useApprovalState } from '@/api/approvals/approvalApiHooks';
 import {
@@ -70,6 +70,15 @@ const APPROVAL_TAB = 'approval';
 const FILES_TAB = 'files';
 const HISTORY_TAB = 'history';
 
+const CARD_TABS = [
+  REQUISITES_TAB,
+  ELABORATION_TAB,
+  APPROVAL_TAB,
+  METHOD_TAB,
+  FILES_TAB,
+  HISTORY_TAB,
+] as const;
+
 function defaultCardTab(status: string): string {
   if (status === 'in_elaboration') return ELABORATION_TAB;
   if (status === 'agreed') return METHOD_TAB;
@@ -87,6 +96,12 @@ function showMethodTab(status: string): boolean {
   return status === 'agreed';
 }
 
+function isCardTabAllowed(tab: string, status: string): boolean {
+  if (tab === ELABORATION_TAB) return showElaborationTab(status);
+  if (tab === METHOD_TAB) return showMethodTab(status);
+  return (CARD_TABS as readonly string[]).includes(tab);
+}
+
 const VI4_DECISION_LABELS = {
   approved: 'Утвердить',
   rejected: 'Отклонить',
@@ -102,7 +117,7 @@ const AGREEMENT_DECISION_LABELS = {
 export default function PurchaseRequestCardPage() {
   const { requestId } = useParams();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<string>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
   const { showNotification, contextHolder } = useNotification();
@@ -117,6 +132,21 @@ export default function PurchaseRequestCardPage() {
   const { data: comparison } = usePurchaseRequestComparison(
     request?.id,
     request?.status === 'in_elaboration',
+  );
+
+  const setTab = useCallback(
+    (next: string) => {
+      setSearchParams(
+        prev => {
+          const nextParams = new URLSearchParams(prev);
+          nextParams.set('tab', next);
+          if (next !== ELABORATION_TAB) nextParams.delete('section');
+          return nextParams;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
   );
 
   if (isLoading) {
@@ -218,7 +248,11 @@ export default function PurchaseRequestCardPage() {
     postToAgreement(false);
   };
 
-  const activeTab = tab ?? defaultCardTab(request.status);
+  const activeTab = (() => {
+    const fromUrl = searchParams.get('tab');
+    if (fromUrl && isCardTabAllowed(fromUrl, request.status)) return fromUrl;
+    return defaultCardTab(request.status);
+  })();
   const tabs = [
     { key: REQUISITES_TAB, label: 'Реквизиты' },
     ...(showElaborationTab(request.status) ? [{ key: ELABORATION_TAB, label: 'Проработка' }] : []),

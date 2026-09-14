@@ -25,3 +25,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS purchase_request_documents_request_contract_ui
 
 COMMENT ON TABLE purchase_request_documents IS
   'S13: запрос → расходный договор (и позже ДС/заказ). Цепочка S14 читает отсюда, не кэш.';
+жал

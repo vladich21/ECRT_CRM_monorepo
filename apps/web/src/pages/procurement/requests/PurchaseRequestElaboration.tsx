@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { UserOutlined } from '@ant-design/icons';
 import { Button, Typography } from 'antd';
+import { useSearchParams } from 'react-router-dom';
 
 import type { PurchaseRequestDetail } from '@/api/procurement/requests/procurementRequestApi';
 import {
@@ -21,8 +22,12 @@ const PANE_LEAD = 'lead';
 const PANE_SUPPLIERS = 'suppliers';
 const PANE_QUOTES = 'quotes';
 const PANE_DECISION = 'decision';
+const SECTION_PARAM = 'section';
+const TAB_PARAM = 'tab';
+const ELABORATION_TAB = 'elaboration';
 
-type Pane = typeof PANE_LEAD | typeof PANE_SUPPLIERS | typeof PANE_QUOTES | typeof PANE_DECISION;
+const PANES = [PANE_LEAD, PANE_SUPPLIERS, PANE_QUOTES, PANE_DECISION] as const;
+type Pane = (typeof PANES)[number];
 
 type Props = {
   request: PurchaseRequestDetail;
@@ -38,8 +43,31 @@ type FlowStep = {
   done: boolean;
 };
 
+function parsePane(raw: string | null): Pane {
+  if (raw && (PANES as readonly string[]).includes(raw)) return raw as Pane;
+  return PANE_LEAD;
+}
+
 export function PurchaseRequestElaboration({ request, canAssign, canEdit, onAssign }: Props) {
-  const [pane, setPane] = useState<Pane>(PANE_LEAD);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pane = parsePane(searchParams.get(SECTION_PARAM));
+
+  const setPane = useCallback(
+    (next: Pane) => {
+      setSearchParams(
+        prev => {
+          const nextParams = new URLSearchParams(prev);
+          nextParams.set(TAB_PARAM, ELABORATION_TAB);
+          if (next === PANE_LEAD) nextParams.delete(SECTION_PARAM);
+          else nextParams.set(SECTION_PARAM, next);
+          return nextParams;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
   const { data: suppliers = [] } = usePurchaseRequestSuppliers(request.id);
   const { data: quotes = [] } = usePurchaseRequestQuotes(request.id);
 
@@ -212,19 +240,17 @@ function LeadPane({
                       aria-hidden
                     />
                   ) : null}
-                  <button
-                    type='button'
-                    className={styles.flowStep}
-                    onClick={() => onOpen(step.pane)}
-                  >
+                  <div className={styles.flowStep}>
                     <span
                       className={`${styles.flowDot} ${step.done ? styles.flowDotDone : ''} ${current ? styles.flowDotCurrent : ''}`}
                     >
                       {step.done ? '✓' : index + 1}
                     </span>
-                    <span className={styles.flowTitle}>{step.title}</span>
+                    <button type='button' className={styles.flowTitleLink} onClick={() => onOpen(step.pane)}>
+                      {step.title}
+                    </button>
                     <span className={styles.flowDetail}>{step.detail}</span>
-                  </button>
+                  </div>
                 </li>
               );
             })}

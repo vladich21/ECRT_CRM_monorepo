@@ -1,16 +1,18 @@
 import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Link } from 'react-router-dom';
 
 import type { ComparisonQuote } from '@/api/procurement/requests/procurementRequest.types';
 
 import { comparisonCellKind, type ComparisonTableRow } from './purchaseRequestComparisonTable';
 import styles from './PurchaseRequestComparison.module.scss';
+import { PurchaseRequestPartnerLink } from './PurchaseRequestPartnerLink';
 
 function renderPartnerHeader(quote: ComparisonQuote, outlier: boolean) {
   return (
     <div className={styles.partnerHead}>
-      <Link to={`/partners/${quote.partner_id}`}>{quote.partner_name || 'Поставщик'}</Link>
+      <PurchaseRequestPartnerLink partnerId={quote.partner_id}>
+        {quote.partner_name || 'Поставщик'}
+      </PurchaseRequestPartnerLink>
       {outlier ? <Tag color='warning'>Выброс</Tag> : null}
     </div>
   );

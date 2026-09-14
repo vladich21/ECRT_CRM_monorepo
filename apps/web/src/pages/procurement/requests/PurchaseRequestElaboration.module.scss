@@ -164,11 +164,6 @@
   gap: 8px;
   width: 100%;
   max-width: 240px;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  color: inherit;
   text-align: center;
 }
 
@@ -200,11 +195,20 @@
   box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.18);
 }
 
-.flowTitle {
+.flowTitleLink {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  color: v.$text-secondary;
   line-height: 1.3;
+  color: v.$text-secondary;
+
+  &:hover {
+    color: v.$primary-color;
+  }
 }
 
 .flowDetail {
@@ -241,7 +245,7 @@
     padding: 10px 0;
   }
 
-  .flowTitle,
+  .flowTitleLink,
   .flowDetail {
     text-align: left;
   }

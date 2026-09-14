@@ -34,7 +34,6 @@ export class ContractEntityHandler implements EntityHandler {
   }
 
   assertCanStartByStatus(): void {
-    // Согласование запускается на любом статусе - статус договора им не управляется.
   }
 
   resolveOwnerId(entity: ApprovalEntity): string | null {

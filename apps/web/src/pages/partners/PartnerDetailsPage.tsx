@@ -10,7 +10,7 @@ import DetailPageHeader, { detailHeaderVariantForPartnerStatusName } from '@/com
 import type { DeletionScope } from '@/constants/deletionScope';
 import { useConfirmByModal } from '@/hooks/modals/useConfirmByModal';
 import { useNotification } from '@/hooks/notifications/useNotification';
-import { isSafeInternalReturnPath } from '@/helpers/internalReturnNavigation';
+import { isSafeInternalReturnPath, getInternalReturnBackLabel } from '@/helpers/internalReturnNavigation';
 import type { Partner } from '@/types/partner';
 import { usePartnerDetailsData } from './details/hooks/usePartnerDetailsData';
 import { PARTNERS_REGISTRY_PATH } from './constants/routes';
@@ -100,13 +100,9 @@ export default function PartnerDetailsPage() {
   const backLabel =
     returnToAfterPartner === '/supplier-evaluations'
       ? 'Реестр оценок поставщиков'
-      : returnToAfterPartner?.startsWith('/patent-grants/')
-        ? 'К охранному документу'
-        : returnToAfterPartner?.startsWith('/patents/')
-          ? 'К РИД'
-          : returnToAfterPartner
-            ? 'Назад'
-            : 'Реестр контрагентов';
+      : returnToAfterPartner
+        ? getInternalReturnBackLabel(returnToAfterPartner, 'Назад')
+        : 'Реестр контрагентов';
 
   const handleBack = () => {
     if (returnToAfterPartner) {

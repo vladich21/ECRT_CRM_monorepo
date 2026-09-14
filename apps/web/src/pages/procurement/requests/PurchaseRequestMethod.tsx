@@ -1,6 +1,6 @@
 import { Alert, Button, Form, Input, Radio, Spin, Tag } from 'antd';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import type { PurchaseMethodOption } from '@/api/procurement/requests/procurementRequest.types';
 import type { PurchaseRequestDetail } from '@/api/procurement/requests/procurementRequestApi';
@@ -27,6 +27,8 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
   const { mutateAsync: setMethod, isPending } = useSetPurchaseRequestMethod();
   const { mutateAsync: chooseRoute, isPending: routing } = useChoosePurchaseRequestRoute();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnPath = `${location.pathname}${location.search}`;
   const [form] = Form.useForm<{ method_id: string; method_justification?: string }>();
   const selectedId = Form.useWatch('method_id', form) as string | undefined;
   const selected = data?.methods.find(method => method.id === selectedId);
@@ -63,7 +65,7 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
       });
       if (detail.routed_contract_id) {
         navigate(`/contracts/${detail.routed_contract_id}`, {
-          state: { from: `/procurement/requests/${request.id}` },
+          state: { from: returnPath },
         });
       }
     } catch (error) {
@@ -186,7 +188,13 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
             <ReadOnlyMethod request={request} methods={data.methods} justification={data.method_justification} />
           )}
         </section>
-        <RouteCard request={request} canRoute={canRoute} routing={routing} onRoute={() => void handleRoute()} />
+        <RouteCard
+          request={request}
+          canRoute={canRoute}
+          routing={routing}
+          returnPath={returnPath}
+          onRoute={() => void handleRoute()}
+        />
       </div>
     </>
   );
@@ -222,11 +230,13 @@ function RouteCard({
   request,
   canRoute,
   routing,
+  returnPath,
   onRoute,
 }: {
   request: PurchaseRequestDetail;
   canRoute: boolean;
   routing: boolean;
+  returnPath: string;
   onRoute: () => void;
 }) {
   const navigate = useNavigate();
@@ -248,7 +258,7 @@ function RouteCard({
           type='primary'
           onClick={() =>
             navigate(`/contracts/${contractId}`, {
-              state: { from: `/procurement/requests/${request.id}` },
+              state: { from: returnPath },
             })
           }
         >

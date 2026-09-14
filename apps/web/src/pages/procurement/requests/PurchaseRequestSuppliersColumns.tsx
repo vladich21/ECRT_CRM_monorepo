@@ -1,14 +1,16 @@
-import { Link } from 'react-router-dom';
 import { Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 import type { PurchaseRequestSupplierRow } from '@/api/procurement/requests/procurementRequest.types';
 
 import { formatPurchaseRequestDateTime } from './purchaseRequestLabels';
+import { PurchaseRequestPartnerLink } from './PurchaseRequestPartnerLink';
 import { SupplierFlagTags } from './purchaseRequestSupplierFlags';
 
 function renderPartnerName(name: string, row: PurchaseRequestSupplierRow) {
-  return <Link to={`/partners/${row.partner_id}`}>{name || 'Поставщик'}</Link>;
+  return (
+    <PurchaseRequestPartnerLink partnerId={row.partner_id}>{name || 'Поставщик'}</PurchaseRequestPartnerLink>
+  );
 }
 
 function renderInn(inn: string) {

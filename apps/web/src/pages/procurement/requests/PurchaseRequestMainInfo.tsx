@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { CalendarOutlined, ProjectOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { Tag, Typography } from 'antd';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import type { PurchaseRequestDetail } from '@/api/procurement/requests/procurementRequestApi';
 
@@ -42,6 +42,8 @@ function MetaRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function PurchaseRequestMainInfo({ request }: Props) {
+  const location = useLocation();
+  const returnPath = `${location.pathname}${location.search}`;
   const funding =
     FUNDING_SOURCE_LABELS[request.funding_source as keyof typeof FUNDING_SOURCE_LABELS] ?? request.funding_source;
 
@@ -94,7 +96,7 @@ export function PurchaseRequestMainInfo({ request }: Props) {
                   {request.income_contract_id ? (
                     <Link
                       to={`/contracts/${request.income_contract_id}`}
-                      state={{ from: `/procurement/requests/${request.id}` }}
+                      state={{ from: returnPath }}
                       className={styles.contractLink}
                     >
                       {request.income_contract_name?.trim() || 'Открыть договор'}

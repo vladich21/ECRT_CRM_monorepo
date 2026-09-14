@@ -1,6 +1,5 @@
 import { Button, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Link } from 'react-router-dom';
 
 import type { PurchaseQuoteRow } from '@/api/procurement/requests/procurementRequest.types';
 import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
@@ -8,11 +7,12 @@ import { formatMoneyAmount } from '@/helpers/numberFormatters';
 
 import { formatPurchaseRequestDate } from './purchaseRequestLabels';
 import { formatQuotePaymentTerms } from './purchaseQuotePayment';
+import { PurchaseRequestPartnerLink } from './PurchaseRequestPartnerLink';
 
 function renderPartner(name: string, row: PurchaseQuoteRow) {
   return (
     <>
-      <Link to={`/partners/${row.partner_id}`}>{name || 'Поставщик'}</Link>
+      <PurchaseRequestPartnerLink partnerId={row.partner_id}>{name || 'Поставщик'}</PurchaseRequestPartnerLink>
       {row.excluded_from_nmcd ? (
         <>
           {' '}
