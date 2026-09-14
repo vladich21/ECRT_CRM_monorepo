@@ -1,0 +1,104 @@
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0 0 10px;
+  font-size: 13px;
+}
+
+.crumb {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1677ff;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.crumbCurrent {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.sep {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+.list {
+  height: 46vh;
+  overflow: auto;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid #fafafa;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: #fafafa;
+  }
+}
+
+.rowSelected {
+  background: #e6f4ff;
+
+  &:hover {
+    background: #e6f4ff;
+  }
+}
+
+.icon {
+  flex: none;
+  color: #8c8c8c;
+}
+
+.iconFile {
+  color: #2b579a;
+}
+
+.name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+}
+
+.meta {
+  flex: none;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.footerPath {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 12.5px;
+}

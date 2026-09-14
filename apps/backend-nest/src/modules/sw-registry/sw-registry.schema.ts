@@ -134,6 +134,8 @@ export const swItems = pgTable(
     responsibleUserId: uuid('responsible_user_id').notNull(),
     developmentKindCode: varchar('development_kind_code', { length: 50 }).notNull(),
     specUrl: varchar('spec_url', { length: 500 }),
+    /** Каталог программы в SVN конструкторов: откуда берётся её документация. */
+    svnPath: varchar('svn_path', { length: 1000 }),
     recordState: varchar('record_state', { length: 20 }).notNull().default('active'),
     archivedByCascade: boolean('archived_by_cascade').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -191,6 +193,12 @@ export const swFiles = pgTable(
     fileId: uuid('file_id').notNull(),
     purpose: varchar('purpose', { length: 30 }).notNull(),
     filename: varchar('filename', { length: 255 }).notNull(),
+    // Происхождение из SVN конструкторов: путь внутри репозитория, ревизия на
+    // момент переноса и UUID репозитория. UUID — страховка: репозиторий пересоздали,
+    // номера ревизий больше не сопоставимы со старыми.
+    svnPath: varchar('svn_path', { length: 1000 }),
+    svnRevision: integer('svn_revision'),
+    svnRepoUuid: varchar('svn_repo_uuid', { length: 40 }),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

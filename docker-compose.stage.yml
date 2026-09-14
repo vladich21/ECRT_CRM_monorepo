@@ -42,6 +42,11 @@ services:
       - HR_SYNC_INTERVAL_MINUTES=${HR_SYNC_INTERVAL_MINUTES:-0}
       - PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE=${PARTNER_ENABLE_OPERATIONAL_STATUS_DERIVE:-true}
       - THESIS_DB_URL=${THESIS_DB_URL:-}
+      # SVN конструкторов: без этих переменных раздел файлов из SVN не показывается.
+      - SVN_URL=${SVN_URL:-}
+      - SVN_USER=${SVN_USER:-}
+      - SVN_SSH_KEY=${SVN_SSH_KEY:-}
+      - SVN_SSH_KEY_BASE64=${SVN_SSH_KEY_BASE64:-}
       - PARTNER_SYNC_INTERVAL_MINUTES=${PARTNER_SYNC_INTERVAL_MINUTES:-15}
       - PARTNER_CREATE_RESTRICTED=${PARTNER_CREATE_RESTRICTED:-true}
       # OnlyOffice Document Server (общий сервис platform/onlyoffice)

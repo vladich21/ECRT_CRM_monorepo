@@ -234,6 +234,10 @@ export class SwFilesService {
       createdAt: Date;
       currentVersion: number | null;
       versions: SwFileVersionDto[];
+      /** Происхождение из SVN: по нему видно, из какой ревизии взята копия. */
+      svnPath: string | null;
+      svnRevision: number | null;
+      svnRepoUuid: string | null;
     };
 
     const items: SwFileListItem[] = [];
@@ -281,6 +285,9 @@ export class SwFilesService {
         createdAt: row.createdAt,
         currentVersion: remote?.currentVersion?.version ?? versions.at(-1)?.version ?? null,
         versions,
+        svnPath: row.svnPath ?? null,
+        svnRevision: row.svnRevision ?? null,
+        svnRepoUuid: row.svnRepoUuid ?? null,
       });
     }
 

@@ -3,7 +3,7 @@ import { App, Button, Spin, Table, Tag } from 'antd';
 import { Link } from 'react-router-dom';
 
 import { useSwItems, useSwStructurePatentLinks } from '@/api/swRegistry/swRegistryApiHooks';
-import type { SwStructureNode } from '@/types/swRegistry';
+import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
 import { getInitials } from './swStructureTree';
 import styles from './SwStructurePage.module.scss';
 
@@ -28,6 +28,10 @@ type Props = {
   archiveLoading?: boolean;
   restoreLoading?: boolean;
   markDeletedLoading?: boolean;
+  /** Программы всей ветки, посчитанные страницей. */
+  branchPrograms?: SwItemListRow[];
+  /** Выбор программы в правой панели вместо перехода на её карточку. */
+  onSelectProgram?: (item: SwItemListRow) => void;
 };
 
 function patentLabel(reg: string | null | undefined, name: string | null | undefined) {
@@ -52,6 +56,8 @@ export function SwStructureDetailPanel({
   archiveLoading,
   restoreLoading,
   markDeletedLoading,
+  branchPrograms,
+  onSelectProgram,
 }: Props) {
   const { modal } = App.useApp();
   const isArchived = node.recordState === 'archived';
@@ -63,7 +69,9 @@ export function SwStructureDetailPanel({
   });
   const patentLinksQuery = useSwStructurePatentLinks(node.id);
 
-  const elementItems = (itemsQuery.data?.items ?? []).filter(item => item.element.id === node.id);
+  // Программы ветки считает страница (один запрос на весь экран); свой запрос
+  // остаётся запасным путём, если панель используют отдельно.
+  const elementItems = branchPrograms ?? (itemsQuery.data?.items ?? []).filter(item => item.element.id === node.id);
   const patentLinks = patentLinksQuery.data ?? [];
 
   const columns = [
@@ -71,16 +79,32 @@ export function SwStructureDetailPanel({
       title: 'Обозначение',
       dataIndex: 'designation',
       key: 'designation',
-      render: (value: string, row: (typeof elementItems)[number]) => (
-        <Link to={`/sw/items/${row.id}`} className={styles.itemLink}>
-          {value}
-        </Link>
-      ),
+      render: (value: string, row: (typeof elementItems)[number]) =>
+        onSelectProgram ? (
+          <button type='button' className={styles.itemPick} onClick={() => onSelectProgram(row)}>
+            {value}
+          </button>
+        ) : (
+          <Link to={`/sw/items/${row.id}`} className={styles.itemLink}>
+            {value}
+          </Link>
+        ),
     },
     {
       title: 'Краткое наименование',
       dataIndex: 'shortName',
       key: 'shortName',
+    },
+    {
+      title: 'Элемент',
+      dataIndex: ['element', 'code'],
+      key: 'element',
+      render: (_: unknown, row: (typeof elementItems)[number]) =>
+        row.element.id === node.id ? (
+          <span className={styles.itemOwnElement}>здесь</span>
+        ) : (
+          <span title={row.element.name}>{row.element.code}</span>
+        ),
     },
     {
       title: 'Вид разработки',
@@ -206,6 +230,24 @@ export function SwStructureDetailPanel({
       </div>
 
       <div className={styles.card}>
+        <div className={styles.cardTitleRow}>
+          <h3 className={styles.cardTitle}>
+            Программное обеспечение ветки
+            {elementItems.length ? <span className={styles.cardTitleCount}>{elementItems.length}</span> : null}
+          </h3>
+          <Link to={`/sw/items?elementId=${node.id}`}>
+            <Button type='link'>Открыть в реестре</Button>
+          </Link>
+        </div>
+        {itemsQuery.isLoading ? (
+          <Spin size='small' />
+        ) : elementItems.length === 0 ? (
+          <div className={styles.emptyHint}>Программ на этом элементе пока нет</div>
+        ) : (
+          <Table rowKey='id' size='small' pagination={false} columns={columns} dataSource={elementItems} />
+        )}
+      </div>
+      <div className={styles.card}>
         <h3 className={styles.cardTitle}>
           Связи с РИД
           {patentLinks.length ? <span className={styles.cardTitleCount}>{patentLinks.length}</span> : null}
@@ -272,24 +314,6 @@ export function SwStructureDetailPanel({
         )}
       </div>
 
-      <div className={styles.card}>
-        <div className={styles.cardTitleRow}>
-          <h3 className={styles.cardTitle}>
-            Программное обеспечение элемента
-            {elementItems.length ? <span className={styles.cardTitleCount}>{elementItems.length}</span> : null}
-          </h3>
-          <Link to={`/sw/items?elementId=${node.id}`}>
-            <Button type='link'>Открыть в реестре</Button>
-          </Link>
-        </div>
-        {itemsQuery.isLoading ? (
-          <Spin size='small' />
-        ) : elementItems.length === 0 ? (
-          <div className={styles.emptyHint}>Программ на этом элементе пока нет</div>
-        ) : (
-          <Table rowKey='id' size='small' pagination={false} columns={columns} dataSource={elementItems} />
-        )}
-      </div>
     </div>
   );
 }
