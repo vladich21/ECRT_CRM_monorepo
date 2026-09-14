@@ -1,4 +1,7 @@
 import { execFile } from 'child_process';
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -28,6 +31,7 @@ const MAX_FILE_BYTES = 100 * 1024 * 1024;
 @Injectable()
 export class SvnClient {
   private readonly logger = new Logger(SvnClient.name);
+  private materializedKeyPath: string | null = null;
 
   constructor(private readonly config: ConfigService) {}
 
@@ -40,9 +44,39 @@ export class SvnClient {
     if (!url) {
       throw new ServiceUnavailableException('SVN не настроен (SVN_URL)');
     }
-    const keyPath = (this.config.get<string>('SVN_SSH_KEY') ?? '').trim();
     const user = (this.config.get<string>('SVN_USER') ?? '').trim();
-    return { url, keyPath, user };
+    return { url, keyPath: this.resolveKeyPath(), user };
+  }
+
+  /**
+   * Ключ к SVN приходит либо файлом (SVN_SSH_KEY), либо содержимым в base64
+   * (SVN_SSH_KEY_BASE64) — второе удобнее в CI: секрет живёт в переменных
+   * проекта, а не на диске сервера. Содержимое разворачивается во временный
+   * файл с правами 600, ssh другого не принимает.
+   */
+  private resolveKeyPath(): string {
+    const filePath = (this.config.get<string>('SVN_SSH_KEY') ?? '').trim();
+    if (filePath && existsSync(filePath)) return filePath;
+
+    const encoded = (this.config.get<string>('SVN_SSH_KEY_BASE64') ?? '').trim();
+    if (!encoded) return filePath;
+
+    if (this.materializedKeyPath && existsSync(this.materializedKeyPath)) {
+      return this.materializedKeyPath;
+    }
+    try {
+      const dir = join(tmpdir(), 'svn-key');
+      mkdirSync(dir, { recursive: true, mode: 0o700 });
+      const target = join(dir, 'id_svn');
+      const body = Buffer.from(encoded, 'base64').toString('utf8');
+      writeFileSync(target, body.endsWith('\n') ? body : `${body}\n`, { mode: 0o600 });
+      chmodSync(target, 0o600);
+      this.materializedKeyPath = target;
+      return target;
+    } catch (err) {
+      this.logger.error('не удалось подготовить ключ SVN', err as Error);
+      return filePath;
+    }
   }
 
   /**

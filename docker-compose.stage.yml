@@ -45,7 +45,8 @@ services:
       # SVN конструкторов: без этих переменных раздел файлов из SVN не показывается.
       - SVN_URL=${SVN_URL:-}
       - SVN_USER=${SVN_USER:-}
-      - SVN_SSH_KEY=${SVN_SSH_KEY:-/run/secrets/svn_key}
+      - SVN_SSH_KEY=${SVN_SSH_KEY:-}
+      - SVN_SSH_KEY_BASE64=${SVN_SSH_KEY_BASE64:-}
       - PARTNER_SYNC_INTERVAL_MINUTES=${PARTNER_SYNC_INTERVAL_MINUTES:-15}
       - PARTNER_CREATE_RESTRICTED=${PARTNER_CREATE_RESTRICTED:-true}
       # OnlyOffice Document Server (общий сервис platform/onlyoffice)
@@ -59,6 +60,4 @@ services:
       - AUTH_RATE_LIMIT_WINDOW_MS=${AUTH_RATE_LIMIT_WINDOW_MS:-900000}
     volumes:
       - /data/pmdb-stage/uploads:/app/apps/backend-nest/uploads
-      # Служебный ключ к SVN конструкторов, только на чтение.
-      - /data/pmdb-stage/secrets/svn_key:/run/secrets/svn_key:ro
     restart: unless-stopped

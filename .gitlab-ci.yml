@@ -233,7 +233,8 @@ stage:deploy:
       # стенда и монтируется в контейнер только на чтение.
       export SVN_URL="${STAGE_SVN_URL:-svn+ssh://192.0.2.16/svn/0001-HST}"
       export SVN_USER="${STAGE_SVN_USER:-y-muravyev}"
-      export SVN_SSH_KEY="/run/secrets/svn_key"
+      export SVN_SSH_KEY=""
+      export SVN_SSH_KEY_BASE64="${STAGE_SVN_SSH_KEY_BASE64:-}"
       docker compose -p pmdb-stage -f docker-compose.stage.yml down || true
       docker compose -p pmdb-stage -f docker-compose.stage.yml up -d
       docker image prune -f || true
