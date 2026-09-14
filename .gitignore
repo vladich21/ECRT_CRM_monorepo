@@ -32,6 +32,8 @@ yarn-error.log*
 
 .env*.local
 /.env
+# Локальные окружения сервисов (секреты стендов)
+.env
 
 # Vercel
 .vercel

@@ -142,12 +142,15 @@ export class FilesRemoteClient {
     entityId?: string;
     createdBy?: string;
     body: Buffer;
+    /** Хеш, посчитанный вызывающим: хранилище отвергнет файл, если байты разошлись. */
+    expectedSha256?: string;
   }): Promise<{ fileId: string; versionId: string; sizeBytes: number | null }> {
     const prepared = await this.prepareFile({
       filename: input.filename,
       contentType: input.contentType,
       entityType: input.entityType,
       entityId: input.entityId,
+      expectedSha256: input.expectedSha256,
       createdBy: input.createdBy,
     });
     try {
@@ -183,11 +186,28 @@ export class FilesRemoteClient {
     throw new BadGatewayException('files-service не подтвердил готовность файла');
   }
 
+  /**
+   * files-service отдаёт адреса из своей сети (внутренний ip докера). Обращаться
+   * к нему надо там же, где мы его вызываем, иначе загрузка уходит в таймаут
+   * на недоступном хосте — переписываем схему и хост на свои, путь сохраняем.
+   */
+  private toOwnHost(rawUrl: string): string {
+    try {
+      const target = new URL(rawUrl);
+      const base = new URL(this.baseUrl());
+      target.protocol = base.protocol;
+      target.host = base.host;
+      return target.toString();
+    } catch {
+      return rawUrl;
+    }
+  }
+
   private async tusUploadBuffer(
     prepared: FilesServicePrepareResponse,
     body: Buffer,
   ): Promise<void> {
-    const endpoint = prepared.upload.tusEndpoint.replace(/\/?$/, '/');
+    const endpoint = this.toOwnHost(prepared.upload.tusEndpoint).replace(/\/?$/, '/');
     const meta = prepared.upload.metadata;
     const b64 = (value: string) => Buffer.from(value, 'utf8').toString('base64');
     const uploadMetadata = [
@@ -228,6 +248,8 @@ export class FilesRemoteClient {
       patchUrl = `${this.baseUrl()}${location.startsWith('/') ? '' : '/'}${location}`;
     } else if (!patchUrl.includes('/files/')) {
       patchUrl = `${this.baseUrl()}/files/${patchUrl.split('/').pop()}`;
+    } else {
+      patchUrl = this.toOwnHost(patchUrl);
     }
 
     let patchRes: Response;

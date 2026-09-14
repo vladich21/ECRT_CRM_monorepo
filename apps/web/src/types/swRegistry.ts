@@ -39,6 +39,8 @@ export type SwItemListRow = {
   responsible: { id: string; name: string };
   developmentKindCode: string;
   specUrl: string | null;
+  /** Каталог программы в SVN конструкторов. */
+  svnPath?: string | null;
   recordState: SwRecordState;
   documentsCount: number;
   statusSummary: Record<string, number>;
@@ -246,6 +248,10 @@ export type SwRegistryFile = {
   createdAt: string;
   currentVersion: number | null;
   versions: SwFileVersion[];
+  /** Происхождение из SVN конструкторов: путь, ревизия переноса, репозиторий. */
+  svnPath?: string | null;
+  svnRevision?: number | null;
+  svnRepoUuid?: string | null;
 };
 
 export type SwFileLinkResponse = {

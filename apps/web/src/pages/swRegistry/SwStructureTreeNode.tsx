@@ -1,8 +1,9 @@
 import { CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 
-import type { SwStructureNode } from '@/types/swRegistry';
+import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
 import styles from './SwStructurePage.module.scss';
+import type { SwNodeCounts } from './swStructurePrograms';
 
 type Props = {
   node: SwStructureNode;
@@ -12,6 +13,10 @@ type Props = {
   typeByCode: Map<string, string>;
   onToggleExpand: (id: string) => void;
   onSelect: (node: SwStructureNode) => void;
+  programsByElement: Map<string, SwItemListRow[]>;
+  countsByNode: Map<string, SwNodeCounts>;
+  selectedProgramId: string | null;
+  onSelectProgram: (item: SwItemListRow) => void;
 };
 
 export function SwStructureTreeNode({
@@ -22,11 +27,18 @@ export function SwStructureTreeNode({
   typeByCode,
   onToggleExpand,
   onSelect,
+  programsByElement,
+  countsByNode,
+  selectedProgramId,
+  onSelectProgram,
 }: Props) {
-  const hasChildren = (node.children?.length ?? 0) > 0;
+  const childNodes = node.children ?? [];
+  const ownPrograms = programsByElement.get(node.id) ?? [];
+  const hasChildren = childNodes.length > 0 || ownPrograms.length > 0;
   const expanded = expandedIds.has(node.id);
   const isSelected = selectedId === node.id;
   const isArchived = node.recordState === 'archived';
+  const counts = countsByNode.get(node.id);
 
   return (
     <div className={styles.treeChildren} style={{ marginLeft: depth === 0 ? 0 : 16 }}>
@@ -61,10 +73,19 @@ export function SwStructureTreeNode({
             </Tag>
           ) : null}
         </div>
+        {counts && counts.programs > 0 ? (
+          <span
+            className={styles.treeCount}
+            title={`${counts.programs} программ(ы) и ${counts.documents} документов в ветке`}
+          >
+            {counts.programs}
+          </span>
+        ) : null}
         <Tag className={styles.treeTypeBadge}>{typeByCode.get(node.elementTypeCode) ?? node.elementTypeCode}</Tag>
       </div>
-      {expanded && hasChildren
-        ? node.children.map(child => (
+
+      {expanded
+        ? childNodes.map(child => (
             <SwStructureTreeNode
               key={child.id}
               node={child}
@@ -74,9 +95,33 @@ export function SwStructureTreeNode({
               typeByCode={typeByCode}
               onToggleExpand={onToggleExpand}
               onSelect={onSelect}
+              programsByElement={programsByElement}
+              countsByNode={countsByNode}
+              selectedProgramId={selectedProgramId}
+              onSelectProgram={onSelectProgram}
             />
           ))
         : null}
+
+      {expanded && ownPrograms.length > 0 ? (
+        <div className={styles.treeChildren} style={{ marginLeft: 16 }}>
+          {ownPrograms.map(item => (
+            <div
+              key={item.id}
+              className={`${styles.treeProgram}${item.id === selectedProgramId ? ` ${styles.treeProgramSelected}` : ''}`}
+              onClick={() => onSelectProgram(item)}
+              role='treeitem'
+              aria-selected={item.id === selectedProgramId}
+            >
+              <span className={styles.treeExpandPlaceholder} />
+              <span className={styles.treeProgramName} title={`${item.designation} — ${item.fullName}`}>
+                {item.shortName}
+              </span>
+              <span className={styles.treeProgramDocs}>{item.documentsCount}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

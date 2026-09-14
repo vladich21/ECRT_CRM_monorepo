@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { App, Button, Checkbox, Spin } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 
 import {
   useAddSwResponsible,
@@ -10,6 +10,7 @@ import {
   useMarkSwStructureDeleted,
   useRemoveSwResponsible,
   useRestoreSwStructure,
+  useSwItems,
   useSwReferences,
   useSwStructure,
   useUpdateSwStructure,
@@ -21,7 +22,8 @@ import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
 import { usePermissions } from '@/hooks/usePermissions';
 import { SECTIONS } from '@/shared/permissions';
-import type { SwStructureNode } from '@/types/swRegistry';
+import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
+import { SwProgramPanel } from './SwProgramPanel';
 import { SwStructureDetailPanel, type SwStructureDetailActions } from './SwStructureDetailPanel';
 import { SwStructureElementModal } from './SwStructureElementModal';
 import { SwStructureListFiltersBar } from './SwStructureListFiltersBar';
@@ -35,6 +37,7 @@ import {
   findStructureParent,
   firstStructureNode,
 } from './swStructureTree';
+import { buildNodeCounts, collectBranchPrograms, groupProgramsByElement } from './swStructurePrograms';
 import { SwStructureTreeNode } from './SwStructureTreeNode';
 
 type ModalState =
@@ -50,6 +53,7 @@ function resolveFetchRecordState(tab: SwStructureFilterTab, showArchivedInTree: 
 
 export default function SwStructurePage() {
   const { message } = App.useApp();
+  const location = useLocation();
   const { hasSectionPermission } = usePermissions();
   const canEdit = hasSectionPermission(SECTIONS.SW_STRUCTURE, 'edit');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,6 +63,7 @@ export default function SwStructurePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('elementId'));
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(() => searchParams.get('itemId'));
   const [modalState, setModalState] = useState<ModalState | null>(null);
 
   const fetchRecordState = resolveFetchRecordState(filterTab, showArchivedInTree);
@@ -68,6 +73,10 @@ export default function SwStructurePage() {
   const typesQuery = useSwReferences('elementTypes');
   const rolesQuery = useSwReferences('responsibilityRoles');
   const kindsQuery = useSwReferences('developmentKinds');
+  const docKindsQuery = useSwReferences('documentKinds');
+  const statusesQuery = useSwReferences('statuses');
+  // Программы грузим целиком: из них считаются счётчики веток и список программ узла.
+  const programsQuery = useSwItems({ recordState: 'active', limit: 500 });
 
   const createMut = useCreateSwStructure();
   const updateMut = useUpdateSwStructure();
@@ -90,6 +99,22 @@ export default function SwStructurePage() {
     [kindsQuery.data],
   );
 
+  const docKindByCode = useMemo(
+    () => new Map((docKindsQuery.data ?? []).map(k => [k.code, k.name])),
+    [docKindsQuery.data],
+  );
+  const gostCodeByKind = useMemo(
+    () => new Map((docKindsQuery.data ?? []).map(k => [k.code, k.gostCode ?? ''])),
+    [docKindsQuery.data],
+  );
+  const statusByCode = useMemo(
+    () => new Map((statusesQuery.data ?? []).map(st => [st.code, st.name])),
+    [statusesQuery.data],
+  );
+
+  const programs = programsQuery.data?.items ?? [];
+  const programsByElement = useMemo(() => groupProgramsByElement(programs), [programs]);
+
   const rawTree = structureQuery.data ?? [];
   const tree = useMemo(() => filterStructureTree(rawTree, searchQuery), [rawTree, searchQuery]);
   const shownCount = countStructureNodes(tree);
@@ -97,9 +122,19 @@ export default function SwStructurePage() {
   const activeCount = countStructureNodes(activeTreeQuery.data ?? []);
   const archivedCount = countStructureNodes(archivedTreeQuery.data ?? []);
 
+  const countsByNode = useMemo(() => buildNodeCounts(rawTree, programsByElement), [rawTree, programsByElement]);
+
   const selectedNode = useMemo(
     () => (selectedId ? findStructureNode(rawTree, selectedId) : null),
     [rawTree, selectedId],
+  );
+  const branchPrograms = useMemo(
+    () => (selectedNode ? collectBranchPrograms(selectedNode, programsByElement) : []),
+    [selectedNode, programsByElement],
+  );
+  const selectedProgram = useMemo(
+    () => (selectedProgramId ? (programs.find(item => item.id === selectedProgramId) ?? null) : null),
+    [programs, selectedProgramId],
   );
   const parentNode = useMemo(
     () => (selectedId ? findStructureParent(rawTree, selectedId) : null),
@@ -119,9 +154,27 @@ export default function SwStructurePage() {
   const selectNode = useCallback(
     (node: SwStructureNode) => {
       setSelectedId(node.id);
+      setSelectedProgramId(null);
       expandPath(node.id, rawTree);
+      // Раскрываем сам узел: иначе счётчик обещает программы, а в дереве их не видно.
+      setExpandedIds(prev => (prev.has(node.id) ? prev : new Set(prev).add(node.id)));
       const next = new URLSearchParams(searchParams);
       next.set('elementId', node.id);
+      next.delete('itemId');
+      setSearchParams(next, { replace: true });
+    },
+    [expandPath, rawTree, searchParams, setSearchParams],
+  );
+
+  const selectProgram = useCallback(
+    (item: SwItemListRow) => {
+      setSelectedProgramId(item.id);
+      setSelectedId(item.element.id);
+      expandPath(item.element.id, rawTree);
+      setExpandedIds(prev => new Set(prev).add(item.element.id));
+      const next = new URLSearchParams(searchParams);
+      next.set('elementId', item.element.id);
+      next.set('itemId', item.id);
       setSearchParams(next, { replace: true });
     },
     [expandPath, rawTree, searchParams, setSearchParams],
@@ -151,6 +204,15 @@ export default function SwStructurePage() {
     next.set('elementId', first.id);
     setSearchParams(next, { replace: true });
   }, [structureQuery.isLoading, rawTree, tree, filterTab, showArchivedInTree, searchParams, selectedId, expandPath, setSearchParams]);
+
+  // Пришли по ссылке с выбранной программой — раскрываем её ветку, иначе непонятно, что выбрано.
+  useEffect(() => {
+    if (!selectedProgramId || rawTree.length === 0) return;
+    const program = programs.find(item => item.id === selectedProgramId);
+    if (!program) return;
+    expandPath(program.element.id, rawTree);
+    setExpandedIds(prev => (prev.has(program.element.id) ? prev : new Set(prev).add(program.element.id)));
+  }, [selectedProgramId, programs, rawTree, expandPath]);
 
   const fail = (err: unknown) => {
     message.error(getApiErrorMessage(err) ?? 'Не удалось выполнить действие');
@@ -264,9 +326,9 @@ export default function SwStructurePage() {
       <BackButton path='/' />
 
       <PageHeader
-        title='Структура систем'
+        title='Реестр программного обеспечения'
         titleWeight='medium'
-        subtitle='системы, подсистемы, комплексы и компоненты'
+        subtitle='структура изделия, программы и комплекты документации'
         actions={
           <div className={styles.headerActions}>
             {filterTab === 'active' ? (
@@ -319,11 +381,24 @@ export default function SwStructurePage() {
                 typeByCode={typeByCode}
                 onToggleExpand={toggleExpand}
                 onSelect={selectNode}
+                programsByElement={programsByElement}
+                countsByNode={countsByNode}
+                selectedProgramId={selectedProgramId}
+                onSelectProgram={selectProgram}
               />
             ))}
           </div>
-          <div className={styles.detailPanel}>
-            {selectedNode ? (
+          <div className={`${styles.detailPanel}${selectedProgram ? ` ${styles.detailPanelFitted}` : ''}`}>
+            {selectedProgram ? (
+              <SwProgramPanel
+                item={selectedProgram}
+                kindByCode={kindByCode}
+                documentKindByCode={docKindByCode}
+                gostCodeByKind={gostCodeByKind}
+                statusByCode={statusByCode}
+                returnPath={`${location.pathname}${location.search}`}
+              />
+            ) : selectedNode ? (
               <SwStructureDetailPanel
                 node={selectedNode}
                 parent={parentNode}
@@ -335,6 +410,8 @@ export default function SwStructurePage() {
                 archiveLoading={archiveMut.isPending && archiveMut.variables === selectedNode.id}
                 restoreLoading={restoreMut.isPending && restoreMut.variables === selectedNode.id}
                 markDeletedLoading={markDeletedMut.isPending && markDeletedMut.variables === selectedNode.id}
+                branchPrograms={branchPrograms}
+                onSelectProgram={selectProgram}
               />
             ) : (
               <div className={styles.detailEmpty}>Выберите элемент в дереве слева</div>

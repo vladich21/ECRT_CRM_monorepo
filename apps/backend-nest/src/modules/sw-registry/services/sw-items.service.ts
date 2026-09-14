@@ -162,6 +162,7 @@ export class SwItemsService {
         },
         developmentKindCode: r.item.developmentKindCode,
         specUrl: r.item.specUrl,
+        svnPath: r.item.svnPath ?? null,
         recordState: r.item.recordState,
         documentsCount: docCounts.get(r.item.id) ?? 0,
         statusSummary: summary.get(r.item.id) ?? {},
@@ -471,6 +472,7 @@ export class SwItemsService {
       },
       developmentKindCode: row.item.developmentKindCode,
       specUrl: row.item.specUrl,
+      svnPath: row.item.svnPath ?? null,
       recordState: row.item.recordState,
     };
   }
