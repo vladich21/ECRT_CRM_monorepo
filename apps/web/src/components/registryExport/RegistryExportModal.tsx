@@ -10,7 +10,11 @@ import {
   saveExportColumnKeys,
   type RegistryExportExtraGroupWithColumns,
 } from './registryExportColumnUtils';
-import type { RegistryExportColumn, RegistryExportExtraSectionLayout } from './registryExportTypes';
+import type {
+  RegistryExportColumn,
+  RegistryExportExtraGroup,
+  RegistryExportExtraSectionLayout,
+} from './registryExportTypes';
 import styles from './RegistryExportModal.module.scss';
 
 export type RegistryExportModalConfig<TKey extends string> = {

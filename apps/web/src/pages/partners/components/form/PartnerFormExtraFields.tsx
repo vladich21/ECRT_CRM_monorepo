@@ -1,5 +1,5 @@
 import { ExperimentOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Col, Divider, Form, Input, Row, Select, Space, Tag, Typography, theme } from 'antd';
+import { Button, Col, Divider, Form, Input, Row, Select, Space, Tag, Typography, theme, type InputRef } from 'antd';
 import { useRef, useState } from 'react';
 
 import { useCreatePartnerCompetence } from '../../../../api/partners/partnerCompetenceApiHooks';
@@ -21,7 +21,7 @@ export function PartnerFormExtraFields({ refs }: Props) {
   const { token } = theme.useToken();
   const [newName, setNewName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<InputRef>(null);
   const { mutate: createCompetence, isPending } = useCreatePartnerCompetence();
 
   const handleCreate = () => {

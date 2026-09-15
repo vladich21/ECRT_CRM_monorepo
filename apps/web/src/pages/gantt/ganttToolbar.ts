@@ -71,7 +71,7 @@ function canMoveDown(api: IApi | null | undefined, taskId: string | number | nul
 }
 
 /**
- * Toolbar: edit / delete / ↑↓ / copy / cut / paste (+ undo).
+ * Toolbar: edit / delete / ↑↓ / copy / cut / paste.
  * Без indent и «Новая задача» — иерархию не ломаем.
  * ↑↓ disabled на краях ветки (иначе SVAR выносит на уровень родителя).
  */
@@ -79,7 +79,8 @@ export function createGanttToolbarItems(
   getApi: () => IApi | null,
   confirm?: (props: ModalFuncProps) => void,
 ) {
-  const buttons = getToolbarButtons({ undo: true });
+  // В MIT-версии getToolbarButtons игнорирует конфиг, кнопок undo/redo в наборе нет.
+  const buttons = getToolbarButtons();
 
   const filtered = buttons.filter(button => {
     if (!button || typeof button !== 'object') return true;

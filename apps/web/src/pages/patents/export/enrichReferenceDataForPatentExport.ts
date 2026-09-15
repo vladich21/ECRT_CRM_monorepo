@@ -3,6 +3,7 @@ import { userApi } from '@/api/users/userApi';
 import { getPatentExpectedLicensees } from '@/helpers/licenseeEntryHelpers';
 import type { ReferenceDataForPatents } from '@/pages/patents/types/data';
 import type { Patent } from '@/types/patent';
+import type { User } from '@/types/user';
 
 const FETCH_CHUNK_SIZE = 20;
 
@@ -53,13 +54,24 @@ function collectUserIds(patents: Patent[]): string[] {
   return ids;
 }
 
+/**
+ * GET /users/:id отдаёт полную карточку без поля name, а справочник users — preview { id, name }.
+ * ФИО собираем так же, как бэкенд для preview (Фамилия Имя Отчество, иначе id).
+ */
+async function fetchUserReference(id: string): Promise<{ id: string; name: string }> {
+  const user: User | undefined = await userApi.getUserById(id);
+  if (!user?.id) throw new Error(`Пользователь ${id} не найден`);
+  const name = [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' ').trim();
+  return { id: user.id, name: name || user.id };
+}
+
 export async function enrichReferenceDataForPatentExport(
   patents: Patent[],
   refs: ReferenceDataForPatents,
 ): Promise<ReferenceDataForPatents> {
   const [partners, users] = await Promise.all([
     fetchMissingEntities(collectPartnerIds(patents), refs.partners, partnerApi.getPartnerById),
-    fetchMissingEntities(collectUserIds(patents), refs.users, userApi.getUserById),
+    fetchMissingEntities(collectUserIds(patents), refs.users, fetchUserReference),
   ]);
 
   return { ...refs, partners, users };

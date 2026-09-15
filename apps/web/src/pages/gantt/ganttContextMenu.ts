@@ -25,7 +25,7 @@ const HIDDEN_MENU_ROOT_IDS = new Set([
  * «Преобразовать в» / move / indent скрыты — путают с доменными типами.
  */
 export function createGanttContextMenuOptions(): MenuItem[] {
-  const options = getMenuOptions({ splitTasks: false }) as MenuItem[];
+  const options = getMenuOptions() as MenuItem[];
 
   return options
     .map(item => {

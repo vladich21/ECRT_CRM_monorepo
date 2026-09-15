@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { EMPTY_FILTERS } from '../PartnerFiltersModal';
+import { EMPTY_FILTERS, type PartnerFilters } from '../PartnerFiltersModal';
 import {
   parsePartnersListPersistedUi,
   serializePartnersListPersistedUi,
@@ -9,12 +9,12 @@ import { loadPartnersListPersistedUi, savePartnersListPersistedUi } from './part
 
 describe('partnersListPersistedUi', () => {
   it('round-trips v3 schema with sort and filters', () => {
-    const appliedFilters = {
+    const appliedFilters: PartnerFilters = {
       ...EMPTY_FILTERS,
       typeIds: ['type-1'],
       statusIds: ['status-1'],
       evaluationCategoryTokens: ['A', 'none'],
-      isKeySupplier: 'yes' as const,
+      isKeySupplier: 'yes',
     };
 
     const raw = serializePartnersListPersistedUi(
