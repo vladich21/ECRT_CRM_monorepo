@@ -11,38 +11,6 @@ export function groupProgramsByElement(items: SwItemListRow[]): Map<string, SwIt
   return byElement;
 }
 
-export type SwNodeCounts = { programs: number; documents: number };
-
-/**
- * Счётчики программ и документов с каскадом на потомков: узел отвечает за всю свою ветку,
- * поэтому у элемента верхнего уровня видно наполнение целиком, без раскрытия дерева.
- */
-export function buildNodeCounts(
-  nodes: SwStructureNode[],
-  programsByElement: Map<string, SwItemListRow[]>,
-): Map<string, SwNodeCounts> {
-  const counts = new Map<string, SwNodeCounts>();
-
-  const walk = (node: SwStructureNode): SwNodeCounts => {
-    const own = programsByElement.get(node.id) ?? [];
-    let programs = own.length;
-    let documents = own.reduce((sum, item) => sum + (item.documentsCount ?? 0), 0);
-
-    (node.children ?? []).forEach(child => {
-      const childCounts = walk(child);
-      programs += childCounts.programs;
-      documents += childCounts.documents;
-    });
-
-    const result: SwNodeCounts = { programs, documents };
-    counts.set(node.id, result);
-    return result;
-  };
-
-  nodes.forEach(walk);
-  return counts;
-}
-
 export type SwStructureSearchResult = {
   tree: SwStructureNode[];
   /** Программы, которые остаются видны под узлами отфильтрованного дерева. */
@@ -98,6 +66,32 @@ export function searchStructureTree(
 
   const tree = nodes.map(match).filter((n): n is SwStructureNode => n != null);
   return { tree, programsByElement: visiblePrograms, expandIds, programCount };
+}
+
+/**
+ * Дерево вкладки «Архивные»: архивные элементы и элементы с архивными программами — вместе с веткой до них.
+ * Без ветки архивный элемент под действующим родителем и программа, ушедшая в архив одна, на вкладке не видны.
+ * Действующие элементы остаются в дереве только как путь к архивному.
+ */
+export function archivedStructureTree(
+  nodes: SwStructureNode[],
+  archivedProgramsByElement: Map<string, SwItemListRow[]>,
+): SwStructureNode[] {
+  const keep = (node: SwStructureNode): SwStructureNode | null => {
+    const children = (node.children ?? []).map(keep).filter((n): n is SwStructureNode => n != null);
+    const hasArchivedPrograms = (archivedProgramsByElement.get(node.id)?.length ?? 0) > 0;
+    if (node.recordState !== 'archived' && !hasArchivedPrograms && children.length === 0) return null;
+    return { ...node, children };
+  };
+  return nodes.map(keep).filter((n): n is SwStructureNode => n != null);
+}
+
+/** Сколько архивных элементов в дереве — на любой глубине, в том числе под действующими родителями. */
+export function countArchivedElements(nodes: SwStructureNode[]): number {
+  return nodes.reduce(
+    (sum, node) => sum + (node.recordState === 'archived' ? 1 : 0) + countArchivedElements(node.children ?? []),
+    0,
+  );
 }
 
 export type SwProgramResponsible = { id: string; name: string; programs: SwItemListRow[] };

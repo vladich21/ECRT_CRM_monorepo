@@ -38,7 +38,12 @@ import {
   findStructureParent,
   firstStructureNode,
 } from './swStructureTree';
-import { buildNodeCounts, groupProgramsByElement, searchStructureTree } from './swStructurePrograms';
+import {
+  archivedStructureTree,
+  countArchivedElements,
+  groupProgramsByElement,
+  searchStructureTree,
+} from './swStructurePrograms';
 import { SwStructureTreeNode } from './SwStructureTreeNode';
 import { SwStructureTreeToolbar } from './SwStructureTreeToolbar';
 
@@ -48,8 +53,12 @@ type ModalState =
   | { mode: 'child'; node: SwStructureNode }
   | { mode: 'responsible'; node: SwStructureNode };
 
+/**
+ * Какое дерево грузить. Вкладка «Архивные» строится из полного дерева: архивный элемент под действующим
+ * родителем и программа, ушедшая в архив одна, видны только вместе с веткой до них.
+ */
 function resolveFetchRecordState(tab: SwStructureFilterTab, showArchivedInTree: boolean): string {
-  if (tab === 'archived') return 'archived';
+  if (tab === 'archived') return 'all';
   return showArchivedInTree ? 'all' : 'active';
 }
 
@@ -95,19 +104,20 @@ export default function SwStructurePage() {
   const fetchRecordState = resolveFetchRecordState(filterTab, showArchivedInTree);
   const structureQuery = useSwStructure(fetchRecordState);
   const activeTreeQuery = useSwStructure('active');
-  const archivedTreeQuery = useSwStructure('archived');
+  // Полное дерево — для счётчика вкладки «Архивные»: архивные элементы бывают и под действующими родителями.
+  const allTreeQuery = useSwStructure('all');
   const typesQuery = useSwReferences('elementTypes');
   const rolesQuery = useSwReferences('responsibilityRoles');
   const kindsQuery = useSwReferences('developmentKinds');
   const docKindsQuery = useSwReferences('documentKinds');
   const statusesQuery = useSwReferences('statuses');
-  // Программы грузим целиком: из них считаются счётчики веток и список программ узла. Какие — по режиму дерева:
+  // Программы грузим целиком: из них строится список программ узла. Какие показать — по режиму дерева:
   // действующие, архивные (вкладка «Архивные») или те и другие («Показывать архивные»). API отдаёт один статус
-  // за запрос, поэтому запросов два.
-  const showActivePrograms = fetchRecordState !== 'archived';
-  const showArchivedPrograms = fetchRecordState !== 'active';
-  const activeProgramsQuery = useSwItems({ recordState: 'active', limit: 500 }, { enabled: showActivePrograms });
-  const archivedProgramsQuery = useSwItems({ recordState: 'archived', limit: 500 }, { enabled: showArchivedPrograms });
+  // за запрос, поэтому запросов два; оба грузятся всегда — из них считаются вкладки «Действующие» и «Архивные».
+  const showActivePrograms = filterTab !== 'archived';
+  const showArchivedPrograms = filterTab === 'archived' || showArchivedInTree;
+  const activeProgramsQuery = useSwItems({ recordState: 'active', limit: 500 });
+  const archivedProgramsQuery = useSwItems({ recordState: 'archived', limit: 500 });
   const programsLoading =
     (showActivePrograms && activeProgramsQuery.isLoading) || (showArchivedPrograms && archivedProgramsQuery.isLoading);
 
@@ -156,8 +166,16 @@ export default function SwStructurePage() {
   );
   const programsByElement = useMemo(() => groupProgramsByElement(programs), [programs]);
 
-  const rawTree = structureQuery.data ?? [];
-  // Поиск идёт по элементам и по программам: дерево показывает программы из выдачи, счётчики веток — полные.
+  // На вкладке «Архивные» из полного дерева остаются архивные элементы и элементы с архивными программами,
+  // вместе с веткой до них; действующие элементы на этом пути — только навигация.
+  const rawTree = useMemo(
+    () =>
+      filterTab === 'archived'
+        ? archivedStructureTree(structureQuery.data ?? [], programsByElement)
+        : (structureQuery.data ?? []),
+    [filterTab, structureQuery.data, programsByElement],
+  );
+  // Поиск идёт по элементам и по программам: дерево показывает программы из выдачи.
   const search = useMemo(
     () => searchStructureTree(rawTree, programsByElement, searchQuery),
     [rawTree, programsByElement, searchQuery],
@@ -169,14 +187,16 @@ export default function SwStructurePage() {
     [expandedIds, search.expandIds],
   );
 
-  const countsByNode = useMemo(() => buildNodeCounts(rawTree, programsByElement), [rawTree, programsByElement]);
-
-  // «N из M» — элементы и программы вкладки.
-  const totalInTab =
-    countStructureNodes(rawTree) + rawTree.reduce((sum, root) => sum + (countsByNode.get(root.id)?.programs ?? 0), 0);
-  const shownCount = searchQuery.trim() ? countStructureNodes(tree) + search.programCount : totalInTab;
-  const activeCount = countStructureNodes(activeTreeQuery.data ?? []);
-  const archivedCount = countStructureNodes(archivedTreeQuery.data ?? []);
+  // Все счётчики считают одинаково — элементы плюс программы: вкладки «Действующие» и «Архивные» и «N из M»
+  // над деревом. На вкладке «Архивные» действующие элементы — только путь к архивному, в счёт они не идут.
+  const countElements = filterTab === 'archived' ? countArchivedElements : countStructureNodes;
+  const totalInTab = countElements(rawTree) + programs.length;
+  const shownCount = searchQuery.trim() ? countElements(tree) + search.programCount : totalInTab;
+  const activeCount =
+    countStructureNodes(activeTreeQuery.data ?? []) + (activeProgramsQuery.data?.items.length ?? 0);
+  // В архиве бывают и элементы под действующими родителями, и программы, ушедшие в архив поодиночке.
+  const archivedCount =
+    countArchivedElements(allTreeQuery.data ?? []) + (archivedProgramsQuery.data?.items.length ?? 0);
 
   const selectedNode = useMemo(
     () => (selectedId ? findStructureNode(rawTree, selectedId) : null),

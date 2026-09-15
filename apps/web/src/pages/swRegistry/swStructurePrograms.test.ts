@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
-import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
-import { groupProgramsByElement, groupProgramsByResponsible, searchStructureTree } from './swStructurePrograms';
+import type { SwItemListRow, SwRecordState, SwStructureNode } from '@/types/swRegistry';
+import {
+  archivedStructureTree,
+  countArchivedElements,
+  groupProgramsByElement,
+  groupProgramsByResponsible,
+  searchStructureTree,
+} from './swStructurePrograms';
 
-const node = (id: string, code: string, name: string, children: SwStructureNode[] = []) =>
-  ({ id, code, name, children }) as SwStructureNode;
+const node = (
+  id: string,
+  code: string,
+  name: string,
+  children: SwStructureNode[] = [],
+  recordState: SwRecordState = 'active',
+) => ({ id, code, name, children, recordState }) as SwStructureNode;
 
 const program = (
   id: string,
@@ -78,5 +89,38 @@ describe('groupProgramsByResponsible', () => {
 
   it('без программ — пустой список', () => {
     expect(groupProgramsByResponsible([])).toEqual([]);
+  });
+});
+
+describe('archivedStructureTree', () => {
+  // Система (действует) → подсистема (действует, в ней архивная программа) и компонент (в архиве);
+  // вторая система действует и без архивного.
+  const fullTree = [
+    node('sys', 'СИС', 'Система', [
+      node('sub', 'ПОД', 'Подсистема'),
+      node('cmp', 'КОМ', 'Компонент', [], 'archived'),
+    ]),
+    node('sys2', 'СИС2', 'Вторая система'),
+  ];
+
+  it('оставляет архивный элемент под действующим родителем вместе с веткой до него', () => {
+    expect(ids(archivedStructureTree(fullTree, new Map()))).toEqual(['sys', 'cmp']);
+  });
+
+  it('оставляет действующий элемент, если в нём есть программа, ушедшая в архив одна', () => {
+    const archivedPrograms = groupProgramsByElement([program('p9', 'sub', 'RU.00099-01', 'Старое ПО')]);
+    expect(ids(archivedStructureTree(fullTree, archivedPrograms))).toEqual(['sys', 'sub', 'cmp']);
+  });
+
+  it('без архивного — пустое дерево', () => {
+    expect(archivedStructureTree([node('a', 'A', 'A')], new Map())).toEqual([]);
+  });
+});
+
+describe('countArchivedElements', () => {
+  it('считает архивные элементы на любой глубине', () => {
+    const nested = [node('a', 'A', 'A', [node('b', 'B', 'B', [node('c', 'C', 'C', [], 'archived')], 'archived')])];
+    expect(countArchivedElements(nested)).toBe(2);
+    expect(countArchivedElements(tree)).toBe(0);
   });
 });

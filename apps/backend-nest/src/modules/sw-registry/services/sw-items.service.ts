@@ -346,7 +346,10 @@ export class SwItemsService {
   }
 
   async restore(id: string) {
-    await this.requireItem(id);
+    const item = await this.requireItem(id);
+    // Программа возвращается на своё место в дереве: элемент и его вышестоящие, если они в архиве, поднимаются
+    // вместе с ней, иначе она оказалась бы под архивным элементом и не была бы видна среди действующих.
+    await this.structure.restorePath(item.elementId);
     await this.db.db
       .update(swItems)
       .set({ recordState: 'active', archivedByCascade: false, updatedAt: new Date() })

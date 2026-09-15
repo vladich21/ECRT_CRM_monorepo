@@ -68,11 +68,11 @@ test('isPgUniqueViolation ignores other errors', () => {
 
 test('archivedEditError allows editing active records', () => {
   assert.equal(archivedEditError('item', { recordState: 'active' }), null);
-  assert.equal(archivedEditError('element', { recordState: 'active', archivedByCascade: false }), null);
+  assert.equal(archivedEditError('element', { recordState: 'active' }), null);
 });
 
-test('archivedEditError rejects archived records with a hint where to restore', () => {
-  assert.deepEqual(archivedEditError('item', { recordState: 'archived', archivedByCascade: false }), {
+test('archivedEditError rejects archived records and says to restore them first', () => {
+  assert.deepEqual(archivedEditError('item', { recordState: 'archived' }), {
     code: 'ITEM_ARCHIVED',
     message: 'Программа в архиве — сначала верните её из архива',
   });
@@ -80,10 +80,6 @@ test('archivedEditError rejects archived records with a hint where to restore', 
     code: 'ELEMENT_ARCHIVED',
     message: 'Элемент структуры в архиве — сначала верните его из архива',
   });
-  assert.equal(
-    archivedEditError('item', { recordState: 'archived', archivedByCascade: true })?.message,
-    'Программа в архиве — сначала верните из архива вышестоящий элемент',
-  );
 });
 
 console.log('sw-registry.util tests passed.');

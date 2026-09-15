@@ -165,24 +165,21 @@ export function SwStructureTreeNode({
           {ownPrograms.map(item => (
             <div
               key={item.id}
-              className={[
-                styles.treeProgram,
-                item.id === selectedProgramId ? styles.treeProgramSelected : '',
-                item.recordState === 'archived' ? styles.treeProgramArchived : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
+              className={`${styles.treeProgram}${item.id === selectedProgramId ? ` ${styles.treeProgramSelected}` : ''}`}
               onClick={() => onSelectProgram(item)}
               role='treeitem'
               aria-selected={item.id === selectedProgramId}
             >
               <span className={styles.treeExpandPlaceholder} />
-              <span
-                className={styles.treeProgramName}
-                title={`${item.designation} — ${item.fullName}${item.recordState === 'archived' ? ' (архивная)' : ''}`}
-              >
+              <span className={styles.treeProgramName} title={`${item.designation} — ${item.fullName}`}>
                 {item.shortName}
               </span>
+              {/* Как у архивного элемента: бейдж виден и на вкладке «Архивные», и при «Показывать архивные». */}
+              {item.recordState === 'archived' ? (
+                <Tag bordered={false} className={styles.treeArchivedTag}>
+                  архивная
+                </Tag>
+              ) : null}
             </div>
           ))}
         </div>

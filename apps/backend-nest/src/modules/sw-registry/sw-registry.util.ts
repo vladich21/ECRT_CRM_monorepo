@@ -63,19 +63,15 @@ export function isPgUniqueViolation(err: unknown, constraint?: string): boolean 
 }
 
 /**
- * Архивная запись только для чтения: правка отклоняется, пока запись не вернули из архива. Ушедшую в архив
- * вместе с вышестоящим элементом возвращают через него. null — запись действующая, менять можно.
+ * Архивная запись только для чтения: правка отклоняется, пока запись не вернули из архива. Вернуть можно и
+ * вложенную часть — вышестоящие элементы поднимаются вместе с ней. null — запись действующая, менять можно.
  */
 export function archivedEditError(
   entity: 'item' | 'element',
-  record: { recordState: string; archivedByCascade?: boolean | null },
+  record: { recordState: string },
 ): { code: string; message: string } | null {
   if (record.recordState !== 'archived') return null;
-  const subject = entity === 'item' ? 'Программа в архиве' : 'Элемент структуры в архиве';
-  const hint = record.archivedByCascade
-    ? 'сначала верните из архива вышестоящий элемент'
-    : entity === 'item'
-      ? 'сначала верните её из архива'
-      : 'сначала верните его из архива';
-  return { code: entity === 'item' ? 'ITEM_ARCHIVED' : 'ELEMENT_ARCHIVED', message: `${subject} — ${hint}` };
+  return entity === 'item'
+    ? { code: 'ITEM_ARCHIVED', message: 'Программа в архиве — сначала верните её из архива' }
+    : { code: 'ELEMENT_ARCHIVED', message: 'Элемент структуры в архиве — сначала верните его из архива' };
 }
