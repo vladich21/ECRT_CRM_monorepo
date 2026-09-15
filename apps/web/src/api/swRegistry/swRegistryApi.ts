@@ -5,7 +5,6 @@ import type {
   CreateStructurePayload,
   CreateSwDocumentPayload,
   CreateSwItemPayload,
-  SwDocumentDetail,
   SwDocumentStatusesResponse,
   SwDocumentWriteResult,
   SwFileLinkResponse,
@@ -157,11 +156,6 @@ export const swRegistryApi = {
   /** Отказ от загруженного файла, который так и не стал документом (окно закрыли). */
   discardDocumentUpload: async (itemId: string, fileId: string) => {
     await apiClient.delete(`/sw/items/detail/${itemId}/documents/upload-ticket/${fileId}`);
-  },
-
-  getDocument: async (id: string): Promise<SwDocumentDetail> => {
-    const { data } = await apiClient.get<SwDocumentDetail>(`/sw/documents/detail/${id}`);
-    return data;
   },
 
   getDocumentStatuses: async (id: string): Promise<SwDocumentStatusesResponse> => {

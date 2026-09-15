@@ -43,14 +43,73 @@ export function buildNodeCounts(
   return counts;
 }
 
-/** Программы всей ветки узла — сначала свои, затем потомков, в порядке обхода дерева. */
-export function collectBranchPrograms(
-  node: SwStructureNode,
+export type SwStructureSearchResult = {
+  tree: SwStructureNode[];
+  /** Программы, которые остаются видны под узлами отфильтрованного дерева. */
+  programsByElement: Map<string, SwItemListRow[]>;
+  /** Узлы, которые надо раскрыть, иначе найденное внутри свёрнутой ветки не видно. */
+  expandIds: Set<string>;
+  /** Сколько программ осталось в выдаче. */
+  programCount: number;
+};
+
+/**
+ * Поиск по дереву вместе с программами: элемент ищется по коду и наименованию, программа — по обозначению,
+ * краткому и полному наименованию. Нашёлся сам элемент — видны все его программы; не нашёлся — только
+ * найденные программы, а ветка до них сохраняется. Раскрываются узлы, внутри которых есть находка.
+ */
+export function searchStructureTree(
+  nodes: SwStructureNode[],
   programsByElement: Map<string, SwItemListRow[]>,
-): SwItemListRow[] {
-  const result: SwItemListRow[] = [...(programsByElement.get(node.id) ?? [])];
-  (node.children ?? []).forEach(child => {
-    result.push(...collectBranchPrograms(child, programsByElement));
+  query: string,
+): SwStructureSearchResult {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    let programCount = 0;
+    programsByElement.forEach(list => {
+      programCount += list.length;
+    });
+    return { tree: nodes, programsByElement, expandIds: new Set(), programCount };
+  }
+
+  const visiblePrograms = new Map<string, SwItemListRow[]>();
+  const expandIds = new Set<string>();
+  let programCount = 0;
+
+  const programMatches = (item: SwItemListRow) =>
+    `${item.designation} ${item.shortName} ${item.fullName}`.toLowerCase().includes(q);
+
+  const match = (node: SwStructureNode): SwStructureNode | null => {
+    const children = (node.children ?? []).map(match).filter((n): n is SwStructureNode => n != null);
+    const own = programsByElement.get(node.id) ?? [];
+    const ownMatched = own.filter(programMatches);
+    const selfMatched = `${node.code} ${node.name}`.toLowerCase().includes(q);
+    if (!selfMatched && children.length === 0 && ownMatched.length === 0) return null;
+
+    const kept = selfMatched ? own : ownMatched;
+    if (kept.length > 0) {
+      visiblePrograms.set(node.id, kept);
+      programCount += kept.length;
+    }
+    // Раскрываем только ради находок внутри: совпавший сам элемент остаётся свёрнутым, как обычно.
+    if (children.length > 0 || ownMatched.length > 0) expandIds.add(node.id);
+    return { ...node, children };
+  };
+
+  const tree = nodes.map(match).filter((n): n is SwStructureNode => n != null);
+  return { tree, programsByElement: visiblePrograms, expandIds, programCount };
+}
+
+export type SwProgramResponsible = { id: string; name: string; programs: SwItemListRow[] };
+
+/** Ответственные программ: каждый человек один раз, со списком программ, за которые он отвечает; по алфавиту. */
+export function groupProgramsByResponsible(programs: SwItemListRow[]): SwProgramResponsible[] {
+  const byUser = new Map<string, SwProgramResponsible>();
+  programs.forEach(item => {
+    const { id, name } = item.responsible;
+    const entry = byUser.get(id);
+    if (entry) entry.programs.push(item);
+    else byUser.set(id, { id, name, programs: [item] });
   });
-  return result;
+  return [...byUser.values()].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 }

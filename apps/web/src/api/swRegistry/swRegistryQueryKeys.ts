@@ -2,6 +2,8 @@ export const swRegistryQueryKeys = {
   all: ['sw'] as const,
   structure: (recordState: string) => [...swRegistryQueryKeys.all, 'structure', recordState] as const,
   structurePatents: (elementId: string) => [...swRegistryQueryKeys.all, 'structure-patents', elementId] as const,
+  /** Связи с РИД у всех элементов структуры: сброс после привязки или отвязки РИД у программы. */
+  structurePatentsAll: () => [...swRegistryQueryKeys.all, 'structure-patents'] as const,
   references: (kind: string) => [...swRegistryQueryKeys.all, 'references', kind] as const,
   items: (params: Record<string, string | number | undefined>) =>
     [...swRegistryQueryKeys.all, 'items', params] as const,

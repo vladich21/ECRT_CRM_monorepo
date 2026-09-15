@@ -283,10 +283,13 @@ export function SwDocumentFilesTab({
   documentId,
   hasApprovalSheet,
   canEdit,
+  compact,
 }: {
   documentId: string;
   hasApprovalSheet: boolean;
   canEdit?: boolean;
+  /** Узкое место (боковая панель документа). */
+  compact?: boolean;
 }) {
   return (
     <>
@@ -297,6 +300,7 @@ export function SwDocumentFilesTab({
         title='Файлы документа'
         hint='Электронные копии программного документа'
         canEdit={canEdit}
+        compact={compact}
       />
       {hasApprovalSheet ? (
         <SwFilesTab
@@ -306,6 +310,7 @@ export function SwDocumentFilesTab({
           title='Файлы листа утверждения'
           hint='Электронные копии листа утверждения'
           canEdit={canEdit}
+          compact={compact}
         />
       ) : null}
     </>

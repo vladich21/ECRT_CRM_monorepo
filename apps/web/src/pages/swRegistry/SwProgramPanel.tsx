@@ -1,16 +1,27 @@
 import { useMemo, useState } from 'react';
-import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons';
+import {
+  CloseOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  InboxOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  UndoOutlined,
+} from '@ant-design/icons';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { App, Button, Spin, Tag } from 'antd';
+import { App, Button, Dropdown, Spin, Tag, Tooltip, type MenuProps } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 
+import { commentQueryKeys } from '@/api/comments/commentQueryKeys';
 import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
 import { swRegistryQueryKeys } from '@/api/swRegistry/swRegistryQueryKeys';
 import {
+  useArchiveSwDocument,
   useArchiveSwItem,
   useChangeSwDocumentStatus,
   useCreateSwDocument,
   useMarkSwItemDeleted,
+  useRestoreSwDocument,
   useRestoreSwItem,
   useSwFiles,
   useSwItem,
@@ -31,11 +42,14 @@ import type {
   CreateSwDocumentPayload,
   SwDocumentListRow,
   SwItemListRow,
+  UpdateSwDocumentPayload,
   UpdateSwItemPayload,
 } from '@/types/swRegistry';
 import { SwDocumentCreateModal } from './SwDocumentCreateModal';
+import { SwDocumentDrawer, type SwDocumentDrawerTab } from './SwDocumentDrawer';
+import { SwDocumentEditModal } from './SwDocumentEditModal';
 import { SwDocumentStatusModal } from './SwDocumentStatusModal';
-import { SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
+import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
 import { SwFilesTab } from './SwFilesTab';
 import { SwIpsPlacementModal } from './SwIpsPlacementModal';
 import { SwItemEditModal } from './SwItemEditModal';
@@ -48,7 +62,6 @@ type Props = {
   documentKindByCode: Map<string, string>;
   gostCodeByKind: Map<string, string>;
   statusByCode: Map<string, string>;
-  returnPath: string;
   /** Программа помечена удалённой — экран снимает с неё выбор. */
   onDeleted: () => void;
   /** Переход к элементу структуры программы в дереве. */
@@ -68,7 +81,6 @@ export function SwProgramPanel({
   documentKindByCode,
   gostCodeByKind,
   statusByCode,
-  returnPath,
   onDeleted,
   onSelectElement,
 }: Props) {
@@ -108,6 +120,32 @@ export function SwProgramPanel({
     const params = new URLSearchParams(searchParams);
     if (next === 'documents') params.delete('tab');
     else params.set('tab', next);
+    // Открытый документ относится к комплекту: на другой вкладке панели его нет.
+    params.delete('documentId');
+    params.delete('docTab');
+    setSearchParams(params, { replace: true });
+  };
+
+  // Документ в боковой панели — тоже в адресе (documentId, docTab=comments): ссылка открывает ровно его.
+  const openDocumentId = searchParams.get('documentId');
+  const docTab: SwDocumentDrawerTab = searchParams.get('docTab') === 'comments' ? 'comments' : 'files';
+  const drawerDocument = openDocumentId ? (documents.find(d => d.id === openDocumentId) ?? null) : null;
+  const openDocument = (document: SwDocumentListRow) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('documentId', document.id);
+    params.delete('docTab');
+    setSearchParams(params, { replace: true });
+  };
+  const closeDocument = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('documentId');
+    params.delete('docTab');
+    setSearchParams(params, { replace: true });
+  };
+  const setDocTab = (next: SwDocumentDrawerTab) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'files') params.delete('docTab');
+    else params.set('docTab', next);
     setSearchParams(params, { replace: true });
   };
 
@@ -117,6 +155,7 @@ export function SwProgramPanel({
   const [editOpen, setEditOpen] = useState(false);
   const [createDocOpen, setCreateDocOpen] = useState(false);
   const [createDocError, setCreateDocError] = useState<unknown>(null);
+  const [editDoc, setEditDoc] = useState<SwDocumentListRow | null>(null);
   const [statusModal, setStatusModal] = useState<StatusModalState | null>(null);
   const [ipsModalDoc, setIpsModalDoc] = useState<SwDocumentListRow | null>(null);
 
@@ -127,6 +166,8 @@ export function SwProgramPanel({
   const createDocMut = useCreateSwDocument();
   const changeStatusMut = useChangeSwDocumentStatus();
   const updateDocMut = useUpdateSwDocument();
+  const archiveDocMut = useArchiveSwDocument();
+  const restoreDocMut = useRestoreSwDocument();
 
   const svnStatus = useQuery({
     queryKey: ['svn', 'status'],
@@ -276,6 +317,42 @@ export function SwProgramPanel({
     );
   };
 
+  const submitEditDoc = (payload: UpdateSwDocumentPayload) => {
+    if (!editDoc) return;
+    updateDocMut.mutate(
+      { id: editDoc.id, payload },
+      {
+        onSuccess: data => {
+          if (data.warnings?.length) message.warning(data.warnings.join(' '));
+          else message.success('Документ обновлен');
+          setEditDoc(null);
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  const handleArchiveDoc = (document: SwDocumentListRow) => {
+    modal.confirm({
+      title: 'Перевести документ в архив?',
+      content: 'Документ исчезнет из действующего комплекта, но останется в своде и архиве программы.',
+      okText: 'В архив',
+      okButtonProps: { danger: true },
+      onOk: () =>
+        archiveDocMut.mutate(document.id, {
+          onSuccess: () => message.success('Документ в архиве'),
+          onError: fail,
+        }),
+    });
+  };
+
+  const handleRestoreDoc = (document: SwDocumentListRow) => {
+    restoreDocMut.mutate(document.id, {
+      onSuccess: () => message.success('Документ восстановлен'),
+      onError: fail,
+    });
+  };
+
   const submitStatus = (payload: ChangeSwDocumentStatusPayload) => {
     const docId = statusModal?.document.id ?? ipsModalDoc?.id;
     if (!docId) return;
@@ -284,6 +361,8 @@ export function SwProgramPanel({
       {
         onSuccess: () => {
           message.success(payload.statusCode === 'in_ips' ? 'Размещение в IPS зафиксировано' : 'Статус изменен');
+          // Основание смены статуса пишется комментарием — в панели документа оно должно появиться сразу.
+          void queryClient.invalidateQueries({ queryKey: commentQueryKeys.byEntity('sw_document', docId) });
           setStatusModal(null);
           setIpsModalDoc(null);
         },
@@ -305,59 +384,63 @@ export function SwProgramPanel({
   const currentStatusCode =
     statusModal?.scope === 'sheet' ? statusModal.document.sheetStatusCode : statusModal?.document.statusCode;
 
+  // Редкие и необратимые действия с программой — в меню «⋯», как у строк комплекта: на виду только правка.
+  const itemMenuItems: NonNullable<MenuProps['items']> = [
+    isArchived
+      ? { key: 'restore', icon: <UndoOutlined />, label: 'Вернуть из архива' }
+      : { key: 'archive', icon: <InboxOutlined />, label: 'В архив' },
+    { type: 'divider' },
+    { key: 'delete', icon: <DeleteOutlined />, label: 'Пометить удаленным', danger: true },
+  ];
+  const handleItemMenu: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'archive') handleArchiveItem();
+    else if (key === 'restore') handleRestoreItem();
+    else if (key === 'delete') handleMarkItemDeleted();
+  };
+  const itemActionPending = archiveItemMut.isPending || restoreItemMut.isPending || markItemDeletedMut.isPending;
+  const developmentKindLabel = kindByCode.get(item.developmentKindCode) ?? item.developmentKindCode;
+
   return (
     <div className={styles.programStack}>
-      <div className={styles.programHeadCard}>
+      <header className={styles.programHeadCard}>
         <div className={styles.programHeadRow}>
           <div className={styles.programHeadTitle}>
-            <span className={styles.programPanelCode}>{item.designation}</span>
-            <h2 className={styles.programHeadName} title={fullNameDiffers ? item.fullName : undefined}>
-              {item.shortName}
-            </h2>
-            <Tag bordered={false} className={styles.programKind}>
-              {kindByCode.get(item.developmentKindCode) ?? item.developmentKindCode}
-            </Tag>
-            {isArchived ? (
-              <Tag bordered={false} className={styles.programKind}>
-                архивная
-              </Tag>
-            ) : null}
+            <div className={styles.programEyebrow}>
+              <span className={styles.programDesignation}>{item.designation}</span>
+              <span aria-hidden>·</span>
+              <span>{developmentKindLabel}</span>
+              {isArchived ? (
+                <Tag bordered={false} className={styles.programState}>
+                  архивная
+                </Tag>
+              ) : null}
+            </div>
+            <h2 className={styles.programHeadName}>{item.shortName}</h2>
+            {fullNameDiffers ? <div className={styles.programFullName}>{item.fullName}</div> : null}
           </div>
           {canManageItem ? (
             <div className={styles.programHeadActions}>
-              <Button size='small' icon={<EditOutlined />} disabled={!detail} onClick={() => setEditOpen(true)}>
-                Редактировать
-              </Button>
-              {isArchived ? (
+              {/* Архивная программа только для чтения: правка возвращается вместе с программой из архива. */}
+              {canEditItem ? (
+                <Button size='small' icon={<EditOutlined />} disabled={!detail} onClick={() => setEditOpen(true)}>
+                  Редактировать
+                </Button>
+              ) : null}
+              <Dropdown trigger={['click']} placement='bottomRight' menu={{ items: itemMenuItems, onClick: handleItemMenu }}>
                 <Button
                   size='small'
-                  icon={<UndoOutlined />}
-                  loading={restoreItemMut.isPending}
-                  onClick={handleRestoreItem}
-                >
-                  Вернуть из архива
-                </Button>
-              ) : (
-                <Button size='small' loading={archiveItemMut.isPending} onClick={handleArchiveItem}>
-                  В архив
-                </Button>
-              )}
-              <Button
-                size='small'
-                danger
-                icon={<DeleteOutlined />}
-                loading={markItemDeletedMut.isPending}
-                onClick={handleMarkItemDeleted}
-              >
-                Пометить удаленным
-              </Button>
+                  icon={<MoreOutlined />}
+                  loading={itemActionPending}
+                  aria-label='Другие действия с программой'
+                />
+              </Dropdown>
             </div>
           ) : null}
         </div>
 
         <dl className={styles.programMeta}>
           <div className={styles.metaCell}>
-            <dt>Элемент</dt>
+            <dt>Элемент структуры</dt>
             <dd title={`${item.element.code} — ${item.element.name}`}>
               <button type='button' className={styles.metaLink} onClick={() => onSelectElement(item.element.id)}>
                 {item.element.name}
@@ -366,23 +449,21 @@ export function SwProgramPanel({
           </div>
           <div className={styles.metaCell}>
             <dt>Ответственный</dt>
-            <dd>{item.responsible.name}</dd>
+            <dd>
+              <span className={styles.metaText}>{item.responsible.name}</span>
+            </dd>
           </div>
           <div className={styles.metaCellWide}>
             <dt>Разработчик</dt>
-            <dd title={item.partner.name}>{item.partner.name}</dd>
+            <dd title={item.partner.name}>
+              <span className={styles.metaText}>{item.partner.name}</span>
+            </dd>
           </div>
-          {fullNameDiffers ? (
-            <div className={styles.metaCellWide}>
-              <dt>Полное наименование</dt>
-              <dd title={item.fullName}>{item.fullName}</dd>
-            </div>
-          ) : null}
           {item.specUrl ? (
             <div className={styles.metaCellWide}>
-              <dt>Ссылка на ТЗ</dt>
+              <dt>Техническое задание</dt>
               <dd title={item.specUrl}>
-                <a href={item.specUrl} target='_blank' rel='noreferrer'>
+                <a href={item.specUrl} target='_blank' rel='noreferrer' className={styles.metaLink}>
                   {item.specUrl}
                 </a>
               </dd>
@@ -391,20 +472,37 @@ export function SwProgramPanel({
           {svnEnabled ? (
             <div className={styles.metaCellWide}>
               <dt>Каталог в SVN</dt>
-              <dd title={folderPath ?? undefined}>
+              <dd>
                 {folderPath ? (
-                  <span className={styles.svnFolder}>{folderPath}</span>
+                  <span className={styles.metaText} title={folderPath}>
+                    {folderPath}
+                  </span>
                 ) : (
-                  <span className={styles.docDash}>не привязан</span>
+                  <span className={styles.metaEmpty}>не привязан</span>
                 )}
-                <Button type='link' size='small' onClick={() => setFolderPickerOpen(true)}>
-                  {folderPath ? 'изменить' : 'привязать'}
-                </Button>
+                {canEditItem ? (
+                  folderPath ? (
+                    <Tooltip title='Изменить каталог'>
+                      <Button
+                        type='text'
+                        size='small'
+                        className={styles.metaAction}
+                        icon={<EditOutlined />}
+                        aria-label='Изменить каталог в SVN'
+                        onClick={() => setFolderPickerOpen(true)}
+                      />
+                    </Tooltip>
+                  ) : (
+                    <Button type='link' size='small' onClick={() => setFolderPickerOpen(true)}>
+                      Привязать
+                    </Button>
+                  )
+                ) : null}
               </dd>
             </div>
           ) : null}
         </dl>
-      </div>
+      </header>
 
       <div className={`${styles.card} ${styles.programDocsCard}`}>
         <div className={styles.cardTitleRow}>
@@ -465,14 +563,15 @@ export function SwProgramPanel({
               </div>
             ) : (
               <SwDocumentsTable
-                itemId={item.id}
                 documents={visibleDocuments}
-                kindLabelByCode={documentKindByCode}
-                gostCodeByKind={gostCodeByKind}
                 statusLabelByCode={statusByCode}
                 requiresApprovalSheetByKind={requiresSheetByKind}
                 canEdit={canEditItem}
-                returnPath={returnPath}
+                selectedDocumentId={drawerDocument?.id ?? null}
+                onOpenDocument={openDocument}
+                onEdit={document => setEditDoc(document)}
+                onArchive={handleArchiveDoc}
+                onRestore={handleRestoreDoc}
                 onChangeStatus={(document, scope) => setStatusModal({ document, scope })}
                 onOpenIps={document => setIpsModalDoc(document)}
                 onSetupSheet={handleSetupSheet}
@@ -534,6 +633,20 @@ export function SwProgramPanel({
         />
       ) : null}
 
+      <SwDocumentDrawer
+        document={drawerDocument}
+        kindLabel={
+          drawerDocument
+            ? formatKindLabel(drawerDocument.documentKindCode, documentKindByCode, gostCodeByKind)
+            : undefined
+        }
+        statusLabel={drawerDocument ? statusByCode.get(drawerDocument.statusCode) : undefined}
+        tab={docTab}
+        onTabChange={setDocTab}
+        canEdit={canEditItem}
+        onClose={closeDocument}
+      />
+
       <SwItemEditModal
         open={editOpen}
         item={detail ?? null}
@@ -556,6 +669,14 @@ export function SwProgramPanel({
           setCreateDocOpen(false);
         }}
         onSubmit={submitCreateDoc}
+      />
+      <SwDocumentEditModal
+        open={editDoc != null}
+        document={editDoc}
+        programDesignation={item.designation}
+        confirmLoading={updateDocMut.isPending}
+        onCancel={() => setEditDoc(null)}
+        onSubmit={submitEditDoc}
       />
       <SwDocumentStatusModal
         open={statusModal != null}

@@ -1,6 +1,14 @@
-import { CloudDownloadOutlined, DownloadOutlined, FileWordOutlined, RightOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import {
+  CloudDownloadOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  FileWordOutlined,
+  InboxOutlined,
+  MoreOutlined,
+  PaperClipOutlined,
+  UndoOutlined,
+} from '@ant-design/icons';
+import { Button, Dropdown, Tooltip, type MenuProps } from 'antd';
 
 import type { SwDocumentListRow } from '@/types/swRegistry';
 import { formatIpsDisplay } from './swDesignationPreview';
@@ -17,15 +25,16 @@ export type SwDocumentFile = {
 };
 
 type Props = {
-  itemId: string;
   documents: SwDocumentListRow[];
-  kindLabelByCode: Map<string, string>;
-  gostCodeByKind: Map<string, string>;
   statusLabelByCode: Map<string, string>;
   requiresApprovalSheetByKind: Map<string, boolean>;
   canEdit: boolean;
-  /** Куда вернуться со страницы документа. */
-  returnPath: string;
+  /** Документ, открытый в боковой панели: его строка подсвечена. */
+  selectedDocumentId: string | null;
+  onOpenDocument: (doc: SwDocumentListRow) => void;
+  onEdit: (doc: SwDocumentListRow) => void;
+  onArchive: (doc: SwDocumentListRow) => void;
+  onRestore: (doc: SwDocumentListRow) => void;
   onChangeStatus: (doc: SwDocumentListRow, scope: 'document' | 'sheet') => void;
   onOpenIps: (doc: SwDocumentListRow) => void;
   onSetupSheet: (doc: SwDocumentListRow) => void;
@@ -57,22 +66,54 @@ function StatusBadge({
   );
 }
 
-function formatKindLabel(code: string, kindLabelByCode: Map<string, string>, gostCodeByKind: Map<string, string>) {
+export function formatKindLabel(
+  code: string,
+  kindLabelByCode: Map<string, string>,
+  gostCodeByKind: Map<string, string>,
+) {
   const gost = gostCodeByKind.get(code);
   const name = kindLabelByCode.get(code) ?? code;
   return gost ? `${gost} · ${name}` : name;
 }
 
-/** Комплект документации программы: реквизиты, действия со статусами и файлы документов (в т.ч. из SVN). */
+/**
+ * Меню «⋯» строки. Файлы и комментарии открываются всем (и с клавиатуры — строка кликается только мышью).
+ * Правка и архив — при праве на комплект; документ, ушедший в архив с программой или элементом, возвращается
+ * только вместе с ними.
+ */
+function rowMenuItems(doc: SwDocumentListRow, canEdit: boolean): NonNullable<MenuProps['items']> {
+  const items: NonNullable<MenuProps['items']> = [
+    { key: 'open', icon: <PaperClipOutlined />, label: 'Файлы и комментарии' },
+  ];
+  if (!canEdit) return items;
+  if (doc.recordState === 'archived') {
+    if (!doc.archivedByCascade) {
+      items.push({ type: 'divider' }, { key: 'restore', icon: <UndoOutlined />, label: 'Вернуть из архива' });
+    }
+    return items;
+  }
+  items.push(
+    { type: 'divider' },
+    { key: 'edit', icon: <EditOutlined />, label: 'Редактировать' },
+    { key: 'archive', icon: <InboxOutlined />, label: 'В архив' },
+  );
+  return items;
+}
+
+/**
+ * Комплект документации программы: реквизиты, действия со статусами и файлы документов (в т.ч. из SVN).
+ * Отдельной колонки вида нет: код вида входит в обозначение, наименование — под ним.
+ */
 export function SwDocumentsTable({
-  itemId,
   documents,
-  kindLabelByCode,
-  gostCodeByKind,
   statusLabelByCode,
   requiresApprovalSheetByKind,
   canEdit,
-  returnPath,
+  selectedDocumentId,
+  onOpenDocument,
+  onEdit,
+  onArchive,
+  onRestore,
   onChangeStatus,
   onOpenIps,
   onSetupSheet,
@@ -83,23 +124,18 @@ export function SwDocumentsTable({
   currentRevisions,
   onPickFromSvn,
 }: Props) {
-  const navigate = useNavigate();
-  const docPath = (documentId: string) => `/sw/items/${itemId}/documents/${documentId}`;
-  const docLinkState = { from: returnPath };
-
   return (
     <div className={panelStyles.docTableWrap}>
       <table className={`${styles.docTable} ${panelStyles.programDocTable}`}>
         <thead>
           <tr>
-            <th>Вид документа</th>
             <th>Обозначение</th>
             <th>Листов</th>
             <th>Литера</th>
             <th>Лист утверждения</th>
             <th>Статус</th>
             <th>IPS</th>
-            <th className={styles.docTableChevronCol} aria-hidden />
+            <th className={panelStyles.docTableMenuCol} aria-label='Действия' />
           </tr>
         </thead>
         <tbody>
@@ -114,20 +150,27 @@ export function SwDocumentsTable({
             const ipsDisplay = formatIpsDisplay(doc.ipsId, doc.ipsPlacedAt);
             const file = fileByDocument.get(doc.id);
             const newerRevision = file?.svnPath ? currentRevisions[file.svnPath] : undefined;
+            const rowClass = [
+              styles.docTableRow,
+              isArchived ? styles.docTableRowArchived : '',
+              doc.id === selectedDocumentId ? panelStyles.docRowSelected : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+
+            const handleMenu: MenuProps['onClick'] = ({ key }) => {
+              if (key === 'open') onOpenDocument(doc);
+              else if (key === 'edit') onEdit(doc);
+              else if (key === 'archive') onArchive(doc);
+              else if (key === 'restore') onRestore(doc);
+            };
 
             return (
-              <tr
-                key={doc.id}
-                className={isArchived ? styles.docTableRowArchived : styles.docTableRow}
-                onClick={() => navigate(docPath(doc.id), { state: docLinkState })}
-              >
-                <td className={styles.docTableKind}>
-                  {formatKindLabel(doc.documentKindCode, kindLabelByCode, gostCodeByKind)}
-                </td>
+              <tr key={doc.id} className={rowClass} onClick={() => onOpenDocument(doc)}>
                 <td onClick={e => e.stopPropagation()}>
                   <div className={panelStyles.docCell}>
                     {file ? (
-                      // С прикреплённым файлом обозначение открывает сам документ; страница — по строке и шеврону.
+                      // С прикреплённым файлом обозначение открывает сам документ; панель — по строке и меню «⋯».
                       <button
                         type='button'
                         className={panelStyles.docOpen}
@@ -138,9 +181,13 @@ export function SwDocumentsTable({
                         {doc.designation}
                       </button>
                     ) : (
-                      <Link to={docPath(doc.id)} state={docLinkState} className={styles.docTableDesignation}>
+                      <button
+                        type='button'
+                        className={`${styles.docTableLinkBtn} ${styles.docTableDesignation}`}
+                        onClick={() => onOpenDocument(doc)}
+                      >
                         {doc.designation}
-                      </Link>
+                      </button>
                     )}
                     {svnEnabled && canChangeDoc ? (
                       <Tooltip title={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}>
@@ -224,16 +271,14 @@ export function SwDocumentsTable({
                     <span className={styles.docTableMuted}>—</span>
                   )}
                 </td>
-                <td className={styles.docTableChevronCol}>
-                  <Link
-                    to={docPath(doc.id)}
-                    state={docLinkState}
-                    className={styles.docTableChevronLink}
-                    aria-label='Открыть документ'
-                    onClick={e => e.stopPropagation()}
+                <td className={panelStyles.docTableMenuCol} onClick={e => e.stopPropagation()}>
+                  <Dropdown
+                    trigger={['click']}
+                    placement='bottomRight'
+                    menu={{ items: rowMenuItems(doc, canEdit), onClick: handleMenu }}
                   >
-                    <RightOutlined className={styles.docTableChevron} />
-                  </Link>
+                    <Button type='text' size='small' icon={<MoreOutlined />} aria-label='Действия с документом' />
+                  </Dropdown>
                 </td>
               </tr>
             );

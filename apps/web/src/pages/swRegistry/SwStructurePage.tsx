@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { App, Button, Spin } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 import {
   useAddSwResponsible,
   useArchiveSwStructure,
+  useCreateSwItem,
   useCreateSwStructure,
   useMarkSwStructureDeleted,
   useRemoveSwResponsible,
@@ -22,7 +23,8 @@ import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
 import { usePermissions } from '@/hooks/usePermissions';
 import { SECTIONS } from '@/shared/permissions';
-import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
+import type { CreateSwItemPayload, SwItemListRow, SwStructureNode } from '@/types/swRegistry';
+import { SwItemCreateModal } from './SwItemCreateModal';
 import { SwProgramPanel } from './SwProgramPanel';
 import { SwStructureDetailPanel, type SwStructureDetailActions } from './SwStructureDetailPanel';
 import { SwStructureElementModal } from './SwStructureElementModal';
@@ -32,12 +34,11 @@ import type { SwStructureFilterTab } from './SwStructurePage.types';
 import {
   collectStructurePathIds,
   countStructureNodes,
-  filterStructureTree,
   findStructureNode,
   findStructureParent,
   firstStructureNode,
 } from './swStructureTree';
-import { buildNodeCounts, collectBranchPrograms, groupProgramsByElement } from './swStructurePrograms';
+import { buildNodeCounts, groupProgramsByElement, searchStructureTree } from './swStructurePrograms';
 import { SwStructureTreeNode } from './SwStructureTreeNode';
 import { SwStructureTreeToolbar } from './SwStructureTreeToolbar';
 
@@ -52,19 +53,27 @@ function resolveFetchRecordState(tab: SwStructureFilterTab, showArchivedInTree: 
   return showArchivedInTree ? 'all' : 'active';
 }
 
-/** Снять выбор программы: вкладка панели и фильтр из свода относятся к ней и уходят вместе с ней. */
+/** Открытый в боковой панели документ относится к программе и уходит при смене программы. */
+function dropDocumentParams(params: URLSearchParams) {
+  params.delete('documentId');
+  params.delete('docTab');
+}
+
+/** Снять выбор программы: вкладка панели, фильтр из свода и открытый документ относятся к ней и уходят вместе с ней. */
 function dropProgramParams(params: URLSearchParams) {
   params.delete('itemId');
   params.delete('tab');
   params.delete('documentStatus');
   params.delete('sheetStatus');
+  dropDocumentParams(params);
 }
 
 export default function SwStructurePage() {
   const { message } = App.useApp();
-  const location = useLocation();
   const { hasSectionPermission } = usePermissions();
   const canEdit = hasSectionPermission(SECTIONS.SW_STRUCTURE, 'edit');
+  // Регистрация ПО — право на программы, отдельное от права на структуру.
+  const canCreateProgram = hasSectionPermission(SECTIONS.SW_ITEMS, 'edit');
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Всё, что определяет «куда смотрим», живёт в адресе: ссылка из строки браузера открывает ровно то же.
@@ -80,6 +89,8 @@ export default function SwStructurePage() {
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('elementId'));
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [modalState, setModalState] = useState<ModalState | null>(null);
+  /** Элемент, на котором регистрируется ПО из меню «+» в дереве. */
+  const [programTarget, setProgramTarget] = useState<SwStructureNode | null>(null);
 
   const fetchRecordState = resolveFetchRecordState(filterTab, showArchivedInTree);
   const structureQuery = useSwStructure(fetchRecordState);
@@ -90,8 +101,15 @@ export default function SwStructurePage() {
   const kindsQuery = useSwReferences('developmentKinds');
   const docKindsQuery = useSwReferences('documentKinds');
   const statusesQuery = useSwReferences('statuses');
-  // Программы грузим целиком: из них считаются счётчики веток и список программ узла.
-  const programsQuery = useSwItems({ recordState: 'active', limit: 500 });
+  // Программы грузим целиком: из них считаются счётчики веток и список программ узла. Какие — по режиму дерева:
+  // действующие, архивные (вкладка «Архивные») или те и другие («Показывать архивные»). API отдаёт один статус
+  // за запрос, поэтому запросов два.
+  const showActivePrograms = fetchRecordState !== 'archived';
+  const showArchivedPrograms = fetchRecordState !== 'active';
+  const activeProgramsQuery = useSwItems({ recordState: 'active', limit: 500 }, { enabled: showActivePrograms });
+  const archivedProgramsQuery = useSwItems({ recordState: 'archived', limit: 500 }, { enabled: showArchivedPrograms });
+  const programsLoading =
+    (showActivePrograms && activeProgramsQuery.isLoading) || (showArchivedPrograms && archivedProgramsQuery.isLoading);
 
   const createMut = useCreateSwStructure();
   const updateMut = useUpdateSwStructure();
@@ -100,6 +118,7 @@ export default function SwStructurePage() {
   const markDeletedMut = useMarkSwStructureDeleted();
   const addRespMut = useAddSwResponsible();
   const removeRespMut = useRemoveSwResponsible();
+  const createProgramMut = useCreateSwItem();
 
   const typeByCode = useMemo(
     () => new Map((typesQuery.data ?? []).map(t => [t.code, t.name])),
@@ -127,34 +146,49 @@ export default function SwStructurePage() {
     [statusesQuery.data],
   );
 
-  const programs = programsQuery.data?.items ?? [];
+  // Выключенный запрос хранит данные прошлого режима — берём только те, что относятся к текущему.
+  const programs = useMemo(
+    () => [
+      ...(showActivePrograms ? (activeProgramsQuery.data?.items ?? []) : []),
+      ...(showArchivedPrograms ? (archivedProgramsQuery.data?.items ?? []) : []),
+    ],
+    [showActivePrograms, showArchivedPrograms, activeProgramsQuery.data, archivedProgramsQuery.data],
+  );
   const programsByElement = useMemo(() => groupProgramsByElement(programs), [programs]);
 
   const rawTree = structureQuery.data ?? [];
-  const tree = useMemo(() => filterStructureTree(rawTree, searchQuery), [rawTree, searchQuery]);
-  const shownCount = countStructureNodes(tree);
-  const totalInTab = countStructureNodes(rawTree);
-  const activeCount = countStructureNodes(activeTreeQuery.data ?? []);
-  const archivedCount = countStructureNodes(archivedTreeQuery.data ?? []);
+  // Поиск идёт по элементам и по программам: дерево показывает программы из выдачи, счётчики веток — полные.
+  const search = useMemo(
+    () => searchStructureTree(rawTree, programsByElement, searchQuery),
+    [rawTree, programsByElement, searchQuery],
+  );
+  const tree = search.tree;
+  // Ветки с находками раскрыты поверх раскрытых вручную, иначе найденное в свёрнутой ветке не видно.
+  const visibleExpandedIds = useMemo(
+    () => (search.expandIds.size > 0 ? new Set([...expandedIds, ...search.expandIds]) : expandedIds),
+    [expandedIds, search.expandIds],
+  );
 
   const countsByNode = useMemo(() => buildNodeCounts(rawTree, programsByElement), [rawTree, programsByElement]);
+
+  // «N из M» — элементы и программы вкладки.
+  const totalInTab =
+    countStructureNodes(rawTree) + rawTree.reduce((sum, root) => sum + (countsByNode.get(root.id)?.programs ?? 0), 0);
+  const shownCount = searchQuery.trim() ? countStructureNodes(tree) + search.programCount : totalInTab;
+  const activeCount = countStructureNodes(activeTreeQuery.data ?? []);
+  const archivedCount = countStructureNodes(archivedTreeQuery.data ?? []);
 
   const selectedNode = useMemo(
     () => (selectedId ? findStructureNode(rawTree, selectedId) : null),
     [rawTree, selectedId],
   );
-  const branchPrograms = useMemo(
-    () => (selectedNode ? collectBranchPrograms(selectedNode, programsByElement) : []),
-    [selectedNode, programsByElement],
-  );
-
-  // В дереве только действующие программы. Архивную (из свода, после «В архив») догружаем по id —
-  // иначе панель не открылась бы, а выбор молча ушёл бы на первый узел.
+  // Программы, которых нет в дереве текущего режима (архивная из свода при дереве действующих, только что
+  // ушедшая в архив), догружаем по id — иначе панель не открылась бы, а выбор молча ушёл бы на первый узел.
   const programFromList = useMemo(
     () => (selectedProgramId ? (programs.find(item => item.id === selectedProgramId) ?? null) : null),
     [programs, selectedProgramId],
   );
-  const needsProgramFallback = Boolean(selectedProgramId) && !programsQuery.isLoading && !programFromList;
+  const needsProgramFallback = Boolean(selectedProgramId) && !programsLoading && !programFromList;
   const programDetailQuery = useSwItem(needsProgramFallback ? (selectedProgramId ?? undefined) : undefined);
   const programNotFound = needsProgramFallback && programDetailQuery.isError;
   const resolvedProgram = programFromList ?? (needsProgramFallback ? (programDetailQuery.data ?? null) : null);
@@ -204,10 +238,11 @@ export default function SwStructurePage() {
       setExpandedIds(prev => new Set(prev).add(item.element.id));
       const next = new URLSearchParams(searchParams);
       next.set('elementId', item.element.id);
-      // Вкладка панели сохраняется при переходе между программами; фильтр из свода — нет.
+      // Вкладка панели сохраняется при переходе между программами; фильтр из свода и открытый документ — нет.
       if (next.get('itemId') !== item.id) {
         next.delete('documentStatus');
         next.delete('sheetStatus');
+        dropDocumentParams(next);
       }
       next.set('itemId', item.id);
       setSearchParams(next, { replace: true });
@@ -243,7 +278,7 @@ export default function SwStructurePage() {
       return;
     }
 
-    // Пришли с программой без элемента (свод, РИД, страница документа): выбираем элемент программы.
+    // Пришли с программой без элемента (свод, РИД): выбираем элемент программы.
     // Пока программа грузится или не найдена — первый узел не подставляем.
     if (selectedProgramId) {
       if (!selectedProgram) return;
@@ -405,6 +440,19 @@ export default function SwStructurePage() {
     });
   };
 
+  // Зарегистрированную программу сразу открываем в дереве: пользователь продолжит с комплектом документации.
+  const submitCreateProgram = (payload: CreateSwItemPayload) => {
+    createProgramMut.mutate(payload, {
+      onSuccess: data => {
+        if (data.warnings?.length) message.warning(data.warnings.join(' '));
+        else message.success('Программа зарегистрирована');
+        setProgramTarget(null);
+        selectProgram(data);
+      },
+      onError: err => message.error(getApiErrorMessage(err) ?? 'Не удалось зарегистрировать программу'),
+    });
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
@@ -429,16 +477,9 @@ export default function SwStructurePage() {
 
   const isInitialLoad = structureQuery.isLoading && !structureQuery.data;
 
-  // Добавлять можно только внутрь элемента структуры: на программе дочерних элементов нет,
-  // в архивную ветку новое не кладём.
-  const addTarget =
-    canEdit &&
-    filterTab === 'active' &&
-    selectedNode &&
-    !selectedProgramId &&
-    selectedNode.recordState !== 'archived'
-      ? selectedNode
-      : null;
+  // «+» у элемента: добавлять можно только в действующее дерево; у архивного элемента «+» скрывает сам узел.
+  const canAddElement = canEdit && filterTab === 'active';
+  const canAddProgram = canCreateProgram && filterTab === 'active';
 
   return (
     <div className={styles.wrap}>
@@ -475,8 +516,6 @@ export default function SwStructurePage() {
               showArchivedToggle={filterTab === 'active'}
               showArchived={showArchivedInTree}
               onShowArchivedChange={changeShowArchived}
-              addTarget={addTarget}
-              onAdd={parent => setModalState({ mode: 'child', node: parent })}
             />
             {/* role='tree' только при наличии узлов: пустое состояние — обычный текст, а не дерево без treeitem. */}
             <div className={styles.treeBody} role={tree.length > 0 ? 'tree' : undefined}>
@@ -487,14 +526,17 @@ export default function SwStructurePage() {
                     node={node}
                     depth={0}
                     selectedId={selectedId}
-                    expandedIds={expandedIds}
+                    expandedIds={visibleExpandedIds}
                     typeByCode={typeByCode}
                     onToggleExpand={toggleExpand}
                     onSelect={selectNode}
-                    programsByElement={programsByElement}
-                    countsByNode={countsByNode}
+                    programsByElement={search.programsByElement}
                     selectedProgramId={selectedProgramId}
                     onSelectProgram={selectProgram}
+                    canAddElement={canAddElement}
+                    canAddProgram={canAddProgram}
+                    onAddElement={parent => setModalState({ mode: 'child', node: parent })}
+                    onAddProgram={element => setProgramTarget(element)}
                   />
                 ))
               ) : rawTree.length > 0 ? (
@@ -520,7 +562,6 @@ export default function SwStructurePage() {
                 documentKindByCode={docKindByCode}
                 gostCodeByKind={gostCodeByKind}
                 statusByCode={statusByCode}
-                returnPath={`${location.pathname}${location.search}`}
                 onDeleted={clearProgramSelection}
                 onSelectElement={selectElementById}
               />
@@ -536,13 +577,11 @@ export default function SwStructurePage() {
                 parent={parentNode}
                 typeByCode={typeByCode}
                 roleByCode={roleByCode}
-                kindByCode={kindByCode}
                 canEdit={canEdit}
                 actions={detailActions}
                 archiveLoading={archiveMut.isPending && archiveMut.variables === selectedNode.id}
                 restoreLoading={restoreMut.isPending && restoreMut.variables === selectedNode.id}
                 markDeletedLoading={markDeletedMut.isPending && markDeletedMut.variables === selectedNode.id}
-                branchPrograms={branchPrograms}
                 onSelectProgram={selectProgram}
               />
             ) : (
@@ -562,6 +601,13 @@ export default function SwStructurePage() {
         confirmLoading={createMut.isPending || updateMut.isPending || addRespMut.isPending}
         onCancel={() => setModalState(null)}
         onSubmit={submitModal}
+      />
+      <SwItemCreateModal
+        open={programTarget != null}
+        defaultElementId={programTarget?.id}
+        confirmLoading={createProgramMut.isPending}
+        onCancel={() => setProgramTarget(null)}
+        onSubmit={submitCreateProgram}
       />
     </div>
   );

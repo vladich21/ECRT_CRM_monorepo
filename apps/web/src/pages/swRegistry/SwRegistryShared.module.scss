@@ -162,11 +162,6 @@
   opacity: 0.72;
 }
 
-.docTableKind {
-  color: #595959;
-  max-width: 160px;
-}
-
 .docTableDesignation {
   font-weight: 600;
   color: v.$primary-color;
@@ -287,22 +282,6 @@
   font-size: 13px;
   color: #595959;
   word-break: break-all;
-}
-
-.docTableChevronCol {
-  width: 28px;
-  padding-right: 4px !important;
-  text-align: right;
-}
-
-.docTableChevronLink {
-  display: inline-flex;
-  color: inherit;
-}
-
-.docTableChevron {
-  color: v.$text-disabled;
-  font-size: v.$font-sm;
 }
 
 .ridActionsCol {

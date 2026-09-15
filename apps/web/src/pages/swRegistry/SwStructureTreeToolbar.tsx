@@ -1,7 +1,6 @@
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { Checkbox, Input } from 'antd';
 
-import type { SwStructureNode } from '@/types/swRegistry';
 import styles from './SwStructurePage.module.scss';
 
 type Props = {
@@ -13,11 +12,9 @@ type Props = {
   showArchivedToggle: boolean;
   showArchived: boolean;
   onShowArchivedChange: (value: boolean) => void;
-  /** Элемент, в который добавляется дочерний; null — кнопку не показываем (выбрана программа, нет прав, архив). */
-  addTarget: SwStructureNode | null;
-  onAdd: (parent: SwStructureNode) => void;
 };
 
+/** Поиск и показ архивных над деревом. Добавление — «+» у самого элемента в дереве. */
 export function SwStructureTreeToolbar({
   searchQuery,
   onSearchChange,
@@ -26,15 +23,13 @@ export function SwStructureTreeToolbar({
   showArchivedToggle,
   showArchived,
   onShowArchivedChange,
-  addTarget,
-  onAdd,
 }: Props) {
   return (
     <div className={styles.treeToolbar}>
       <div className={styles.treeToolbarRow}>
         <Input
           className={styles.treeSearch}
-          placeholder='Код, наименование элемента'
+          placeholder='Элемент или ПО: код, обозначение, наименование'
           allowClear
           prefix={<SearchOutlined className={styles.searchIcon} />}
           value={searchQuery}
@@ -45,24 +40,11 @@ export function SwStructureTreeToolbar({
         </span>
       </div>
 
-      {showArchivedToggle || addTarget ? (
+      {showArchivedToggle ? (
         <div className={styles.treeToolbarRow}>
-          {showArchivedToggle ? (
-            <Checkbox checked={showArchived} onChange={e => onShowArchivedChange(e.target.checked)}>
-              <span className={styles.showArchived}>Показывать архивные</span>
-            </Checkbox>
-          ) : null}
-          {addTarget ? (
-            <Button
-              size='small'
-              icon={<PlusOutlined />}
-              className={styles.treeAddButton}
-              title={`Создать дочерний элемент для ${addTarget.code} — ${addTarget.name}`}
-              onClick={() => onAdd(addTarget)}
-            >
-              Добавить
-            </Button>
-          ) : null}
+          <Checkbox checked={showArchived} onChange={e => onShowArchivedChange(e.target.checked)}>
+            <span className={styles.showArchived}>Показывать архивные</span>
+          </Checkbox>
         </div>
       ) : null}
     </div>

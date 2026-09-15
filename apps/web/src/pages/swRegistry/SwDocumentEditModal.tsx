@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Col, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
 
 import { useSwReferences } from '@/api/swRegistry/swRegistryApiHooks';
-import type { SwDocumentDetail, UpdateSwDocumentPayload } from '@/types/swRegistry';
+import type { SwDocumentListRow, UpdateSwDocumentPayload } from '@/types/swRegistry';
 import { assembleDocumentDesignation } from './swDesignationPreview';
 import styles from './SwRegistryModals.module.scss';
 
@@ -19,7 +19,7 @@ type FormValues = {
 
 interface Props {
   open: boolean;
-  document: SwDocumentDetail | null;
+  document: SwDocumentListRow | null;
   programDesignation: string;
   confirmLoading?: boolean;
   onCancel: () => void;
@@ -140,7 +140,7 @@ export function SwDocumentEditModal({ open, document, programDesignation, confir
           label='Наименование'
           rules={[{ required: true, message: 'Укажите наименование' }]}
           extra={
-            document?.approvalSheet
+            document?.sheetStatusCode
               ? 'Наименование листа утверждения выводится из наименования документа (ДОК-11)'
               : undefined
           }
