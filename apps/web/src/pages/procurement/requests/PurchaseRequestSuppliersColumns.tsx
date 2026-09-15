@@ -8,9 +8,7 @@ import { PurchaseRequestPartnerLink } from './PurchaseRequestPartnerLink';
 import { SupplierFlagTags } from './purchaseRequestSupplierFlags';
 
 function renderPartnerName(name: string, row: PurchaseRequestSupplierRow) {
-  return (
-    <PurchaseRequestPartnerLink partnerId={row.partner_id}>{name || 'Поставщик'}</PurchaseRequestPartnerLink>
-  );
+  return <PurchaseRequestPartnerLink partnerId={row.partner_id}>{name || 'Поставщик'}</PurchaseRequestPartnerLink>;
 }
 
 function renderInn(inn: string) {
@@ -18,7 +16,7 @@ function renderInn(inn: string) {
 }
 
 function renderFlags(_value: unknown, row: PurchaseRequestSupplierRow) {
-  return <SupplierFlagTags flags={row.warning_snapshot} />;
+  return <SupplierFlagTags flags={row.current_flags ?? row.warning_snapshot} snapshot={row.warning_snapshot} />;
 }
 
 function renderAddedAt(value: string) {
@@ -30,7 +28,7 @@ export const PURCHASE_REQUEST_SUPPLIER_COLUMNS: ColumnsType<PurchaseRequestSuppl
   { title: 'ИНН', dataIndex: 'inn', width: 140, render: renderInn },
   {
     title: (
-      <Tooltip title='Категория оценки и ограничения контрагента на дату добавления в запрос, не текущее состояние'>
+      <Tooltip title='Взвешенный балл и ограничения контрагента по проекту запроса на текущий момент. Наведите на балл, чтобы увидеть состояние на дату добавления в запрос'>
         Оценка и ограничения
       </Tooltip>
     ),

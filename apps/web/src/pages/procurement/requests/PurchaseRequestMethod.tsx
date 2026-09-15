@@ -1,4 +1,5 @@
-import { Alert, Button, Form, Input, Radio, Spin, Tag } from 'antd';
+import { useState } from 'react';
+import { Alert, Button, Form, Input, Radio, Spin, Tag, Tooltip } from 'antd';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -29,6 +30,8 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const returnPath = `${location.pathname}${location.search}`;
+  const methodSaved = Boolean(request.purchase_method_id);
+  const [editing, setEditing] = useState(!methodSaved);
   const [form] = Form.useForm<{ method_id: string; method_justification?: string }>();
   const selectedId = Form.useWatch('method_id', form) as string | undefined;
   const selected = data?.methods.find(method => method.id === selectedId);
@@ -43,6 +46,7 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
           method_justification: values.method_justification?.trim() || null,
         },
       });
+      setEditing(false);
       showNotification('success', 'Способ закупки сохранён');
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {
@@ -119,7 +123,20 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
             </span>
           </div>
 
-          {canEdit ? (
+          <div className={styles.cardHead}>
+            <h3 className={styles.title}>Способ закупки</h3>
+            {canEdit && methodSaved ? (
+              <Button type='link' size='small' onClick={() => setEditing(value => !value)}>
+                {editing ? 'Свернуть' : 'Изменить'}
+              </Button>
+            ) : null}
+          </div>
+
+          {methodSaved && !editing ? (
+            <ReadOnlyMethod request={request} methods={data.methods} justification={data.method_justification} />
+          ) : null}
+
+          {canEdit && editing ? (
             <Form
               form={form}
               layout='vertical'
@@ -143,11 +160,13 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
                       <span className={styles.methodBody}>
                         <span className={styles.methodName}>
                           {method.name}
-                          {method.id === data.recommended_method_id ? (
-                            <Tag color='blue'>рекомендуется</Tag>
-                          ) : null}
+                          {method.id === data.recommended_method_id ? <Tag color='blue'>рекомендуется</Tag> : null}
                           {method.in_threshold ? <Tag color='success'>подходит</Tag> : null}
-                          {!method.allowed ? <Tag>только комиссия</Tag> : null}
+                          {!method.allowed ? (
+                            <Tooltip title='Сумма выше верхнего порога: такая закупка проводится только через закупочную комиссию'>
+                              <Tag>недоступен при этой сумме</Tag>
+                            </Tooltip>
+                          ) : null}
                           {method.allowed && method.requires_justification ? (
                             <Tag color='warning'>вне порога</Tag>
                           ) : null}
@@ -160,11 +179,7 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
               </Form.Item>
               {selected?.requires_justification ? (
                 <>
-                  <Alert
-                    type='info'
-                    showIcon
-                    message='Обоснование увидят согласующие отдельным пунктом'
-                  />
+                  <Alert type='info' showIcon message='Обоснование увидят согласующие отдельным пунктом' />
                   <Form.Item
                     name='method_justification'
                     label='Обоснование вне порога'
@@ -184,9 +199,8 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
                 </Button>
               </div>
             </Form>
-          ) : (
-            <ReadOnlyMethod request={request} methods={data.methods} justification={data.method_justification} />
-          )}
+          ) : null}
+          {!canEdit && !methodSaved ? <p className={styles.bounds}>Способ ещё не выбран</p> : null}
         </section>
         <RouteCard
           request={request}

@@ -5,9 +5,10 @@ import type { PurchaseQuoteRow } from '@/api/procurement/requests/procurementReq
 import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
 import { formatMoneyAmount } from '@/helpers/numberFormatters';
 
+import { formatQuotePaymentTermLines } from './purchaseQuotePayment';
 import { formatPurchaseRequestDate } from './purchaseRequestLabels';
-import { formatQuotePaymentTerms } from './purchaseQuotePayment';
 import { PurchaseRequestPartnerLink } from './PurchaseRequestPartnerLink';
+import styles from './PurchaseRequestQuotes.module.scss';
 
 function renderPartner(name: string, row: PurchaseQuoteRow) {
   return (
@@ -32,7 +33,15 @@ function renderVat(_value: unknown, row: PurchaseQuoteRow) {
 }
 
 function renderTerms(_value: unknown, row: PurchaseQuoteRow) {
-  return formatQuotePaymentTerms(row.payment_terms);
+  const lines = formatQuotePaymentTermLines(row.payment_terms);
+  if (lines.length === 0) return '—';
+  return (
+    <div className={styles.termLines}>
+      {lines.map(line => (
+        <span key={line}>{line}</span>
+      ))}
+    </div>
+  );
 }
 
 function renderValidUntil(value: string | null) {
@@ -44,12 +53,7 @@ function renderFiles(_value: unknown, row: PurchaseQuoteRow) {
   return (
     <>
       {row.files.map(file => (
-        <Button
-          key={file.id}
-          type='link'
-          size='small'
-          onClick={() => triggerFileDownload(file.url, file.name)}
-        >
+        <Button key={file.id} type='link' size='small' onClick={() => triggerFileDownload(file.url, file.name)}>
           {file.name}
         </Button>
       ))}

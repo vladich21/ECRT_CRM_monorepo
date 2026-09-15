@@ -1,7 +1,7 @@
 import type { ComparisonQuote } from '@/api/procurement/requests/procurementRequest.types';
 import { formatMoneyAmount } from '@/helpers/numberFormatters';
 
-import { formatQuotePaymentTerms } from './purchaseQuotePayment';
+import { formatQuotePaymentTermLines } from './purchaseQuotePayment';
 import { formatPurchaseRequestDate } from './purchaseRequestLabels';
 
 export type ComparisonCriterionKey = 'price' | 'net' | 'deviation' | 'delivery' | 'warranty' | 'payment' | 'valid';
@@ -9,7 +9,8 @@ export type ComparisonCriterionKey = 'price' | 'net' | 'deviation' | 'delivery' 
 export type ComparisonTableRow = {
   key: ComparisonCriterionKey;
   criterion: string;
-  values: Record<string, string>;
+  /** Массив — значение рисуется в несколько строк (условия оплаты). */
+  values: Record<string, string | string[]>;
 };
 
 export function marketPreviewMessage(code: string | undefined): string | null {
@@ -29,8 +30,8 @@ export function formatDeviationPercent(value: string | null): string {
 }
 
 export function buildComparisonTableRows(quotes: ComparisonQuote[], currency: string): ComparisonTableRow[] {
-  const cell = (pick: (quote: ComparisonQuote) => string): Record<string, string> => {
-    const values: Record<string, string> = {};
+  const cell = (pick: (quote: ComparisonQuote) => string | string[]): Record<string, string | string[]> => {
+    const values: Record<string, string | string[]> = {};
     for (const quote of quotes) values[quote.quote_id] = pick(quote);
     return values;
   };
@@ -64,7 +65,7 @@ export function buildComparisonTableRows(quotes: ComparisonQuote[], currency: st
     {
       key: 'payment',
       criterion: 'Оплата',
-      values: cell(quote => formatQuotePaymentTerms(quote.payment_terms)),
+      values: cell(quote => formatQuotePaymentTermLines(quote.payment_terms)),
     },
     {
       key: 'valid',

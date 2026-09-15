@@ -27,7 +27,10 @@ import { SECTIONS, type SectionPermission } from '../../../shared/permissions';
 import { PermissionsService } from '../../permissions/services/permissions.service';
 import { ApprovalEngineService } from '../../approvals/services/approval-engine.service';
 import { PartnersService } from '../../partners/services/partners.service';
-import { formatPartnerDisplayName } from '../../partners/domain/partner-procurement-flags';
+import {
+  formatPartnerDisplayName,
+  type PartnerProcurementFlags,
+} from '../../partners/domain/partner-procurement-flags';
 import {
   canAssignLead,
   canChangeIncomeLink,
@@ -606,6 +609,13 @@ export class PurchaseRequestsService {
 
   async listSuppliers(id: string, actorId: string, permissions: SectionPermission[] | undefined) {
     await this.assertCanView(id, actorId, permissions);
+    const [request] = await this.db.db
+      .select({ projectId: purchaseRequests.projectId })
+      .from(purchaseRequests)
+      .where(eq(purchaseRequests.id, id))
+      .limit(1);
+    if (!request) throw new NotFoundException('Запрос на закупку не найден');
+
     const rows = await this.db.db
       .select({
         partnerId: purchaseRequestSuppliers.partnerId,
@@ -620,7 +630,12 @@ export class PurchaseRequestsService {
       .where(eq(purchaseRequestSuppliers.requestId, id))
       .orderBy(purchaseRequestSuppliers.addedAt);
 
-    return { data: rows.map(toSupplierRow) };
+    const currentFlags = await this.partners.getFlagsForProcurement(
+      rows.map(row => String(row.partnerId)),
+      request.projectId,
+    );
+
+    return { data: rows.map(row => toSupplierRow(row, currentFlags.get(String(row.partnerId)) ?? null)) };
   }
 
   async searchSupplierCandidates(
@@ -733,6 +748,7 @@ export class PurchaseRequestsService {
       inn: partner.inn,
       added_at: new Date().toISOString(),
       warning_snapshot: snapshot,
+      current_flags: partner.flags,
     };
   }
 
@@ -1105,20 +1121,24 @@ function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function toSupplierRow(row: {
-  partnerId: string;
-  addedAt: Date;
-  warningSnapshot: PurchaseRequestSupplierWarningSnapshot | null;
-  name: string | null;
-  shortName: string | null;
-  inn: string | null;
-}) {
+function toSupplierRow(
+  row: {
+    partnerId: string;
+    addedAt: Date;
+    warningSnapshot: PurchaseRequestSupplierWarningSnapshot | null;
+    name: string | null;
+    shortName: string | null;
+    inn: string | null;
+  },
+  currentFlags: PartnerProcurementFlags | null,
+) {
   return {
     partner_id: row.partnerId,
     name: formatPartnerDisplayName(row.shortName, row.name),
     inn: row.inn ?? '',
     added_at: toIsoSafe(row.addedAt),
     warning_snapshot: row.warningSnapshot,
+    current_flags: currentFlags,
   };
 }
 

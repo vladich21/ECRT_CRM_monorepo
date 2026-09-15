@@ -5,7 +5,7 @@ import type { PurchaseRequestSupplierCandidate } from '@/api/procurement/request
 import { CanAccess } from '@/components/canAccess/CanAccess';
 import { SECTIONS } from '@/shared/permissions';
 
-import { SupplierFlagTags, supplierWarningText } from './purchaseRequestSupplierFlags';
+import { SupplierFlagTags } from './purchaseRequestSupplierFlags';
 import styles from './PurchaseRequestSuppliers.module.scss';
 
 type Props = {
@@ -54,7 +54,6 @@ export function PurchaseRequestCounterpartySelect({
       optionRender={option => {
         const candidate = (option.data as { candidate?: PurchaseRequestSupplierCandidate }).candidate;
         if (!candidate) return option.label;
-        const warning = supplierWarningText(candidate.flags);
         return (
           <div className={styles.option}>
             <span className={styles.optionName}>{candidate.name}</span>
@@ -62,7 +61,6 @@ export function PurchaseRequestCounterpartySelect({
               <span>ИНН {candidate.inn || '—'}</span>
               <SupplierFlagTags flags={candidate.flags} />
             </div>
-            {warning ? <div className={styles.warning}>{warning}</div> : null}
           </div>
         );
       }}
@@ -77,11 +75,7 @@ export function PurchaseRequestCounterpartySelect({
           <div className={styles.emptyHint}>
             Нет в реестре.{' '}
             <CanAccess section={SECTIONS.PARTNERS_LIST}>
-              <Button
-                type='link'
-                onMouseDown={event => event.preventDefault()}
-                onClick={onCreate}
-              >
+              <Button type='link' onMouseDown={event => event.preventDefault()} onClick={onCreate}>
                 Завести контрагента
               </Button>
             </CanAccess>

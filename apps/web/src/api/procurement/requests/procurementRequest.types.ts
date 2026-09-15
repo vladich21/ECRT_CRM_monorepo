@@ -252,6 +252,8 @@ export type PartnerEvaluationLetter = 'A' | 'B' | 'C' | 'D';
 export type PartnerProcurementFlags = {
   is_approved: boolean;
   evaluation_category: PartnerEvaluationLetter | null;
+  /** Взвешенный балл той же оценки, из которой взята категория. */
+  evaluation_score: number | null;
   next_reevaluation_date: string | null;
   reevaluation_overdue: boolean;
   blocked_on_project: boolean;
@@ -263,7 +265,10 @@ export type PurchaseRequestSupplierRow = {
   name: string;
   inn: string;
   added_at: string;
+  /** Состояние на момент добавления в запрос — обоснование не переписываем (ЗАП-22). */
   warning_snapshot: PartnerProcurementFlags | null;
+  /** Актуальное состояние по проекту запроса на момент чтения карточки. */
+  current_flags: PartnerProcurementFlags | null;
 };
 
 export type PurchaseRequestSupplierCandidate = {
@@ -479,4 +484,3 @@ export type ChoosePurchaseRoutePayload = {
   kind: PurchaseRouteKind;
   base_contract_id?: string | null;
 };
-

@@ -212,9 +212,16 @@
 }
 
 .flowDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 12px;
   line-height: 1.4;
   color: v.$text-quaternary;
+}
+
+.flowDetailLine {
+  display: block;
 }
 
 @media (max-width: 720px) {

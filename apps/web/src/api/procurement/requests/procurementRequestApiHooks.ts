@@ -127,6 +127,9 @@ export function usePurchaseRequestSuppliers(id: string | undefined, enabled = tr
     queryKey: procurementRequestQueryKeys.suppliers(id ?? ''),
     queryFn: () => procurementRequestApi.getSuppliers(id!),
     enabled: Boolean(id) && enabled,
+    // current_flags живут в реестре контрагентов и меняются вне этого модуля,
+    // поэтому глобальные 30 минут staleTime тут показывали бы устаревший балл.
+    staleTime: 0,
   });
 }
 

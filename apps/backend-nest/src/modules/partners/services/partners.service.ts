@@ -797,6 +797,13 @@ export class PartnersService {
     return this.procurementFlags.getRecord(partnerId, projectId);
   }
 
+  async getFlagsForProcurement(
+    partnerIds: string[],
+    projectId: string,
+  ): Promise<Map<string, PartnerProcurementFlags>> {
+    return this.procurementFlags.getManyFlags(partnerIds, projectId);
+  }
+
   async searchForProcurement(params: {
     search: string;
     projectId: string;

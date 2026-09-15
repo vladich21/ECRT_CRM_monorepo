@@ -1,6 +1,20 @@
-import { PrinterOutlined } from '@ant-design/icons';
-import { App, Badge, Button, Card, Collapse, Empty, Modal, Popconfirm, Space, Spin, Table, Tabs, Typography } from 'antd';
 import { useState, type ReactNode } from 'react';
+import { PrinterOutlined } from '@ant-design/icons';
+import {
+  App,
+  Badge,
+  Button,
+  Card,
+  Collapse,
+  Empty,
+  Modal,
+  Popconfirm,
+  Space,
+  Spin,
+  Table,
+  Tabs,
+  Typography,
+} from 'antd';
 import { useParams } from 'react-router-dom';
 
 import { useApprovalProcess, useApprovalState, useCancelProcess } from '@/api/approvals/approvalApiHooks';
@@ -13,13 +27,13 @@ import {
   type ApprovalProcessView,
 } from '@/types/approval';
 
-import { formatApprovalDateTime } from './approvalFormat';
 import { ApprovalDocuments } from './ApprovalDocuments';
 import { ApprovalFeed } from './ApprovalFeed';
+import { formatApprovalDateTime } from './approvalFormat';
 import { ApprovalJournalTable } from './ApprovalJournalTable';
+import styles from './ApprovalPanel.module.scss';
 import { ApprovalStepsBoard } from './ApprovalStepsBoard';
 import { DEFAULT_APPROVAL_VOCABULARY, type ApprovalVocabulary } from './approvalVocabulary';
-import styles from './ApprovalPanel.module.scss';
 
 type BadgeStatus = 'success' | 'processing' | 'error' | 'warning' | 'default';
 
@@ -43,6 +57,10 @@ interface ApprovalPanelProps {
   emptyDescription?: string;
   /** Старт процесса снаружи (кнопка «Отправить» в шапке карточки) — не дублировать здесь. */
   hideGenericStart?: boolean;
+  /** Отмена вынесена в шапку карточки — не дублируем её в панели. */
+  hideCancel?: boolean;
+  /** Принятие решения вынесено в шапку карточки. */
+  hideDecision?: boolean;
 }
 
 function ProcessLayout({
@@ -116,6 +134,8 @@ export function ApprovalPanel({
   approveBlockedReason,
   emptyDescription,
   hideGenericStart,
+  hideCancel,
+  hideDecision,
 }: ApprovalPanelProps) {
   const params = useParams();
   const entityId = entityIdProp ?? (params[`${entityType}Id`] as string | undefined);
@@ -186,7 +206,7 @@ export function ApprovalPanel({
           Свернуть
         </Button>
       ) : null}
-      {state.can_approve ? (
+      {state.can_approve && !hideDecision ? (
         <Button type='primary' onClick={openDecision}>
           Принять решение
         </Button>
@@ -197,7 +217,7 @@ export function ApprovalPanel({
           Лист согласования
         </Button>
       ) : null}
-      {state.can_cancel ? (
+      {state.can_cancel && !hideCancel ? (
         <Popconfirm
           title='Отменить согласование?'
           okButtonProps={{ danger: true }}
@@ -236,9 +256,7 @@ export function ApprovalPanel({
           vocabulary={vocabulary}
           editable={editable}
           toolbarExtra={toolbarExtra}
-          documents={
-            <ApprovalDocuments entityType={entityType} entityId={entityId} hideWhenEmpty />
-          }
+          documents={<ApprovalDocuments entityType={entityType} entityId={entityId} hideWhenEmpty />}
         />
       ) : null}
 
@@ -253,19 +271,10 @@ export function ApprovalPanel({
       ) : null}
 
       {!process && !showStartInPanel ? (
-        <Empty
-          description={emptyDescription ?? 'Согласование не запущено'}
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <Empty description={emptyDescription ?? 'Согласование не запущено'} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : null}
 
-      <Modal
-        open={sheetOpen}
-        title='Лист согласования'
-        footer={null}
-        width={760}
-        onCancel={() => setSheetOpen(false)}
-      >
+      <Modal open={sheetOpen} title='Лист согласования' footer={null} width={760} onCancel={() => setSheetOpen(false)}>
         <Table
           size='small'
           rowKey='id'
@@ -316,19 +325,11 @@ export function ApprovalPanel({
             <Space wrap>
               <Badge status={STATUS_BADGE[p.status] ?? 'default'} text={APPROVAL_STATUS_LABELS[p.status]} />
               <Typography.Text type='secondary'>
-                {p.completed_at
-                  ? formatApprovalDateTime(p.completed_at)
-                  : formatApprovalDateTime(p.initiated_at)}
+                {p.completed_at ? formatApprovalDateTime(p.completed_at) : formatApprovalDateTime(p.initiated_at)}
               </Typography.Text>
             </Space>
           ),
-          children: (
-            <ArchiveProcessDetail
-              processId={p.id}
-              active={archiveKey === p.id}
-              vocabulary={vocabulary}
-            />
-          ),
+          children: <ArchiveProcessDetail processId={p.id} active={archiveKey === p.id} vocabulary={vocabulary} />,
         }))}
       />
     ) : (

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   FileTextOutlined,
   NumberOutlined,
@@ -7,9 +8,10 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { Button, Col, Divider, Form, Input, Row, Select } from 'antd';
-import { useMemo } from 'react';
 
+import { usePartnerById } from '@/api/partners/partnerApiHooks';
 import type { ProjectPreviewItem } from '@/api/projects/projectApi';
+
 import type { ContractFormMode, ContractFormRefs } from './contractForm.types';
 import formFieldStyles from './ContractFormMainFields.module.scss';
 
@@ -23,15 +25,32 @@ type Props = {
   requireFullValidation?: boolean;
 };
 
-export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectChange, requireFullValidation = false }: Props) {
+export function ContractFormMainFields({
+  mode,
+  refs,
+  onCreatePartner,
+  onProjectChange,
+  requireFullValidation = false,
+}: Props) {
   const handleProjectChange = (value: string | undefined) => {
     if (!onProjectChange) return;
     const project = refs.projects?.find(projectRow => projectRow.id === value) ?? null;
     onProjectChange(project);
   };
 
+  // Справочник контрагентов отдаёт preview без заблокированных, но уже выбранного
+  // в договоре показать обязаны — иначе в поле остаётся голый id.
+  const selectedPartnerId = Form.useWatch('partner_id') as string | undefined;
+  const partnerMissingFromRefs = Boolean(
+    selectedPartnerId && !(refs.partners ?? []).some(partner => String(partner.id) === selectedPartnerId),
+  );
+  const { data: missingPartner } = usePartnerById(partnerMissingFromRefs ? (selectedPartnerId as string) : '');
+
   const partnerOptions = useMemo(() => {
-    const allPartners = refs.partners ?? [];
+    const allPartners = [...(refs.partners ?? [])];
+    if (missingPartner && !allPartners.some(partner => String(partner.id) === String(missingPartner.id))) {
+      allPartners.push(missingPartner);
+    }
     return allPartners.map(partner => {
       const withExtras = partner as { name?: string; short_name?: string; shortName?: string; inn?: string };
       const shortName = String(withExtras.short_name ?? withExtras.shortName ?? '').trim();
@@ -41,7 +60,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
       const searchLabel = `${displayLabel} ${inn}`.trim().toLowerCase();
       return { id: String(partner.id), label: displayLabel, searchLabel, inn };
     });
-  }, [refs.partners]);
+  }, [refs.partners, missingPartner]);
 
   return (
     <>
@@ -67,11 +86,7 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
         </Col>
 
         <Col xs={24} md={16}>
-          <Form.Item
-            label='Название'
-            name='name'
-            rules={[{ required: true, message: 'Введите название договора' }]}
-          >
+          <Form.Item label='Название' name='name' rules={[{ required: true, message: 'Введите название договора' }]}>
             <Input placeholder='Введите название договора' />
           </Form.Item>
         </Col>
@@ -107,8 +122,9 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
               optionFilterProp='label'
               optionLabelProp='label'
               filterOption={(input, option) =>
-                String((option as { searchLabel?: string } | undefined)?.searchLabel ?? option?.label ?? '')
-                  .includes(input.toLowerCase().trim())
+                String((option as { searchLabel?: string } | undefined)?.searchLabel ?? option?.label ?? '').includes(
+                  input.toLowerCase().trim(),
+                )
               }
               suffixIcon={<TeamOutlined />}
               popupRender={menu => (
@@ -126,7 +142,12 @@ export function ContractFormMainFields({ mode, refs, onCreatePartner, onProjectC
               )}
             >
               {partnerOptions.map(partner => (
-                <Select.Option key={partner.id} value={partner.id} label={partner.label} searchLabel={partner.searchLabel}>
+                <Select.Option
+                  key={partner.id}
+                  value={partner.id}
+                  label={partner.label}
+                  searchLabel={partner.searchLabel}
+                >
                   {partner.label}
                   {partner.inn ? <span style={{ color: '#8c8c8c' }}> · ИНН {partner.inn}</span> : null}
                 </Select.Option>

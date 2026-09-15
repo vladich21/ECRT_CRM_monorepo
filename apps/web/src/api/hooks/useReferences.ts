@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 import { Contract, ContractStageState, ContractState, ContractType } from '../../types/contract';
 import { PartnerCategory, PartnerCompetence, PartnerStatus, PartnerType } from '../../types/partner';
@@ -114,8 +115,7 @@ const referenceApiMethods = {
   partnerTypes: partnerTypeApi.getPartnerTypes,
   partnerStatuses: partnerStatusApi.getPartnerStatuses,
   partnerEconomicCategories: partnerEconomicCategoryApi.getPartnerEconomicCategories,
-  contracts: (opts?: { includeInactive?: boolean }) =>
-    contractApi.getContractsForReference(opts).then(r => r.data),
+  contracts: (opts?: { includeInactive?: boolean }) => contractApi.getContractsForReference(opts).then(r => r.data),
   contractStates: contractApi.getContractsStates,
   contractCategories: contractApi.getContractsCategories,
   contractTypes: contractTypeApi.getContractTypes,
@@ -131,10 +131,7 @@ export type UseReferenceDataOptions = {
   contractsIncludeInactive?: boolean;
 };
 
-export const useReferenceData = (
-  neededReferences: ReferenceType[] = [],
-  options: UseReferenceDataOptions = {},
-) => {
+export const useReferenceData = (neededReferences: ReferenceType[] = [], options: UseReferenceDataOptions = {}) => {
   const sortedReferences = [...neededReferences].sort();
   const { contractsIncludeInactive = false } = options;
   return useQuery({
@@ -156,12 +153,22 @@ export const useReferenceData = (
       });
       const results = await Promise.allSettled(promises);
       const formattedData: Partial<ReferenceData> = {};
-      results.forEach(result => {
+      const broken: string[] = [];
+      results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           const { type, data } = result.value;
           (formattedData as Record<ReferenceType, unknown>)[type] = data;
+          return;
         }
+        // 403 — роли просто не дали справочник, это законные неполные данные.
+        const status = axios.isAxiosError(result.reason) ? result.reason.response?.status : undefined;
+        if (status !== 403) broken.push(neededReferences[index]);
       });
+      // Иначе сбой сети или рестарт бэкенда вернул бы «успешный» пустой справочник,
+      // React Query закешировал бы его на 30 минут, а формы показали бы голые id.
+      if (broken.length > 0) {
+        throw new Error(`Не удалось загрузить справочники: ${broken.join(', ')}`);
+      }
       return formattedData;
     },
     enabled: neededReferences.length > 0,
