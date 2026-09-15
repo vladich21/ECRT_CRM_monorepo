@@ -63,7 +63,7 @@ export class SwFilesService {
       const [row] = await this.db.db.select().from(swItems).where(eq(swItems.id, objectId)).limit(1);
       if (!row || row.recordState === 'deleted') throw new UnprocessableEntityException('Программа не найдена');
       if (row.recordState !== 'active') {
-        throw new UnprocessableEntityException('Нельзя прикрепить файл к архивной программе');
+        throw new UnprocessableEntityException('Программа в архиве — её файлы не меняются');
       }
       return;
     }
@@ -73,7 +73,7 @@ export class SwFilesService {
       throw new UnprocessableEntityException('Документ не найден');
     }
     if (doc.recordState !== 'active') {
-      throw new UnprocessableEntityException('Нельзя прикрепить файл к архивному документу');
+      throw new UnprocessableEntityException('Документ в архиве — его файлы не меняются');
     }
     if (objectType === 'sw_sheet' && !doc.sheetStatusCode) {
       throw new UnprocessableEntityException('У документа нет листа утверждения');
@@ -110,6 +110,8 @@ export class SwFilesService {
       .where(eq(swFiles.fileId, remoteFileId))
       .limit(1);
     if (!link) throw new NotFoundException('Файл не привязан к записи реестра ПО');
+    // Файлы архивной записи не меняются. Файл листа утверждения проверяем по документу: лист могли уже снять.
+    await this.assertObjectActive(link.objectType === 'sw_sheet' ? 'sw_document' : link.objectType, link.objectId);
 
     const remote = await this.filesRemote.prepareVersion(remoteFileId, {
       filename: dto.filename?.trim(),
@@ -320,6 +322,8 @@ export class SwFilesService {
   async detach(linkId: string) {
     const [row] = await this.db.db.select().from(swFiles).where(eq(swFiles.id, linkId)).limit(1);
     if (!row) throw new NotFoundException('Связь файла не найдена');
+    // Файлы архивной записи не меняются. Файл листа утверждения проверяем по документу: лист могли уже снять.
+    await this.assertObjectActive(row.objectType === 'sw_sheet' ? 'sw_document' : row.objectType, row.objectId);
     await this.db.db.delete(swFiles).where(eq(swFiles.id, linkId));
 
     // Без привязки файл в хранилище никому не виден и копился бы там навсегда. Удаляем его, только если

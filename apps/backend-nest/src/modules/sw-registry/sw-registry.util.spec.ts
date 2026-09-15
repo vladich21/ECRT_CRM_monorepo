@@ -4,6 +4,7 @@ import test from 'node:test';
 import { DrizzleQueryError } from 'drizzle-orm';
 
 import {
+  archivedEditError,
   assembleDocumentDesignation,
   assembleSheetDesignation,
   gost19103Warning,
@@ -63,6 +64,26 @@ test('isPgUniqueViolation ignores other errors', () => {
   assert.equal(isPgUniqueViolation(Object.assign(new Error('net'), { code: 'ECONNREFUSED' })), false);
   assert.equal(isPgUniqueViolation(new Error('plain')), false);
   assert.equal(isPgUniqueViolation(null), false);
+});
+
+test('archivedEditError allows editing active records', () => {
+  assert.equal(archivedEditError('item', { recordState: 'active' }), null);
+  assert.equal(archivedEditError('element', { recordState: 'active', archivedByCascade: false }), null);
+});
+
+test('archivedEditError rejects archived records with a hint where to restore', () => {
+  assert.deepEqual(archivedEditError('item', { recordState: 'archived', archivedByCascade: false }), {
+    code: 'ITEM_ARCHIVED',
+    message: 'Программа в архиве — сначала верните её из архива',
+  });
+  assert.deepEqual(archivedEditError('element', { recordState: 'archived' }), {
+    code: 'ELEMENT_ARCHIVED',
+    message: 'Элемент структуры в архиве — сначала верните его из архива',
+  });
+  assert.equal(
+    archivedEditError('item', { recordState: 'archived', archivedByCascade: true })?.message,
+    'Программа в архиве — сначала верните из архива вышестоящий элемент',
+  );
 });
 
 console.log('sw-registry.util tests passed.');

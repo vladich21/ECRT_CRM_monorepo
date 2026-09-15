@@ -61,3 +61,21 @@ export function isPgUniqueViolation(err: unknown, constraint?: string): boolean 
   const pg = pgErrorOf(err);
   return pg?.code === '23505' && (constraint === undefined || pg.constraint === constraint);
 }
+
+/**
+ * Архивная запись только для чтения: правка отклоняется, пока запись не вернули из архива. Ушедшую в архив
+ * вместе с вышестоящим элементом возвращают через него. null — запись действующая, менять можно.
+ */
+export function archivedEditError(
+  entity: 'item' | 'element',
+  record: { recordState: string; archivedByCascade?: boolean | null },
+): { code: string; message: string } | null {
+  if (record.recordState !== 'archived') return null;
+  const subject = entity === 'item' ? 'Программа в архиве' : 'Элемент структуры в архиве';
+  const hint = record.archivedByCascade
+    ? 'сначала верните из архива вышестоящий элемент'
+    : entity === 'item'
+      ? 'сначала верните её из архива'
+      : 'сначала верните его из архива';
+  return { code: entity === 'item' ? 'ITEM_ARCHIVED' : 'ELEMENT_ARCHIVED', message: `${subject} — ${hint}` };
+}

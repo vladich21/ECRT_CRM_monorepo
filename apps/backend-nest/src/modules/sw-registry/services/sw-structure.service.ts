@@ -18,7 +18,7 @@ import {
   swDocuments,
 } from '../sw-registry.schema';
 import type { AddStructureResponsibleDto, CreateStructureElementDto, UpdateStructureElementDto } from '../dto/sw-registry.dto';
-import { formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
+import { archivedEditError, formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
 
 type ElementRow = typeof swStructureElements.$inferSelect;
 
@@ -118,6 +118,8 @@ export class SwStructureService {
 
   async update(id: string, dto: UpdateStructureElementDto, userId?: string) {
     const current = await this.requireElement(id);
+    const locked = archivedEditError('element', current);
+    if (locked) throw new UnprocessableEntityException(locked);
     if (dto.elementTypeCode) await this.assertType(dto.elementTypeCode);
     if (dto.parentId !== undefined && dto.parentId !== current.parentId) {
       if (dto.parentId === id) {
@@ -268,7 +270,7 @@ export class SwStructureService {
   }
 
   async addResponsible(elementId: string, dto: AddStructureResponsibleDto) {
-    await this.requireElement(elementId);
+    await this.requireEditableElement(elementId);
     const [role] = await this.db.db
       .select()
       .from(swRefResponsibilityRoles)
@@ -292,7 +294,7 @@ export class SwStructureService {
   }
 
   async removeResponsible(elementId: string, userId: string, roleCode: string) {
-    await this.requireElement(elementId);
+    await this.requireEditableElement(elementId);
     await this.db.db
       .delete(swStructureResponsibles)
       .where(
@@ -302,6 +304,14 @@ export class SwStructureService {
           eq(swStructureResponsibles.roleCode, roleCode),
         ),
       );
+  }
+
+  /** Элемент, который можно менять: существует и не в архиве (архивная запись только для чтения). */
+  private async requireEditableElement(id: string) {
+    const row = await this.requireElement(id);
+    const locked = archivedEditError('element', row);
+    if (locked) throw new UnprocessableEntityException(locked);
+    return row;
   }
 
   async requireActiveElement(id: string) {

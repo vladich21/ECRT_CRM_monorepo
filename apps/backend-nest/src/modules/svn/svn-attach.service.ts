@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { DatabaseService } from '../../database/database.service';
 import { FilesRemoteClient } from '../files/services/files-remote.client';
 import { swDocuments, swFiles, swItems } from '../sw-registry/sw-registry.schema';
+import { archivedEditError } from '../sw-registry/sw-registry.util';
 import { SvnClient } from './svn.client';
 
 const OBJECT_TYPES = new Set(['sw_item', 'sw_document', 'sw_sheet']);
@@ -62,7 +63,9 @@ export class SvnAttachService {
   /** Привязывает программу к её каталогу в SVN — оттуда берётся документация. */
   async linkFolder(itemId: string, path: string): Promise<{ itemId: string; svnPath: string }> {
     const [item] = await this.db.db.select().from(swItems).where(eq(swItems.id, itemId)).limit(1);
-    if (!item) throw new NotFoundException('Программа не найдена');
+    if (!item || item.recordState === 'deleted') throw new NotFoundException('Программа не найдена');
+    const locked = archivedEditError('item', item);
+    if (locked) throw new UnprocessableEntityException(locked);
 
     const clean = path.replace(/^\/+|\/+$/g, '');
     // Проверяем, что каталог существует и доступен: иначе привязка молча сломается.
