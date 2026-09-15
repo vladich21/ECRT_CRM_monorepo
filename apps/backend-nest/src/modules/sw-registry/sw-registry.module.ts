@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { CommentsModule } from '../comments/comments.module';
 import { FilesModule } from '../files/files.module';
+import { SvnModule } from '../svn/svn.module';
 import { SwDocumentsController } from './controllers/sw-documents.controller';
 import { SwFilesController } from './controllers/sw-files.controller';
 import { SwItemsController } from './controllers/sw-items.controller';
@@ -15,7 +16,7 @@ import { SwStructureService } from './services/sw-structure.service';
 import { SwSummaryService } from './services/sw-summary.service';
 
 @Module({
-  imports: [CommentsModule, FilesModule],
+  imports: [CommentsModule, FilesModule, SvnModule],
   controllers: [
     SwStructureController,
     SwItemsController,

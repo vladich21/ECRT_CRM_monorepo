@@ -94,7 +94,6 @@ const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersList
 const RolesListPage = lazy(() => import('../pages/admin/roles/RolesListPage'));
 const SwStructurePage = lazy(() => import('../pages/swRegistry/SwStructurePage'));
 const SwItemsListPage = lazy(() => import('../pages/swRegistry/SwItemsListPage'));
-const SwItemDetailsPage = lazy(() => import('../pages/swRegistry/SwItemDetailsPage'));
 const SwDocumentDetailsPage = lazy(() => import('../pages/swRegistry/SwDocumentDetailsPage'));
 const SwSummaryPage = lazy(() => import('../pages/swRegistry/SwSummaryPage'));
 
@@ -266,7 +265,6 @@ export default function AppRoutes() {
           <Route index element={<Navigate to="/sw/items" replace />} />
           <Route path="structure" element={<Guarded section={SECTIONS.SW_STRUCTURE}><SwStructurePage /></Guarded>} />
           <Route path="items" element={<Guarded section={SECTIONS.SW_ITEMS}><SwItemsListPage /></Guarded>} />
-          <Route path="items/:itemId" element={<Guarded section={SECTIONS.SW_ITEMS}><SwItemDetailsPage /></Guarded>} />
           <Route path="items/:itemId/documents/:documentId" element={<Guarded section={SECTIONS.SW_ITEMS}><SwDocumentDetailsPage /></Guarded>} />
           <Route path="summary" element={<Guarded section={SECTIONS.SW_SUMMARY}><SwSummaryPage /></Guarded>} />
         </Route>

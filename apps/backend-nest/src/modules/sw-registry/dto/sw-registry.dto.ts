@@ -1,4 +1,5 @@
 import {
+  IsDefined,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -7,6 +8,7 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -158,17 +160,94 @@ export class ApprovalSheetInputDto {
   sheetsCount?: number;
 }
 
+export const SW_DOCUMENT_FILE_SOURCES = ['svn', 'upload'] as const;
+
+/**
+ * Файл создаваемого документа. Один класс с условными проверками по source: вложенные DTO с
+ * дискриминатором в проекте не используются, а whitelist вырезал бы поля «чужой» ветки.
+ */
+export class SwDocumentFileDto {
+  @IsString()
+  @IsIn(SW_DOCUMENT_FILE_SOURCES)
+  source!: (typeof SW_DOCUMENT_FILE_SOURCES)[number];
+
+  /** svn: путь файла внутри репозитория конструкторов. */
+  @ValidateIf((o: SwDocumentFileDto) => o.source === 'svn')
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  path?: string;
+
+  /** svn, повтор после конфликта: файл уже перенесён в хранилище под этот документ — второй раз не качаем. */
+  @ValidateIf((o: SwDocumentFileDto) => o.source === 'svn' && o.storedFileId != null)
+  @IsUUID()
+  storedFileId?: string;
+
+  /** Ревизия и UUID репозитория перенесённого файла — из ответа на конфликт. */
+  @ValidateIf((o: SwDocumentFileDto) => o.source === 'svn' && o.storedFileId != null)
+  @IsInt()
+  @Min(1)
+  revision?: number;
+
+  @ValidateIf((o: SwDocumentFileDto) => o.source === 'svn' && o.storedFileId != null)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(40)
+  repoUuid?: string;
+
+  /** upload: файл, загруженный браузером по тикету upload-ticket. */
+  @ValidateIf((o: SwDocumentFileDto) => o.source === 'upload')
+  @IsUUID()
+  fileId?: string;
+
+  @ValidateIf((o: SwDocumentFileDto) => o.source === 'upload')
+  @IsUUID()
+  versionId?: string;
+
+  @ValidateIf((o: SwDocumentFileDto) => o.source === 'upload')
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  filename?: string;
+}
+
+/** Тикет на загрузку файла ещё не созданного документа (id документа резервирует окно). */
+export class SwDocumentUploadTicketDto {
+  @IsUUID()
+  documentId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  filename!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  contentType?: string;
+}
+
 export class CreateSwDocumentDto {
+  /** id резервирует окно при открытии: повтор «Создать» после потерянного ответа не плодит дубль. */
+  @IsUUID()
+  id!: string;
+
+  /** Документ без файла не создаётся. */
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => SwDocumentFileDto)
+  file!: SwDocumentFileDto;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
   documentKindCode!: string;
 
-  @IsOptional()
+  /** Номер задаёт человек или имя файла: автонумерации нет, документы живые. */
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  kindSequenceNo?: number;
+  kindSequenceNo!: number;
 
   @IsOptional()
   @IsString()
@@ -197,6 +276,19 @@ export class CreateSwDocumentDto {
 }
 
 export class UpdateSwDocumentDto {
+  /** Вид и номер у живого документа меняются; без обозначения оно пересобирается из них. */
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  documentKindCode?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  kindSequenceNo?: number;
+
   @IsOptional()
   @IsString()
   @MaxLength(100)

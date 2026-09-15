@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   ServiceUnavailableException,
   UnprocessableEntityException,
@@ -17,7 +18,7 @@ import type {
   SwFileVersionTicketDto,
 } from '../dto/sw-registry.dto';
 import { swDocuments, swFiles, swItems } from '../sw-registry.schema';
-import { formatPersonName } from '../sw-registry.util';
+import { formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
 
 const OBJECT_TYPES = new Set(['sw_item', 'sw_document', 'sw_sheet']);
 const PURPOSES = new Set(['document', 'sheet', 'spec']);
@@ -32,6 +33,8 @@ const LINK_TTL_SEC = 900;
 
 @Injectable()
 export class SwFilesService {
+  private readonly logger = new Logger(SwFilesService.name);
+
   constructor(
     private readonly db: DatabaseService,
     private readonly filesRemote: FilesRemoteClient,
@@ -151,19 +154,13 @@ export class SwFilesService {
     }
 
     const filename = dto.filename.trim();
-    const [existing] = await this.db.db
-      .select()
-      .from(swFiles)
-      .where(
-        and(
-          eq(swFiles.objectType, dto.objectType),
-          eq(swFiles.objectId, dto.objectId),
-          eq(swFiles.fileId, remoteFileId),
-        ),
-      )
-      .limit(1);
+    const [existing] = await this.db.db.select().from(swFiles).where(eq(swFiles.fileId, remoteFileId)).limit(1);
 
     if (existing) {
+      // Новая версия уже привязанного файла. Файл привязан ровно к одной записи — к чужой не переносим.
+      if (existing.objectType !== dto.objectType || existing.objectId !== dto.objectId) {
+        throw new ConflictException({ code: 'FILE_IN_USE', message: 'Файл уже привязан к другой записи реестра' });
+      }
       const [row] = await this.db.db
         .update(swFiles)
         .set({ filename, purpose: dto.purpose })
@@ -172,19 +169,31 @@ export class SwFilesService {
       return this.toFileDto(row, remote);
     }
 
-    const [row] = await this.db.db
-      .insert(swFiles)
-      .values({
-        objectType: dto.objectType,
-        objectId: dto.objectId,
-        fileId: remoteFileId,
-        purpose: dto.purpose,
-        filename,
-        createdBy: userId,
-      })
-      .returning();
+    // Непривязанный файл должен быть выдан тикетом под эту же запись: иначе можно подцепить чужой файл хранилища.
+    if (remote.entityType !== dto.objectType || remote.entityId !== dto.objectId) {
+      throw new UnprocessableEntityException('Файл не относится к этой записи реестра');
+    }
 
-    return this.toFileDto(row, remote);
+    try {
+      const [row] = await this.db.db
+        .insert(swFiles)
+        .values({
+          objectType: dto.objectType,
+          objectId: dto.objectId,
+          fileId: remoteFileId,
+          purpose: dto.purpose,
+          filename,
+          createdBy: userId,
+        })
+        .returning();
+      return this.toFileDto(row, remote);
+    } catch (err) {
+      // Два подтверждения одного файла наперегонки: привязку создал соседний запрос.
+      if (isPgUniqueViolation(err)) {
+        throw new ConflictException({ code: 'FILE_IN_USE', message: 'Файл уже привязан к записи реестра' });
+      }
+      throw err;
+    }
   }
 
   async list(objectType: string, objectId: string) {
@@ -312,6 +321,25 @@ export class SwFilesService {
     const [row] = await this.db.db.select().from(swFiles).where(eq(swFiles.id, linkId)).limit(1);
     if (!row) throw new NotFoundException('Связь файла не найдена');
     await this.db.db.delete(swFiles).where(eq(swFiles.id, linkId));
+
+    // Без привязки файл в хранилище никому не виден и копился бы там навсегда. Удаляем его, только если
+    // на него не ссылается другая привязка. Сбой хранилища не отменяет снятие: связь уже убрана, а файл
+    // остаётся сиротой — пишем в лог, чтобы его можно было дочистить.
+    const [otherLink] = await this.db.db
+      .select({ id: swFiles.id })
+      .from(swFiles)
+      .where(eq(swFiles.fileId, row.fileId))
+      .limit(1);
+    if (!otherLink && this.filesRemote.isEnabled()) {
+      try {
+        await this.filesRemote.deleteFile(row.fileId);
+      } catch (err) {
+        this.logger.warn(
+          `вложение ${linkId} снято, но файл ${row.fileId} в files-service не удалён: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
     return { id: linkId, detached: true };
   }
 

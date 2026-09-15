@@ -29,8 +29,8 @@ import { formatIpsDisplay } from './swDesignationPreview';
 import { SwDocumentStatusModal } from './SwDocumentStatusModal';
 import { SwIpsPlacementModal } from './SwIpsPlacementModal';
 import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
-import { readSwRegistryReturnState } from './swRegistryNavigation';
-import styles from './SwItemDetailsPage.module.scss';
+import { readSwRegistryReturnState, resolveSwRegistryBackPath } from './swRegistryNavigation';
+import styles from './SwRegistryShared.module.scss';
 
 type DocTab = 'main' | 'files';
 
@@ -84,8 +84,12 @@ export default function SwDocumentDetailsPage() {
     });
   };
 
-  const backPath = itemId ? `/sw/items/${itemId}` : '/sw/items';
-  const handleBack = () => navigate(backPath, { state: { tab: 'documents', from: registryFrom } });
+  // Комплект документации живёт в структуре: возвращаемся туда, откуда пришли, иначе — к программе в дереве.
+  const backPath = resolveSwRegistryBackPath({
+    from: registryFrom,
+    fallback: itemId ? `/sw/structure?itemId=${itemId}` : '/sw/items',
+  });
+  const handleBack = () => navigate(backPath);
 
   const submitStatus = (payload: ChangeSwDocumentStatusPayload) => {
     if (!documentId) return;
@@ -346,6 +350,7 @@ export default function SwDocumentDetailsPage() {
       <SwDocumentEditModal
         open={editOpen}
         document={document}
+        programDesignation={item.designation}
         confirmLoading={updateDocMut.isPending}
         onCancel={() => setEditOpen(false)}
         onSubmit={submitEdit}

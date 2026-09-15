@@ -12,18 +12,6 @@ export type SvnEntry = {
 
 export type SvnAttachResult = { fileId: string; filename: string; revision: number };
 
-export type SvnFolderFile = {
-  name: string;
-  path: string;
-  revision: number | null;
-  size: number | null;
-  /** Обозначение документа, к которому файл уже прикреплён, либо null. */
-  attachedTo: string | null;
-  attachedRevision: number | null;
-};
-
-export type SvnFolderState = { svnPath: string | null; files: SvnFolderFile[] };
-
 export const svnApi = {
   status: async (): Promise<{ enabled: boolean }> => {
     const { data } = await apiClient.get<{ enabled: boolean }>('/sw/registry/svn/status');
@@ -41,11 +29,6 @@ export const svnApi = {
   /** Привязать программу к её каталогу в SVN. */
   link: async (input: { itemId: string; path: string }): Promise<{ itemId: string; svnPath: string }> => {
     const { data } = await apiClient.post<{ itemId: string; svnPath: string }>('/sw/registry/svn/link', input);
-    return data;
-  },
-  /** Что лежит в каталоге программы и что из этого заведено в реестр. */
-  folder: async (itemId: string): Promise<SvnFolderState> => {
-    const { data } = await apiClient.get<SvnFolderState>('/sw/registry/svn/folder', { params: { itemId } });
     return data;
   },
   attach: async (input: { objectType: string; objectId: string; path: string }): Promise<SvnAttachResult> => {

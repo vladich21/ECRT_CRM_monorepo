@@ -35,6 +35,8 @@ type SwFilesTabProps = {
   title: string;
   hint?: string;
   canEdit?: boolean;
+  /** Узкое место (панель программы у дерева): файл одной строкой, зона загрузки в одну строку. */
+  compact?: boolean;
 };
 
 function getFileIconClass(filename: string): string {
@@ -77,7 +79,15 @@ function FileVersions({ file, onDownload }: { file: SwRegistryFile; onDownload: 
   );
 }
 
-export function SwFilesTab({ objectType, objectId, purpose, title, hint, canEdit = false }: SwFilesTabProps) {
+export function SwFilesTab({
+  objectType,
+  objectId,
+  purpose,
+  title,
+  hint,
+  canEdit = false,
+  compact = false,
+}: SwFilesTabProps) {
   const navigate = useNavigate();
   const { data: files = [], isLoading, isError, refetch } = useSwFiles(objectType, objectId);
   const detachMut = useDetachSwFile();
@@ -154,7 +164,10 @@ export function SwFilesTab({ objectType, objectId, purpose, title, hint, canEdit
   };
 
   return (
-    <section className={styles.sectionBlock} aria-labelledby={`sw-files-${purpose}`}>
+    <section
+      className={`${styles.sectionBlock}${compact ? ` ${styles.sectionBlockCompact}` : ''}`}
+      aria-labelledby={`sw-files-${purpose}`}
+    >
       {contextHolder}
       <input
         ref={versionInputRef}
@@ -184,9 +197,9 @@ export function SwFilesTab({ objectType, objectId, purpose, title, hint, canEdit
       ) : files.length === 0 ? (
         <Text type='secondary'>Файлы не приложены</Text>
       ) : (
-        <div className={styles.fileList}>
+        <div className={`${styles.fileList}${compact ? ` ${styles.fileListCompact}` : ''}`}>
           {files.map(file => (
-            <div key={file.id} className={styles.fileCard}>
+            <div key={file.id} className={`${styles.fileCard}${compact ? ` ${styles.fileCardCompact}` : ''}`}>
               <button type='button' className={styles.fileMain} onClick={() => void handleDownload(file)}>
                 <FileOutlined className={getFileIconClass(file.filename)} />
                 <div className={styles.fileMeta}>
@@ -229,7 +242,20 @@ export function SwFilesTab({ objectType, objectId, purpose, title, hint, canEdit
         </div>
       )}
 
-      {canEdit ? (
+      {canEdit && compact ? (
+        <Dragger
+          multiple={false}
+          showUploadList={false}
+          disabled={uploading}
+          customRequest={handleUpload}
+          className={styles.uploadDraggerCompact}
+        >
+          <span className={styles.compactDropText}>
+            <CloudUploadOutlined />
+            {uploading ? 'Загрузка…' : 'Перетащите файл или нажмите, чтобы выбрать'}
+          </span>
+        </Dragger>
+      ) : canEdit ? (
         <Dragger
           multiple={false}
           showUploadList={false}

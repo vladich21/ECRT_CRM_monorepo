@@ -86,6 +86,86 @@
   margin-top: 8px;
 }
 
+/* ── Компактный вид (панель программы у дерева): файл одной строкой, загрузка в одну строку ── */
+
+.sectionBlockCompact {
+  margin-bottom: 0;
+}
+
+.fileListCompact {
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.fileCardCompact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 6px 10px;
+
+  .fileMain {
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .fileMeta {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .fileName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fileSubline {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .fileActions {
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  /* Список версий — отдельной строкой под файлом. */
+  .versionList {
+    flex-basis: 100%;
+    margin-top: 2px;
+    padding-top: 4px;
+  }
+
+  .iconPdf,
+  .iconWord,
+  .iconExcel,
+  .iconImage,
+  .iconDefault {
+    font-size: 18px;
+  }
+}
+
+/* :global — у Dragger antd внутренний отступ задаётся на .ant-upload-btn, снаружи его не переопределить. */
+.uploadDraggerCompact {
+  margin-top: 4px;
+
+  :global(.ant-upload-btn) {
+    padding: 8px 12px !important;
+  }
+}
+
+.compactDropText {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
 .iconPdf { color: #ff4d4f; font-size: 24px; }
 .iconWord { color: #1677ff; font-size: 24px; }
 .iconExcel { color: #52c41a; font-size: 24px; }

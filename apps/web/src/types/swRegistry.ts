@@ -84,6 +84,9 @@ export type CreateSwItemPayload = {
 export type UpdateSwItemPayload = Partial<CreateSwItemPayload>;
 
 export type UpdateSwDocumentPayload = {
+  /** Вид и номер у живого документа меняются; без обозначения бэк пересоберёт его из них. */
+  documentKindCode?: string;
+  kindSequenceNo?: number;
   designation?: string;
   name?: string;
   sheetsCount?: number;
@@ -172,9 +175,20 @@ export type SwDocumentStatusesResponse = {
   sheet: SwApplicableStatus[];
 };
 
+/** Файл создаваемого документа: выбранный в SVN или загруженный браузером по тикету. */
+export type SwDocumentFileInput =
+  /** storedFileId и ревизия — из ответа на конфликт: файл уже перенесён, повтор не качает его снова. */
+  | { source: 'svn'; path: string; storedFileId?: string; revision?: number; repoUuid?: string }
+  | { source: 'upload'; fileId: string; versionId: string; filename: string };
+
 export type CreateSwDocumentPayload = {
+  /** id резервирует окно при открытии: повтор после потерянного ответа не создаёт дубль. */
+  id: string;
+  /** Документ без файла не создаётся. */
+  file: SwDocumentFileInput;
   documentKindCode: string;
-  kindSequenceNo?: number;
+  /** Номер задаёт человек или имя файла: автонумерации нет. */
+  kindSequenceNo: number;
   designation?: string;
   name?: string;
   sheetsCount: number;

@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
 import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
 import styles from './SwRegistryModals.module.scss';
-import pageStyles from './SwItemDetailsPage.module.scss';
+import pageStyles from './SwRegistryShared.module.scss';
 
 type Props = {
   open: boolean;

@@ -9,6 +9,7 @@ import { SvnController } from './svn.controller';
   imports: [FilesModule],
   controllers: [SvnController],
   providers: [SvnClient, SvnAttachService],
-  exports: [SvnClient],
+  // SvnAttachService нужен реестру ПО: документ создаётся сразу с файлом из SVN.
+  exports: [SvnClient, SvnAttachService],
 })
 export class SvnModule {}

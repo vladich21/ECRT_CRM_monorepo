@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ExportOutlined, FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import { App, Alert, Button, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -51,10 +51,6 @@ export default function SwItemsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  useEffect(() => {
-    void import('./SwItemDetailsPage');
-  }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SwItemsFilterTab>(() => readInitialTab(searchParams));
@@ -145,7 +141,8 @@ export default function SwItemsListPage() {
   const activeFiltersCount = Number(Boolean(appliedFilters.partnerId)) + Number(Boolean(appliedFilters.elementId));
 
   const openItem = (item: SwItemListRow) => {
-    openFromRegistry(location, navigate, `/sw/items/${item.id}`, {
+    // Программа открывается в структуре: панель с комплектом, файлами и связями с РИД.
+    openFromRegistry(location, navigate, `/sw/structure?elementId=${item.element.id}&itemId=${item.id}`, {
       state: { from: `${location.pathname}${location.search}` },
     });
   };

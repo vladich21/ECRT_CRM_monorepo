@@ -24,21 +24,13 @@
 }
 
 .filterSection   { @include lp.filterSection; }
-.filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
-.filterTabsRight { @include lp.filterTabsRight; }
-.searchInTabsRow { @include lp.searchInput; }
+.filterTabsRow   { @include lp.filterTabsRow; }
 .searchIcon      { @include lp.searchIcon; }
 .resultCount     { @include lp.resultCount; }
 .filterTabs      { @include lp.filterTabs; }
 .filterTab       { @include lp.filterTab; }
 .filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
 .filterTabCount  { @include lp.filterTabCount; }
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
 
 .showArchived {
   white-space: nowrap;
@@ -59,18 +51,67 @@
   }
 }
 
+/* Панель дерева — колонка: тулбар (поиск, архивные, добавление) стоит на месте,
+   листается только само дерево. */
 .treePanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
   background: #fff;
   border: 1px solid #f0f0f0;
   border-radius: 12px;
-  padding: 8px 0;
-  max-height: 100%;
-  overflow: auto;
-  overscroll-behavior: contain;
 
   @media (max-width: 900px) {
     max-height: calc(100vh - 280px);
   }
+}
+
+.treeToolbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.treeToolbarRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.treeSearch {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: v.$radius-lg;
+}
+
+.treeAddButton {
+  margin-left: auto;
+}
+
+.treeBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 8px 0;
+}
+
+.treeEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+  text-align: center;
 }
 
 .detailPanel {
@@ -457,13 +498,6 @@
   text-align: center;
 }
 
-.empty {
-  text-align: center;
-  padding: 48px 0;
-  color: #8c8c8c;
-  font-size: 14px;
-}
-
 .itemLink {
   color: #1677ff;
   font-weight: 600;
@@ -667,87 +701,6 @@
   }
 }
 
-.docTable {
-  width: 100%;
-  min-width: 820px;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 13.5px;
-
-  th:nth-child(1),
-  td:nth-child(1) {
-    width: 38%;
-  }
-
-  th:nth-child(2),
-  td:nth-child(2) {
-    width: 24%;
-  }
-
-  th:nth-child(3),
-  td:nth-child(3) {
-    width: 9%;
-  }
-
-  th:nth-child(4),
-  td:nth-child(4) {
-    width: 7%;
-  }
-
-  th:nth-child(5),
-  td:nth-child(5),
-  th:nth-child(6),
-  td:nth-child(6),
-  th:nth-child(7),
-  td:nth-child(7) {
-    width: 12%;
-  }
-
-  th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: 8px 10px;
-    border-bottom: 1px solid #f0f0f0;
-    background: #fff;
-    color: rgba(0, 0, 0, 0.45);
-    font-size: 12px;
-    font-weight: 500;
-    text-align: left;
-    white-space: nowrap;
-  }
-
-  td {
-    padding: 9px 10px;
-    border-bottom: 1px solid #f5f5f5;
-    vertical-align: top;
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-}
-
-.docNum {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.docLink {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12.5px;
-  white-space: nowrap;
-}
-
-.docName {
-  margin-top: 2px;
-  color: rgba(0, 0, 0, 0.55);
-  font-size: 12.5px;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
 .docDash {
   color: rgba(0, 0, 0, 0.25);
 }
@@ -764,6 +717,7 @@
 
 .programHeadRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
@@ -860,9 +814,89 @@
   opacity: 0.55;
   transition: opacity 0.15s;
 
-  .docTable tr:hover & {
+  .programDocTable tr:hover & {
     opacity: 1;
   }
+}
+
+/* Таблица комплекта в панели программы: шапка остаётся на месте, листаются строки. */
+.programDocTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.docsTitleActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.docsFilter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* Вкладки панели программы: те же, что над экраном, только компактнее и без
+   отрицательного отступа — здесь они стоят в заголовке карточки. */
+.programTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.programTab {
+  @include lp.filterTab;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+
+.programTabActive {
+  @include lp.filterTab;
+  @include lp.filterTabActive;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+
+/* Элемент структуры в реквизитах программы: переход к нему в дереве. */
+.metaLink {
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: #1677ff;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Действия с программой (раньше жили в отдельной карточке): переносятся под заголовок на узкой панели. */
+.programHeadActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Файлы и связи с РИД не держат свою прокрутку — листается тело вкладки. */
+.programTabBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .itemPick {
@@ -884,21 +918,6 @@
 .itemOwnElement {
   color: rgba(0, 0, 0, 0.35);
   font-size: 12.5px;
-}
-
-.docSubtle {
-  margin-top: 2px;
-  color: rgba(0, 0, 0, 0.45);
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.docIps {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 .docSvn {
@@ -927,30 +946,3 @@
   font-size: 12px;
 }
 
-.orphanList {
-  display: flex;
-  flex-direction: column;
-  max-height: 210px;
-  overflow: auto;
-}
-
-.orphanRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
-  border-bottom: 1px solid #fafafa;
-
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.orphanName {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-}

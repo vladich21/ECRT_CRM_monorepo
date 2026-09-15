@@ -74,15 +74,6 @@
   word-break: break-word;
 }
 
-.infoLink {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1677ff;
-  text-align: right;
-  max-width: 65%;
-  word-break: break-word;
-}
-
 .emptyHint {
   font-size: 14px;
   color: #bfbfbf;
@@ -186,15 +177,6 @@
   }
 }
 
-.docTableLink {
-  color: v.$primary-color;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .docTableDocName {
   margin-top: 2px;
   font-size: 13px;
@@ -223,18 +205,6 @@
   &:hover {
     text-decoration: underline;
   }
-}
-
-.docTableStatusCell {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.docTableSheetDesignation {
-  font-size: 13px;
-  color: #595959;
 }
 
 .statusBadge {
@@ -333,14 +303,6 @@
 .docTableChevron {
   color: v.$text-disabled;
   font-size: v.$font-sm;
-}
-
-.ridPlaceholder {
-  padding: 32px 16px;
-  text-align: center;
-  color: v.$text-quaternary;
-  font-size: v.$font-base;
-  line-height: 1.5;
 }
 
 .ridActionsCol {

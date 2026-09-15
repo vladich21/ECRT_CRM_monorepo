@@ -1,20 +1,46 @@
-import { useState } from 'react';
-import { CloudDownloadOutlined, DownloadOutlined, ExportOutlined, FileWordOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
+import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Spin, Tag, Tooltip } from 'antd';
-import { Link } from 'react-router-dom';
+import { App, Button, Spin, Tag } from 'antd';
+import { useSearchParams } from 'react-router-dom';
 
 import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
 import { swRegistryQueryKeys } from '@/api/swRegistry/swRegistryQueryKeys';
-import { useSwItem } from '@/api/swRegistry/swRegistryApiHooks';
+import {
+  useArchiveSwItem,
+  useChangeSwDocumentStatus,
+  useCreateSwDocument,
+  useMarkSwItemDeleted,
+  useRestoreSwItem,
+  useSwFiles,
+  useSwItem,
+  useSwItemPatentLinks,
+  useSwReferences,
+  useUpdateSwDocument,
+  useUpdateSwItem,
+} from '@/api/swRegistry/swRegistryApiHooks';
 import { DocumentViewerModal } from '@/components/documentViewer/DocumentViewerModal';
 import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
 import { svnApi } from '@/components/svnPicker/svnApi';
 import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
-import type { SwDocumentListRow, SwItemListRow } from '@/types/swRegistry';
-import itemStyles from './SwItemDetailsPage.module.scss';
+import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
+import { usePermissions } from '@/hooks/usePermissions';
+import { SECTIONS } from '@/shared/permissions';
+import type {
+  ChangeSwDocumentStatusPayload,
+  CreateSwDocumentPayload,
+  SwDocumentListRow,
+  SwItemListRow,
+  UpdateSwItemPayload,
+} from '@/types/swRegistry';
+import { SwDocumentCreateModal } from './SwDocumentCreateModal';
+import { SwDocumentStatusModal } from './SwDocumentStatusModal';
+import { SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
+import { SwFilesTab } from './SwFilesTab';
+import { SwIpsPlacementModal } from './SwIpsPlacementModal';
+import { SwItemEditModal } from './SwItemEditModal';
+import { SwItemRidTab } from './SwItemRidTab';
 import styles from './SwStructurePage.module.scss';
-import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
 
 type Props = {
   item: SwItemListRow;
@@ -23,183 +49,18 @@ type Props = {
   gostCodeByKind: Map<string, string>;
   statusByCode: Map<string, string>;
   returnPath: string;
+  /** Программа помечена удалённой — экран снимает с неё выбор. */
+  onDeleted: () => void;
+  /** Переход к элементу структуры программы в дереве. */
+  onSelectElement: (elementId: string) => void;
 };
 
-/** Дата размещения в IPS: в реестре это день без времени. */
-function formatIpsDate(value: string): string {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('ru-RU');
-}
-
-function formatKind(code: string, kindByCode: Map<string, string>, gostByCode: Map<string, string>): string {
-  const name = kindByCode.get(code) ?? code;
-  const gost = gostByCode.get(code);
-  return gost ? `${gost} · ${name}` : name;
-}
-
-type DocFile = {
-  fileId: string;
-  filename: string;
-  svnPath?: string | null;
-  svnRevision?: number | null;
+type StatusModalState = {
+  document: SwDocumentListRow;
+  scope: 'document' | 'sheet';
 };
 
-function DocumentsTable({
-  itemId,
-  documents,
-  documentKindByCode,
-  gostCodeByKind,
-  statusByCode,
-  returnPath,
-  fileByDocument,
-  onPreview,
-  onDownload,
-  svnEnabled,
-  currentRevisions,
-  onPickFromSvn,
-}: {
-  itemId: string;
-  documents: SwDocumentListRow[];
-  documentKindByCode: Map<string, string>;
-  gostCodeByKind: Map<string, string>;
-  statusByCode: Map<string, string>;
-  returnPath: string;
-  fileByDocument: Map<string, DocFile>;
-  onPreview: (file: DocFile) => void;
-  onDownload: (file: DocFile) => Promise<void>;
-  svnEnabled: boolean;
-  currentRevisions: Record<string, number>;
-  onPickFromSvn: (doc: SwDocumentListRow) => void;
-}) {
-  if (documents.length === 0) {
-    return <div className={styles.branchEmpty}>Комплект документации пуст</div>;
-  }
-
-  return (
-    <div className={styles.docTableWrap}>
-      <table className={styles.docTable}>
-        <thead>
-          <tr>
-            <th>Обозначение</th>
-            <th>Вид по ГОСТ 19.101</th>
-            <th className={styles.docNum}>Листов</th>
-            <th className={styles.docNum}>Литера</th>
-            <th>Статус</th>
-            <th>Лист утверждения</th>
-            <th>Размещение в IPS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {documents.map(doc => {
-            const file = fileByDocument.get(doc.id);
-            return (
-            <tr key={doc.id}>
-              <td>
-                <div className={styles.docCell}>
-                  {file ? (
-                    <button
-                      type='button'
-                      className={styles.docOpen}
-                      title='Открыть документ'
-                      onClick={() => onPreview(file)}
-                    >
-                      <FileWordOutlined className={styles.docIcon} />
-                      {doc.designation}
-                    </button>
-                  ) : (
-                    <Link
-                      className={styles.docLink}
-                      to={`/sw/items/${itemId}/documents/${doc.id}`}
-                      state={{ from: returnPath }}
-                    >
-                      {doc.designation}
-                    </Link>
-                  )}
-                  {svnEnabled ? (
-                    <Tooltip title={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}>
-                      <Button
-                        type='text'
-                        size='small'
-                        icon={<CloudDownloadOutlined />}
-                        aria-label={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}
-                        onClick={() => onPickFromSvn(doc)}
-                      />
-                    </Tooltip>
-                  ) : null}
-                  {file ? (
-                    <span className={styles.docActions}>
-                      <Tooltip title='Скачать'>
-                        <Button
-                          type='text'
-                          size='small'
-                          icon={<DownloadOutlined />}
-                          aria-label='Скачать документ'
-                          onClick={() => void onDownload(file)}
-                        />
-                      </Tooltip>
-                    </span>
-                  ) : null}
-                </div>
-                <div className={styles.docName} title={doc.name}>
-                  {doc.name}
-                </div>
-                {file?.svnPath ? (
-                  <div className={styles.docSvn} title={file.svnPath}>
-                    <span className={styles.docSvnRev}>SVN r{file.svnRevision}</span>
-                    {currentRevisions[file.svnPath] && currentRevisions[file.svnPath] !== file.svnRevision ? (
-                      <span className={styles.docSvnStale}>
-                        в SVN новее: r{currentRevisions[file.svnPath]}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-              </td>
-              <td>{formatKind(doc.documentKindCode, documentKindByCode, gostCodeByKind)}</td>
-              <td className={styles.docNum}>{doc.sheetsCount}</td>
-              <td className={styles.docNum}>{doc.letter || <span className={styles.docDash}>—</span>}</td>
-              <td>
-                <span className={swStatusBadgeClass(doc.statusCode, itemStyles)}>
-                  {formatSwStatusLabel(statusByCode.get(doc.statusCode), doc.statusCode)}
-                </span>
-              </td>
-              <td>
-                {doc.sheetStatusCode ? (
-                  <>
-                    <span className={swStatusBadgeClass(doc.sheetStatusCode, itemStyles)}>
-                      {formatSwStatusLabel(statusByCode.get(doc.sheetStatusCode), doc.sheetStatusCode)}
-                    </span>
-                    {doc.sheetDesignation ? (
-                      <div className={styles.docSubtle} title={doc.sheetDesignation}>
-                        {doc.sheetDesignation}
-                        {doc.sheetSheetsCount ? ` · ${doc.sheetSheetsCount} л.` : ''}
-                      </div>
-                    ) : null}
-                  </>
-                ) : (
-                  <span className={styles.docDash}>не оформлен</span>
-                )}
-              </td>
-              <td>
-                {doc.ipsId ? (
-                  <>
-                    <div className={styles.docIps}>{doc.ipsId}</div>
-                    {doc.ipsPlacedAt ? (
-                      <div className={styles.docSubtle}>{formatIpsDate(doc.ipsPlacedAt)}</div>
-                    ) : null}
-                  </>
-                ) : (
-                  <span className={styles.docDash}>—</span>
-                )}
-              </td>
-
-            </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+type ProgramTab = 'documents' | 'files' | 'rid';
 
 export function SwProgramPanel({
   item,
@@ -208,14 +69,64 @@ export function SwProgramPanel({
   gostCodeByKind,
   statusByCode,
   returnPath,
+  onDeleted,
+  onSelectElement,
 }: Props) {
+  const { message, modal } = App.useApp();
+  const { hasSectionPermission } = usePermissions();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Фильтр приходит из свода: «документы программы в таком-то статусе».
+  const documentStatusFilter = searchParams.get('documentStatus');
+  const sheetStatusFilter = searchParams.get('sheetStatus');
+  const statusFilter = sheetStatusFilter ?? documentStatusFilter;
+
   const detailQuery = useSwItem(item.id);
   const detail = detailQuery.data;
   const documents = detail?.documents ?? [];
   const sheetsTotal = documents.reduce((sum, doc) => sum + (doc.sheetsCount ?? 0), 0);
-  const [preview, setPreview] = useState<DocFile | null>(null);
+  const isArchived = item.recordState === 'archived';
+  // Реквизиты, архив и удаление программы — право на программы (как было в карточке).
+  const canManageItem = hasSectionPermission(SECTIONS.SW_ITEMS, 'edit');
+  // Комплект, файлы и связи с РИД в архивной программе не меняем.
+  const canEditItem = canManageItem && !isArchived;
+
+  // Счётчики вкладок — из тех же запросов, что грузят сами вкладки: кэш общий, лишних обращений нет.
+  const filesQuery = useSwFiles('sw_item', item.id);
+  const ridLinksQuery = useSwItemPatentLinks(item.id);
+
+  const docKindsQuery = useSwReferences('documentKinds');
+  const requiresSheetByKind = useMemo(
+    () => new Map((docKindsQuery.data ?? []).map(k => [k.code, Boolean(k.requiresApprovalSheet)])),
+    [docKindsQuery.data],
+  );
+
+  // Вкладка — в адресе (tab=files|rid): ссылка из строки браузера открывает ту же вкладку. Без параметра —
+  // комплект; ссылка из свода с фильтром статуса вкладку не несёт и потому открывает комплект.
+  const tabParam = searchParams.get('tab');
+  const tab: ProgramTab = tabParam === 'files' || tabParam === 'rid' ? tabParam : 'documents';
+  const setTab = (next: ProgramTab) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'documents') params.delete('tab');
+    else params.set('tab', next);
+    setSearchParams(params, { replace: true });
+  };
+
+  const [preview, setPreview] = useState<SwDocumentFile | null>(null);
   const [svnTarget, setSvnTarget] = useState<{ id: string; designation: string } | null>(null);
   const [folderPickerOpen, setFolderPickerOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [createDocOpen, setCreateDocOpen] = useState(false);
+  const [createDocError, setCreateDocError] = useState<unknown>(null);
+  const [statusModal, setStatusModal] = useState<StatusModalState | null>(null);
+  const [ipsModalDoc, setIpsModalDoc] = useState<SwDocumentListRow | null>(null);
+
+  const updateItemMut = useUpdateSwItem();
+  const archiveItemMut = useArchiveSwItem();
+  const restoreItemMut = useRestoreSwItem();
+  const markItemDeletedMut = useMarkSwItemDeleted();
+  const createDocMut = useCreateSwDocument();
+  const changeStatusMut = useChangeSwDocumentStatus();
+  const updateDocMut = useUpdateSwDocument();
 
   const svnStatus = useQuery({
     queryKey: ['svn', 'status'],
@@ -227,8 +138,7 @@ export function SwProgramPanel({
 
   const queryClient = useQueryClient();
 
-
-  const downloadFile = async (file: DocFile) => {
+  const downloadFile = async (file: SwDocumentFile) => {
     const link = await swRegistryApi.getSwFileLink(file.fileId);
     triggerFileDownload(link.url, file.filename);
   };
@@ -242,7 +152,7 @@ export function SwProgramPanel({
       staleTime: 60_000,
     })),
   });
-  const fileByDocument = new Map<string, DocFile>();
+  const fileByDocument = new Map<string, SwDocumentFile>();
   documents.forEach((doc, index) => {
     // Показываем актуальную копию: сперва пришедшую из SVN, иначе последнюю
     // загруженную. Первая по порядку — самая старая, и это вводило в заблуждение.
@@ -270,18 +180,130 @@ export function SwProgramPanel({
   });
   const currentRevisions = revisionsQuery.data ?? {};
 
-  // Каталог программы в SVN: что в нём лежит и что из этого уже в реестре.
-  const folderQuery = useQuery({
-    queryKey: ['svn', 'folder', item.id],
-    queryFn: () => svnApi.folder(item.id),
-    enabled: svnEnabled && Boolean(item.svnPath),
-    staleTime: 60_000,
-    retry: false,
-  });
-  const folderPath = folderQuery.data?.svnPath ?? item.svnPath ?? null;
-  const notInRegistry = (folderQuery.data?.files ?? []).filter(f => !f.attachedTo);
+  // Каталог программы в SVN хранится в самой записи: читать его содержимое ради пути не нужно.
+  const folderPath = item.svnPath ?? null;
 
   const fullNameDiffers = item.fullName.trim() !== item.shortName.trim();
+
+  const visibleDocuments = documentStatusFilter
+    ? documents.filter(d => d.statusCode === documentStatusFilter)
+    : sheetStatusFilter
+      ? documents.filter(d => d.sheetStatusCode === sheetStatusFilter)
+      : documents;
+
+  const tabs: { key: ProgramTab; label: string; count: number }[] = [
+    { key: 'documents', label: 'Комплект документации', count: documents.length },
+    { key: 'files', label: 'Файлы', count: filesQuery.data?.length ?? 0 },
+    { key: 'rid', label: 'Связанные РИД', count: ridLinksQuery.data?.length ?? detail?.patentsCount ?? 0 },
+  ];
+
+  const clearStatusFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('documentStatus');
+    next.delete('sheetStatus');
+    setSearchParams(next, { replace: true });
+  };
+
+  const fail = (err: unknown) => message.error(getApiErrorMessage(err) ?? 'Не удалось выполнить действие');
+
+  const submitEditItem = (payload: UpdateSwItemPayload) => {
+    updateItemMut.mutate(
+      { id: item.id, payload },
+      {
+        onSuccess: data => {
+          if (data.warnings?.length) message.warning(data.warnings.join(' '));
+          else message.success('Программа обновлена');
+          setEditOpen(false);
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  const handleArchiveItem = () => {
+    modal.confirm({
+      title: 'Перевести программу в архив?',
+      content: 'Документы программы тоже уйдут в архив.',
+      okText: 'В архив',
+      okButtonProps: { danger: true },
+      onOk: () =>
+        archiveItemMut.mutate(item.id, {
+          onSuccess: () => message.success('Программа в архиве'),
+          onError: fail,
+        }),
+    });
+  };
+
+  const handleRestoreItem = () => {
+    restoreItemMut.mutate(item.id, {
+      onSuccess: () => message.success('Программа восстановлена'),
+      onError: fail,
+    });
+  };
+
+  const handleMarkItemDeleted = () => {
+    modal.confirm({
+      title: 'Пометить программу удаленной?',
+      content: 'Запись исчезнет из реестра и свода. Действие необратимо.',
+      okText: 'Пометить удаленным',
+      okButtonProps: { danger: true },
+      onOk: () =>
+        markItemDeletedMut.mutate(item.id, {
+          onSuccess: () => {
+            message.success('Программа помечена удаленной');
+            onDeleted();
+          },
+          onError: fail,
+        }),
+    });
+  };
+
+  const submitCreateDoc = (payload: CreateSwDocumentPayload) => {
+    createDocMut.mutate(
+      { itemId: item.id, payload },
+      {
+        onSuccess: data => {
+          setCreateDocError(null);
+          if (data.warnings?.length) message.warning(data.warnings.join(' '));
+          else message.success('Документ добавлен');
+          setCreateDocOpen(false);
+        },
+        onError: err => {
+          setCreateDocError(err);
+          message.error(getApiErrorMessage(err) ?? 'Не удалось добавить документ');
+        },
+      },
+    );
+  };
+
+  const submitStatus = (payload: ChangeSwDocumentStatusPayload) => {
+    const docId = statusModal?.document.id ?? ipsModalDoc?.id;
+    if (!docId) return;
+    changeStatusMut.mutate(
+      { id: docId, payload },
+      {
+        onSuccess: () => {
+          message.success(payload.statusCode === 'in_ips' ? 'Размещение в IPS зафиксировано' : 'Статус изменен');
+          setStatusModal(null);
+          setIpsModalDoc(null);
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  const handleSetupSheet = (document: SwDocumentListRow) => {
+    updateDocMut.mutate(
+      { id: document.id, payload: { approvalSheet: { sheetsCount: 1 } } },
+      {
+        onSuccess: () => message.success('Лист утверждения оформлен'),
+        onError: fail,
+      },
+    );
+  };
+
+  const currentStatusCode =
+    statusModal?.scope === 'sheet' ? statusModal.document.sheetStatusCode : statusModal?.document.statusCode;
 
   return (
     <div className={styles.programStack}>
@@ -295,23 +317,52 @@ export function SwProgramPanel({
             <Tag bordered={false} className={styles.programKind}>
               {kindByCode.get(item.developmentKindCode) ?? item.developmentKindCode}
             </Tag>
-            {item.recordState === 'archived' ? (
+            {isArchived ? (
               <Tag bordered={false} className={styles.programKind}>
                 архивная
               </Tag>
             ) : null}
           </div>
-          <Link to={`/sw/items/${item.id}`} state={{ from: returnPath }}>
-            <Button size='small' icon={<ExportOutlined />}>
-              Открыть карточку
-            </Button>
-          </Link>
+          {canManageItem ? (
+            <div className={styles.programHeadActions}>
+              <Button size='small' icon={<EditOutlined />} disabled={!detail} onClick={() => setEditOpen(true)}>
+                Редактировать
+              </Button>
+              {isArchived ? (
+                <Button
+                  size='small'
+                  icon={<UndoOutlined />}
+                  loading={restoreItemMut.isPending}
+                  onClick={handleRestoreItem}
+                >
+                  Вернуть из архива
+                </Button>
+              ) : (
+                <Button size='small' loading={archiveItemMut.isPending} onClick={handleArchiveItem}>
+                  В архив
+                </Button>
+              )}
+              <Button
+                size='small'
+                danger
+                icon={<DeleteOutlined />}
+                loading={markItemDeletedMut.isPending}
+                onClick={handleMarkItemDeleted}
+              >
+                Пометить удаленным
+              </Button>
+            </div>
+          ) : null}
         </div>
 
         <dl className={styles.programMeta}>
           <div className={styles.metaCell}>
             <dt>Элемент</dt>
-            <dd title={`${item.element.code} — ${item.element.name}`}>{item.element.name}</dd>
+            <dd title={`${item.element.code} — ${item.element.name}`}>
+              <button type='button' className={styles.metaLink} onClick={() => onSelectElement(item.element.id)}>
+                {item.element.name}
+              </button>
+            </dd>
           </div>
           <div className={styles.metaCell}>
             <dt>Ответственный</dt>
@@ -325,6 +376,16 @@ export function SwProgramPanel({
             <div className={styles.metaCellWide}>
               <dt>Полное наименование</dt>
               <dd title={item.fullName}>{item.fullName}</dd>
+            </div>
+          ) : null}
+          {item.specUrl ? (
+            <div className={styles.metaCellWide}>
+              <dt>Ссылка на ТЗ</dt>
+              <dd title={item.specUrl}>
+                <a href={item.specUrl} target='_blank' rel='noreferrer'>
+                  {item.specUrl}
+                </a>
+              </dd>
             </div>
           ) : null}
           {svnEnabled ? (
@@ -347,52 +408,104 @@ export function SwProgramPanel({
 
       <div className={`${styles.card} ${styles.programDocsCard}`}>
         <div className={styles.cardTitleRow}>
-          <span className={styles.cardTitle}>Комплект документации</span>
-          <span className={styles.cardTitleCount}>{documents.length}</span>
-          {sheetsTotal > 0 ? <span className={styles.branchDocs}>{sheetsTotal} л.</span> : null}
-        </div>
-
-        {detailQuery.isLoading ? (
-          <div className={styles.branchLoading}>
-            <Spin />
-          </div>
-        ) : (
-          <DocumentsTable
-            itemId={item.id}
-            documents={documents}
-            documentKindByCode={documentKindByCode}
-            gostCodeByKind={gostCodeByKind}
-            statusByCode={statusByCode}
-            returnPath={returnPath}
-            fileByDocument={fileByDocument}
-            onPreview={setPreview}
-            onDownload={downloadFile}
-            svnEnabled={svnEnabled}
-            currentRevisions={currentRevisions}
-            onPickFromSvn={doc => setSvnTarget({ id: doc.id, designation: doc.designation })}
-          />
-        )}
-      </div>
-
-      {folderPath && notInRegistry.length > 0 ? (
-        <div className={styles.card}>
-          <div className={styles.cardTitleRow}>
-            <span className={styles.cardTitle}>В SVN есть, в реестре нет</span>
-            <span className={styles.cardTitleCount}>{notInRegistry.length}</span>
-          </div>
-          <div className={styles.orphanList}>
-            {notInRegistry.map(file => (
-              <div key={file.path} className={styles.orphanRow}>
-                <FileWordOutlined className={styles.docIcon} />
-                <span className={styles.orphanName} title={file.path}>
-                  {file.name}
-                </span>
-                {file.revision ? <span className={styles.docSvnRev}>r{file.revision}</span> : null}
-              </div>
+          <div className={styles.programTabs} role='tablist'>
+            {tabs.map(t => (
+              <button
+                key={t.key}
+                type='button'
+                role='tab'
+                aria-selected={tab === t.key}
+                className={tab === t.key ? styles.programTabActive : styles.programTab}
+                onClick={() => setTab(t.key)}
+              >
+                {t.label}
+                <span className={styles.filterTabCount}>{t.count}</span>
+              </button>
             ))}
           </div>
+          {tab === 'documents' ? (
+            <span className={styles.docsTitleActions}>
+              {sheetsTotal > 0 ? <span className={styles.branchDocs}>{sheetsTotal} л.</span> : null}
+              {canEditItem ? (
+                <Button
+                  type='primary'
+                  size='small'
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setCreateDocError(null);
+                    setCreateDocOpen(true);
+                  }}
+                >
+                  Добавить документ
+                </Button>
+              ) : null}
+            </span>
+          ) : null}
         </div>
-      ) : null}
+
+        {tab === 'documents' ? (
+          <>
+            {statusFilter ? (
+              <div className={styles.docsFilter}>
+                {sheetStatusFilter ? 'Лист утверждения' : 'Статус'}:{' '}
+                <strong>{statusByCode.get(statusFilter) ?? statusFilter}</strong>
+                <Button type='link' size='small' icon={<CloseOutlined />} onClick={clearStatusFilter}>
+                  сбросить
+                </Button>
+              </div>
+            ) : null}
+
+            {detailQuery.isLoading ? (
+              <div className={styles.branchLoading}>
+                <Spin />
+              </div>
+            ) : visibleDocuments.length === 0 ? (
+              <div className={styles.branchEmpty}>
+                {statusFilter ? 'Нет документов с выбранным статусом' : 'Комплект документации пуст'}
+              </div>
+            ) : (
+              <SwDocumentsTable
+                itemId={item.id}
+                documents={visibleDocuments}
+                kindLabelByCode={documentKindByCode}
+                gostCodeByKind={gostCodeByKind}
+                statusLabelByCode={statusByCode}
+                requiresApprovalSheetByKind={requiresSheetByKind}
+                canEdit={canEditItem}
+                returnPath={returnPath}
+                onChangeStatus={(document, scope) => setStatusModal({ document, scope })}
+                onOpenIps={document => setIpsModalDoc(document)}
+                onSetupSheet={handleSetupSheet}
+                fileByDocument={fileByDocument}
+                onPreview={setPreview}
+                onDownload={downloadFile}
+                svnEnabled={svnEnabled}
+                currentRevisions={currentRevisions}
+                onPickFromSvn={doc => setSvnTarget({ id: doc.id, designation: doc.designation })}
+              />
+            )}
+          </>
+        ) : null}
+
+        {tab === 'files' ? (
+          <div className={styles.programTabBody}>
+            <SwFilesTab
+              objectType='sw_item'
+              objectId={item.id}
+              purpose='spec'
+              title='Техническое задание и спецификации'
+              canEdit={canEditItem}
+              compact
+            />
+          </div>
+        ) : null}
+
+        {tab === 'rid' ? (
+          <div className={styles.programTabBody}>
+            <SwItemRidTab itemId={item.id} canEdit={canEditItem} />
+          </div>
+        ) : null}
+      </div>
 
       {folderPickerOpen ? (
         <SvnPickerModal
@@ -403,7 +516,6 @@ export function SwProgramPanel({
           onClose={() => setFolderPickerOpen(false)}
           onDone={() => {
             void queryClient.invalidateQueries({ queryKey: ['sw'] });
-            void queryClient.invalidateQueries({ queryKey: ['svn', 'folder', item.id] });
           }}
         />
       ) : null}
@@ -418,10 +530,49 @@ export function SwProgramPanel({
           onDone={() => {
             void queryClient.invalidateQueries({ queryKey: ['sw'] });
             void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.files('sw_document', svnTarget.id) });
-            void queryClient.invalidateQueries({ queryKey: ['svn', 'folder', item.id] });
           }}
         />
       ) : null}
+
+      <SwItemEditModal
+        open={editOpen}
+        item={detail ?? null}
+        confirmLoading={updateItemMut.isPending}
+        onCancel={() => setEditOpen(false)}
+        onSubmit={submitEditItem}
+      />
+      <SwDocumentCreateModal
+        open={createDocOpen}
+        itemId={item.id}
+        svnEnabled={svnEnabled}
+        svnFolderPath={folderPath}
+        isRnd={item.developmentKindCode === 'rnd'}
+        programDesignation={item.designation}
+        existingDocuments={documents}
+        confirmLoading={createDocMut.isPending}
+        submitError={createDocError}
+        onCancel={() => {
+          setCreateDocError(null);
+          setCreateDocOpen(false);
+        }}
+        onSubmit={submitCreateDoc}
+      />
+      <SwDocumentStatusModal
+        open={statusModal != null}
+        document={statusModal?.document ?? null}
+        scope={statusModal?.scope ?? 'document'}
+        currentStatusCode={currentStatusCode ?? null}
+        confirmLoading={changeStatusMut.isPending}
+        onCancel={() => setStatusModal(null)}
+        onSubmit={submitStatus}
+      />
+      <SwIpsPlacementModal
+        open={ipsModalDoc != null}
+        document={ipsModalDoc}
+        confirmLoading={changeStatusMut.isPending}
+        onCancel={() => setIpsModalDoc(null)}
+        onSubmit={submitStatus}
+      />
 
       <DocumentViewerModal
         open={preview != null}

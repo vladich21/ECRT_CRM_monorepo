@@ -67,3 +67,70 @@ export async function uploadSwRegistryFileVersion(
     versionId: ticket.versionId,
   });
 }
+
+export type SwDraftUploadTicket = { fileId: string; versionId: string };
+
+export type SwDraftUpload = {
+  promise: Promise<SwDraftUploadTicket>;
+  abort: () => void;
+  isAborted: () => boolean;
+};
+
+/**
+ * Загрузка файла для документа, которого ещё нет: тикет записывает файл на зарезервированный id,
+ * документ с привязкой создаётся потом одним запросом. Подтверждения нет — его заменяет создание.
+ * `onTicket` отдаёт fileId сразу: при отмене окна от файла надо отказаться, даже если он не догрузился.
+ */
+export function startSwDocumentDraftUpload(
+  file: File,
+  opts: {
+    itemId: string;
+    documentId: string;
+    onTicket?: (ticket: SwDraftUploadTicket) => void;
+    onProgress?: (percent: number) => void;
+  },
+): SwDraftUpload {
+  let upload: Upload | null = null;
+  let aborted = false;
+
+  const promise = (async () => {
+    const ticket = await swRegistryApi.createDocumentUploadTicket(opts.itemId, {
+      documentId: opts.documentId,
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+    });
+    if (aborted) {
+      // Отменили, пока выдавался тикет: fileId знаем только мы — отказываемся от файла сами, иначе он осиротеет.
+      void swRegistryApi.discardDocumentUpload(opts.itemId, ticket.fileId).catch(() => undefined);
+      throw new Error('upload aborted');
+    }
+    opts.onTicket?.({ fileId: ticket.fileId, versionId: ticket.versionId });
+
+    await new Promise<void>((resolve, reject) => {
+      const tus = new Upload(file, {
+        endpoint: ticket.upload.tusEndpoint,
+        metadata: ticket.upload.metadata,
+        retryDelays: [0, 1000, 3000, 5000, 10000],
+        removeFingerprintOnSuccess: true,
+        onProgress: (sent, total) => {
+          if (!aborted) opts.onProgress?.(total > 0 ? Math.floor((sent / total) * 100) : 0);
+        },
+        onError: error => reject(error),
+        onSuccess: () => resolve(),
+      });
+      upload = tus;
+      tus.start();
+    });
+
+    return { fileId: ticket.fileId, versionId: ticket.versionId };
+  })();
+
+  return {
+    promise,
+    abort: () => {
+      aborted = true;
+      void (upload as Upload | null)?.abort(true);
+    },
+    isAborted: () => aborted,
+  };
+}

@@ -3,7 +3,7 @@ import { Button, Space, Tag } from 'antd';
 import { CanAccess } from '@/components/canAccess/CanAccess';
 import { SECTIONS } from '@/shared/permissions';
 import type { SwDocumentListRow } from '@/types/swRegistry';
-import styles from './SwItemDetailsPage.module.scss';
+import styles from './SwRegistryShared.module.scss';
 
 type Props = {
   document: SwDocumentListRow;

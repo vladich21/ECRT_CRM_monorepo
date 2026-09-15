@@ -140,6 +140,25 @@ export const swRegistryApi = {
     return data;
   },
 
+  /** Тикет на загрузку файла ещё не созданного документа: файл сразу записан на его будущий id. */
+  createDocumentUploadTicket: async (
+    itemId: string,
+    payload: { documentId: string; filename: string; contentType?: string },
+  ) => {
+    const { data } = await apiClient.post<{
+      documentId: string;
+      fileId: string;
+      versionId: string;
+      upload: { tusEndpoint: string; metadata: Record<string, string> };
+    }>(`/sw/items/detail/${itemId}/documents/upload-ticket`, payload);
+    return data;
+  },
+
+  /** Отказ от загруженного файла, который так и не стал документом (окно закрыли). */
+  discardDocumentUpload: async (itemId: string, fileId: string) => {
+    await apiClient.delete(`/sw/items/detail/${itemId}/documents/upload-ticket/${fileId}`);
+  },
+
   getDocument: async (id: string): Promise<SwDocumentDetail> => {
     const { data } = await apiClient.get<SwDocumentDetail>(`/sw/documents/detail/${id}`);
     return data;

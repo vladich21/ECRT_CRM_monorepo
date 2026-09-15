@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { App, Button, Checkbox, Spin } from 'antd';
+import { App, Button, Spin } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useLocation, useSearchParams } from 'react-router-dom';
 
@@ -10,13 +10,13 @@ import {
   useMarkSwStructureDeleted,
   useRemoveSwResponsible,
   useRestoreSwStructure,
+  useSwItem,
   useSwItems,
   useSwReferences,
   useSwStructure,
   useUpdateSwStructure,
 } from '@/api/swRegistry/swRegistryApiHooks';
 import { BackButton } from '@/components/backButton/BackButton';
-import { CanAccess } from '@/components/canAccess/CanAccess';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
@@ -39,6 +39,7 @@ import {
 } from './swStructureTree';
 import { buildNodeCounts, collectBranchPrograms, groupProgramsByElement } from './swStructurePrograms';
 import { SwStructureTreeNode } from './SwStructureTreeNode';
+import { SwStructureTreeToolbar } from './SwStructureTreeToolbar';
 
 type ModalState =
   | { mode: 'create' }
@@ -51,6 +52,14 @@ function resolveFetchRecordState(tab: SwStructureFilterTab, showArchivedInTree: 
   return showArchivedInTree ? 'all' : 'active';
 }
 
+/** Снять выбор программы: вкладка панели и фильтр из свода относятся к ней и уходят вместе с ней. */
+function dropProgramParams(params: URLSearchParams) {
+  params.delete('itemId');
+  params.delete('tab');
+  params.delete('documentStatus');
+  params.delete('sheetStatus');
+}
+
 export default function SwStructurePage() {
   const { message } = App.useApp();
   const location = useLocation();
@@ -58,12 +67,18 @@ export default function SwStructurePage() {
   const canEdit = hasSectionPermission(SECTIONS.SW_STRUCTURE, 'edit');
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [filterTab, setFilterTab] = useState<SwStructureFilterTab>('active');
-  const [showArchivedInTree, setShowArchivedInTree] = useState(false);
+  // Всё, что определяет «куда смотрим», живёт в адресе: ссылка из строки браузера открывает ровно то же.
+  //   view=archived — вкладка «Архивные»; archived=1 — архивные в дереве действующих;
+  //   elementId, itemId — выбор; tab — вкладка панели программы; documentStatus/sheetStatus — фильтр из свода.
+  // Параметры по умолчанию в адрес не пишем. Каждый обработчик меняет адрес одним setSearchParams:
+  // два вызова подряд строятся от одного и того же searchParams, и второй затирает первый.
+  const filterTab: SwStructureFilterTab = searchParams.get('view') === 'archived' ? 'archived' : 'active';
+  const showArchivedInTree = searchParams.get('archived') === '1';
+  const selectedProgramId = searchParams.get('itemId');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('elementId'));
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
-  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(() => searchParams.get('itemId'));
   const [modalState, setModalState] = useState<ModalState | null>(null);
 
   const fetchRecordState = resolveFetchRecordState(filterTab, showArchivedInTree);
@@ -132,10 +147,27 @@ export default function SwStructurePage() {
     () => (selectedNode ? collectBranchPrograms(selectedNode, programsByElement) : []),
     [selectedNode, programsByElement],
   );
-  const selectedProgram = useMemo(
+
+  // В дереве только действующие программы. Архивную (из свода, после «В архив») догружаем по id —
+  // иначе панель не открылась бы, а выбор молча ушёл бы на первый узел.
+  const programFromList = useMemo(
     () => (selectedProgramId ? (programs.find(item => item.id === selectedProgramId) ?? null) : null),
     [programs, selectedProgramId],
   );
+  const needsProgramFallback = Boolean(selectedProgramId) && !programsQuery.isLoading && !programFromList;
+  const programDetailQuery = useSwItem(needsProgramFallback ? (selectedProgramId ?? undefined) : undefined);
+  const programNotFound = needsProgramFallback && programDetailQuery.isError;
+  const resolvedProgram = programFromList ?? (needsProgramFallback ? (programDetailQuery.data ?? null) : null);
+
+  // Пока программа догружается (сразу после «В архив» она уходит из списка действующих), держим последнюю
+  // известную: иначе панель размонтируется и сбросит открытые модалки.
+  const [lastProgram, setLastProgram] = useState<SwItemListRow | null>(null);
+  useEffect(() => {
+    if (resolvedProgram) setLastProgram(resolvedProgram);
+  }, [resolvedProgram]);
+  const selectedProgram: SwItemListRow | null =
+    resolvedProgram ?? (!programNotFound && lastProgram?.id === selectedProgramId ? lastProgram : null);
+
   const parentNode = useMemo(
     () => (selectedId ? findStructureParent(rawTree, selectedId) : null),
     [rawTree, selectedId],
@@ -154,13 +186,12 @@ export default function SwStructurePage() {
   const selectNode = useCallback(
     (node: SwStructureNode) => {
       setSelectedId(node.id);
-      setSelectedProgramId(null);
       expandPath(node.id, rawTree);
       // Раскрываем сам узел: иначе счётчик обещает программы, а в дереве их не видно.
       setExpandedIds(prev => (prev.has(node.id) ? prev : new Set(prev).add(node.id)));
       const next = new URLSearchParams(searchParams);
       next.set('elementId', node.id);
-      next.delete('itemId');
+      dropProgramParams(next);
       setSearchParams(next, { replace: true });
     },
     [expandPath, rawTree, searchParams, setSearchParams],
@@ -168,16 +199,38 @@ export default function SwStructurePage() {
 
   const selectProgram = useCallback(
     (item: SwItemListRow) => {
-      setSelectedProgramId(item.id);
       setSelectedId(item.element.id);
       expandPath(item.element.id, rawTree);
       setExpandedIds(prev => new Set(prev).add(item.element.id));
       const next = new URLSearchParams(searchParams);
       next.set('elementId', item.element.id);
+      // Вкладка панели сохраняется при переходе между программами; фильтр из свода — нет.
+      if (next.get('itemId') !== item.id) {
+        next.delete('documentStatus');
+        next.delete('sheetStatus');
+      }
       next.set('itemId', item.id);
       setSearchParams(next, { replace: true });
     },
     [expandPath, rawTree, searchParams, setSearchParams],
+  );
+
+  // Переход из панели программы к её элементу структуры.
+  const selectElementById = useCallback(
+    (elementId: string) => {
+      const node = findStructureNode(rawTree, elementId);
+      if (node) {
+        selectNode(node);
+        return;
+      }
+      // Элемента нет в текущем дереве (архивный, скрыт) — показываем архивные, выбор подхватит эффект по elementId.
+      const next = new URLSearchParams(searchParams);
+      next.set('elementId', elementId);
+      dropProgramParams(next);
+      if (filterTab === 'active') next.set('archived', '1');
+      setSearchParams(next, { replace: true });
+    },
+    [rawTree, selectNode, searchParams, setSearchParams, filterTab],
   );
 
   useEffect(() => {
@@ -187,6 +240,28 @@ export default function SwStructurePage() {
     if (urlId && findStructureNode(rawTree, urlId)) {
       setSelectedId(prev => (prev === urlId ? prev : urlId));
       expandPath(urlId, rawTree);
+      return;
+    }
+
+    // Пришли с программой без элемента (свод, РИД, страница документа): выбираем элемент программы.
+    // Пока программа грузится или не найдена — первый узел не подставляем.
+    if (selectedProgramId) {
+      if (!selectedProgram) return;
+      const elementId = selectedProgram.element.id;
+      if (findStructureNode(rawTree, elementId)) {
+        setSelectedId(elementId);
+        expandPath(elementId, rawTree);
+        const next = new URLSearchParams(searchParams);
+        next.set('elementId', elementId);
+        setSearchParams(next, { replace: true });
+        return;
+      }
+      // Элемент программы в архиве и скрыт — показываем архивные, иначе программу не найти в дереве.
+      if (filterTab === 'active' && !showArchivedInTree) {
+        const next = new URLSearchParams(searchParams);
+        next.set('archived', '1');
+        setSearchParams(next, { replace: true });
+      }
       return;
     }
 
@@ -203,19 +278,52 @@ export default function SwStructurePage() {
     const next = new URLSearchParams(searchParams);
     next.set('elementId', first.id);
     setSearchParams(next, { replace: true });
-  }, [structureQuery.isLoading, rawTree, tree, filterTab, showArchivedInTree, searchParams, selectedId, expandPath, setSearchParams]);
+  }, [
+    structureQuery.isLoading,
+    rawTree,
+    tree,
+    filterTab,
+    showArchivedInTree,
+    searchParams,
+    selectedId,
+    expandPath,
+    setSearchParams,
+    selectedProgramId,
+    selectedProgram,
+  ]);
 
-  // Пришли по ссылке с выбранной программой — раскрываем её ветку, иначе непонятно, что выбрано.
+  // Выбрана программа — раскрываем её ветку, иначе непонятно, что выбрано.
   useEffect(() => {
-    if (!selectedProgramId || rawTree.length === 0) return;
-    const program = programs.find(item => item.id === selectedProgramId);
-    if (!program) return;
-    expandPath(program.element.id, rawTree);
-    setExpandedIds(prev => (prev.has(program.element.id) ? prev : new Set(prev).add(program.element.id)));
-  }, [selectedProgramId, programs, rawTree, expandPath]);
+    if (!selectedProgram || rawTree.length === 0) return;
+    const elementId = selectedProgram.element.id;
+    expandPath(elementId, rawTree);
+    setExpandedIds(prev => (prev.has(elementId) ? prev : new Set(prev).add(elementId)));
+  }, [selectedProgram, rawTree, expandPath]);
 
   const fail = (err: unknown) => {
     message.error(getApiErrorMessage(err) ?? 'Не удалось выполнить действие');
+  };
+
+  const clearProgramSelection = () => {
+    const next = new URLSearchParams(searchParams);
+    dropProgramParams(next);
+    setSearchParams(next, { replace: true });
+  };
+
+  const changeFilterTab = (tab: SwStructureFilterTab) => {
+    setSelectedId(null);
+    const next = new URLSearchParams(searchParams);
+    if (tab === 'archived') next.set('view', 'archived');
+    else next.delete('view');
+    dropProgramParams(next);
+    setSearchParams(next, { replace: true });
+  };
+
+  const changeShowArchived = (value: boolean) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('archived', '1');
+    else next.delete('archived');
+    setSearchParams(next, { replace: true });
   };
 
   const detailActions: SwStructureDetailActions = useMemo(
@@ -321,6 +429,17 @@ export default function SwStructurePage() {
 
   const isInitialLoad = structureQuery.isLoading && !structureQuery.data;
 
+  // Добавлять можно только внутрь элемента структуры: на программе дочерних элементов нет,
+  // в архивную ветку новое не кладём.
+  const addTarget =
+    canEdit &&
+    filterTab === 'active' &&
+    selectedNode &&
+    !selectedProgramId &&
+    selectedNode.recordState !== 'archived'
+      ? selectedNode
+      : null;
+
   return (
     <div className={styles.wrap}>
       <BackButton path='/' />
@@ -329,34 +448,13 @@ export default function SwStructurePage() {
         title='Реестр программного обеспечения'
         titleWeight='medium'
         subtitle='структура изделия, программы и комплекты документации'
-        actions={
-          <div className={styles.headerActions}>
-            {filterTab === 'active' ? (
-              <Checkbox checked={showArchivedInTree} onChange={e => setShowArchivedInTree(e.target.checked)}>
-                <span className={styles.showArchived}>Показывать архивные</span>
-              </Checkbox>
-            ) : null}
-            <CanAccess section={SECTIONS.SW_STRUCTURE} action='edit'>
-              <Button type='primary' icon={<PlusOutlined />} onClick={() => setModalState({ mode: 'create' })}>
-                Создать элемент
-              </Button>
-            </CanAccess>
-          </div>
-        }
         filters={
           !isInitialLoad ? (
             <SwStructureListFiltersBar
               activeTab={filterTab}
-              onTabChange={tab => {
-                setFilterTab(tab);
-                setSelectedId(null);
-              }}
+              onTabChange={changeFilterTab}
               activeCount={activeCount}
               archivedCount={archivedCount}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              shownCount={shownCount}
-              totalCount={totalInTab}
             />
           ) : undefined
         }
@@ -366,27 +464,53 @@ export default function SwStructurePage() {
         <div className={styles.loading}>
           <Spin size='large' />
         </div>
-      ) : tree.length === 0 ? (
-        <div className={styles.empty}>Элементов пока нет</div>
       ) : (
         <div className={styles.splitLayout}>
-          <div className={styles.treePanel} role='tree'>
-            {tree.map(node => (
-              <SwStructureTreeNode
-                key={node.id}
-                node={node}
-                depth={0}
-                selectedId={selectedId}
-                expandedIds={expandedIds}
-                typeByCode={typeByCode}
-                onToggleExpand={toggleExpand}
-                onSelect={selectNode}
-                programsByElement={programsByElement}
-                countsByNode={countsByNode}
-                selectedProgramId={selectedProgramId}
-                onSelectProgram={selectProgram}
-              />
-            ))}
+          <div className={styles.treePanel}>
+            <SwStructureTreeToolbar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              shownCount={shownCount}
+              totalCount={totalInTab}
+              showArchivedToggle={filterTab === 'active'}
+              showArchived={showArchivedInTree}
+              onShowArchivedChange={changeShowArchived}
+              addTarget={addTarget}
+              onAdd={parent => setModalState({ mode: 'child', node: parent })}
+            />
+            {/* role='tree' только при наличии узлов: пустое состояние — обычный текст, а не дерево без treeitem. */}
+            <div className={styles.treeBody} role={tree.length > 0 ? 'tree' : undefined}>
+              {tree.length > 0 ? (
+                tree.map(node => (
+                  <SwStructureTreeNode
+                    key={node.id}
+                    node={node}
+                    depth={0}
+                    selectedId={selectedId}
+                    expandedIds={expandedIds}
+                    typeByCode={typeByCode}
+                    onToggleExpand={toggleExpand}
+                    onSelect={selectNode}
+                    programsByElement={programsByElement}
+                    countsByNode={countsByNode}
+                    selectedProgramId={selectedProgramId}
+                    onSelectProgram={selectProgram}
+                  />
+                ))
+              ) : rawTree.length > 0 ? (
+                <div className={styles.treeEmpty}>Ничего не найдено</div>
+              ) : (
+                <div className={styles.treeEmpty}>
+                  {filterTab === 'archived' ? 'Архивных элементов нет' : 'Элементов пока нет'}
+                  {/* Пустое дерево: выбрать родителя не из чего, поэтому первый элемент создаётся отсюда. */}
+                  {canEdit && filterTab === 'active' ? (
+                    <Button type='link' icon={<PlusOutlined />} onClick={() => setModalState({ mode: 'create' })}>
+                      Создать первый элемент
+                    </Button>
+                  ) : null}
+                </div>
+              )}
+            </div>
           </div>
           <div className={`${styles.detailPanel}${selectedProgram ? ` ${styles.detailPanelFitted}` : ''}`}>
             {selectedProgram ? (
@@ -397,7 +521,15 @@ export default function SwStructurePage() {
                 gostCodeByKind={gostCodeByKind}
                 statusByCode={statusByCode}
                 returnPath={`${location.pathname}${location.search}`}
+                onDeleted={clearProgramSelection}
+                onSelectElement={selectElementById}
               />
+            ) : programNotFound ? (
+              <div className={styles.detailEmpty}>Программа не найдена или удалена</div>
+            ) : selectedProgramId ? (
+              <div className={styles.branchLoading}>
+                <Spin />
+              </div>
             ) : selectedNode ? (
               <SwStructureDetailPanel
                 node={selectedNode}

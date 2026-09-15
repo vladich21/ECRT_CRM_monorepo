@@ -85,7 +85,7 @@ export function SwStructureDetailPanel({
             {value}
           </button>
         ) : (
-          <Link to={`/sw/items/${row.id}`} className={styles.itemLink}>
+          <Link to={`/sw/structure?itemId=${row.id}`} className={styles.itemLink}>
             {value}
           </Link>
         ),
@@ -262,7 +262,7 @@ export function SwStructureDetailPanel({
           <div className={styles.infoRows}>
             {patentLinks.map(link => (
               <div key={link.id} className={styles.infoRow}>
-                <Link to={`/sw/items/${link.software.id}`} className={styles.ridSoftwareLabel}>
+                <Link to={`/sw/structure?itemId=${link.software.id}`} className={styles.ridSoftwareLabel}>
                   {elementTitle(link.software.designation, link.software.shortName)}
                 </Link>
                 <div className={styles.infoValue}>

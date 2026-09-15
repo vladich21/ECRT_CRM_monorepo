@@ -1,6 +1,5 @@
-import { createHash } from 'crypto';
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { DatabaseService } from '../../database/database.service';
 import { FilesRemoteClient } from '../files/services/files-remote.client';
@@ -23,6 +22,8 @@ const CONTENT_TYPES: Record<string, string> = {
   pdf: 'application/pdf',
   txt: 'text/plain',
 };
+
+export type SvnStoredFile = { fileId: string; filename: string; revision: number; repoUuid: string };
 
 @Injectable()
 export class SvnAttachService {
@@ -72,63 +73,49 @@ export class SvnAttachService {
   }
 
   /**
-   * Содержимое каталога программы, сопоставленное с её комплектом: видно, какие
-   * файлы уже в реестре, а какие лежат в SVN, но не заведены.
+   * Переносит файл из SVN в хранилище потоком — гигабайтные файлы не копятся в памяти — и
+   * записывает его на указанную сущность. Связь в реестре не создаёт: это делает вызывающий,
+   * в том числе при создании документа, которого ещё нет в базе.
+   *
+   * Версии документа ведёт SVN, поэтому фиксируется ревизия на момент переноса: по ней потом
+   * видно, разошлась ли копия в реестре с оригиналом.
    */
-  async folderState(itemId: string): Promise<{
-    svnPath: string | null;
-    files: Array<{
-      name: string;
-      path: string;
-      revision: number | null;
-      size: number | null;
-      attachedTo: string | null;
-      attachedRevision: number | null;
-    }>;
-  }> {
-    const [item] = await this.db.db.select().from(swItems).where(eq(swItems.id, itemId)).limit(1);
-    if (!item) throw new NotFoundException('Программа не найдена');
-    if (!item.svnPath) return { svnPath: null, files: [] };
+  async fetchToStorage(input: {
+    path: string;
+    entityType: string;
+    entityId: string;
+    userId: string;
+  }): Promise<SvnStoredFile> {
+    const info = await this.svn.info(input.path);
+    const filename = input.path.split('/').pop() ?? 'document';
+    const size = await this.svn.fileSize(input.path, info.revision);
+    if (size === 0) {
+      throw new UnprocessableEntityException({ code: 'SVN_FILE_EMPTY', field: 'file', message: 'Файл в SVN пуст' });
+    }
 
-    const documents = await this.db.db
-      .select()
-      .from(swDocuments)
-      .where(eq(swDocuments.softwareId, itemId));
-    const docIds = documents.map(d => d.id);
-
-    const links = docIds.length
-      ? await this.db.db
-          .select()
-          .from(swFiles)
-          .where(and(eq(swFiles.objectType, 'sw_document'), inArray(swFiles.objectId, docIds)))
-      : [];
-    const byPath = new Map(links.filter(l => l.svnPath).map(l => [l.svnPath as string, l]));
-    const docById = new Map(documents.map(d => [d.id, d.designation]));
-
-    const entries = await this.svn.list(item.svnPath);
-    const files = entries
-      .filter(e => e.kind === 'file')
-      .map(e => {
-        const link = byPath.get(e.path);
-        return {
-          name: e.name,
-          path: e.path,
-          revision: e.revision,
-          size: e.size,
-          attachedTo: link ? (docById.get(link.objectId) ?? null) : null,
-          attachedRevision: link?.svnRevision ?? null,
-        };
+    const source = this.svn.catStream(input.path, info.revision);
+    let stored: { fileId: string };
+    try {
+      stored = await this.filesRemote.ingestStream({
+        filename,
+        contentType: this.contentType(filename),
+        entityType: input.entityType,
+        entityId: input.entityId,
+        createdBy: input.userId,
+        size,
+        stream: source.stream,
+        completion: source.completion,
       });
+    } catch (err) {
+      // Заливка сорвалась — останавливаем svn, иначе процесс повиснет на непрочитанном выводе.
+      source.abort();
+      throw err;
+    }
 
-    return { svnPath: item.svnPath, files };
+    return { fileId: stored.fileId, filename, revision: info.revision, repoUuid: info.repoUuid };
   }
 
-  /**
-   * Переносит файл из SVN в файловое хранилище и связывает его с объектом реестра.
-   *
-   * Версии документа ведёт SVN, поэтому здесь фиксируется ревизия на момент
-   * переноса: по ней потом видно, разошлась ли копия в реестре с оригиналом.
-   */
+  /** Переносит файл из SVN и связывает его с существующим объектом реестра (замена/первый файл). */
   async attach(input: {
     objectType: string;
     objectId: string;
@@ -137,25 +124,11 @@ export class SvnAttachService {
   }): Promise<{ fileId: string; filename: string; revision: number }> {
     await this.assertObjectActive(input.objectType, input.objectId);
 
-    const info = await this.svn.info(input.path);
-    const filename = input.path.split('/').pop() ?? 'document';
-    const body = await this.svn.cat(input.path, info.revision);
-    if (body.length === 0) {
-      throw new UnprocessableEntityException('Файл в SVN пуст');
-    }
-
-    // Хеш считаем сами и передаём хранилищу: так проверка целостности идёт
-    // насквозь, а не по коду ответа.
-    const sha256 = createHash('sha256').update(body).digest('hex');
-
-    const stored = await this.filesRemote.ingestBuffer({
-      filename,
-      contentType: this.contentType(filename),
+    const stored = await this.fetchToStorage({
+      path: input.path,
       entityType: input.objectType,
       entityId: input.objectId,
-      createdBy: input.userId,
-      body,
-      expectedSha256: sha256,
+      userId: input.userId,
     });
 
     const [existing] = await this.db.db
@@ -176,14 +149,14 @@ export class SvnAttachService {
         objectId: input.objectId,
         fileId: stored.fileId,
         purpose: PURPOSE_BY_OBJECT[input.objectType] ?? 'document',
-        filename,
+        filename: stored.filename,
         svnPath: input.path,
-        svnRevision: info.revision,
-        svnRepoUuid: info.repoUuid,
+        svnRevision: stored.revision,
+        svnRepoUuid: stored.repoUuid,
         createdBy: input.userId,
       });
     }
 
-    return { fileId: stored.fileId, filename, revision: info.revision };
+    return { fileId: stored.fileId, filename: stored.filename, revision: stored.revision };
   }
 }
