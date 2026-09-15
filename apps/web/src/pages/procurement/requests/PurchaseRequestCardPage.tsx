@@ -1,19 +1,24 @@
 import { useCallback, useState } from 'react';
 import {
   CalendarOutlined,
+  CheckCircleOutlined,
   DollarOutlined,
   EditOutlined,
   ProjectOutlined,
   SendOutlined,
+  StopOutlined,
   SwapOutlined,
-  UserAddOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Modal, Space } from 'antd';
+import { Alert, Button, Modal, Popconfirm, Space } from 'antd';
 import axios from 'axios';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
-import { useApprovalState } from '@/api/approvals/approvalApiHooks';
+import { useApprovalState, useCancelProcess } from '@/api/approvals/approvalApiHooks';
+import {
+  PURCHASE_REQUEST_AGREEMENT_ENTITY_TYPE,
+  PURCHASE_REQUEST_ENTITY_TYPE,
+} from '@/api/procurement/requests/procurementRequestApi';
 import {
   useAssignPurchaseRequestLead,
   usePurchaseRequestComparison,
@@ -22,12 +27,11 @@ import {
   useSendPurchaseRequestToAgreement,
   useSubmitPurchaseRequest,
 } from '@/api/procurement/requests/procurementRequestApiHooks';
-import {
-  PURCHASE_REQUEST_AGREEMENT_ENTITY_TYPE,
-  PURCHASE_REQUEST_ENTITY_TYPE,
-} from '@/api/procurement/requests/procurementRequestApi';
 import { ApprovalPanel } from '@/components/approvals/ApprovalPanel';
-import { DEFAULT_APPROVAL_VOCABULARY, PURCHASE_REQUEST_APPROVAL_VOCABULARY } from '@/components/approvals/approvalVocabulary';
+import {
+  DEFAULT_APPROVAL_VOCABULARY,
+  PURCHASE_REQUEST_APPROVAL_VOCABULARY,
+} from '@/components/approvals/approvalVocabulary';
 import { CanAccess } from '@/components/canAccess/CanAccess';
 import { EntityFilesTab } from '@/components/entityFiles/EntityFilesTab';
 import { Loader } from '@/components/loader/Loader';
@@ -38,27 +42,28 @@ import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMess
 import { useNotification } from '@/hooks/notifications/useNotification';
 import { SECTIONS } from '@/shared/permissions';
 import { useAuthStore } from '@/store/AuthStore';
+import { useModalStore } from '@/store/ModalStore';
 
 import { PurchaseRequestAssignLeadModal } from './PurchaseRequestAssignLeadModal';
 import { PurchaseRequestChangeIncomeModal } from './PurchaseRequestChangeIncomeModal';
 import { PurchaseRequestElaboration } from './PurchaseRequestElaboration';
 import { PurchaseRequestJournal } from './PurchaseRequestJournal';
-import { PurchaseRequestMainInfo } from './PurchaseRequestMainInfo';
-import { PurchaseRequestMethod } from './PurchaseRequestMethod';
 import {
   formatPurchaseRequestAmount,
   formatPurchaseRequestDate,
   purchaseRequestHeaderBadgeVariant,
   purchaseRequestStatusLabel,
 } from './purchaseRequestLabels';
+import { PurchaseRequestMainInfo } from './PurchaseRequestMainInfo';
+import { PurchaseRequestMethod } from './PurchaseRequestMethod';
 import {
   canAssignPurchaseRequestLead,
   canChangePurchaseRequestIncomeLink,
+  canChoosePurchaseRequestRoute,
   canEditPurchaseRequestDraft,
   canEditPurchaseRequestElaboration,
   canSendPurchaseRequestToAgreement,
   canSetPurchaseRequestMethod,
-  canChoosePurchaseRequestRoute,
   canSubmitPurchaseRequest,
   needsIncomeContractForApprove,
 } from './purchaseRequestPolicy';
@@ -70,14 +75,7 @@ const APPROVAL_TAB = 'approval';
 const FILES_TAB = 'files';
 const HISTORY_TAB = 'history';
 
-const CARD_TABS = [
-  REQUISITES_TAB,
-  ELABORATION_TAB,
-  APPROVAL_TAB,
-  METHOD_TAB,
-  FILES_TAB,
-  HISTORY_TAB,
-] as const;
+const CARD_TABS = [REQUISITES_TAB, ELABORATION_TAB, APPROVAL_TAB, METHOD_TAB, FILES_TAB, HISTORY_TAB] as const;
 
 function defaultCardTab(status: string): string {
   if (status === 'in_elaboration') return ELABORATION_TAB;
@@ -122,6 +120,7 @@ export default function PurchaseRequestCardPage() {
   const [leadOpen, setLeadOpen] = useState(false);
   const { showNotification, contextHolder } = useNotification();
   const userId = useAuthStore(state => state.user?.id);
+  const openModal = useModalStore(state => state.openModal);
   const { data: request, isLoading, isError, refetch } = usePurchaseRequestDetail(requestId);
   const { mutate: replaceIncome, isPending: replacingIncome } = useReplacePurchaseRequestIncomeContract();
   const { mutate: submit, isPending: submitting } = useSubmitPurchaseRequest();
@@ -129,10 +128,8 @@ export default function PurchaseRequestCardPage() {
   const { mutate: assignLead, isPending: assigningLead } = useAssignPurchaseRequestLead();
   const { data: approvalState } = useApprovalState(PURCHASE_REQUEST_ENTITY_TYPE, request?.id);
   const { data: agreementState } = useApprovalState(PURCHASE_REQUEST_AGREEMENT_ENTITY_TYPE, request?.id);
-  const { data: comparison } = usePurchaseRequestComparison(
-    request?.id,
-    request?.status === 'in_elaboration',
-  );
+  const { mutateAsync: cancelProcess, isPending: cancelling } = useCancelProcess();
+  const { data: comparison } = usePurchaseRequestComparison(request?.id, request?.status === 'in_elaboration');
 
   const setTab = useCallback(
     (next: string) => {
@@ -178,17 +175,44 @@ export default function PurchaseRequestCardPage() {
   const canSendToAgreement = canSendPurchaseRequestToAgreement(request, userId);
   const canSetMethod = canSetPurchaseRequestMethod(request, userId);
   const showAgreementPanel =
-    request.status === 'in_agreement' ||
-    request.status === 'agreed' ||
-    Boolean(agreementState?.has_active_process);
+    request.status === 'in_agreement' || request.status === 'agreed' || Boolean(agreementState?.has_active_process);
   const missingIncome = needsIncomeContractForApprove(request);
   const canChangeIncome = canChangePurchaseRequestIncomeLink(request, userId, {
     canApprove: approvalState?.can_approve,
   });
+  const activeApproval = showAgreementPanel ? agreementState : approvalState;
+  const cancellableProcessId = activeApproval?.can_cancel ? (activeApproval.process?.id ?? null) : null;
+  const cancelLabel = showAgreementPanel ? 'Отменить согласование' : 'Отменить отправку';
+
+  const decisionProcess = activeApproval?.can_approve ? activeApproval.process : undefined;
+
   const approveBlockedReason =
     missingIncome && request.status === 'pending_approval'
       ? 'Укажите доходный договор, иначе утвердить нельзя. Отклонить или вернуть можно без договора.'
       : null;
+
+  const openDecision = () => {
+    if (!decisionProcess) return;
+    const currentStep = decisionProcess.steps.find(step => step.state === 'current');
+    const previousSteps = decisionProcess.steps
+      .filter(step => step.state !== 'skipped' && step.step_order < decisionProcess.current_step_order)
+      .map(step => ({ step_order: step.step_order, name: step.name }));
+    openModal({
+      type: 'approvalDecision',
+      title: 'Принятие решения',
+      modalData: {
+        processId: decisionProcess.id,
+        currentStepOrder: decisionProcess.current_step_order,
+        canDelegate: currentStep?.can_delegate ?? false,
+        canReturnToPrevious: currentStep?.can_return_to_previous ?? false,
+        previousSteps,
+        labels: showAgreementPanel ? AGREEMENT_DECISION_LABELS : VI4_DECISION_LABELS,
+        approveBlockedReason: showAgreementPanel ? null : approveBlockedReason,
+      },
+      onConfirm: () => {},
+      onCancel: () => {},
+    });
+  };
 
   const postToAgreement = (confirmExpiring: boolean) => {
     sendToAgreement(
@@ -265,72 +289,78 @@ export default function PurchaseRequestCardPage() {
     { key: HISTORY_TAB, label: 'История' },
   ];
 
-  const requestActions = canEdit || canChangeIncome || canSubmit || canSendToAgreement ? (
-    <Space>
-      {canChangeIncome ? (
-        <Button icon={<SwapOutlined />} onClick={() => setIncomeOpen(true)}>
-          Сменить договор
-        </Button>
-      ) : null}
-      {canEdit ? (
-        <CanAccess section={SECTIONS.PROCUREMENT_REQUESTS} action='edit'>
-          <Button icon={<EditOutlined />} onClick={() => navigate(`/procurement/requests/${request.id}/edit`)}>
-            Редактировать
-          </Button>
-        </CanAccess>
-      ) : null}
-      {canSubmit ? (
-        <CanAccess section={SECTIONS.PROCUREMENT_REQUESTS} action='edit'>
-          <Button
-            type='primary'
-            icon={<SendOutlined />}
-            loading={submitting}
-            onClick={() => {
-              submit(request.id, {
-                onSuccess: () => {
-                  setTab(APPROVAL_TAB);
-                  showNotification('success', 'Запрос отправлен на утверждение');
-                },
-                onError: error => {
-                  if (axios.isAxiosError(error) && error.response?.status === 409) {
-                    showNotification('error', 'Отправить можно только черновик');
-                    return;
-                  }
-                  showNotification('error', 'Не удалось отправить', getApiErrorMessage(error) ?? 'Ошибка отправки');
-                },
-              });
-            }}
-          >
-            Отправить
-          </Button>
-        </CanAccess>
-      ) : null}
-      {canSendToAgreement ? (
-        <Button
-          type='primary'
-          icon={<SendOutlined />}
-          loading={sendingAgreement}
-          onClick={handleSendToAgreement}
-        >
-          Отправить на согласование
-        </Button>
-      ) : null}
-    </Space>
-  ) : null;
-
-  const headerActions =
-    canAssignLead || requestActions ? (
+  const requestActions =
+    canEdit || canChangeIncome || canSubmit || canSendToAgreement || cancellableProcessId || decisionProcess ? (
       <Space>
-        {canAssignLead ? (
-          <CanAccess section={SECTIONS.PROCUREMENT_LEAD} action='edit'>
-            <Button icon={<UserAddOutlined />} onClick={() => setLeadOpen(true)}>
-              {request.lead_manager_id ? 'Сменить ведущего' : 'Назначить'}
+        {decisionProcess ? (
+          <Button type='primary' onClick={openDecision}>
+            Принять решение
+          </Button>
+        ) : null}
+        {canEdit ? (
+          <CanAccess section={SECTIONS.PROCUREMENT_REQUESTS} action='edit'>
+            <Button icon={<EditOutlined />} onClick={() => navigate(`/procurement/requests/${request.id}/edit`)}>
+              Редактировать
             </Button>
           </CanAccess>
         ) : null}
-        {requestActions}
+        {canSubmit ? (
+          <CanAccess section={SECTIONS.PROCUREMENT_REQUESTS} action='edit'>
+            <Button
+              type='primary'
+              icon={<SendOutlined />}
+              loading={submitting}
+              onClick={() => {
+                submit(request.id, {
+                  onSuccess: () => {
+                    setTab(APPROVAL_TAB);
+                    showNotification('success', 'Запрос отправлен на утверждение');
+                  },
+                  onError: error => {
+                    if (axios.isAxiosError(error) && error.response?.status === 409) {
+                      showNotification('error', 'Отправить можно только черновик');
+                      return;
+                    }
+                    showNotification('error', 'Не удалось отправить', getApiErrorMessage(error) ?? 'Ошибка отправки');
+                  },
+                });
+              }}
+            >
+              Отправить
+            </Button>
+          </CanAccess>
+        ) : null}
+        {canSendToAgreement ? (
+          <Button type='primary' icon={<SendOutlined />} loading={sendingAgreement} onClick={handleSendToAgreement}>
+            Отправить на согласование
+          </Button>
+        ) : null}
+        {cancellableProcessId ? (
+          <Popconfirm
+            title={`${cancelLabel}?`}
+            description='Запрос вернётся на предыдущий шаг, принятые решения сбросятся.'
+            okText='Отменить'
+            cancelText='Нет'
+            okButtonProps={{ danger: true }}
+            onConfirm={async () => {
+              try {
+                await cancelProcess({ processId: cancellableProcessId });
+                showNotification('success', `${cancelLabel} — выполнено`);
+                void refetch();
+              } catch (error) {
+                showNotification('error', 'Не удалось отменить', getApiErrorMessage(error) ?? 'Ошибка');
+              }
+            }}
+          >
+            <Button danger icon={<StopOutlined />} loading={cancelling}>
+              {cancelLabel}
+            </Button>
+          </Popconfirm>
+        ) : null}
       </Space>
-    ) : undefined;
+    ) : null;
+
+  const headerActions = requestActions ?? undefined;
 
   return (
     <>
@@ -384,6 +414,8 @@ export default function PurchaseRequestCardPage() {
               <ApprovalPanel
                 variant='compact'
                 hideGenericStart
+                hideCancel
+                hideDecision
                 entityType={showAgreementPanel ? PURCHASE_REQUEST_AGREEMENT_ENTITY_TYPE : PURCHASE_REQUEST_ENTITY_TYPE}
                 entityId={request.id}
                 decisionLabels={showAgreementPanel ? AGREEMENT_DECISION_LABELS : VI4_DECISION_LABELS}
@@ -442,7 +474,11 @@ export default function PurchaseRequestCardPage() {
                   showNotification('error', 'Карточка изменена', 'Обновите данные и повторите сохранение');
                   return;
                 }
-                showNotification('error', 'Не удалось сменить договор', getApiErrorMessage(error) ?? 'Ошибка сохранения');
+                showNotification(
+                  'error',
+                  'Не удалось сменить договор',
+                  getApiErrorMessage(error) ?? 'Ошибка сохранения',
+                );
               },
             },
           );

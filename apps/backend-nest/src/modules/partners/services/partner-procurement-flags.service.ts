@@ -14,6 +14,7 @@ import {
   formatPartnerDisplayName,
   isoDateOnly,
   parseEvaluationLetter,
+  parseEvaluationScore,
   pickProjectEvaluation,
   type PartnerProcurementCandidate,
   type PartnerProcurementFlags,
@@ -32,6 +33,12 @@ export class PartnerProcurementFlagsService {
   async getRecord(partnerId: string, projectId: string): Promise<PartnerProcurementCandidate | null> {
     const map = await this.loadRecords([partnerId], projectId);
     return map.get(partnerId) ?? null;
+  }
+
+  /** Актуальные флаги пачкой: для списков, где снимок дополняется текущим состоянием. */
+  async getManyFlags(partnerIds: string[], projectId: string): Promise<Map<string, PartnerProcurementFlags>> {
+    const records = await this.loadRecords(partnerIds, projectId);
+    return new Map([...records].map(([id, record]) => [id, record.flags]));
   }
 
   async search(params: {
@@ -118,6 +125,7 @@ export class PartnerProcurementFlagsService {
         flags: buildPartnerProcurementFlags({
           isApproved,
           evaluationCategory: parseEvaluationLetter(picked?.category),
+          evaluationScore: parseEvaluationScore(picked?.weightedScore),
           nextReevaluationDate: isoDateOnly(picked?.nextReevaluationDate ?? null),
           blockedOnProject: blockedOnProject.has(id),
           today,
@@ -192,6 +200,7 @@ export class PartnerProcurementFlagsService {
         partnerId: supplierEvaluations.partnerId,
         projectId: supplierEvaluations.projectId,
         category: supplierEvaluations.category,
+        weightedScore: supplierEvaluations.weightedScore,
         nextReevaluationDate: supplierEvaluations.nextReevaluationDate,
         evaluatedAt: supplierEvaluations.evaluatedAt,
       })
@@ -209,6 +218,7 @@ export class PartnerProcurementFlagsService {
       list.push({
         projectId: row.projectId ? String(row.projectId) : null,
         category: row.category,
+        weightedScore: row.weightedScore,
         nextReevaluationDate: row.nextReevaluationDate,
         evaluatedAt: row.evaluatedAt,
       });

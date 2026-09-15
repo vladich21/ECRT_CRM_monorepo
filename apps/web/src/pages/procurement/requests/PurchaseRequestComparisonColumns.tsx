@@ -3,8 +3,8 @@ import type { ColumnsType } from 'antd/es/table';
 
 import type { ComparisonQuote } from '@/api/procurement/requests/procurementRequest.types';
 
-import { comparisonCellKind, type ComparisonTableRow } from './purchaseRequestComparisonTable';
 import styles from './PurchaseRequestComparison.module.scss';
+import { comparisonCellKind, type ComparisonTableRow } from './purchaseRequestComparisonTable';
 import { PurchaseRequestPartnerLink } from './PurchaseRequestPartnerLink';
 
 function renderPartnerHeader(quote: ComparisonQuote, outlier: boolean) {
@@ -16,6 +16,20 @@ function renderPartnerHeader(quote: ComparisonQuote, outlier: boolean) {
       {outlier ? <Tag color='warning'>Выброс</Tag> : null}
     </div>
   );
+}
+
+function renderCellValue(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    return (
+      <div className={styles.cellLines}>
+        {value.map(line => (
+          <span key={line}>{line}</span>
+        ))}
+      </div>
+    );
+  }
+  return value ?? '—';
 }
 
 export function purchaseRequestComparisonColumns(options: {
@@ -34,8 +48,7 @@ export function purchaseRequestComparisonColumns(options: {
       title: renderPartnerHeader(quote, options.outlierIds.has(quote.quote_id)),
       key: quote.quote_id,
       width: 180,
-      ellipsis: true,
-      render: (_value: unknown, row: ComparisonTableRow) => row.values[quote.quote_id] ?? '—',
+      render: (_value: unknown, row: ComparisonTableRow) => renderCellValue(row.values[quote.quote_id]),
       onCell: (row: ComparisonTableRow) => {
         const kind = comparisonCellKind({
           criterion: row.key,

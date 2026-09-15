@@ -59,12 +59,7 @@ export const StageCard: React.FC<StageCardProps> = ({
     !isCompleted && !isOverdue && daysUntilDeadline >= 0 && daysUntilDeadline <= 14 && Boolean(stage.planned_end_date);
   return (
     <Col xs={24}>
-      <Card
-        className={styles.stageCard}
-        style={{
-          borderLeft: `4px solid ${statusColor}`,
-        }}
-      >
+      <Card className={styles.stageCard}>
         <div className={styles.stageCardHeader}>
           <div className={`${styles.stageHeaderLeft} ${styles.stageHeaderLeftClickable}`} onClick={onToggle}>
             <div className={styles.stageNumberWrapper}>

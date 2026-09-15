@@ -39,7 +39,8 @@ type Props = {
 type FlowStep = {
   pane: Exclude<Pane, typeof PANE_LEAD>;
   title: string;
-  detail: string;
+  /** Несколько строк: НМЦД и выбранный поставщик не слипаются в одну. */
+  detail: string[];
   done: boolean;
 };
 
@@ -80,9 +81,7 @@ export function PurchaseRequestElaboration({ request, canAssign, canEdit, onAssi
     const nmcdText = nmcdDone
       ? [
           priceMethodLabel(request.price_method),
-          request.initial_max_price
-            ? formatMoneyAmount(request.initial_max_price, request.currency_code)
-            : null,
+          request.initial_max_price ? formatMoneyAmount(request.initial_max_price, request.currency_code) : null,
         ]
           .filter(Boolean)
           .join(', ')
@@ -96,24 +95,25 @@ export function PurchaseRequestElaboration({ request, canAssign, canEdit, onAssi
         pane: PANE_SUPPLIERS,
         title: 'Поставщики',
         done: suppliers.length > 0,
-        detail: suppliers.length > 0 ? String(suppliers.length) : 'Не добавлены',
+        detail: [suppliers.length > 0 ? String(suppliers.length) : 'Не добавлены'],
       },
       {
         pane: PANE_QUOTES,
         title: 'Коммерческие предложения',
         done: quotes.length > 0,
-        detail:
+        detail: [
           quotes.length > 0
             ? suppliers.length
               ? `${quotes.length} из ${suppliers.length}`
               : String(quotes.length)
             : 'Пока нет',
+        ],
       },
       {
         pane: PANE_DECISION,
         title: 'НМЦД и выбор',
         done: decisionDone,
-        detail: `${nmcdText}. ${selectText}`,
+        detail: [nmcdText, selectText],
       },
     ];
   }, [
@@ -249,7 +249,13 @@ function LeadPane({
                     <button type='button' className={styles.flowTitleLink} onClick={() => onOpen(step.pane)}>
                       {step.title}
                     </button>
-                    <span className={styles.flowDetail}>{step.detail}</span>
+                    <span className={styles.flowDetail}>
+                      {step.detail.map(line => (
+                        <span key={line} className={styles.flowDetailLine}>
+                          {line}
+                        </span>
+                      ))}
+                    </span>
                   </div>
                 </li>
               );

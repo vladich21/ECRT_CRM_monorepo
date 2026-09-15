@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Alert, Button, Checkbox, Empty, Form, Input, InputNumber, Select, Spin, Table } from 'antd';
+import { useMemo, useState } from 'react';
+import { Alert, Button, Checkbox, Empty, Form, Input, InputNumber, Select, Spin, Table, Tag } from 'antd';
 import axios from 'axios';
 
 import type {
@@ -17,9 +17,9 @@ import { formatMoneyAmount, MONEY_INPUT_NUMBER_PROPS } from '@/helpers/numberFor
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
 import { useNotification } from '@/hooks/notifications/useNotification';
 
-import { buildComparisonTableRows, marketPreviewMessage } from './purchaseRequestComparisonTable';
 import styles from './PurchaseRequestComparison.module.scss';
 import { purchaseRequestComparisonColumns } from './PurchaseRequestComparisonColumns';
+import { buildComparisonTableRows, marketPreviewMessage } from './purchaseRequestComparisonTable';
 import { PRICE_METHOD_OPTIONS, priceMethodLabel } from './purchaseRequestLabels';
 
 type Props = {
@@ -31,7 +31,7 @@ type Props = {
 export function PurchaseRequestComparison({ request, canEdit, pane }: Props) {
   const { showNotification, contextHolder } = useNotification();
   const { data, isLoading, isError, refetch } = usePurchaseRequestComparison(request.id);
-  const { data: reasons = [] } = usePurchaseRequestSelectionReasons(canEdit);
+  const { data: reasons = [] } = usePurchaseRequestSelectionReasons();
   const { mutateAsync: fixPrice, isPending: fixing } = useFixPurchaseRequestPrice();
   const { mutateAsync: selectSupplier, isPending: selecting } = useSelectPurchaseRequestSupplier();
 
@@ -130,7 +130,10 @@ export function PurchaseRequestComparison({ request, canEdit, pane }: Props) {
               }
             />
           ) : emptyQuotes ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description='Сначала добавьте коммерческие предложения — здесь появится сравнение' />
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description='Сначала добавьте коммерческие предложения — здесь появится сравнение'
+            />
           ) : (
             <Table
               size='middle'
@@ -164,8 +167,15 @@ export function PurchaseRequestComparison({ request, canEdit, pane }: Props) {
             />
           ) : data ? (
             <div className={styles.stack}>
-              <NmcdCard canEdit={canEdit} comparison={data} saving={fixing} onSubmit={handleFix} />
+              <NmcdCard
+                key={`nmcd-${data.request_updated_at}`}
+                canEdit={canEdit}
+                comparison={data}
+                saving={fixing}
+                onSubmit={handleFix}
+              />
               <SelectSupplierCard
+                key={`pick-${data.request_updated_at}`}
                 canEdit={canEdit}
                 comparison={data}
                 reasons={reasons}
@@ -188,6 +198,8 @@ function NmcdCard(props: {
 }) {
   const { comparison, canEdit } = props;
   const [form] = Form.useForm();
+  const fixed = Boolean(comparison.price_method);
+  const [editing, setEditing] = useState(!fixed);
   const watched = Form.useWatch('method', form) as PriceMethod | undefined;
   const method = watched ?? (comparison.price_method as PriceMethod | null) ?? 'market';
   const marketMessage = method === 'market' ? marketPreviewMessage(comparison.market_preview.code) : null;
@@ -195,28 +207,46 @@ function NmcdCard(props: {
 
   return (
     <div className={styles.card}>
-      <h3 className={styles.cardTitle}>НМЦД</h3>
+      <div className={styles.cardHead}>
+        <div className={styles.headMain}>
+          <h3 className={styles.cardTitle}>НМЦД</h3>
+          {fixed ? <Tag className={styles.methodTag}>{priceMethodLabel(comparison.price_method)}</Tag> : null}
+        </div>
+        <div className={styles.headExtra}>
+          {canEdit && fixed ? (
+            <Button type='link' size='small' onClick={() => setEditing(value => !value)}>
+              {editing ? 'Свернуть' : 'Изменить'}
+            </Button>
+          ) : null}
+        </div>
+      </div>
       {comparison.price_method ? (
-        <p className={styles.summary}>
-          Зафиксировано: {priceMethodLabel(comparison.price_method)}
-          {comparison.initial_max_price
-            ? ` · ${formatMoneyAmount(comparison.initial_max_price, comparison.currency_code)}`
-            : ''}
-          {comparison.nmcd_snapshot?.excluded.length
-            ? ` · исключено КП: ${comparison.nmcd_snapshot.excluded.length}`
-            : ''}
-        </p>
+        <div className={styles.fact}>
+          <span className={styles.factValue}>
+            {comparison.initial_max_price
+              ? formatMoneyAmount(comparison.initial_max_price, comparison.currency_code)
+              : 'Цена не обоснована'}
+          </span>
+          {comparison.price_method === 'impossible' ? null : (
+            <span className={styles.factMeta}>
+              {comparison.nmcd_snapshot?.excluded.length
+                ? `Исключено КП из расчёта: ${comparison.nmcd_snapshot.excluded.length}`
+                : 'Все КП учтены в расчёте'}
+            </span>
+          )}
+          {comparison.price_method_note ? <p className={styles.note}>{comparison.price_method_note}</p> : null}
+        </div>
       ) : (
-        <p className={`${styles.summary} ${styles.muted}`}>Ещё не зафиксирована</p>
+        <p className={styles.emptyLine}>Ещё не зафиксирована</p>
       )}
-      {method === 'market' && comparison.market_preview.ok ? (
+      {canEdit && editing && method === 'market' && comparison.market_preview.ok ? (
         <p className={styles.hint}>
           Среднее без НДС после выбросов:{' '}
           {formatMoneyAmount(comparison.market_preview.average_after, comparison.currency_code)}
         </p>
       ) : null}
-      {marketMessage ? <Alert type='warning' showIcon message={marketMessage} /> : null}
-      {canEdit ? (
+      {canEdit && editing && marketMessage ? <Alert type='warning' showIcon message={marketMessage} /> : null}
+      {canEdit && editing ? (
         <Form
           form={form}
           layout='vertical'
@@ -247,7 +277,7 @@ function NmcdCard(props: {
           </Form.Item>
           <div className={styles.actions}>
             <Button type='primary' htmlType='submit' loading={props.saving} disabled={marketBlocked}>
-              Зафиксировать
+              {fixed ? 'Сохранить' : 'Зафиксировать'}
             </Button>
           </div>
         </Form>
@@ -265,16 +295,64 @@ function SelectSupplierCard(props: {
 }) {
   const { comparison, canEdit, reasons } = props;
   const selected = comparison.quotes.find(quote => quote.quote_id === comparison.selected_quote_id);
+  const reasonNames = comparison.reason_codes
+    .map(code => reasons.find(reason => reason.code === code)?.name ?? code)
+    .filter(Boolean);
+  const picked = Boolean(selected);
+  const [editing, setEditing] = useState(!picked);
 
   return (
     <div className={styles.card}>
-      <h3 className={styles.cardTitle}>Выбор поставщика</h3>
+      <div className={styles.cardHead}>
+        <div className={styles.headMain}>
+          <h3 className={styles.cardTitle}>Выбор поставщика</h3>
+          {reasonNames.length > 0 ? (
+            <div className={styles.reasonTags}>
+              {reasonNames.map(name => (
+                <Tag key={name} className={styles.reasonTag}>
+                  {name}
+                </Tag>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className={styles.headExtra}>
+          {canEdit && picked ? (
+            <Button type='link' size='small' onClick={() => setEditing(value => !value)}>
+              {editing ? 'Свернуть' : 'Изменить'}
+            </Button>
+          ) : null}
+        </div>
+      </div>
       {selected ? (
-        <p className={styles.summary}>Выбран: {selected.partner_name}</p>
+        <div className={styles.fact}>
+          <div className={styles.factTop}>
+            <span className={styles.factValue}>{selected.partner_name}</span>
+            <dl className={styles.params}>
+              <div className={styles.param}>
+                <dt className={styles.paramLabel}>Цена</dt>
+                <dd className={styles.paramValue}>{formatMoneyAmount(selected.price, comparison.currency_code)}</dd>
+              </div>
+              {selected.delivery_days != null ? (
+                <div className={styles.param}>
+                  <dt className={styles.paramLabel}>Срок поставки</dt>
+                  <dd className={styles.paramValue}>{selected.delivery_days}&nbsp;дн.</dd>
+                </div>
+              ) : null}
+              {selected.warranty_months != null ? (
+                <div className={styles.param}>
+                  <dt className={styles.paramLabel}>Гарантия</dt>
+                  <dd className={styles.paramValue}>{selected.warranty_months}&nbsp;мес.</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+          {comparison.selection_note ? <p className={styles.note}>{comparison.selection_note}</p> : null}
+        </div>
       ) : (
-        <p className={`${styles.summary} ${styles.muted}`}>Ещё не выбран</p>
+        <p className={styles.emptyLine}>Ещё не выбран</p>
       )}
-      {canEdit ? (
+      {canEdit && editing ? (
         <Form
           layout='vertical'
           key={`${comparison.request_updated_at}-${comparison.selected_quote_id ?? ''}`}
@@ -305,7 +383,7 @@ function SelectSupplierCard(props: {
           </Form.Item>
           <div className={styles.actions}>
             <Button type='primary' htmlType='submit' loading={props.saving}>
-              Выбрать
+              {picked ? 'Сохранить' : 'Выбрать'}
             </Button>
           </div>
         </Form>

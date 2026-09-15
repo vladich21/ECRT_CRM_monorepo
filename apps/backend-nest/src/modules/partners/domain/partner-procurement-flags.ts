@@ -5,6 +5,8 @@ export type PartnerEvaluationLetter = (typeof PARTNER_EVALUATION_LETTERS)[number
 export type PartnerProcurementFlags = {
   is_approved: boolean;
   evaluation_category: PartnerEvaluationLetter | null;
+  /** Взвешенный балл той же оценки, из которой взята категория. */
+  evaluation_score: number | null;
   next_reevaluation_date: string | null;
   reevaluation_overdue: boolean;
   blocked_on_project: boolean;
@@ -27,6 +29,7 @@ export function formatPartnerDisplayName(shortName: string | null | undefined, n
 export type ProjectEvaluationPick = {
   projectId: string | null;
   category: string;
+  weightedScore: string | number | null;
   nextReevaluationDate: string | Date | null;
   evaluatedAt: string | Date | null;
 };
@@ -67,9 +70,18 @@ export function pickProjectEvaluation(
   return [...pool].sort((left, right) => compareIsoDesc(left.evaluatedAt, right.evaluatedAt))[0];
 }
 
+/** numeric(5,2) приезжает из Drizzle строкой — приводим к числу с двумя знаками. */
+export function parseEvaluationScore(raw: string | number | null | undefined): number | null {
+  if (raw == null || raw === '') return null;
+  const value = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(value)) return null;
+  return Math.round(value * 100) / 100;
+}
+
 export function buildPartnerProcurementFlags(input: {
   isApproved: boolean;
   evaluationCategory: PartnerEvaluationLetter | null;
+  evaluationScore: number | null;
   nextReevaluationDate: string | null;
   blockedOnProject: boolean;
   today: string;
@@ -78,13 +90,14 @@ export function buildPartnerProcurementFlags(input: {
     input.nextReevaluationDate && input.nextReevaluationDate < input.today,
   );
   const warnings: string[] = [];
-  if (!input.isApproved) warnings.push('Контрагент не одобрен');
+  if (!input.isApproved) warnings.push('Контрагент не утверждён');
   if (input.evaluationCategory === 'D') warnings.push('Категория D');
   if (reevaluationOverdue) warnings.push('Просрочена переоценка');
   if (input.blockedOnProject) warnings.push('Блок по проекту закупки');
   return {
     is_approved: input.isApproved,
     evaluation_category: input.evaluationCategory,
+    evaluation_score: input.evaluationScore,
     next_reevaluation_date: input.nextReevaluationDate,
     reevaluation_overdue: reevaluationOverdue,
     blocked_on_project: input.blockedOnProject,
