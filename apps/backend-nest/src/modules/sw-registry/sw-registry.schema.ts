@@ -176,8 +176,8 @@ export const swDocuments = pgTable(
     updatedBy: uuid('updated_by'),
   },
   (t) => [
+    // Уникально только обозначение: номер вида живой и меняется (scripts/sw-registry/01).
     uniqueIndex('sw_documents_designation_uidx').on(t.designation),
-    uniqueIndex('sw_documents_kind_seq_uidx').on(t.softwareId, t.documentKindCode, t.kindSequenceNo),
     index('sw_documents_software_idx').on(t.softwareId),
     index('sw_documents_status_idx').on(t.statusCode),
   ],
@@ -205,7 +205,8 @@ export const swFiles = pgTable(
   (t) => [
     uniqueIndex('sw_files_object_file_uidx').on(t.objectType, t.objectId, t.fileId),
     index('sw_files_object_idx').on(t.objectType, t.objectId),
-    index('sw_files_file_idx').on(t.fileId),
+    // Файл хранилища привязан ровно к одной записи (scripts/sw-registry/02).
+    uniqueIndex('sw_files_file_uidx').on(t.fileId),
   ],
 );
 

@@ -63,18 +63,6 @@ export function firstStructureNode(nodes: SwStructureNode[]): SwStructureNode | 
   return nodes[0];
 }
 
-export function filterStructureTree(nodes: SwStructureNode[], query: string): SwStructureNode[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return nodes;
-  const match = (node: SwStructureNode): SwStructureNode | null => {
-    const children = (node.children ?? []).map(match).filter((n): n is SwStructureNode => n != null);
-    const self = `${node.code} ${node.name}`.toLowerCase().includes(q);
-    if (!self && children.length === 0) return null;
-    return { ...node, children };
-  };
-  return nodes.map(match).filter((n): n is SwStructureNode => n != null);
-}
-
 export function getInitials(name: string): string {
   return name
     .split(' ')

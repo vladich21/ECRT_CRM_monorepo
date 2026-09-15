@@ -1,4 +1,4 @@
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -24,9 +24,6 @@ export type SvnFileInfo = {
 };
 
 const LIST_TIMEOUT_MS = 60_000;
-const CAT_TIMEOUT_MS = 180_000;
-/** Больше 100 МБ в реестр не принимаем: это документация, а не дистрибутивы. */
-const MAX_FILE_BYTES = 100 * 1024 * 1024;
 
 @Injectable()
 export class SvnClient {
@@ -193,11 +190,56 @@ export class SvnClient {
     return result;
   }
 
-  /** Содержимое файла указанной ревизии (по умолчанию — текущей). */
-  async cat(path: string, revision?: number): Promise<Buffer> {
-    const target = revision ? `${this.fullUrl(path)}@${revision}` : this.fullUrl(path);
-    const args = revision ? ['cat', '-r', String(revision), target] : ['cat', target];
-    return this.run(args, CAT_TIMEOUT_MS, MAX_FILE_BYTES);
+  /** Размер файла в байтах на ревизии — tus требует его до начала потоковой передачи. */
+  async fileSize(path: string, revision: number): Promise<number> {
+    const target = `${this.fullUrl(path)}@${revision}`;
+    const xml = (await this.run(['ls', '--xml', target], LIST_TIMEOUT_MS, 1024 * 1024)).toString('utf8');
+    const size = /<size>(\d+)<\/size>/.exec(xml)?.[1];
+    if (size == null) {
+      throw new ServiceUnavailableException('Не удалось узнать размер файла в SVN');
+    }
+    return Number(size);
+  }
+
+  /**
+   * Содержимое файла потоком: гигабайтные файлы не копятся в памяти и не упираются в лимит буфера.
+   * `completion` завершается, когда svn отработал (при сбое — понятной ошибкой); `abort` останавливает
+   * процесс, если получатель сорвался и вывод больше никто не читает.
+   */
+  catStream(
+    path: string,
+    revision: number,
+  ): { stream: NodeJS.ReadableStream; completion: Promise<void>; abort: () => void } {
+    const target = `${this.fullUrl(path)}@${revision}`;
+    const child = spawn('svn', ['--non-interactive', 'cat', '-r', String(revision), target], {
+      env: this.processEnv(),
+    });
+
+    let stderr = '';
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', (chunk: string) => {
+      if (stderr.length < 4000) stderr += chunk;
+    });
+
+    const completion = new Promise<void>((resolve, reject) => {
+      child.on('error', (err) => {
+        this.logger.warn(`svn cat → ${err.message}`);
+        reject(new ServiceUnavailableException(this.humanError(err.message)));
+      });
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+        this.logger.warn(`svn cat → ${stderr.slice(0, 300)}`);
+        reject(new ServiceUnavailableException(this.humanError(stderr)));
+      });
+    });
+    // Отказ svn может прийти раньше, чем получатель начнёт ждать completion: без обработчика это
+    // необработанное отклонение, которое роняет процесс. Ожидающий всё равно получит ошибку.
+    completion.catch(() => undefined);
+
+    return { stream: child.stdout, completion, abort: () => child.kill() };
   }
 
   private unescape(value: string): string {

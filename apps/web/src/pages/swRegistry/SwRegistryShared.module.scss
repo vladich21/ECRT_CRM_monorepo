@@ -74,15 +74,6 @@
   word-break: break-word;
 }
 
-.infoLink {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1677ff;
-  text-align: right;
-  max-width: 65%;
-  word-break: break-word;
-}
-
 .emptyHint {
   font-size: 14px;
   color: #bfbfbf;
@@ -171,11 +162,6 @@
   opacity: 0.72;
 }
 
-.docTableKind {
-  color: #595959;
-  max-width: 160px;
-}
-
 .docTableDesignation {
   font-weight: 600;
   color: v.$primary-color;
@@ -183,15 +169,6 @@
 
   &:hover {
     color: v.$primary-light;
-  }
-}
-
-.docTableLink {
-  color: v.$primary-color;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
   }
 }
 
@@ -223,18 +200,6 @@
   &:hover {
     text-decoration: underline;
   }
-}
-
-.docTableStatusCell {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.docTableSheetDesignation {
-  font-size: 13px;
-  color: #595959;
 }
 
 .statusBadge {
@@ -317,30 +282,6 @@
   font-size: 13px;
   color: #595959;
   word-break: break-all;
-}
-
-.docTableChevronCol {
-  width: 28px;
-  padding-right: 4px !important;
-  text-align: right;
-}
-
-.docTableChevronLink {
-  display: inline-flex;
-  color: inherit;
-}
-
-.docTableChevron {
-  color: v.$text-disabled;
-  font-size: v.$font-sm;
-}
-
-.ridPlaceholder {
-  padding: 32px 16px;
-  text-align: center;
-  color: v.$text-quaternary;
-  font-size: v.$font-base;
-  line-height: 1.5;
 }
 
 .ridActionsCol {

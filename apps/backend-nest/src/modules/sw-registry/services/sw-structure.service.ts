@@ -18,7 +18,7 @@ import {
   swDocuments,
 } from '../sw-registry.schema';
 import type { AddStructureResponsibleDto, CreateStructureElementDto, UpdateStructureElementDto } from '../dto/sw-registry.dto';
-import { formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
+import { archivedEditError, formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
 
 type ElementRow = typeof swStructureElements.$inferSelect;
 
@@ -118,6 +118,8 @@ export class SwStructureService {
 
   async update(id: string, dto: UpdateStructureElementDto, userId?: string) {
     const current = await this.requireElement(id);
+    const locked = archivedEditError('element', current);
+    if (locked) throw new UnprocessableEntityException(locked);
     if (dto.elementTypeCode) await this.assertType(dto.elementTypeCode);
     if (dto.parentId !== undefined && dto.parentId !== current.parentId) {
       if (dto.parentId === id) {
@@ -193,6 +195,8 @@ export class SwStructureService {
   async restore(id: string) {
     const root = await this.requireElement(id);
     if (root.recordState === 'deleted') throw new NotFoundException('Элемент структуры не найден');
+    // Вложенный элемент возвращается на своё место: архивные вышестоящие поднимаются вместе с ним.
+    await this.restorePath(root.parentId);
     const descendantIds = [...(await this.collectDescendantIds(id))];
     await this.db.db
       .update(swStructureElements)
@@ -268,7 +272,7 @@ export class SwStructureService {
   }
 
   async addResponsible(elementId: string, dto: AddStructureResponsibleDto) {
-    await this.requireElement(elementId);
+    await this.requireEditableElement(elementId);
     const [role] = await this.db.db
       .select()
       .from(swRefResponsibilityRoles)
@@ -292,7 +296,7 @@ export class SwStructureService {
   }
 
   async removeResponsible(elementId: string, userId: string, roleCode: string) {
-    await this.requireElement(elementId);
+    await this.requireEditableElement(elementId);
     await this.db.db
       .delete(swStructureResponsibles)
       .where(
@@ -302,6 +306,47 @@ export class SwStructureService {
           eq(swStructureResponsibles.roleCode, roleCode),
         ),
       );
+  }
+
+  /**
+   * Возвращает из архива элемент и всех его архивных предков до корня — без их остальных вложений. Иначе часть
+   * ветки, возвращённая из архива, оказалась бы под архивным родителем и пропала из дерева действующих.
+   * Удалённый предок цепочку обрывает. Возвращает id поднятых элементов.
+   */
+  async restorePath(elementId: string | null): Promise<string[]> {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    let currentId = elementId;
+    while (currentId && !seen.has(currentId)) {
+      seen.add(currentId);
+      const [row] = await this.db.db
+        .select({
+          id: swStructureElements.id,
+          parentId: swStructureElements.parentId,
+          recordState: swStructureElements.recordState,
+        })
+        .from(swStructureElements)
+        .where(eq(swStructureElements.id, currentId))
+        .limit(1);
+      if (!row || row.recordState === 'deleted') break;
+      if (row.recordState === 'archived') ids.push(row.id);
+      currentId = row.parentId;
+    }
+    if (ids.length) {
+      await this.db.db
+        .update(swStructureElements)
+        .set({ recordState: 'active', archivedByCascade: false, updatedAt: new Date() })
+        .where(inArray(swStructureElements.id, ids));
+    }
+    return ids;
+  }
+
+  /** Элемент, который можно менять: существует и не в архиве (архивная запись только для чтения). */
+  private async requireEditableElement(id: string) {
+    const row = await this.requireElement(id);
+    const locked = archivedEditError('element', row);
+    if (locked) throw new UnprocessableEntityException(locked);
+    return row;
   }
 
   async requireActiveElement(id: string) {

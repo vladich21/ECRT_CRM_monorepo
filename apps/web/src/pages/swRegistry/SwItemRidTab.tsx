@@ -14,7 +14,7 @@ import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMess
 import { useNotification } from '@/hooks/notifications/useNotification';
 import type { AddSwItemPatentLinkPayload } from '@/types/swRegistry';
 import { SwItemPatentLinkModal } from './SwItemPatentLinkModal';
-import styles from './SwItemDetailsPage.module.scss';
+import styles from './SwRegistryShared.module.scss';
 
 type SwItemRidTabProps = {
   itemId: string;

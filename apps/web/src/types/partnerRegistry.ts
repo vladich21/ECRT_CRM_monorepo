@@ -6,3 +6,11 @@ export interface PartnerDetailExtras {
   targeted?: boolean;
   city?: string;
 }
+
+export interface RecentContractItem {
+  num: string;
+  date: string;
+  subject: string;
+  amount: string;
+  status: 'active' | 'completed';
+}

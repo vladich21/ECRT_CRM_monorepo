@@ -49,13 +49,6 @@ export class SvnController {
     return this.attachService.linkFolder(dto.itemId, dto.path ?? '');
   }
 
-  /** Каталог программы в сопоставлении с её комплектом документации. */
-  @Get('folder')
-  @RequirePermission(SECTIONS.SW_ITEMS, 'read')
-  folder(@Query('itemId') itemId: string) {
-    return this.attachService.folderState(itemId);
-  }
-
   /** Перенос выбранного файла в реестр. */
   @Post('attach')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')

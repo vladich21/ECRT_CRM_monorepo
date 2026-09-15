@@ -112,10 +112,7 @@ export function parseUploadFormData(formData: FormData): {
       entityType,
       entityId,
       documentSection: typeof documentSection === 'string' ? documentSection : undefined,
-      responseRequired:
-        responseRequiredRaw === 'true' ||
-        responseRequiredRaw === '1' ||
-        responseRequiredRaw === true,
+      responseRequired: responseRequiredRaw === 'true' || responseRequiredRaw === '1',
       responseDeadline: typeof responseDeadline === 'string' ? responseDeadline : null,
     },
   };

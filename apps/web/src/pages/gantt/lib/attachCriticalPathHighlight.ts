@@ -1,19 +1,9 @@
-import type { IApi, ILink, TID } from '@svar-ui/react-gantt';
+import type { IApi, ILink } from '@svar-ui/react-gantt';
 
 import { computeCriticalPath } from './criticalPath';
 import { linksFromApi } from './ganttApi';
 
-type TaskTree = {
-  byId: (id: TID) => { id: TID; $critical?: boolean } | undefined;
-  update: (id: TID, patch: { $critical: boolean }) => void;
-  forEach: (fn: (task: { id: TID; $critical?: boolean }) => void) => void;
-};
-
-type LinkArray = {
-  byId?: (id: TID) => { id: TID; $critical?: boolean } | undefined;
-  update?: (id: TID, patch: { $critical: boolean }) => void;
-  serialize?: () => Array<{ id?: TID; $critical?: boolean }>;
-};
+type CriticalLink = ILink & { $critical?: boolean };
 
 /**
  * MIT: PRO CPM не считает `$critical`, но UI уже умеет класс `wx-critical`,
@@ -30,11 +20,7 @@ export function applyCriticalPathFlags(
     ? computeCriticalPath(tasks, links)
     : { taskIds: new Set<string>(), linkIds: new Set<string>() };
 
-  const state = api.getState() as {
-    tasks: TaskTree;
-    links: LinkArray | ILink[];
-    _links?: Array<{ id?: TID; $critical?: boolean }>;
-  };
+  const state = api.getState();
 
   const tree = state.tasks;
   tree.forEach(task => {
@@ -45,22 +31,16 @@ export function applyCriticalPathFlags(
     }
   });
 
+  // state.links — DataArray (без serialize), byId для неизвестного id вернёт undefined.
   const linksStore = state.links;
-  if (linksStore && typeof linksStore === 'object' && 'update' in linksStore && linksStore.update) {
-    const serialized =
-      typeof linksStore.serialize === 'function'
-        ? linksStore.serialize()
-        : Array.isArray(linksStore)
-          ? linksStore
-          : links;
-    for (const link of serialized) {
-      if (link.id == null) continue;
-      const want = enabled && linkIds.has(String(link.id));
-      const current =
-        typeof linksStore.byId === 'function' ? linksStore.byId(link.id) : link;
-      if (current && !!current.$critical !== want) {
-        linksStore.update(link.id, { $critical: want });
-      }
+  for (const link of links) {
+    if (link.id == null) continue;
+    const want = enabled && linkIds.has(String(link.id));
+    const current: CriticalLink | undefined = linksStore.byId(link.id);
+    if (current && !!current.$critical !== want) {
+      // DataArray.update сливает объект с текущей записью
+      const next: CriticalLink = { ...current, $critical: want };
+      linksStore.update(link.id, next);
     }
   }
 

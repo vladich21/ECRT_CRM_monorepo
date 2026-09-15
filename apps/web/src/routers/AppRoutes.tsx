@@ -94,8 +94,6 @@ const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersList
 const RolesListPage = lazy(() => import('../pages/admin/roles/RolesListPage'));
 const SwStructurePage = lazy(() => import('../pages/swRegistry/SwStructurePage'));
 const SwItemsListPage = lazy(() => import('../pages/swRegistry/SwItemsListPage'));
-const SwItemDetailsPage = lazy(() => import('../pages/swRegistry/SwItemDetailsPage'));
-const SwDocumentDetailsPage = lazy(() => import('../pages/swRegistry/SwDocumentDetailsPage'));
 const SwSummaryPage = lazy(() => import('../pages/swRegistry/SwSummaryPage'));
 
 const Private = ({ children }: { children: React.ReactNode }) => <PrivateRoute>{children}</PrivateRoute>;
@@ -103,6 +101,15 @@ const Private = ({ children }: { children: React.ReactNode }) => <PrivateRoute>{
 const Guarded = ({ section, children }: { section: SectionCode; children: React.ReactNode }) => (
   <RequireSection section={section} action="read">{children}</RequireSection>
 );
+
+/** Карточка программы и страница документа реестра ПО заменены панелью в дереве: старые адреса ведут туда. */
+const RedirectSwItemToStructure = () => {
+  const { itemId, documentId } = useParams();
+  const params = new URLSearchParams();
+  if (itemId) params.set('itemId', itemId);
+  if (documentId) params.set('documentId', documentId);
+  return <Navigate to={`/sw/structure?${params}`} replace />;
+};
 
 const RedirectToUsersList = () => <Navigate to="/users" replace />;
 
@@ -266,8 +273,8 @@ export default function AppRoutes() {
           <Route index element={<Navigate to="/sw/items" replace />} />
           <Route path="structure" element={<Guarded section={SECTIONS.SW_STRUCTURE}><SwStructurePage /></Guarded>} />
           <Route path="items" element={<Guarded section={SECTIONS.SW_ITEMS}><SwItemsListPage /></Guarded>} />
-          <Route path="items/:itemId" element={<Guarded section={SECTIONS.SW_ITEMS}><SwItemDetailsPage /></Guarded>} />
-          <Route path="items/:itemId/documents/:documentId" element={<Guarded section={SECTIONS.SW_ITEMS}><SwDocumentDetailsPage /></Guarded>} />
+          <Route path="items/:itemId" element={<RedirectSwItemToStructure />} />
+          <Route path="items/:itemId/documents/:documentId" element={<RedirectSwItemToStructure />} />
           <Route path="summary" element={<Guarded section={SECTIONS.SW_SUMMARY}><SwSummaryPage /></Guarded>} />
         </Route>
       </Route>

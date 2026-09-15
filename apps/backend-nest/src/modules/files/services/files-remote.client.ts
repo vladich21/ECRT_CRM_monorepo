@@ -5,6 +5,8 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'crypto';
+import { Transform, pipeline } from 'stream';
 import type {
   FilesServiceFileResponse,
   FilesServiceListQuery,
@@ -14,6 +16,22 @@ import type {
   FilesServiceVersionListResponse,
   PrepareRemoteFileInput,
 } from '../files-remote.types';
+
+/**
+ * Готовность большого файла: files-service считает sha256 по всем байтам. Ждём 10 минут и ещё
+ * по 5 минут на каждый начатый гигабайт — фиксированный срок гигабайтные файлы не укладывал.
+ */
+const LARGE_READY_BASE_ATTEMPTS = 600;
+const LARGE_READY_ATTEMPTS_PER_GB = 300;
+const LARGE_READY_DELAY_MS = 1000;
+const GIGABYTE = 1024 ** 3;
+
+function largeReadyAttempts(sizeBytes?: number | null): number {
+  const gigabytes = Math.ceil(Math.max(0, sizeBytes ?? 0) / GIGABYTE);
+  return LARGE_READY_BASE_ATTEMPTS + gigabytes * LARGE_READY_ATTEMPTS_PER_GB;
+}
+/** Потоковый PATCH гигабайтного файла идёт долго; обрыв по таймауту — только при явном зависании. */
+const TUS_STREAM_TIMEOUT_MS = 6 * 3600_000;
 
 /**
  * HTTP-клиент к files-service (Bearer API-ключ).
@@ -167,6 +185,154 @@ export class FilesRemoteClient {
     }
   }
 
+  /**
+   * Серверная заливка потока (файлы из SVN, в том числе гигабайтные): prepare → tus одним
+   * потоковым PATCH → ожидание готовности. Байты в памяти не копятся. `completion` — завершение
+   * источника (процесс svn): если он упал, заливка считается сорванной. При любом сбое файл удаляется.
+   */
+  async ingestStream(input: {
+    filename: string;
+    contentType?: string;
+    entityType?: string;
+    entityId?: string;
+    createdBy?: string;
+    size: number;
+    stream: NodeJS.ReadableStream;
+    completion?: Promise<void>;
+  }): Promise<{ fileId: string; versionId: string; sizeBytes: number | null }> {
+    const prepared = await this.prepareFile({
+      filename: input.filename,
+      contentType: input.contentType,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      createdBy: input.createdBy,
+    });
+    try {
+      // Хеш считаем по пути в хранилище: сверка с хешем files-service ловит порчу байтов в дороге.
+      const hash = createHash('sha256');
+      const hashing = new Transform({
+        transform(chunk: Buffer, _encoding, callback) {
+          hash.update(chunk);
+          callback(null, chunk);
+        },
+      });
+      // Обрыв источника ловят completion и проверка Upload-Offset; здесь ошибку только гасим.
+      pipeline(input.stream, hashing, () => undefined);
+      await Promise.all([
+        this.tusUploadStream(prepared, hashing, input.size),
+        input.completion ?? Promise.resolve(),
+      ]);
+      const ready = await this.waitUntilReadyLarge(prepared.fileId, input.size);
+      const sent = hash.digest('hex');
+      const stored = ready.currentVersion?.sha256?.toLowerCase();
+      if (stored && stored !== sent) {
+        throw new BadGatewayException(`files-service: хеш файла не совпал (${stored} ≠ ${sent})`);
+      }
+      return {
+        fileId: prepared.fileId,
+        versionId: ready.currentVersion?.id ?? prepared.versionId,
+        sizeBytes: ready.currentVersion?.sizeBytes ?? input.size,
+      };
+    } catch (err) {
+      await this.deleteFile(prepared.fileId).catch(() => undefined);
+      throw err;
+    }
+  }
+
+  /**
+   * Готовность большого файла: files-service считает хеш по всем байтам, на гигабайтах это
+   * минуты. Для загрузки из браузера и из SVN ждём дольше, чем для мелких серверных заливок,
+   * и тем дольше, чем больше файл.
+   */
+  waitUntilReadyLarge(remoteFileId: string, sizeBytes?: number | null): Promise<FilesServiceFileResponse> {
+    return this.waitUntilReady(remoteFileId, largeReadyAttempts(sizeBytes), LARGE_READY_DELAY_MS);
+  }
+
+  private async tusCreate(prepared: FilesServicePrepareResponse, length: number): Promise<string> {
+    const endpoint = this.toOwnHost(prepared.upload.tusEndpoint).replace(/\/?$/, '/');
+    const meta = prepared.upload.metadata;
+    const b64 = (value: string) => Buffer.from(value, 'utf8').toString('base64');
+    const uploadMetadata = [
+      `filename ${b64(meta.filename)}`,
+      `fileId ${b64(meta.fileId)}`,
+      `versionId ${b64(meta.versionId)}`,
+    ].join(',');
+
+    let createRes: Response;
+    try {
+      createRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Tus-Resumable': '1.0.0',
+          'Upload-Length': String(length),
+          'Upload-Metadata': uploadMetadata,
+        },
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch (err) {
+      this.logger.error('files-service tus create network error', err);
+      throw new BadGatewayException('files-service tus недоступен');
+    }
+
+    if (!createRes.ok) {
+      const text = await createRes.text().catch(() => '');
+      throw new BadGatewayException(
+        `tus create ${createRes.status}${text ? `: ${text.slice(0, 200)}` : ''}`,
+      );
+    }
+
+    const location = createRes.headers.get('location');
+    if (!location) {
+      throw new BadGatewayException('tus create: нет Location');
+    }
+    if (!location.startsWith('http')) {
+      return `${this.baseUrl()}${location.startsWith('/') ? '' : '/'}${location}`;
+    }
+    if (!location.includes('/files/')) {
+      return `${this.baseUrl()}/files/${location.split('/').pop()}`;
+    }
+    return this.toOwnHost(location);
+  }
+
+  private async tusUploadStream(
+    prepared: FilesServicePrepareResponse,
+    stream: NodeJS.ReadableStream,
+    size: number,
+  ): Promise<void> {
+    const patchUrl = await this.tusCreate(prepared, size);
+
+    let patchRes: Response;
+    try {
+      // Тело — поток: fetch (undici) принимает async-iterable при duplex 'half', байты не буферизуются.
+      patchRes = await fetch(patchUrl, {
+        method: 'PATCH',
+        headers: {
+          'Tus-Resumable': '1.0.0',
+          'Upload-Offset': '0',
+          'Content-Type': 'application/offset+octet-stream',
+        },
+        body: stream as unknown as BodyInit,
+        duplex: 'half',
+        signal: AbortSignal.timeout(TUS_STREAM_TIMEOUT_MS),
+      } as RequestInit & { duplex: 'half' });
+    } catch (err) {
+      this.logger.error('files-service tus stream patch network error', err);
+      throw new BadGatewayException('files-service tus недоступен');
+    }
+
+    if (!patchRes.ok) {
+      const text = await patchRes.text().catch(() => '');
+      throw new BadGatewayException(
+        `tus patch ${patchRes.status}${text ? `: ${text.slice(0, 200)}` : ''}`,
+      );
+    }
+    // Источник мог оборваться раньше времени: без всех байтов загрузка не завершится и повиснет в pending.
+    const offset = Number(patchRes.headers.get('upload-offset'));
+    if (offset !== size) {
+      throw new BadGatewayException(`tus patch: принято ${offset} из ${size} байт`);
+    }
+  }
+
   async waitUntilReady(
     remoteFileId: string,
     attempts = 40,
@@ -207,50 +373,7 @@ export class FilesRemoteClient {
     prepared: FilesServicePrepareResponse,
     body: Buffer,
   ): Promise<void> {
-    const endpoint = this.toOwnHost(prepared.upload.tusEndpoint).replace(/\/?$/, '/');
-    const meta = prepared.upload.metadata;
-    const b64 = (value: string) => Buffer.from(value, 'utf8').toString('base64');
-    const uploadMetadata = [
-      `filename ${b64(meta.filename)}`,
-      `fileId ${b64(meta.fileId)}`,
-      `versionId ${b64(meta.versionId)}`,
-    ].join(',');
-
-    let createRes: Response;
-    try {
-      createRes = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Tus-Resumable': '1.0.0',
-          'Upload-Length': String(body.length),
-          'Upload-Metadata': uploadMetadata,
-        },
-        signal: AbortSignal.timeout(30_000),
-      });
-    } catch (err) {
-      this.logger.error('files-service tus create network error', err);
-      throw new BadGatewayException('files-service tus недоступен');
-    }
-
-    if (!createRes.ok) {
-      const text = await createRes.text().catch(() => '');
-      throw new BadGatewayException(
-        `tus create ${createRes.status}${text ? `: ${text.slice(0, 200)}` : ''}`,
-      );
-    }
-
-    const location = createRes.headers.get('location');
-    if (!location) {
-      throw new BadGatewayException('tus create: нет Location');
-    }
-    let patchUrl = location;
-    if (!patchUrl.startsWith('http')) {
-      patchUrl = `${this.baseUrl()}${location.startsWith('/') ? '' : '/'}${location}`;
-    } else if (!patchUrl.includes('/files/')) {
-      patchUrl = `${this.baseUrl()}/files/${patchUrl.split('/').pop()}`;
-    } else {
-      patchUrl = this.toOwnHost(patchUrl);
-    }
+    const patchUrl = await this.tusCreate(prepared, body.length);
 
     let patchRes: Response;
     try {

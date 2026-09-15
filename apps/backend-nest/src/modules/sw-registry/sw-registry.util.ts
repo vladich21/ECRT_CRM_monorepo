@@ -45,11 +45,33 @@ export function formatPersonName(row: {
   return name || String(row.id);
 }
 
-export function isPgUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code: string }).code === '23505'
-  );
+/** Ошибка Postgres. drizzle-orm с 0.44 заворачивает её в DrizzleQueryError, исходная лежит в cause. */
+function pgErrorOf(err: unknown): { code?: unknown; constraint?: unknown } | null {
+  let current: unknown = err;
+  for (let depth = 0; depth < 3 && typeof current === 'object' && current !== null; depth++) {
+    const candidate = current as { code?: unknown; constraint?: unknown; cause?: unknown };
+    if (typeof candidate.code === 'string') return candidate;
+    current = candidate.cause;
+  }
+  return null;
+}
+
+/** Нарушение уникальности; с `constraint` — только по этому индексу или ключу. */
+export function isPgUniqueViolation(err: unknown, constraint?: string): boolean {
+  const pg = pgErrorOf(err);
+  return pg?.code === '23505' && (constraint === undefined || pg.constraint === constraint);
+}
+
+/**
+ * Архивная запись только для чтения: правка отклоняется, пока запись не вернули из архива. Вернуть можно и
+ * вложенную часть — вышестоящие элементы поднимаются вместе с ней. null — запись действующая, менять можно.
+ */
+export function archivedEditError(
+  entity: 'item' | 'element',
+  record: { recordState: string },
+): { code: string; message: string } | null {
+  if (record.recordState !== 'archived') return null;
+  return entity === 'item'
+    ? { code: 'ITEM_ARCHIVED', message: 'Программа в архиве — сначала верните её из архива' }
+    : { code: 'ELEMENT_ARCHIVED', message: 'Элемент структуры в архиве — сначала верните его из архива' };
 }

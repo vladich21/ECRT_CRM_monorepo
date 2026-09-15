@@ -138,7 +138,7 @@ function mapProject(node: GanttApiProjectNode): GanttHierarchyNode {
   // Одна вспомогательная на проект — показываем на уровне проекта, не внутри этапа.
   const projectAuxiliary = auxiliaryTasks.slice(0, 1).map(task => ({
     ...task,
-    name: withAutoAuxiliaryProjectCode(task.name, node.project_code, task.isAutoAuxiliary),
+    name: withAutoAuxiliaryProjectCode(task.name, node.project_code, Boolean(task.isAutoAuxiliary)),
   }));
 
   return {

@@ -9,8 +9,11 @@ import { svnApi, type SvnEntry } from './svnApi';
 
 type Props = {
   open: boolean;
-  /** Что выбираем: файл для документа или каталог программы. */
-  mode?: 'file' | 'folder';
+  /**
+   * Что делаем: file — прикрепить файл к существующему объекту, folder — назначить каталог программе,
+   * select — только выбрать файл (документ ещё не создан, файл прикрепится при сохранении).
+   */
+  mode?: 'file' | 'folder' | 'select';
   objectType?: 'sw_item' | 'sw_document' | 'sw_sheet';
   objectId?: string;
   /** Программа, которой назначается каталог (в режиме folder). */
@@ -18,7 +21,9 @@ type Props = {
   /** Начальный каталог: например, папка программы в SVN. */
   startPath?: string;
   onClose: () => void;
-  onDone: () => void;
+  onDone?: () => void;
+  /** Режим select: выбранный файл. */
+  onSelect?: (entry: SvnEntry) => void;
 };
 
 function Crumbs({ path, onNavigate }: { path: string; onNavigate: (path: string) => void }) {
@@ -57,8 +62,10 @@ export function SvnPickerModal({
   startPath = '',
   onClose,
   onDone,
+  onSelect,
 }: Props) {
   const folderMode = mode === 'folder';
+  const selectMode = mode === 'select';
   const { message } = App.useApp();
   const [path, setPath] = useState(startPath);
   const [selected, setSelected] = useState<SvnEntry | null>(null);
@@ -82,7 +89,7 @@ export function SvnPickerModal({
           ? `Программа связана с каталогом «${result.svnPath || 'корень'}»`
           : `Файл «${result.filename}» прикреплён из SVN (ревизия ${result.revision})`,
       );
-      onDone();
+      onDone?.();
       onClose();
     },
     onError: (err: unknown) => {
@@ -92,6 +99,16 @@ export function SvnPickerModal({
       message.error(text);
     },
   });
+
+  const confirm = () => {
+    if (selectMode) {
+      if (!selected) return;
+      onSelect?.(selected);
+      onClose();
+      return;
+    }
+    attachMut.mutate();
+  };
 
   const entries = listQuery.data ?? [];
   const errorText = useMemo(() => {
@@ -107,6 +124,8 @@ export function SvnPickerModal({
       setSelected(entry);
     }
   };
+
+  const confirmLabel = folderMode ? 'Выбрать этот каталог' : selectMode ? 'Выбрать' : 'Прикрепить';
 
   return (
     <Modal
@@ -125,9 +144,9 @@ export function SvnPickerModal({
             type='primary'
             disabled={folderMode ? false : !selected}
             loading={attachMut.isPending}
-            onClick={() => attachMut.mutate()}
+            onClick={confirm}
           >
-            {folderMode ? 'Выбрать этот каталог' : 'Прикрепить'}
+            {confirmLabel}
           </Button>
         </div>
       }
@@ -166,7 +185,15 @@ export function SvnPickerModal({
                 type='button'
                 className={`${styles.row}${selected?.path === entry.path ? ` ${styles.rowSelected}` : ''}`}
                 onClick={() => openEntry(entry)}
-                onDoubleClick={() => !folderMode && entry.kind === 'file' && attachMut.mutate()}
+                onDoubleClick={() => {
+                  if (folderMode || entry.kind !== 'file') return;
+                  if (selectMode) {
+                    onSelect?.(entry);
+                    onClose();
+                    return;
+                  }
+                  attachMut.mutate();
+                }}
               >
                 {entry.kind === 'dir' ? (
                   <FolderOutlined className={styles.icon} />

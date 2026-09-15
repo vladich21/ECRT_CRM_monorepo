@@ -1,9 +1,9 @@
-import { CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
-import { Button, Tag } from 'antd';
+import { useState } from 'react';
+import { CaretDownOutlined, CaretRightOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Tag, type MenuProps } from 'antd';
 
 import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
 import styles from './SwStructurePage.module.scss';
-import type { SwNodeCounts } from './swStructurePrograms';
 
 type Props = {
   node: SwStructureNode;
@@ -14,10 +14,61 @@ type Props = {
   onToggleExpand: (id: string) => void;
   onSelect: (node: SwStructureNode) => void;
   programsByElement: Map<string, SwItemListRow[]>;
-  countsByNode: Map<string, SwNodeCounts>;
   selectedProgramId: string | null;
   onSelectProgram: (item: SwItemListRow) => void;
+  /** Можно добавить дочерний элемент (право на структуру, вкладка действующих). */
+  canAddElement: boolean;
+  /** Можно зарегистрировать ПО на элементе (право на программы, вкладка действующих). */
+  canAddProgram: boolean;
+  onAddElement: (parent: SwStructureNode) => void;
+  onAddProgram: (element: SwStructureNode) => void;
 };
+
+/** «+» у элемента: что добавить внутрь. У программы добавлять нечего, у архивного элемента — некуда. */
+function AddMenu({
+  node,
+  canAddElement,
+  canAddProgram,
+  onAddElement,
+  onAddProgram,
+}: Pick<Props, 'node' | 'canAddElement' | 'canAddProgram' | 'onAddElement' | 'onAddProgram'>) {
+  const [open, setOpen] = useState(false);
+  const items: NonNullable<MenuProps['items']> = [];
+  if (canAddElement) items.push({ key: 'element', label: 'Дочерний элемент' });
+  if (canAddProgram) items.push({ key: 'program', label: 'Программное обеспечение' });
+  if (items.length === 0) return null;
+
+  return (
+    // Меню рисуется в портале, но события React всплывают по дереву компонентов: без остановки клик по пункту
+    // выбрал бы и сам элемент.
+    <span className={styles.treeAddWrap} onClick={e => e.stopPropagation()}>
+      <Dropdown
+        trigger={['click']}
+        placement='bottomRight'
+        open={open}
+        onOpenChange={setOpen}
+        menu={{
+          items,
+          onClick: ({ key, domEvent }) => {
+            domEvent.stopPropagation();
+            setOpen(false);
+            if (key === 'element') onAddElement(node);
+            else if (key === 'program') onAddProgram(node);
+          },
+        }}
+      >
+        <Button
+          type='text'
+          size='small'
+          className={`${styles.treeAdd}${open ? ` ${styles.treeAddOpen}` : ''}`}
+          icon={<PlusOutlined />}
+          aria-label={`Добавить в ${node.code}`}
+          title='Добавить'
+        />
+      </Dropdown>
+    </span>
+  );
+}
 
 export function SwStructureTreeNode({
   node,
@@ -28,9 +79,12 @@ export function SwStructureTreeNode({
   onToggleExpand,
   onSelect,
   programsByElement,
-  countsByNode,
   selectedProgramId,
   onSelectProgram,
+  canAddElement,
+  canAddProgram,
+  onAddElement,
+  onAddProgram,
 }: Props) {
   const childNodes = node.children ?? [];
   const ownPrograms = programsByElement.get(node.id) ?? [];
@@ -38,7 +92,6 @@ export function SwStructureTreeNode({
   const expanded = expandedIds.has(node.id);
   const isSelected = selectedId === node.id;
   const isArchived = node.recordState === 'archived';
-  const counts = countsByNode.get(node.id);
 
   return (
     <div className={styles.treeChildren} style={{ marginLeft: depth === 0 ? 0 : 16 }}>
@@ -73,15 +126,16 @@ export function SwStructureTreeNode({
             </Tag>
           ) : null}
         </div>
-        {counts && counts.programs > 0 ? (
-          <span
-            className={styles.treeCount}
-            title={`${counts.programs} программ(ы) и ${counts.documents} документов в ветке`}
-          >
-            {counts.programs}
-          </span>
-        ) : null}
         <Tag className={styles.treeTypeBadge}>{typeByCode.get(node.elementTypeCode) ?? node.elementTypeCode}</Tag>
+        {!isArchived ? (
+          <AddMenu
+            node={node}
+            canAddElement={canAddElement}
+            canAddProgram={canAddProgram}
+            onAddElement={onAddElement}
+            onAddProgram={onAddProgram}
+          />
+        ) : null}
       </div>
 
       {expanded
@@ -96,9 +150,12 @@ export function SwStructureTreeNode({
               onToggleExpand={onToggleExpand}
               onSelect={onSelect}
               programsByElement={programsByElement}
-              countsByNode={countsByNode}
               selectedProgramId={selectedProgramId}
               onSelectProgram={onSelectProgram}
+              canAddElement={canAddElement}
+              canAddProgram={canAddProgram}
+              onAddElement={onAddElement}
+              onAddProgram={onAddProgram}
             />
           ))
         : null}
@@ -117,7 +174,12 @@ export function SwStructureTreeNode({
               <span className={styles.treeProgramName} title={`${item.designation} — ${item.fullName}`}>
                 {item.shortName}
               </span>
-              <span className={styles.treeProgramDocs}>{item.documentsCount}</span>
+              {/* Как у архивного элемента: бейдж виден и на вкладке «Архивные», и при «Показывать архивные». */}
+              {item.recordState === 'archived' ? (
+                <Tag bordered={false} className={styles.treeArchivedTag}>
+                  архивная
+                </Tag>
+              ) : null}
             </div>
           ))}
         </div>

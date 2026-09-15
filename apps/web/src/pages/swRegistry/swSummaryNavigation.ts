@@ -14,7 +14,9 @@ export function buildSummaryDrillHref(
     params.set('documentStatus', statusCode);
   }
   if (by === 'item') {
-    return `/sw/items/${rowId}?${params.toString()}`;
+    // Комплект документации программы открывается в структуре: панель программы у дерева.
+    params.set('itemId', rowId);
+    return `/sw/structure?${params.toString()}`;
   }
   if (by === 'element') params.set('elementId', rowId);
   if (by === 'partner') params.set('partnerId', rowId);

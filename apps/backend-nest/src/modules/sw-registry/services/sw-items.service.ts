@@ -11,7 +11,13 @@ import { DatabaseService } from '../../../database/database.service';
 import { partners, patents, users } from '../../../database/schema';
 import { swDocuments, swItemPatents, swItems, swRefDevelopmentKinds, swRefStatuses, swStructureElements } from '../sw-registry.schema';
 import type { AddSwItemPatentDto, CreateSwItemDto, UpdateSwItemDto } from '../dto/sw-registry.dto';
-import { formatPersonName, gost19103Warning, isPgUniqueViolation, normalizeDesignation } from '../sw-registry.util';
+import {
+  archivedEditError,
+  formatPersonName,
+  gost19103Warning,
+  isPgUniqueViolation,
+  normalizeDesignation,
+} from '../sw-registry.util';
 import { validateSwItemsListQuery } from '../sw-list-query.validation';
 import { SwStructureService } from './sw-structure.service';
 
@@ -292,6 +298,8 @@ export class SwItemsService {
 
   async update(id: string, dto: UpdateSwItemDto, userId?: string) {
     const current = await this.requireItem(id);
+    const locked = archivedEditError('item', current);
+    if (locked) throw new UnprocessableEntityException(locked);
     if (dto.elementId) await this.structure.requireActiveElement(dto.elementId);
     if (dto.developmentKindCode) await this.assertKind(dto.developmentKindCode);
     if (dto.partnerId) await this.assertPartner(dto.partnerId);
@@ -338,7 +346,10 @@ export class SwItemsService {
   }
 
   async restore(id: string) {
-    await this.requireItem(id);
+    const item = await this.requireItem(id);
+    // Программа возвращается на своё место в дереве: элемент и его вышестоящие, если они в архиве, поднимаются
+    // вместе с ней, иначе она оказалась бы под архивным элементом и не была бы видна среди действующих.
+    await this.structure.restorePath(item.elementId);
     await this.db.db
       .update(swItems)
       .set({ recordState: 'active', archivedByCascade: false, updatedAt: new Date() })
@@ -405,7 +416,9 @@ export class SwItemsService {
   }
 
   async addPatentLink(softwareId: string, dto: AddSwItemPatentDto, userId?: string) {
-    await this.requireItem(softwareId);
+    const item = await this.requireItem(softwareId);
+    const locked = archivedEditError('item', item);
+    if (locked) throw new UnprocessableEntityException(locked);
     const [patent] = await this.db.db
       .select({ id: patents.id, isDeleted: patents.isDeleted })
       .from(patents)
@@ -435,7 +448,9 @@ export class SwItemsService {
   }
 
   async removePatentLink(softwareId: string, patentId: string) {
-    await this.requireItem(softwareId);
+    const item = await this.requireItem(softwareId);
+    const locked = archivedEditError('item', item);
+    if (locked) throw new UnprocessableEntityException(locked);
     const deleted = await this.db.db
       .delete(swItemPatents)
       .where(and(eq(swItemPatents.softwareId, softwareId), eq(swItemPatents.patentId, patentId)))

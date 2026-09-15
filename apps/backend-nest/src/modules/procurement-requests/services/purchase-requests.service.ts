@@ -1143,7 +1143,9 @@ function toSupplierRow(
 }
 
 function isUniqueViolation(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && 'code' in err && (err as { code: string }).code === '23505';
+  // drizzle-orm заворачивает ошибку Postgres в DrizzleQueryError: код лежит в cause.
+  const pg = (err as { cause?: { code?: unknown } } | null)?.cause ?? (err as { code?: unknown } | null);
+  return pg?.code === '23505';
 }
 
 /** ILIKE-паттерн для поиска; пустая строка — без фильтра. */

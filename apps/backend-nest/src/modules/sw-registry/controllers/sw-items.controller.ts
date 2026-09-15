@@ -3,7 +3,13 @@ import type { Request } from 'express';
 
 import { RequirePermission } from '../../permissions/decorators/permission-meta';
 import { SECTIONS } from '../../../shared/permissions';
-import { AddSwItemPatentDto, CreateSwDocumentDto, CreateSwItemDto, UpdateSwItemDto } from '../dto/sw-registry.dto';
+import {
+  AddSwItemPatentDto,
+  CreateSwDocumentDto,
+  CreateSwItemDto,
+  SwDocumentUploadTicketDto,
+  UpdateSwItemDto,
+} from '../dto/sw-registry.dto';
 import { SwDocumentsService } from '../services/sw-documents.service';
 import { SwItemsService } from '../services/sw-items.service';
 
@@ -84,6 +90,25 @@ export class SwItemsController {
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   addDocument(@Param('id') id: string, @Body('body') dto: CreateSwDocumentDto, @Req() req: AuthReq) {
     return this.documents.create(id, dto, req.user?.user_id);
+  }
+
+  /** Загрузка файла с компьютера для документа, которого ещё нет: браузер льёт байты tus-ом напрямую. */
+  @Post('detail/:id/documents/upload-ticket')
+  @HttpCode(201)
+  @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
+  createDocumentUploadTicket(
+    @Param('id') id: string,
+    @Body('body') dto: SwDocumentUploadTicketDto,
+    @Req() req: AuthReq,
+  ) {
+    return this.documents.createUploadTicket(id, dto, req.user?.user_id);
+  }
+
+  /** Отказ от загруженного, но не использованного файла (окно закрыли без создания документа). */
+  @Delete('detail/:id/documents/upload-ticket/:fileId')
+  @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
+  discardDocumentUpload(@Param('fileId') fileId: string) {
+    return this.documents.discardUpload(fileId);
   }
 
   @Get('detail/:id/patents')

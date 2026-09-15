@@ -63,7 +63,7 @@ export function SwSummaryTable({ by, data, rowLabel, returnPath, resolveRowName 
                     style={row.depth ? { paddingLeft: 10 + row.depth * 20 } : undefined}
                   >
                     {by === 'item' ? (
-                      <Link to={`/sw/items/${row.id}`} state={{ from: returnPath }} className={styles.cellLink}>
+                      <Link to={`/sw/structure?itemId=${row.id}`} state={{ from: returnPath }} className={styles.cellLink}>
                         {name}
                       </Link>
                     ) : (

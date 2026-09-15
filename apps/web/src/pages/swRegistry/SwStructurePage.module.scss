@@ -24,21 +24,13 @@
 }
 
 .filterSection   { @include lp.filterSection; }
-.filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
-.filterTabsRight { @include lp.filterTabsRight; }
-.searchInTabsRow { @include lp.searchInput; }
+.filterTabsRow   { @include lp.filterTabsRow; }
 .searchIcon      { @include lp.searchIcon; }
 .resultCount     { @include lp.resultCount; }
 .filterTabs      { @include lp.filterTabs; }
 .filterTab       { @include lp.filterTab; }
 .filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
 .filterTabCount  { @include lp.filterTabCount; }
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
 
 .showArchived {
   white-space: nowrap;
@@ -59,18 +51,92 @@
   }
 }
 
+/* Панель дерева — колонка: тулбар (поиск, архивные, добавление) стоит на месте,
+   листается только само дерево. */
 .treePanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
   background: #fff;
   border: 1px solid #f0f0f0;
   border-radius: 12px;
-  padding: 8px 0;
-  max-height: 100%;
-  overflow: auto;
-  overscroll-behavior: contain;
 
   @media (max-width: 900px) {
     max-height: calc(100vh - 280px);
   }
+}
+
+.treeToolbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.treeToolbarRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.treeSearch {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: v.$radius-lg;
+}
+
+/* «+» у элемента дерева: виден при наведении, на выбранной строке и пока открыто меню. */
+.treeAddWrap {
+  display: inline-flex;
+  flex: none;
+}
+
+.treeAdd {
+  width: 22px;
+  height: 22px;
+  color: v.$text-quaternary;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .treeNode:hover &,
+  .treeNodeSelected &,
+  &:focus-visible {
+    opacity: 1;
+  }
+
+  /* На сенсорных экранах наведения нет — кнопка видна всегда. */
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.treeAddOpen {
+  opacity: 1;
+}
+
+.treeBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 8px 0;
+}
+
+.treeEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+  text-align: center;
 }
 
 .detailPanel {
@@ -190,43 +256,6 @@
   gap: 16px;
 }
 
-.detailHeaderCard {
-  background: #fff;
-  border: 1px solid #f0f0f0;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.detailTitleRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.detailTitle {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #141414;
-  line-height: 1.35;
-}
-
-.detailBadges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.detailActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
 .card {
   background: #fff;
   border-radius: 10px;
@@ -297,12 +326,6 @@
   }
 }
 
-.infoLabel {
-  font-size: 14px;
-  color: #8c8c8c;
-  flex-shrink: 0;
-}
-
 .infoValue {
   font-size: 14px;
   font-weight: 600;
@@ -310,28 +333,6 @@
   text-align: right;
   max-width: 62%;
   word-break: break-word;
-}
-
-.infoValuePlain {
-  font-weight: 600;
-}
-
-.infoValueMultiline {
-  font-weight: 400;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.infoCodeTag {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.35;
-  padding: 2px 10px;
-  border-radius: 6px;
-  border: 1px solid #e8e8e8;
-  background: #fafafa;
-  color: #595959;
 }
 
 .infoLink {
@@ -369,13 +370,6 @@
   font-size: 13px;
   font-weight: 400;
   color: #bfbfbf;
-}
-
-.descriptionText {
-  font-size: 14px;
-  color: #262626;
-  line-height: 1.6;
-  white-space: pre-wrap;
 }
 
 .responsibleRow {
@@ -457,36 +451,7 @@
   text-align: center;
 }
 
-.empty {
-  text-align: center;
-  padding: 48px 0;
-  color: #8c8c8c;
-  font-size: 14px;
-}
-
-.itemLink {
-  color: #1677ff;
-  font-weight: 600;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 /* ── Вариант Б: программы в дереве и панель ветки ───────────────── */
-
-.treeCount {
-  flex: none;
-  min-width: 20px;
-  padding: 0 6px;
-  border-radius: 9px;
-  background: #f0f5ff;
-  color: #2f54eb;
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
 
 .treeProgram {
   display: flex;
@@ -511,7 +476,6 @@
     background: #e6f4ff;
   }
 }
-
 .treeProgramName {
   flex: 1 1 auto;
   min-width: 0;
@@ -519,13 +483,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.treeProgramDocs {
-  flex: none;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-  font-variant-numeric: tabular-nums;
 }
 
 .branchDocs {
@@ -645,13 +602,6 @@
   color: rgba(0, 0, 0, 0.25);
 }
 
-.programPanelCode {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.55);
-  margin-bottom: 2px;
-}
-
 .docTableWrap {
   /* Прокручивается только комплект: реквизиты программы и дерево остаются на месте. */
   margin-top: 4px;
@@ -667,159 +617,196 @@
   }
 }
 
-.docTable {
-  width: 100%;
-  min-width: 820px;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 13.5px;
-
-  th:nth-child(1),
-  td:nth-child(1) {
-    width: 38%;
-  }
-
-  th:nth-child(2),
-  td:nth-child(2) {
-    width: 24%;
-  }
-
-  th:nth-child(3),
-  td:nth-child(3) {
-    width: 9%;
-  }
-
-  th:nth-child(4),
-  td:nth-child(4) {
-    width: 7%;
-  }
-
-  th:nth-child(5),
-  td:nth-child(5),
-  th:nth-child(6),
-  td:nth-child(6),
-  th:nth-child(7),
-  td:nth-child(7) {
-    width: 12%;
-  }
-
-  th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: 8px 10px;
-    border-bottom: 1px solid #f0f0f0;
-    background: #fff;
-    color: rgba(0, 0, 0, 0.45);
-    font-size: 12px;
-    font-weight: 500;
-    text-align: left;
-    white-space: nowrap;
-  }
-
-  td {
-    padding: 9px 10px;
-    border-bottom: 1px solid #f5f5f5;
-    vertical-align: top;
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-}
-
-.docNum {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.docLink {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12.5px;
-  white-space: nowrap;
-}
-
-.docName {
-  margin-top: 2px;
-  color: rgba(0, 0, 0, 0.55);
-  font-size: 12.5px;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
-.docDash {
-  color: rgba(0, 0, 0, 0.25);
-}
-
-/* ── Компактная шапка карточки программы ───────────────────────── */
+/* ── Шапка программы ─────────────────────────────────────────────
+   Один шрифт и три уровня текста: наименование — главное; значения реквизитов — основной текст;
+   обозначение, вид разработки и подписи полей — второстепенное. */
 
 .programHeadCard {
   flex: none;
-  background: #fff;
-  border: 1px solid #f0f0f0;
-  border-radius: 12px;
-  padding: 14px 16px;
+  background: v.$bg-primary;
+  border: 1px solid v.$border-tertiary;
+  border-radius: v.$radius-xl;
+  padding: v.$spacing-2xl v.$spacing-3xl;
 }
 
 .programHeadRow {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: v.$spacing-2xl;
 }
 
 .programHeadTitle {
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: v.$spacing-2xs;
   min-width: 0;
+}
+
+.programEyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: v.$spacing-sm;
+  font-size: v.$font-sm;
+  line-height: v.$line-height-normal;
+  color: v.$text-quaternary;
+}
+
+.programDesignation {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.programState {
+  margin: 0;
+  font-size: v.$font-sm;
 }
 
 .programHeadName {
   margin: 0;
-  font-size: 18px;
+  font-size: v.$font-xl;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: v.$line-height-tight;
+  color: v.$text-primary;
+  overflow-wrap: anywhere;
+}
+
+.programFullName {
+  font-size: v.$font-md;
+  line-height: v.$line-height-normal;
+  color: v.$text-tertiary;
 }
 
 .programMeta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 20px;
-  margin: 10px 0 0;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$spacing-xl v.$spacing-4xl;
+  margin: v.$spacing-xl 0 0;
+  padding-top: v.$spacing-xl;
+  border-top: 1px solid v.$border-tertiary;
 }
 
 .metaCell,
 .metaCellWide {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  gap: v.$spacing-2xs;
   min-width: 0;
 
   dt {
-    flex: none;
-    color: rgba(0, 0, 0, 0.45);
-    font-size: 12.5px;
+    font-size: v.$font-sm;
+    line-height: v.$line-height-normal;
+    color: v.$text-quaternary;
+  }
+
+  dd {
+    display: flex;
+    align-items: center;
+    gap: v.$spacing-xs;
+    min-width: 0;
+    min-height: 24px;
+    margin: 0;
+    font-size: v.$font-base;
+    line-height: v.$line-height-normal;
+    color: v.$text-secondary;
+  }
+}
+
+.metaCell {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.metaCellWide {
+  flex: 1 1 260px;
+}
+
+/* Длинное значение (разработчик, путь в SVN) — одной строкой с многоточием, целиком в подсказке. */
+.metaText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaEmpty {
+  color: v.$text-placeholder;
+}
+
+.metaAction {
+  flex: none;
+  color: v.$text-quaternary;
+}
+
+/* Описание элемента — на всю ширину и с переносами. */
+.metaCellFull {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: v.$spacing-2xs;
+  min-width: 0;
+
+  dt {
+    font-size: v.$font-sm;
+    line-height: v.$line-height-normal;
+    color: v.$text-quaternary;
   }
 
   dd {
     margin: 0;
-    min-width: 0;
-    font-size: 13.5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: v.$font-base;
+    line-height: v.$line-height-normal;
+    color: v.$text-secondary;
   }
 }
 
-.metaCellWide {
-  grid-column: 1 / -1;
+.metaMultiline {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Ответственные элемента: по программам и дополнительные ───── */
+
+.respSection + .respSection {
+  margin-top: v.$spacing-3xl;
+  padding-top: v.$spacing-2xl;
+  border-top: 1px solid v.$border-tertiary;
+}
+
+.respSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$spacing-xl;
+  min-height: 24px;
+  margin-bottom: v.$spacing-md;
+}
+
+.respSectionTitle {
+  font-size: v.$font-sm;
+  line-height: v.$line-height-normal;
+  color: v.$text-quaternary;
+}
+
+.responsiblePrograms {
+  font-size: v.$font-md;
+  line-height: v.$line-height-normal;
+  color: v.$text-quaternary;
+}
+
+.responsibleProgram {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: v.$primary-color;
+  cursor: pointer;
+
+  &:hover {
+    color: v.$primary-light;
+    text-decoration: underline;
+  }
 }
 
 .docOpen {
@@ -860,9 +847,90 @@
   opacity: 0.55;
   transition: opacity 0.15s;
 
-  .docTable tr:hover & {
+  .programDocTable tr:hover & {
     opacity: 1;
   }
+}
+
+/* Таблица комплекта в панели программы: шапка остаётся на месте, листаются строки. */
+.programDocTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.docsTitleActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.docsFilter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* Вкладки панели программы: те же, что над экраном, только компактнее и без
+   отрицательного отступа — здесь они стоят в заголовке карточки. */
+.programTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.programTab {
+  @include lp.filterTab;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+
+.programTabActive {
+  @include lp.filterTab;
+  @include lp.filterTabActive;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+
+/* Элемент структуры в реквизитах программы: переход к нему в дереве. */
+.metaLink {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: v.$primary-color;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: v.$primary-light;
+    text-decoration: underline;
+  }
+}
+
+/* Действия с программой: на виду только правка, остальное — в меню «⋯». */
+.programHeadActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: v.$spacing-md;
+}
+
+/* Файлы и связи с РИД не держат свою прокрутку — листается тело вкладки. */
+.programTabBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .itemPick {
@@ -886,21 +954,6 @@
   font-size: 12.5px;
 }
 
-.docSubtle {
-  margin-top: 2px;
-  color: rgba(0, 0, 0, 0.45);
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.docIps {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
 .docSvn {
   display: flex;
   align-items: center;
@@ -914,6 +967,57 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Документ, открытый в боковой панели. */
+.docRowSelected td {
+  background: v.$bg-active;
+}
+
+/* Меню «⋯» строки комплекта. */
+.docTableMenuCol {
+  width: 36px;
+  padding-right: 4px !important;
+  text-align: right;
+}
+
+/* Боковая панель документа комплекта. */
+.docDrawerTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.docDrawerDesignation {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: v.$font-base;
+  font-weight: 600;
+}
+
+.docDrawerName {
+  font-size: v.$font-md;
+  font-weight: 400;
+  color: v.$text-quaternary;
+  overflow-wrap: anywhere;
+}
+
+.docDrawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.docDrawerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.docDrawerMetaText {
+  font-size: v.$font-md;
+  color: v.$text-tertiary;
+}
+
 .docSvnStale {
   padding: 1px 6px;
   border-radius: 8px;
@@ -922,35 +1026,3 @@
   white-space: nowrap;
 }
 
-.svnFolder {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-
-.orphanList {
-  display: flex;
-  flex-direction: column;
-  max-height: 210px;
-  overflow: auto;
-}
-
-.orphanRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
-  border-bottom: 1px solid #fafafa;
-
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.orphanName {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-}

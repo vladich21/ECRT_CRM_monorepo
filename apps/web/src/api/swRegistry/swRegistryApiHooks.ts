@@ -35,20 +35,24 @@ export function useSwReferences(kind: string) {
   });
 }
 
-export function useSwItems(params: {
-  elementId?: string;
-  developmentKind?: string;
-  partnerId?: string;
-  recordState?: string;
-  documentStatus?: string;
-  sheetStatus?: string;
-  q?: string;
-  page?: number;
-  limit?: number;
-}) {
+export function useSwItems(
+  params: {
+    elementId?: string;
+    developmentKind?: string;
+    partnerId?: string;
+    recordState?: string;
+    documentStatus?: string;
+    sheetStatus?: string;
+    q?: string;
+    page?: number;
+    limit?: number;
+  },
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: swRegistryQueryKeys.items(params),
     queryFn: () => swRegistryApi.getItems(params),
+    enabled: options.enabled ?? true,
   });
 }
 
@@ -68,15 +72,23 @@ export function useSwItemPatentLinks(itemId: string | undefined) {
   });
 }
 
+/**
+ * После привязки или отвязки РИД обновляем всё, где связь видна: вкладку программы, её карточку и блок
+ * «Связи с РИД» у элементов структуры. Кэш живёт 30 минут (main.jsx) — без сброса блок у элемента отставал.
+ * У какого элемента и его предков связь показывается, фронт не знает, поэтому сбрасываем блоки всех элементов.
+ */
+function invalidateItemPatentLinks(queryClient: ReturnType<typeof useQueryClient>, itemId: string) {
+  void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.itemPatents(itemId) });
+  void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.item(itemId) });
+  void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.structurePatentsAll() });
+}
+
 export function useAddSwItemPatentLink() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ itemId, payload }: { itemId: string; payload: AddSwItemPatentLinkPayload }) =>
       swRegistryApi.addItemPatentLink(itemId, payload),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.itemPatents(variables.itemId) });
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.item(variables.itemId) });
-    },
+    onSuccess: (_data, variables) => invalidateItemPatentLinks(queryClient, variables.itemId),
   });
 }
 
@@ -85,18 +97,7 @@ export function useRemoveSwItemPatentLink() {
   return useMutation({
     mutationFn: ({ itemId, patentId }: { itemId: string; patentId: string }) =>
       swRegistryApi.removeItemPatentLink(itemId, patentId),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.itemPatents(variables.itemId) });
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.item(variables.itemId) });
-    },
-  });
-}
-
-export function useSwDocument(id: string | undefined) {
-  return useQuery({
-    queryKey: swRegistryQueryKeys.document(id ?? ''),
-    queryFn: () => swRegistryApi.getDocument(id!),
-    enabled: Boolean(id),
+    onSuccess: (_data, variables) => invalidateItemPatentLinks(queryClient, variables.itemId),
   });
 }
 

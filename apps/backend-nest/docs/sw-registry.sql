@@ -147,9 +147,9 @@ CREATE TABLE IF NOT EXISTS sw_documents (
   updated_by uuid
 );
 
+-- Уникально только обозначение: номер вида живой, перенумерация не должна упираться в индекс
+-- (индекс по «программа + вид + номер» снят скриптом scripts/sw-registry/01).
 CREATE UNIQUE INDEX IF NOT EXISTS sw_documents_designation_uidx ON sw_documents (designation);
-CREATE UNIQUE INDEX IF NOT EXISTS sw_documents_kind_seq_uidx
-  ON sw_documents (software_id, document_kind_code, kind_sequence_no);
 CREATE INDEX IF NOT EXISTS sw_documents_software_idx ON sw_documents (software_id);
 CREATE INDEX IF NOT EXISTS sw_documents_status_idx ON sw_documents (status_code);
 
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS sw_files (
 CREATE UNIQUE INDEX IF NOT EXISTS sw_files_object_file_uidx
   ON sw_files (object_type, object_id, file_id);
 CREATE INDEX IF NOT EXISTS sw_files_object_idx ON sw_files (object_type, object_id);
-CREATE INDEX IF NOT EXISTS sw_files_file_idx ON sw_files (file_id);
+CREATE UNIQUE INDEX IF NOT EXISTS sw_files_file_uidx ON sw_files (file_id);
 
 -- ── Связи программ с реестром РИД ─────────────────────────────
 
