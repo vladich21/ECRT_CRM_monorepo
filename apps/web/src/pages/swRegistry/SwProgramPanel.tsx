@@ -8,7 +8,7 @@ import {
   PlusOutlined,
   UndoOutlined,
 } from '@ant-design/icons';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, Button, Dropdown, Spin, Tag, Tooltip, type MenuProps } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 
@@ -47,6 +47,8 @@ import type {
 } from '@/types/swRegistry';
 import { SwDocumentCreateModal } from './SwDocumentCreateModal';
 import { SwDocumentDrawer, type SwDocumentDrawerTab } from './SwDocumentDrawer';
+import { uploadSwRegistryFile } from '@/api/swRegistry/uploadSwFile';
+import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './SwApprovalSheetModal';
 import { SwDocumentEditModal } from './SwDocumentEditModal';
 import { SwDocumentStatusModal } from './SwDocumentStatusModal';
 import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
@@ -62,6 +64,8 @@ type Props = {
   documentKindByCode: Map<string, string>;
   gostCodeByKind: Map<string, string>;
   statusByCode: Map<string, string>;
+  /** Справочник статусов ещё едет: без него подписи и правила листа меняются на глазах. */
+  referencesLoading?: boolean;
   /** Программа помечена удалённой — экран снимает с неё выбор. */
   onDeleted: () => void;
   /** Переход к элементу структуры программы в дереве. */
@@ -81,6 +85,7 @@ export function SwProgramPanel({
   documentKindByCode,
   gostCodeByKind,
   statusByCode,
+  referencesLoading,
   onDeleted,
   onSelectElement,
 }: Props) {
@@ -150,7 +155,11 @@ export function SwProgramPanel({
   };
 
   const [preview, setPreview] = useState<SwDocumentFile | null>(null);
-  const [svnTarget, setSvnTarget] = useState<{ id: string; designation: string } | null>(null);
+  const [svnTarget, setSvnTarget] = useState<{
+    id: string;
+    designation: string;
+    objectType: 'sw_document' | 'sw_sheet';
+  } | null>(null);
   const [folderPickerOpen, setFolderPickerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [createDocOpen, setCreateDocOpen] = useState(false);
@@ -158,6 +167,7 @@ export function SwProgramPanel({
   const [editDoc, setEditDoc] = useState<SwDocumentListRow | null>(null);
   const [statusModal, setStatusModal] = useState<StatusModalState | null>(null);
   const [ipsModalDoc, setIpsModalDoc] = useState<SwDocumentListRow | null>(null);
+  const [sheetModalDoc, setSheetModalDoc] = useState<SwDocumentListRow | null>(null);
 
   const updateItemMut = useUpdateSwItem();
   const archiveItemMut = useArchiveSwItem();
@@ -184,34 +194,33 @@ export function SwProgramPanel({
     triggerFileDownload(link.url, file.filename);
   };
 
-  // Файлы комплекта: по одному запросу на документ, в обратном индексе связь
-  // хранится за объектом, списком по программе хранилище её не отдаёт.
-  const fileQueries = useQueries({
-    queries: documents.map(doc => ({
-      queryKey: swRegistryQueryKeys.files('sw_document', doc.id),
-      queryFn: () => swRegistryApi.listFiles('sw_document', doc.id),
-      staleTime: 60_000,
-    })),
-  });
+  // Копии документов и листов приходят вместе с комплектом: раньше на каждый
+  // объект уходил отдельный запрос, и таблица достраивалась по частям.
   const fileByDocument = new Map<string, SwDocumentFile>();
-  documents.forEach((doc, index) => {
-    // Показываем актуальную копию: сперва пришедшую из SVN, иначе последнюю
-    // загруженную. Первая по порядку — самая старая, и это вводило в заблуждение.
-    const attached = fileQueries[index]?.data ?? [];
-    const actual = [...attached].reverse().find(f => f.svnPath) ?? attached.at(-1);
-    if (actual) {
-      fileByDocument.set(doc.id, {
-        fileId: actual.fileId,
-        filename: actual.filename,
-        svnPath: actual.svnPath ?? null,
-        svnRevision: actual.svnRevision ?? null,
-      });
-    }
+  const sheetFileByDocument = new Map<string, SwDocumentFile>();
+  documents.forEach(doc => {
+    if (doc.file) fileByDocument.set(doc.id, doc.file);
+    if (doc.sheetFile) sheetFileByDocument.set(doc.id, doc.sheetFile);
   });
+
+  /**
+   * Пока не пришло всё, от чего зависит содержимое строк, показываем загрузку:
+   * иначе таблица достраивается на глазах — сначала статусы кодами, потом файлы,
+   * потом иконки. Ревизии SVN сюда не входят: это внешняя система, ждать её
+   * ради метки «в SVN новее» значит держать пустой экран из-за чужой задержки.
+   */
+  const contentLoading =
+    detailQuery.isLoading ||
+    docKindsQuery.isLoading ||
+    Boolean(referencesLoading) ||
+    filesQuery.isLoading ||
+    ridLinksQuery.isLoading;
 
   // Ревизии в SVN спрашиваем одним запросом на весь комплект: свежесть копии
   // видно сразу, без клика по каждому документу.
-  const svnPaths = [...fileByDocument.values()].map(f => f.svnPath).filter((p): p is string => Boolean(p));
+  const svnPaths = [...fileByDocument.values(), ...sheetFileByDocument.values()]
+    .map(f => f.svnPath)
+    .filter((p): p is string => Boolean(p));
   const revisionsQuery = useQuery({
     queryKey: ['svn', 'revisions', svnPaths.slice().sort().join('|')],
     queryFn: () => svnApi.revisions(svnPaths),
@@ -371,14 +380,75 @@ export function SwProgramPanel({
     );
   };
 
-  const handleSetupSheet = (document: SwDocumentListRow) => {
+  // Реквизиты листа вводит пользователь: молча оформлять «1 лист» с обозначением
+  // по умолчанию — значит заставлять потом всё исправлять.
+  const handleSetupSheet = (document: SwDocumentListRow) => setSheetModalDoc(document);
+
+  const submitSheet = (payload: ApprovalSheetSubmit) => {
+    if (!sheetModalDoc) return;
+    const doc = sheetModalDoc;
+    const wasOformlen = Boolean(doc.sheetStatusCode);
+    const { svnPath, localFile, ...sheet } = payload;
     updateDocMut.mutate(
-      { id: document.id, payload: { approvalSheet: { sheetsCount: 1 } } },
+      { id: doc.id, payload: { approvalSheet: sheet } },
       {
-        onSuccess: () => message.success('Лист утверждения оформлен'),
+        onSuccess: async () => {
+          // Файл прикрепляем после сохранения листа: до этого объекта sw_sheet ещё нет.
+          if (svnPath) {
+            try {
+              const attached = await svnApi.attach({ objectType: 'sw_sheet', objectId: doc.id, path: svnPath });
+              message.success(`Лист утверждения оформлен, файл из SVN (ревизия ${attached.revision})`);
+            } catch (err) {
+              message.warning('Лист сохранён, но файл из SVN прикрепить не удалось');
+              fail(err);
+            }
+          } else if (localFile) {
+            try {
+              await uploadSwRegistryFile(localFile, {
+                objectType: 'sw_sheet',
+                objectId: doc.id,
+                purpose: 'sheet',
+              });
+              message.success(`Лист утверждения оформлен, файл «${localFile.name}» загружен`);
+            } catch (err) {
+              message.warning('Лист сохранён, но файл загрузить не удалось');
+              fail(err);
+            }
+          } else {
+            message.success(wasOformlen ? 'Лист утверждения изменён' : 'Лист утверждения оформлен');
+          }
+          void queryClient.invalidateQueries({ queryKey: ['sw'] });
+          setSheetModalDoc(null);
+        },
         onError: fail,
       },
     );
+  };
+
+  const handleRemoveSheet = (document: SwDocumentListRow) => {
+    modal.confirm({
+      title: 'Удалить лист утверждения?',
+      content: `Лист ${document.sheetDesignation ?? ''} будет снят с документа ${document.designation}. Сам документ останется.`,
+      okText: 'Удалить',
+      okButtonProps: { danger: true },
+      cancelText: 'Отмена',
+      onOk: () =>
+        new Promise<void>((resolve, reject) => {
+          updateDocMut.mutate(
+            { id: document.id, payload: { approvalSheet: null } },
+            {
+              onSuccess: () => {
+                message.success('Лист утверждения удалён');
+                resolve();
+              },
+              onError: err => {
+                fail(err);
+                reject(err);
+              },
+            },
+          );
+        }),
+    });
   };
 
   const currentStatusCode =
@@ -553,7 +623,7 @@ export function SwProgramPanel({
               </div>
             ) : null}
 
-            {detailQuery.isLoading ? (
+            {contentLoading ? (
               <div className={styles.branchLoading}>
                 <Spin />
               </div>
@@ -574,13 +644,21 @@ export function SwProgramPanel({
                 onRestore={handleRestoreDoc}
                 onChangeStatus={(document, scope) => setStatusModal({ document, scope })}
                 onOpenIps={document => setIpsModalDoc(document)}
+                developmentKindCode={item.developmentKindCode}
                 onSetupSheet={handleSetupSheet}
+                onRemoveSheet={handleRemoveSheet}
                 fileByDocument={fileByDocument}
+                sheetFileByDocument={sheetFileByDocument}
+                onPickSheetFromSvn={doc =>
+                  setSvnTarget({ id: doc.id, designation: doc.sheetDesignation ?? doc.designation, objectType: 'sw_sheet' })
+                }
                 onPreview={setPreview}
                 onDownload={downloadFile}
                 svnEnabled={svnEnabled}
                 currentRevisions={currentRevisions}
-                onPickFromSvn={doc => setSvnTarget({ id: doc.id, designation: doc.designation })}
+                onPickFromSvn={doc =>
+                  setSvnTarget({ id: doc.id, designation: doc.designation, objectType: 'sw_document' })
+                }
               />
             )}
           </>
@@ -622,13 +700,15 @@ export function SwProgramPanel({
       {svnTarget ? (
         <SvnPickerModal
           open
-          objectType='sw_document'
+          objectType={svnTarget.objectType}
           objectId={svnTarget.id}
           startPath={folderPath ?? ''}
           onClose={() => setSvnTarget(null)}
           onDone={() => {
             void queryClient.invalidateQueries({ queryKey: ['sw'] });
-            void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.files('sw_document', svnTarget.id) });
+            void queryClient.invalidateQueries({
+              queryKey: swRegistryQueryKeys.files(svnTarget.objectType, svnTarget.id),
+            });
           }}
         />
       ) : null}
@@ -693,6 +773,16 @@ export function SwProgramPanel({
         confirmLoading={changeStatusMut.isPending}
         onCancel={() => setIpsModalDoc(null)}
         onSubmit={submitStatus}
+      />
+      <SwApprovalSheetModal
+        open={sheetModalDoc != null}
+        document={sheetModalDoc}
+        sheetFile={sheetModalDoc ? (sheetFileByDocument.get(sheetModalDoc.id) ?? null) : null}
+        svnEnabled={svnEnabled}
+        svnFolderPath={folderPath}
+        confirmLoading={updateDocMut.isPending}
+        onCancel={() => setSheetModalDoc(null)}
+        onSubmit={submitSheet}
       />
 
       <DocumentViewerModal

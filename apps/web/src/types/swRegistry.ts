@@ -110,6 +110,16 @@ export type SwDocumentListRow = {
   ipsPlacedAt: string | null;
   recordState: SwRecordState;
   archivedByCascade?: boolean;
+  file?: SwDocumentFileRef | null;
+  sheetFile?: SwDocumentFileRef | null;
+};
+
+/** Актуальная копия документа или его листа, приходит вместе с комплектом. */
+export type SwDocumentFileRef = {
+  fileId: string;
+  filename: string;
+  svnPath: string | null;
+  svnRevision: number | null;
 };
 
 export type SwItemDetail = SwItemListRow & {

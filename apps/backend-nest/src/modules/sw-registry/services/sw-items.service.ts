@@ -9,7 +9,15 @@ import { and, asc, count, eq, exists, ilike, inArray, ne, or, sql, type SQL } fr
 
 import { DatabaseService } from '../../../database/database.service';
 import { partners, patents, users } from '../../../database/schema';
-import { swDocuments, swItemPatents, swItems, swRefDevelopmentKinds, swRefStatuses, swStructureElements } from '../sw-registry.schema';
+import {
+  swDocuments,
+  swFiles,
+  swItemPatents,
+  swItems,
+  swRefDevelopmentKinds,
+  swRefStatuses,
+  swStructureElements,
+} from '../sw-registry.schema';
 import type { AddSwItemPatentDto, CreateSwItemDto, UpdateSwItemDto } from '../dto/sw-registry.dto';
 import {
   archivedEditError,
@@ -241,6 +249,37 @@ export class SwItemsService {
       .from(swItemPatents)
       .where(eq(swItemPatents.softwareId, id));
 
+    // Копии документов и листов забираем здесь же: запрос на каждый объект
+    // отдельно давал десяток обращений на одну программу и достраивал таблицу
+    // на глазах у пользователя.
+    const docIds = docs.map((d) => d.id);
+    const links = docIds.length
+      ? await this.db.db
+          .select()
+          .from(swFiles)
+          .where(
+            and(
+              inArray(swFiles.objectType, ['sw_document', 'sw_sheet']),
+              inArray(swFiles.objectId, docIds),
+            ),
+          )
+          .orderBy(asc(swFiles.createdAt))
+      : [];
+
+    /** Актуальная копия: сперва пришедшая из SVN, иначе последняя загруженная. */
+    const pickFile = (objectId: string, objectType: 'sw_document' | 'sw_sheet') => {
+      const own = links.filter((l) => l.objectId === objectId && l.objectType === objectType);
+      const actual = [...own].reverse().find((l) => l.svnPath) ?? own.at(-1);
+      return actual
+        ? {
+            fileId: actual.fileId,
+            filename: actual.filename,
+            svnPath: actual.svnPath ?? null,
+            svnRevision: actual.svnRevision ?? null,
+          }
+        : null;
+    };
+
     return {
       ...this.toCard(row),
       patentsCount: Number(patentLinksCount?.n ?? 0),
@@ -260,6 +299,8 @@ export class SwItemsService {
         ipsPlacedAt: d.ipsPlacedAt,
         recordState: d.recordState,
         archivedByCascade: d.archivedByCascade,
+        file: pickFile(d.id, 'sw_document'),
+        sheetFile: d.sheetStatusCode ? pickFile(d.id, 'sw_sheet') : null,
       })),
     };
   }

@@ -289,3 +289,141 @@
   text-align: right;
   padding-right: 4px !important;
 }
+
+/* Колонка листа утверждения: статус, реквизиты и действия с самим листом. */
+.docTableSheetCell {
+  min-width: 0;
+}
+
+.docTableSheetHead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Реквизиты документа под наименованием: объём, литера, происхождение из SVN. */
+.docTableMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 3px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.docTableSheetDesignation {
+  flex: 1 1 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+/* ── Ячейка документа: наименование ведёт, обозначение и служебное отступают ── */
+
+.docTableTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.docTableTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.88);
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.2px;
+  text-align: left;
+
+  &:hover .docTableTitleText {
+    color: #1677ff;
+    text-decoration: underline;
+  }
+}
+
+.docTableTitleIcon {
+  flex: none;
+  color: #2b579a;
+  font-size: 15px;
+}
+
+.docTableTitleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docTableSubline {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+}
+
+/* Обозначение листа утверждения: тот же код-стиль, что и у документа, но тише. */
+.docTableDesignationLine {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.55);
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+/* Строка файла листа утверждения: обозначение ведёт к файлу, действия рядом. */
+.docTableSheetFileRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 2px;
+}
+
+.docTableSheetLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.55);
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:hover {
+    color: #1677ff;
+    text-decoration: underline;
+  }
+}
+
+/* Место под действия резервируется заранее: файлы приезжают отдельным запросом,
+   и без резерва строка дёргается, когда появляется кнопка скачивания. */
+.docTableRowActions {
+  display: inline-flex;
+  flex: none;
+  gap: 0;
+  min-width: 52px;
+}

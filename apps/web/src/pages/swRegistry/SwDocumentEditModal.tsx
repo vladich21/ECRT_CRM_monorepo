@@ -3,7 +3,7 @@ import { Col, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
 
 import { useSwReferences } from '@/api/swRegistry/swRegistryApiHooks';
 import type { SwDocumentListRow, UpdateSwDocumentPayload } from '@/types/swRegistry';
-import { assembleDocumentDesignation } from './swDesignationPreview';
+import { assembleDocumentDesignation, assembleSheetDesignation } from './swDesignationPreview';
 import styles from './SwRegistryModals.module.scss';
 
 const LETTER_OPTIONS = ['О', 'О₁', 'О₂', 'А', 'Б', 'В'].map(value => ({ value, label: value }));
@@ -15,6 +15,8 @@ type FormValues = {
   name?: string;
   sheetsCount?: number;
   letter?: string | null;
+  sheetDesignation?: string;
+  sheetSheetsCount?: number;
 };
 
 interface Props {
@@ -51,6 +53,8 @@ export function SwDocumentEditModal({ open, document, programDesignation, confir
       name: document.name,
       sheetsCount: document.sheetsCount,
       letter: document.letter ?? undefined,
+      sheetDesignation: document.sheetDesignation ?? undefined,
+      sheetSheetsCount: document.sheetSheetsCount ?? undefined,
     });
   }, [open, document, form]);
 
@@ -75,6 +79,13 @@ export function SwDocumentEditModal({ open, document, programDesignation, confir
       name: values.name,
       sheetsCount: values.sheetsCount,
       letter: values.letter ?? null,
+      // Лист утверждения правится здесь же; снимают его отдельным действием в меню строки.
+      approvalSheet: document?.sheetStatusCode
+        ? {
+            designation: values.sheetDesignation?.trim() || undefined,
+            sheetsCount: values.sheetSheetsCount ?? undefined,
+          }
+        : undefined,
     });
   };
 
@@ -101,6 +112,11 @@ export function SwDocumentEditModal({ open, document, programDesignation, confir
           // Документ живой: номер и вид меняются. Обозначение следует за ними, пока его не правили руками.
           if (next && (!values.designation || values.designation === derivedDesignation.current)) {
             form.setFieldValue('designation', next);
+            // Обозначение листа тянется за документом, пока пользователь не задал своё.
+            const sheetNow = values.sheetDesignation;
+            if (sheetNow && sheetNow === assembleSheetDesignation(values.designation ?? '')) {
+              form.setFieldValue('sheetDesignation', assembleSheetDesignation(next));
+            }
           }
           derivedDesignation.current = next ?? derivedDesignation.current;
         }}
@@ -164,6 +180,32 @@ export function SwDocumentEditModal({ open, document, programDesignation, confir
             </Form.Item>
           </Col>
         </Row>
+
+        {document?.sheetStatusCode ? (
+          <>
+            <div className={styles.formSectionTitle}>Лист утверждения</div>
+            <Row gutter={16}>
+              <Col xs={24} md={14}>
+                <Form.Item
+                  name='sheetDesignation'
+                  label='Обозначение'
+                  rules={[{ required: true, message: 'Укажите обозначение листа' }]}
+                >
+                  <Input maxLength={100} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={10}>
+                <Form.Item
+                  name='sheetSheetsCount'
+                  label='Количество листов'
+                  rules={[{ required: true, message: 'Укажите количество листов' }]}
+                >
+                  <InputNumber min={1} precision={0} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </>
+        ) : null}
       </Form>
     </Modal>
   );

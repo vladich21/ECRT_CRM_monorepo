@@ -1,5 +1,6 @@
 import {
   CloudDownloadOutlined,
+  DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
   FileWordOutlined,
@@ -10,24 +11,22 @@ import {
 } from '@ant-design/icons';
 import { Button, Dropdown, Tooltip, type MenuProps } from 'antd';
 
-import type { SwDocumentListRow } from '@/types/swRegistry';
+import type { SwDocumentFileRef, SwDocumentListRow } from '@/types/swRegistry';
 import { formatIpsDisplay } from './swDesignationPreview';
 import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
 import styles from './SwRegistryShared.module.scss';
 import panelStyles from './SwStructurePage.module.scss';
 
 /** Актуальный файл документа: пришедший из SVN, иначе последний загруженный. */
-export type SwDocumentFile = {
-  fileId: string;
-  filename: string;
-  svnPath?: string | null;
-  svnRevision?: number | null;
-};
+/** Копия документа или его листа: приходит вместе с комплектом. */
+export type SwDocumentFile = SwDocumentFileRef;
 
 type Props = {
   documents: SwDocumentListRow[];
   statusLabelByCode: Map<string, string>;
   requiresApprovalSheetByKind: Map<string, boolean>;
+  /** Вид разработки программы: лист утверждения бывает только у ОКР. */
+  developmentKindCode: string;
   canEdit: boolean;
   /** Документ, открытый в боковой панели: его строка подсвечена. */
   selectedDocumentId: string | null;
@@ -38,7 +37,11 @@ type Props = {
   onChangeStatus: (doc: SwDocumentListRow, scope: 'document' | 'sheet') => void;
   onOpenIps: (doc: SwDocumentListRow) => void;
   onSetupSheet: (doc: SwDocumentListRow) => void;
+  onRemoveSheet: (doc: SwDocumentListRow) => void;
   fileByDocument: Map<string, SwDocumentFile>;
+  /** Файл листа утверждения: лист — такой же документ, со своей копией. */
+  sheetFileByDocument: Map<string, SwDocumentFile>;
+  onPickSheetFromSvn: (doc: SwDocumentListRow) => void;
   onPreview: (file: SwDocumentFile) => void;
   onDownload: (file: SwDocumentFile) => void | Promise<void>;
   svnEnabled: boolean;
@@ -95,8 +98,8 @@ function rowMenuItems(doc: SwDocumentListRow, canEdit: boolean): NonNullable<Men
   items.push(
     { type: 'divider' },
     { key: 'edit', icon: <EditOutlined />, label: 'Редактировать' },
-    { key: 'archive', icon: <InboxOutlined />, label: 'В архив' },
   );
+  items.push({ key: 'archive', icon: <InboxOutlined />, label: 'В архив' });
   return items;
 }
 
@@ -108,6 +111,7 @@ export function SwDocumentsTable({
   documents,
   statusLabelByCode,
   requiresApprovalSheetByKind,
+  developmentKindCode,
   canEdit,
   selectedDocumentId,
   onOpenDocument,
@@ -117,7 +121,10 @@ export function SwDocumentsTable({
   onChangeStatus,
   onOpenIps,
   onSetupSheet,
+  onRemoveSheet,
   fileByDocument,
+  sheetFileByDocument,
+  onPickSheetFromSvn,
   onPreview,
   onDownload,
   svnEnabled,
@@ -129,11 +136,9 @@ export function SwDocumentsTable({
       <table className={`${styles.docTable} ${panelStyles.programDocTable}`}>
         <thead>
           <tr>
-            <th>Обозначение</th>
-            <th>Листов</th>
-            <th>Литера</th>
+            <th>Документ</th>
+            <th>Статус документа</th>
             <th>Лист утверждения</th>
-            <th>Статус</th>
             <th>IPS</th>
             <th className={panelStyles.docTableMenuCol} aria-label='Действия' />
           </tr>
@@ -144,11 +149,16 @@ export function SwDocumentsTable({
             const isArchived = doc.recordState === 'archived';
             const statusLabel = statusLabelByCode.get(doc.statusCode) ?? doc.statusCode;
             const sheetStatusLabel = doc.sheetStatusCode ? statusLabelByCode.get(doc.sheetStatusCode) : undefined;
-            const needsSheet = requiresApprovalSheetByKind.get(doc.documentKindCode) ?? false;
+            // Лист утверждения предусмотрен только при ОКР: при серийном и покупном
+            // изделии бэкенд его запрещает, поэтому и предлагать нечего.
+            const sheetAllowed = developmentKindCode === 'rnd';
+            const needsSheet = (requiresApprovalSheetByKind.get(doc.documentKindCode) ?? false) && sheetAllowed;
             const canChangeDoc = canEdit && !locked && !isArchived;
             const canChangeSheet = canChangeDoc && Boolean(doc.sheetStatusCode);
             const ipsDisplay = formatIpsDisplay(doc.ipsId, doc.ipsPlacedAt);
             const file = fileByDocument.get(doc.id);
+            const sheetFile = sheetFileByDocument.get(doc.id);
+            const sheetNewerRevision = sheetFile?.svnPath ? currentRevisions[sheetFile.svnPath] : undefined;
             const newerRevision = file?.svnPath ? currentRevisions[file.svnPath] : undefined;
             const rowClass = [
               styles.docTableRow,
@@ -168,40 +178,31 @@ export function SwDocumentsTable({
             return (
               <tr key={doc.id} className={rowClass} onClick={() => onOpenDocument(doc)}>
                 <td onClick={e => e.stopPropagation()}>
-                  <div className={panelStyles.docCell}>
-                    {file ? (
-                      // С прикреплённым файлом обозначение открывает сам документ; панель — по строке и меню «⋯».
-                      <button
-                        type='button'
-                        className={panelStyles.docOpen}
-                        title='Открыть документ'
-                        onClick={() => onPreview(file)}
-                      >
-                        <FileWordOutlined className={panelStyles.docIcon} />
-                        {doc.designation}
-                      </button>
-                    ) : (
-                      <button
-                        type='button'
-                        className={`${styles.docTableLinkBtn} ${styles.docTableDesignation}`}
-                        onClick={() => onOpenDocument(doc)}
-                      >
-                        {doc.designation}
-                      </button>
-                    )}
-                    {svnEnabled && canChangeDoc ? (
-                      <Tooltip title={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}>
-                        <Button
-                          type='text'
-                          size='small'
-                          icon={<CloudDownloadOutlined />}
-                          aria-label={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}
-                          onClick={() => onPickFromSvn(doc)}
-                        />
-                      </Tooltip>
-                    ) : null}
-                    {file ? (
-                      <span className={panelStyles.docActions}>
+                  {/* Три уровня чтения: обозначение различает документы (12 01 и 12 02 —
+                      оба «Текст программы»), наименование поясняет, служебное — в конце. */}
+                  <div className={styles.docTableTitleRow}>
+                    <button
+                      type='button'
+                      className={styles.docTableTitle}
+                      title={file ? 'Открыть документ' : 'Открыть карточку документа'}
+                      onClick={() => (file ? onPreview(file) : onOpenDocument(doc))}
+                    >
+                      {file ? <FileWordOutlined className={styles.docTableTitleIcon} /> : null}
+                      <span className={styles.docTableTitleText}>{doc.designation}</span>
+                    </button>
+                    <span className={`${panelStyles.docActions} ${styles.docTableRowActions}`}>
+                      {svnEnabled && canChangeDoc ? (
+                        <Tooltip title={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}>
+                          <Button
+                            type='text'
+                            size='small'
+                            icon={<CloudDownloadOutlined />}
+                            aria-label={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}
+                            onClick={() => onPickFromSvn(doc)}
+                          />
+                        </Tooltip>
+                      ) : null}
+                      {file ? (
                         <Tooltip title='Скачать'>
                           <Button
                             type='text'
@@ -211,31 +212,118 @@ export function SwDocumentsTable({
                             onClick={() => void onDownload(file)}
                           />
                         </Tooltip>
-                      </span>
-                    ) : null}
+                      ) : null}
+                    </span>
                   </div>
-                  <div className={styles.docTableDocName} title={doc.name}>
+                  <div className={styles.docTableSubline} title={doc.name}>
                     {doc.name}
                   </div>
-                  {file?.svnPath ? (
-                    <div className={panelStyles.docSvn} title={file.svnPath}>
-                      <span className={panelStyles.docSvnRev}>SVN r{file.svnRevision}</span>
-                      {newerRevision && newerRevision !== file.svnRevision ? (
-                        <span className={panelStyles.docSvnStale}>в SVN новее: r{newerRevision}</span>
-                      ) : null}
-                    </div>
-                  ) : null}
+                  <div className={styles.docTableMeta}>
+                    <span>{doc.sheetsCount} л.</span>
+                    {doc.letter ? <span>литера {doc.letter}</span> : null}
+                    {file?.svnPath ? <span title={file.svnPath}>SVN r{file.svnRevision}</span> : null}
+                    {file?.svnPath && newerRevision && newerRevision !== file.svnRevision ? (
+                      <span className={panelStyles.docSvnStale}>в SVN новее: r{newerRevision}</span>
+                    ) : null}
+                  </div>
                 </td>
-                <td className={styles.docTableNum}>{doc.sheetsCount}</td>
-                <td className={styles.docTableNum}>{doc.letter ?? '—'}</td>
+                <td onClick={e => e.stopPropagation()}>
+                  <StatusBadge
+                    statusCode={doc.statusCode}
+                    label={statusLabel}
+                    onClick={canChangeDoc ? () => onChangeStatus(doc, 'document') : undefined}
+                  />
+                </td>
                 <td onClick={e => e.stopPropagation()}>
                   {needsSheet ? (
                     doc.sheetStatusCode ? (
-                      <StatusBadge
-                        statusCode={doc.sheetStatusCode}
-                        label={sheetStatusLabel ?? doc.sheetStatusCode}
-                        onClick={canChangeSheet ? () => onChangeStatus(doc, 'sheet') : undefined}
-                      />
+                      <div className={styles.docTableSheetCell}>
+                        {/* Тот же порядок чтения, что у документа: состояние — обозначение — объём. */}
+                        <div className={styles.docTableSheetHead}>
+                          <StatusBadge
+                            statusCode={doc.sheetStatusCode}
+                            label={sheetStatusLabel ?? doc.sheetStatusCode}
+                            onClick={canChangeSheet ? () => onChangeStatus(doc, 'sheet') : undefined}
+                          />
+                          {canChangeDoc ? (
+                            <span className={`${panelStyles.docActions} ${styles.docTableRowActions}`}>
+                              <Tooltip title='Изменить лист утверждения'>
+                                <Button
+                                  type='text'
+                                  size='small'
+                                  icon={<EditOutlined />}
+                                  aria-label='Изменить лист утверждения'
+                                  onClick={() => onSetupSheet(doc)}
+                                />
+                              </Tooltip>
+                              <Tooltip title='Удалить лист утверждения'>
+                                <Button
+                                  type='text'
+                                  size='small'
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  aria-label='Удалить лист утверждения'
+                                  onClick={() => onRemoveSheet(doc)}
+                                />
+                              </Tooltip>
+                            </span>
+                          ) : null}
+                        </div>
+                        {doc.sheetDesignation ? (
+                          <div className={styles.docTableSheetFileRow}>
+                            {sheetFile ? (
+                              <button
+                                type='button'
+                                className={styles.docTableSheetLink}
+                                title='Открыть лист утверждения'
+                                onClick={() => onPreview(sheetFile)}
+                              >
+                                <FileWordOutlined className={styles.docTableTitleIcon} />
+                                {doc.sheetDesignation}
+                              </button>
+                            ) : (
+                              <span className={styles.docTableDesignationLine} title={doc.sheetDesignation}>
+                                {doc.sheetDesignation}
+                              </span>
+                            )}
+                            <span className={`${panelStyles.docActions} ${styles.docTableRowActions}`}>
+                              {svnEnabled && canChangeDoc ? (
+                                <Tooltip title={sheetFile ? 'Обновить файл листа из SVN' : 'Прикрепить файл листа из SVN'}>
+                                  <Button
+                                    type='text'
+                                    size='small'
+                                    icon={<CloudDownloadOutlined />}
+                                    aria-label={sheetFile ? 'Обновить файл листа из SVN' : 'Прикрепить файл листа из SVN'}
+                                    onClick={() => onPickSheetFromSvn(doc)}
+                                  />
+                                </Tooltip>
+                              ) : null}
+                              {sheetFile ? (
+                                <Tooltip title='Скачать лист утверждения'>
+                                  <Button
+                                    type='text'
+                                    size='small'
+                                    icon={<DownloadOutlined />}
+                                    aria-label='Скачать лист утверждения'
+                                    onClick={() => void onDownload(sheetFile)}
+                                  />
+                                </Tooltip>
+                              ) : null}
+                            </span>
+                          </div>
+                        ) : null}
+                        {doc.sheetSheetsCount || sheetFile?.svnPath ? (
+                          <div className={styles.docTableMeta}>
+                            {doc.sheetSheetsCount ? <span>{doc.sheetSheetsCount} л.</span> : null}
+                            {sheetFile?.svnPath ? (
+                              <span title={sheetFile.svnPath}>SVN r{sheetFile.svnRevision}</span>
+                            ) : null}
+                            {sheetFile?.svnPath && sheetNewerRevision && sheetNewerRevision !== sheetFile.svnRevision ? (
+                              <span className={panelStyles.docSvnStale}>в SVN новее: r{sheetNewerRevision}</span>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
                     ) : (
                       <span className={styles.docTableMuted}>
                         не оформлен
@@ -252,13 +340,6 @@ export function SwDocumentsTable({
                   ) : (
                     <span className={styles.docTableMuted}>—</span>
                   )}
-                </td>
-                <td onClick={e => e.stopPropagation()}>
-                  <StatusBadge
-                    statusCode={doc.statusCode}
-                    label={statusLabel}
-                    onClick={canChangeDoc ? () => onChangeStatus(doc, 'document') : undefined}
-                  />
                 </td>
                 <td onClick={e => e.stopPropagation()}>
                   {ipsDisplay ? (

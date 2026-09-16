@@ -26,6 +26,7 @@ import {
   assembleSheetDesignation,
   initialDocumentStatus,
   isPgUniqueViolation,
+  nextSheetDesignation,
   normalizeDesignation,
 } from '../sw-registry.util';
 import { SwItemsService } from './sw-items.service';
@@ -465,7 +466,11 @@ export class SwDocumentsService {
       sheetSheetsCount = dto.approvalSheet.sheetsCount ?? current.sheetSheetsCount ?? 1;
       sheetStatusCode = current.sheetStatusCode ?? initialDocumentStatus(item.developmentKindCode);
     } else if (current.sheetStatusCode && designationChanged) {
-      sheetDesignation = assembleSheetDesignation(designation);
+      sheetDesignation = nextSheetDesignation({
+        previousDocumentDesignation: current.designation,
+        nextDocumentDesignation: designation,
+        currentSheetDesignation: current.sheetDesignation,
+      });
     }
 
     try {

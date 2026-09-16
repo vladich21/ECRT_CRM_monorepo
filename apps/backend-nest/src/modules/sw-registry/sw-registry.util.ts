@@ -27,6 +27,23 @@ export function assembleSheetDesignation(documentDesignation: string): string {
   return `${documentDesignation}-ЛУ`;
 }
 
+/**
+ * Каким станет обозначение листа утверждения после смены обозначения документа.
+ *
+ * Пересобираем только то, что собрано автоматически: если пользователь задал
+ * своё обозначение листа, правка документа не должна его затирать (ECRT-598).
+ */
+export function nextSheetDesignation(input: {
+  previousDocumentDesignation: string;
+  nextDocumentDesignation: string;
+  currentSheetDesignation: string | null;
+}): string | null {
+  const { previousDocumentDesignation, nextDocumentDesignation, currentSheetDesignation } = input;
+  if (!currentSheetDesignation) return currentSheetDesignation;
+  const wasDerived = currentSheetDesignation === assembleSheetDesignation(previousDocumentDesignation);
+  return wasDerived ? assembleSheetDesignation(nextDocumentDesignation) : currentSheetDesignation;
+}
+
 export function initialDocumentStatus(developmentKindCode: string): string {
   return developmentKindCode === 'rnd' ? 'development' : 'received';
 }

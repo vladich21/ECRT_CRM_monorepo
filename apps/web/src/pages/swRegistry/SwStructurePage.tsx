@@ -582,6 +582,7 @@ export default function SwStructurePage() {
                 documentKindByCode={docKindByCode}
                 gostCodeByKind={gostCodeByKind}
                 statusByCode={statusByCode}
+                referencesLoading={statusesQuery.isLoading}
                 onDeleted={clearProgramSelection}
                 onSelectElement={selectElementById}
               />

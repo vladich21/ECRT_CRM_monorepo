@@ -69,3 +69,13 @@
   font-size: 13px;
   color: #bfbfbf;
 }
+
+/* Заголовок смыслового блока внутри формы: отделяет реквизиты листа утверждения. */
+.formSectionTitle {
+  margin: 4px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.65);
+}

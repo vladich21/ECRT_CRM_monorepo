@@ -38,14 +38,14 @@ export class SvnController {
   /** Текущие ревизии файлов в SVN — чтобы показать, где копия в реестре отстала. */
   @Post('revisions')
   @RequirePermission(SECTIONS.SW_ITEMS, 'read')
-  revisions(@Body() dto: { paths: string[] }) {
+  revisions(@Body('body') dto: { paths: string[] }) {
     return this.svn.currentRevisions(dto?.paths ?? []);
   }
 
   /** Привязка программы к её каталогу в SVN. */
   @Post('link')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  link(@Body() dto: { itemId: string; path: string }) {
+  link(@Body('body') dto: { itemId: string; path: string }) {
     return this.attachService.linkFolder(dto.itemId, dto.path ?? '');
   }
 
@@ -53,7 +53,7 @@ export class SvnController {
   @Post('attach')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   attach(
-    @Body() dto: { objectType: string; objectId: string; path: string },
+    @Body('body') dto: { objectType: string; objectId: string; path: string },
     @Req() req: AuthReq,
   ) {
     return this.attachService.attach({

@@ -32,6 +32,10 @@ export function useSwReferences(kind: string) {
   return useQuery({
     queryKey: swRegistryQueryKeys.references(kind),
     queryFn: () => swRegistryApi.getReferences(kind),
+    // Справочники меняются редко, а от них зависит разметка комплекта: без кэша
+    // каждое открытие программы ждало их заново.
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
   });
 }
 
