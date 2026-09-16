@@ -241,6 +241,7 @@ export class SwFirmwaresService {
     const version = this.normalizeVersion(dto.version);
     await this.assertVersionFree(firmwareId, version);
     const ready = await this.awaitFile(dto.fileId);
+    await this.assertFileNotLoaded(firmwareId, ready.currentVersion?.sha256 ?? null);
     return this.insertVersion(firmwareId, { ...dto, version }, ready, userId);
   }
 
@@ -332,6 +333,33 @@ export class SwFirmwaresService {
         code: 'FIRMWARE_VERSION_TAKEN',
         field: 'version',
         message: `Версия ${version} у этой прошивки уже загружена`,
+      });
+    }
+  }
+
+  /**
+   * Одну и ту же сборку не заводим дважды: если файл с таким же хешем уже лежит
+   * версией этой прошивки, новый номер лишь запутает историю. Хеш считает хранилище
+   * по всем байтам, поэтому совпадение означает именно тот же файл.
+   */
+  private async assertFileNotLoaded(firmwareId: string, sha256: string | null) {
+    if (!sha256) return;
+    const [same] = await this.db.db
+      .select({ version: swFirmwareVersions.version })
+      .from(swFirmwareVersions)
+      .where(
+        and(
+          eq(swFirmwareVersions.firmwareId, firmwareId),
+          eq(swFirmwareVersions.sha256, sha256),
+          ne(swFirmwareVersions.recordState, 'deleted'),
+        ),
+      )
+      .limit(1);
+    if (same) {
+      throw new ConflictException({
+        code: 'FIRMWARE_FILE_DUPLICATE',
+        field: 'file',
+        message: `Этот файл уже загружен в эту прошивку как версия ${same.version} — выберите другой файл`,
       });
     }
   }

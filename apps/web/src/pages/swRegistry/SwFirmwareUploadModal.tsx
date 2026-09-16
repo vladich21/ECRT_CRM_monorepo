@@ -37,6 +37,8 @@ interface Props {
   firmware?: { id: string; name: string } | null;
   /** Занятые номера версий: у новой прошивки пусто, у существующей — её линия. */
   takenVersions: string[];
+  /** Уже загруженные сборки этой прошивки: по размеру предупреждаем о том же файле до заливки. */
+  existingBuilds?: { version: string; sizeBytes: number | null }[];
   /** Наименования других прошивок программы: подсказываем занятое до отправки. */
   takenNames?: string[];
   confirmLoading?: boolean;
@@ -55,6 +57,7 @@ export function SwFirmwareUploadModal({
   itemId,
   firmware,
   takenVersions,
+  existingBuilds = [],
   takenNames = [],
   confirmLoading,
   submitError,
@@ -63,12 +66,15 @@ export function SwFirmwareUploadModal({
 }: Props) {
   const [form] = Form.useForm<FormValues>();
   const [upload, setUpload] = useState<UploadState>({ status: 'idle' });
+  /** Тот же файл в линию не принимают по хешу; по размеру предупреждаем заранее, до заливки гигабайтов. */
+  const [sameSizeVersion, setSameSizeVersion] = useState<string | null>(null);
   const uploadHandle = useRef<SwDraftUpload | null>(null);
 
   useEffect(() => {
     if (open) {
       form.resetFields();
       setUpload({ status: 'idle' });
+      setSameSizeVersion(null);
       uploadHandle.current = null;
     }
   }, [open, form]);
@@ -89,6 +95,7 @@ export function SwFirmwareUploadModal({
   };
 
   const startUpload = (file: File) => {
+    setSameSizeVersion(existingBuilds.find(b => b.sizeBytes === file.size)?.version ?? null);
     uploadHandle.current?.abort();
     discard(upload);
     setUpload({ status: 'uploading', filename: file.name, size: file.size, percent: 0 });
@@ -204,6 +211,16 @@ export function SwFirmwareUploadModal({
         <Form.Item name='note' label='Примечание к сборке'>
           <Input.TextArea rows={2} maxLength={1000} placeholder='Что изменилось в этой сборке' />
         </Form.Item>
+
+        {sameSizeVersion ? (
+          <Alert
+            type='warning'
+            showIcon
+            style={{ marginBottom: 8 }}
+            message={`Размер совпадает с версией ${sameSizeVersion}`}
+            description='Если это тот же файл, реестр его не примет: одну сборку дважды в одну прошивку не заводим.'
+          />
+        ) : null}
 
         <Form.Item label='Файл прошивки' required>
           {upload.status === 'idle' || upload.status === 'error' ? (
