@@ -162,6 +162,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
       <div className={styles.main}>
         <div className={styles.titleLine}>
           <span className={styles.versionNo}>{version.version}</span>
+          <span className={styles.pastTag}>прежняя</span>
           <span className={styles.filename} title={version.filename}>
             {version.filename}
           </span>
@@ -251,7 +252,6 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                   >
                     <div className={styles.titleLine}>
                       <span className={styles.firmwareName}>{firmware.name}</span>
-                      {current ? <span className={styles.versionNo}>{current.version}</span> : null}
                       {accordion && !open ? (
                         <span className={styles.more}>ещё {history.length}</span>
                       ) : null}
@@ -259,8 +259,12 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                     {firmware.note ? <div className={styles.note}>{firmware.note}</div> : null}
                     {current ? (
                       <>
-                        <div className={styles.filename} title={current.filename}>
-                          {current.filename}
+                        <div className={styles.titleLine}>
+                          <span className={styles.versionNo}>{current.version}</span>
+                          <span className={styles.currentTag}>текущая</span>
+                          <span className={styles.filename} title={current.filename}>
+                            {current.filename}
+                          </span>
                         </div>
                         <div className={styles.meta}>
                           <span>{formatFileSize(current.sizeBytes ?? 0)}</span>
