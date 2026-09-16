@@ -243,10 +243,16 @@ export function SwProgramPanel({
       ? documents.filter(d => d.sheetStatusCode === sheetStatusFilter)
       : documents;
 
-  const tabs: { key: ProgramTab; label: string; count: number }[] = [
-    { key: 'documents', label: 'Комплект документации', count: documents.length },
-    { key: 'firmware', label: 'Прошивки', count: firmwaresQuery.data?.length ?? 0 },
-    { key: 'rid', label: 'Связанные РИД', count: ridLinksQuery.data?.length ?? detail?.patentsCount ?? 0 },
+  // Счётчик показываем, когда данные самой вкладки пришли: ноль вместо будущего числа
+  // читается как «ничего нет», а размер плашки фиксирован — строка вкладок не дёргается.
+  const tabs: { key: ProgramTab; label: string; count: number | null }[] = [
+    { key: 'documents', label: 'Комплект документации', count: detail ? documents.length : null },
+    { key: 'firmware', label: 'Прошивки', count: firmwaresQuery.data?.length ?? null },
+    {
+      key: 'rid',
+      label: 'Связанные РИД',
+      count: ridLinksQuery.data?.length ?? detail?.patentsCount ?? null,
+    },
   ];
 
   const clearStatusFilter = () => {
@@ -628,8 +634,7 @@ export function SwProgramPanel({
                 onClick={() => setTab(t.key)}
               >
                 {t.label}
-                {/* Пока данные вкладок не пришли, счётчик пустой: ноль вместо будущего числа читается как «ничего нет». */}
-                <span className={styles.filterTabCount}>{contentLoading ? '' : t.count}</span>
+                <span className={styles.filterTabCount}>{t.count ?? ''}</span>
               </button>
             ))}
           </div>

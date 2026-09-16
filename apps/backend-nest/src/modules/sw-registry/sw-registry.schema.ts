@@ -229,11 +229,27 @@ export const swItemPatents = pgTable(
 );
 
 /** Прошивки программы: версия, дата сборки и ссылка на файл в хранилище. */
+/** Прошивка программы: у загрузчика, основного ПО и образа ПЛИС своя линия версий. */
 export const swFirmwares = pgTable(
   'sw_firmwares',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     softwareId: uuid('software_id').notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    note: varchar('note', { length: 1000 }),
+    recordState: varchar('record_state', { length: 20 }).notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: uuid('created_by'),
+  },
+  (t) => [index('sw_firmwares_software_idx').on(t.softwareId)],
+);
+
+/** Сборка прошивки: номер версии уникален внутри своей прошивки, файл — в files-service. */
+export const swFirmwareVersions = pgTable(
+  'sw_firmware_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    firmwareId: uuid('firmware_id').notNull(),
     version: varchar('version', { length: 50 }).notNull(),
     builtAt: date('built_at'),
     note: varchar('note', { length: 1000 }),
@@ -246,7 +262,7 @@ export const swFirmwares = pgTable(
     createdBy: uuid('created_by'),
   },
   (t) => [
-    index('sw_firmwares_software_idx').on(t.softwareId),
-    index('sw_firmwares_file_idx').on(t.fileId),
+    index('sw_firmware_versions_firmware_idx').on(t.firmwareId),
+    index('sw_firmware_versions_file_idx').on(t.fileId),
   ],
 );

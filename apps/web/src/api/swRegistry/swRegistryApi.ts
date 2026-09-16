@@ -2,6 +2,7 @@ import { apiClient } from '../clients';
 import type {
   AddSwItemPatentLinkPayload,
   CreateSwFirmwarePayload,
+  CreateSwFirmwareVersionPayload,
   ChangeSwDocumentStatusPayload,
   CreateStructurePayload,
   CreateSwDocumentPayload,
@@ -10,6 +11,7 @@ import type {
   SwDocumentWriteResult,
   SwFileLinkResponse,
   SwFirmware,
+  SwFirmwareVersion,
   SwItemDetail,
   SwItemListRow,
   SwItemPatentLink,
@@ -280,16 +282,33 @@ export const swRegistryApi = {
     await apiClient.delete(`/sw/registry/firmwares/upload-ticket/${fileId}`);
   },
 
+  /** Новая прошивка заводится сразу с первой сборкой. */
   createFirmware: async (payload: CreateSwFirmwarePayload): Promise<SwFirmware> => {
     const { data } = await apiClient.post<SwFirmware>('/sw/registry/firmwares', payload);
     return data;
   },
 
-  getFirmwareLink: async (id: string): Promise<{ fileId: string; url: string; expiresAt: string }> => {
+  updateFirmware: async (id: string, payload: { name?: string; note?: string | null }) => {
+    const { data } = await apiClient.patch<SwFirmware>(`/sw/registry/firmwares/${id}`, payload);
+    return data;
+  },
+
+  createFirmwareVersion: async (payload: CreateSwFirmwareVersionPayload): Promise<SwFirmwareVersion> => {
+    const { data } = await apiClient.post<SwFirmwareVersion>('/sw/registry/firmwares/versions', payload);
+    return data;
+  },
+
+  getFirmwareVersionLink: async (
+    versionId: string,
+  ): Promise<{ fileId: string; url: string; expiresAt: string }> => {
     const { data } = await apiClient.get<{ fileId: string; url: string; expiresAt: string }>(
-      `/sw/registry/firmwares/${id}/link`,
+      `/sw/registry/firmwares/versions/${versionId}/link`,
     );
     return data;
+  },
+
+  deleteFirmwareVersion: async (versionId: string) => {
+    await apiClient.delete(`/sw/registry/firmwares/versions/${versionId}`);
   },
 
   deleteFirmware: async (id: string) => {

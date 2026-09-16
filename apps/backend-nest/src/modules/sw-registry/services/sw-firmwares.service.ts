@@ -6,16 +6,21 @@ import {
   ServiceUnavailableException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 
 import { DatabaseService } from '../../../database/database.service';
 import { FilesRemoteClient } from '../../files/services/files-remote.client';
 import { users } from '../../../database/schema';
-import { swFirmwares } from '../sw-registry.schema';
+import { swFirmwares, swFirmwareVersions } from '../sw-registry.schema';
 import { formatPersonName } from '../sw-registry.util';
 import { SwItemsService } from './sw-items.service';
 
-/** Прошивки весят до десятка гигабайт: байты идут в хранилище напрямую из браузера. */
+/**
+ * Прошивки программы. У программы их бывает несколько (загрузчик, основное ПО,
+ * образ ПЛИС), поэтому прошивка — это запись с наименованием, а сборки лежат
+ * версиями внутри неё: номер уникален в своей линии, а не по всей программе.
+ * Файлы весят до десятка гигабайт, поэтому байты идут в хранилище напрямую из браузера.
+ */
 @Injectable()
 export class SwFirmwaresService {
   private readonly logger = new Logger(SwFirmwaresService.name);
@@ -32,38 +37,70 @@ export class SwFirmwaresService {
     }
   }
 
+  private async requireActiveItem(softwareId: string) {
+    const item = await this.items.requireItem(softwareId);
+    if (item.recordState !== 'active') {
+      throw new UnprocessableEntityException('Прошивки архивной программы не меняются');
+    }
+    return item;
+  }
+
+  /** Прошивки программы вместе со своими версиями: список открывается одним запросом. */
   async list(softwareId: string) {
+    const lines = await this.db.db
+      .select()
+      .from(swFirmwares)
+      .where(and(eq(swFirmwares.softwareId, softwareId), ne(swFirmwares.recordState, 'deleted')))
+      .orderBy(asc(swFirmwares.createdAt));
+    if (!lines.length) return [];
+
     const rows = await this.db.db
       .select({
-        firmware: swFirmwares,
+        version: swFirmwareVersions,
         authorId: users.id,
         lastName: users.lastName,
         firstName: users.firstName,
         middleName: users.middleName,
       })
-      .from(swFirmwares)
-      .leftJoin(users, eq(users.id, swFirmwares.createdBy))
-      .where(and(eq(swFirmwares.softwareId, softwareId), ne(swFirmwares.recordState, 'deleted')))
-      .orderBy(desc(swFirmwares.createdAt));
+      .from(swFirmwareVersions)
+      .leftJoin(users, eq(users.id, swFirmwareVersions.createdBy))
+      .where(
+        and(
+          inArray(
+            swFirmwareVersions.firmwareId,
+            lines.map((l) => l.id),
+          ),
+          ne(swFirmwareVersions.recordState, 'deleted'),
+        ),
+      )
+      .orderBy(desc(swFirmwareVersions.createdAt));
 
-    return rows.map((r) => ({
-      id: r.firmware.id,
-      version: r.firmware.version,
-      builtAt: r.firmware.builtAt,
-      note: r.firmware.note,
-      fileId: r.firmware.fileId,
-      filename: r.firmware.filename,
-      sizeBytes: r.firmware.sizeBytes,
-      sha256: r.firmware.sha256,
-      createdAt: r.firmware.createdAt,
-      createdByName: r.lastName
-        ? formatPersonName({
-            id: r.authorId,
-            lastName: r.lastName,
-            firstName: r.firstName,
-            middleName: r.middleName,
-          })
-        : null,
+    return lines.map((line) => ({
+      id: line.id,
+      name: line.name,
+      note: line.note,
+      createdAt: line.createdAt,
+      versions: rows
+        .filter((r) => r.version.firmwareId === line.id)
+        .map((r) => ({
+          id: r.version.id,
+          version: r.version.version,
+          builtAt: r.version.builtAt,
+          note: r.version.note,
+          fileId: r.version.fileId,
+          filename: r.version.filename,
+          sizeBytes: r.version.sizeBytes,
+          sha256: r.version.sha256,
+          createdAt: r.version.createdAt,
+          createdByName: r.lastName
+            ? formatPersonName({
+                id: r.authorId,
+                lastName: r.lastName,
+                firstName: r.firstName,
+                middleName: r.middleName,
+              })
+            : null,
+        })),
     }));
   }
 
@@ -77,10 +114,7 @@ export class SwFirmwaresService {
     userId?: string,
   ) {
     this.assertStorage();
-    const item = await this.items.requireItem(softwareId);
-    if (item.recordState !== 'active') {
-      throw new UnprocessableEntityException('Нельзя добавить прошивку к архивной программе');
-    }
+    await this.requireActiveItem(softwareId);
 
     const remote = await this.filesRemote.prepareFile({
       filename: dto.filename.trim(),
@@ -99,20 +133,24 @@ export class SwFirmwaresService {
     return { ok: true };
   }
 
-  async create(
+  /** Новая прошивка заводится сразу с первой сборкой: линия версий без сборок бессмысленна. */
+  async createLine(
     softwareId: string,
-    dto: { version: string; builtAt?: string | null; note?: string | null; fileId: string; filename: string },
+    dto: {
+      name: string;
+      note?: string | null;
+      version: string;
+      builtAt?: string | null;
+      versionNote?: string | null;
+      fileId: string;
+      filename: string;
+    },
     userId?: string,
   ) {
-    this.assertStorage();
-    const item = await this.items.requireItem(softwareId);
-    if (item.recordState !== 'active') {
-      throw new UnprocessableEntityException('Нельзя добавить прошивку к архивной программе');
-    }
-
-    const version = dto.version.trim();
-    if (!version) throw new UnprocessableEntityException('Укажите версию прошивки');
-    if (version.length > 50) throw new UnprocessableEntityException('Версия длиннее 50 символов');
+    await this.requireActiveItem(softwareId);
+    const name = dto.name.trim();
+    if (!name) throw new UnprocessableEntityException('Укажите наименование прошивки');
+    if (name.length > 255) throw new UnprocessableEntityException('Наименование длиннее 255 символов');
 
     const [taken] = await this.db.db
       .select({ id: swFirmwares.id })
@@ -120,27 +158,196 @@ export class SwFirmwaresService {
       .where(
         and(
           eq(swFirmwares.softwareId, softwareId),
-          eq(swFirmwares.version, version),
+          eq(swFirmwares.name, name),
           ne(swFirmwares.recordState, 'deleted'),
         ),
       )
       .limit(1);
     if (taken) {
       throw new ConflictException({
-        code: 'FIRMWARE_VERSION_TAKEN',
-        message: `Версия ${version} у этой программы уже загружена`,
+        code: 'FIRMWARE_NAME_TAKEN',
+        field: 'name',
+        message: `Прошивка «${name}» у этой программы уже есть — загрузите в неё новую версию`,
       });
     }
 
-    // Хранилище подтверждает готовность и отдаёт размер с хешем — их и сохраняем,
-    // чтобы список прошивок не дёргал файловый сервис на каждую строку. Хеш десяти
-    // гигабайт считается минутами, поэтому ждём по размеру файла, а не фиксированные секунды.
-    const uploaded = await this.filesRemote.getFile(dto.fileId);
-    let ready: Awaited<ReturnType<FilesRemoteClient['getFile']>>;
+    // Файл проверяем до создания записи: линия без сборки не нужна, а ждать
+    // готовности гигабайтов приходится минутами.
+    const ready = await this.awaitFile(dto.fileId);
+
+    const [line] = await this.db.db
+      .insert(swFirmwares)
+      .values({ softwareId, name, note: dto.note?.trim() || null, createdBy: userId ?? null })
+      .returning();
+
+    await this.insertVersion(line.id, dto, ready, userId);
+    return line;
+  }
+
+  /** Переименование прошивки и правка примечания линии. */
+  async updateLine(id: string, dto: { name?: string; note?: string | null }) {
+    const line = await this.requireLine(id);
+    await this.requireActiveItem(line.softwareId);
+
+    const name = dto.name?.trim();
+    if (name !== undefined && !name) throw new UnprocessableEntityException('Укажите наименование прошивки');
+    if (name && name !== line.name) {
+      const [taken] = await this.db.db
+        .select({ id: swFirmwares.id })
+        .from(swFirmwares)
+        .where(
+          and(
+            eq(swFirmwares.softwareId, line.softwareId),
+            eq(swFirmwares.name, name),
+            ne(swFirmwares.recordState, 'deleted'),
+          ),
+        )
+        .limit(1);
+      if (taken) {
+        throw new ConflictException({
+          code: 'FIRMWARE_NAME_TAKEN',
+          field: 'name',
+          message: `Прошивка «${name}» у этой программы уже есть`,
+        });
+      }
+    }
+
+    const [row] = await this.db.db
+      .update(swFirmwares)
+      .set({
+        ...(name ? { name } : {}),
+        ...(dto.note !== undefined ? { note: dto.note?.trim() || null } : {}),
+      })
+      .where(eq(swFirmwares.id, id))
+      .returning();
+    return row;
+  }
+
+  /** Новая сборка существующей прошивки. */
+  async createVersion(
+    firmwareId: string,
+    dto: {
+      version: string;
+      builtAt?: string | null;
+      versionNote?: string | null;
+      fileId: string;
+      filename: string;
+    },
+    userId?: string,
+  ) {
+    const line = await this.requireLine(firmwareId);
+    await this.requireActiveItem(line.softwareId);
+
+    const version = this.normalizeVersion(dto.version);
+    await this.assertVersionFree(firmwareId, version);
+    const ready = await this.awaitFile(dto.fileId);
+    return this.insertVersion(firmwareId, { ...dto, version }, ready, userId);
+  }
+
+  async markVersionDeleted(id: string) {
+    const [version] = await this.db.db
+      .select({ id: swFirmwareVersions.id, firmwareId: swFirmwareVersions.firmwareId, fileId: swFirmwareVersions.fileId })
+      .from(swFirmwareVersions)
+      .where(and(eq(swFirmwareVersions.id, id), ne(swFirmwareVersions.recordState, 'deleted')))
+      .limit(1);
+    if (!version) throw new NotFoundException('Версия прошивки не найдена');
+    const line = await this.requireLine(version.firmwareId);
+    await this.requireActiveItem(line.softwareId);
+
+    await this.db.db
+      .update(swFirmwareVersions)
+      .set({ recordState: 'deleted' })
+      .where(eq(swFirmwareVersions.id, id));
+    await this.dropFile(version.fileId, `версия прошивки ${id}`);
+    return { ok: true };
+  }
+
+  /** Удаление прошивки целиком: вместе с ней уходят все её сборки и их файлы. */
+  async markLineDeleted(id: string) {
+    const line = await this.requireLine(id);
+    await this.requireActiveItem(line.softwareId);
+
+    const versions = await this.db.db
+      .select({ id: swFirmwareVersions.id, fileId: swFirmwareVersions.fileId })
+      .from(swFirmwareVersions)
+      .where(and(eq(swFirmwareVersions.firmwareId, id), ne(swFirmwareVersions.recordState, 'deleted')));
+
+    await this.db.db.update(swFirmwares).set({ recordState: 'deleted' }).where(eq(swFirmwares.id, id));
+    await this.db.db
+      .update(swFirmwareVersions)
+      .set({ recordState: 'deleted' })
+      .where(eq(swFirmwareVersions.firmwareId, id));
+
+    for (const version of versions) {
+      await this.dropFile(version.fileId, `прошивка ${id}`);
+    }
+    return { ok: true, versions: versions.length };
+  }
+
+  /** Ссылка на скачивание: сборки не лежат в sw_files, поэтому подписываем сами. */
+  async getVersionLink(id: string) {
+    this.assertStorage();
+    const [row] = await this.db.db
+      .select({ fileId: swFirmwareVersions.fileId })
+      .from(swFirmwareVersions)
+      .where(and(eq(swFirmwareVersions.id, id), ne(swFirmwareVersions.recordState, 'deleted')))
+      .limit(1);
+    if (!row) throw new NotFoundException('Версия прошивки не найдена');
+
+    const signed = await this.filesRemote.createSignedLink(row.fileId, 600);
+    return { fileId: row.fileId, url: signed.url, expiresAt: signed.expiresAt };
+  }
+
+  private async requireLine(id: string) {
+    const [line] = await this.db.db
+      .select()
+      .from(swFirmwares)
+      .where(and(eq(swFirmwares.id, id), ne(swFirmwares.recordState, 'deleted')))
+      .limit(1);
+    if (!line) throw new NotFoundException('Прошивка не найдена');
+    return line;
+  }
+
+  private normalizeVersion(raw: string) {
+    const version = (raw ?? '').trim();
+    if (!version) throw new UnprocessableEntityException('Укажите номер версии');
+    if (version.length > 50) throw new UnprocessableEntityException('Номер версии длиннее 50 символов');
+    return version;
+  }
+
+  private async assertVersionFree(firmwareId: string, version: string) {
+    const [taken] = await this.db.db
+      .select({ id: swFirmwareVersions.id })
+      .from(swFirmwareVersions)
+      .where(
+        and(
+          eq(swFirmwareVersions.firmwareId, firmwareId),
+          eq(swFirmwareVersions.version, version),
+          ne(swFirmwareVersions.recordState, 'deleted'),
+        ),
+      )
+      .limit(1);
+    if (taken) {
+      throw new ConflictException({
+        code: 'FIRMWARE_VERSION_TAKEN',
+        field: 'version',
+        message: `Версия ${version} у этой прошивки уже загружена`,
+      });
+    }
+  }
+
+  /**
+   * Хранилище подтверждает готовность и отдаёт размер с хешем — их и сохраняем,
+   * чтобы список не дёргал файловый сервис на каждую строку. Хеш десяти гигабайт
+   * считается минутами, поэтому ждём по размеру файла, а не фиксированные секунды.
+   */
+  private async awaitFile(fileId: string) {
+    this.assertStorage();
+    const uploaded = await this.filesRemote.getFile(fileId);
     try {
-      ready = await this.filesRemote.waitUntilReadyLarge(dto.fileId, uploaded.currentVersion?.sizeBytes);
+      return await this.filesRemote.waitUntilReadyLarge(fileId, uploaded.currentVersion?.sizeBytes);
     } catch (err) {
-      const current = await this.filesRemote.getFile(dto.fileId).catch(() => null);
+      const current = await this.filesRemote.getFile(fileId).catch(() => null);
       const status = current?.currentVersion?.status;
       if (!status || status === 'pending') {
         // Файл не удаляем: заливать гигабайты заново из-за нашего ожидания нельзя, повтор его подхватит.
@@ -156,14 +363,21 @@ export class SwFirmwaresService {
         message: `Хранилище отклонило файл: ${current?.currentVersion?.rejectReason ?? (err instanceof Error ? err.message : status)}`,
       });
     }
+  }
 
+  private async insertVersion(
+    firmwareId: string,
+    dto: { version: string; builtAt?: string | null; versionNote?: string | null; fileId: string; filename: string },
+    ready: Awaited<ReturnType<FilesRemoteClient['getFile']>>,
+    userId?: string,
+  ) {
     const [row] = await this.db.db
-      .insert(swFirmwares)
+      .insert(swFirmwareVersions)
       .values({
-        softwareId,
-        version,
+        firmwareId,
+        version: this.normalizeVersion(dto.version),
         builtAt: dto.builtAt || null,
-        note: dto.note?.trim() || null,
+        note: dto.versionNote?.trim() || null,
         fileId: dto.fileId,
         filename: dto.filename.trim(),
         sizeBytes: ready.currentVersion?.sizeBytes ?? null,
@@ -171,56 +385,21 @@ export class SwFirmwaresService {
         createdBy: userId ?? null,
       })
       .returning();
-
     return row;
   }
 
-  /** Ссылка на скачивание: прошивки не лежат в sw_files, поэтому подписываем сами. */
-  async getLink(id: string) {
-    this.assertStorage();
-    const [row] = await this.db.db
-      .select({ fileId: swFirmwares.fileId })
-      .from(swFirmwares)
-      .where(and(eq(swFirmwares.id, id), ne(swFirmwares.recordState, 'deleted')))
-      .limit(1);
-    if (!row) throw new NotFoundException('Прошивка не найдена');
-
-    const signed = await this.filesRemote.createSignedLink(row.fileId, 600);
-    return { fileId: row.fileId, url: signed.url, expiresAt: signed.expiresAt };
-  }
-
-  async markDeleted(id: string) {
-    // Архивная запись только для чтения (ECRT-600): прошивки архивной программы не удаляем.
-    const [existing] = await this.db.db
-      .select({ softwareId: swFirmwares.softwareId })
-      .from(swFirmwares)
-      .where(and(eq(swFirmwares.id, id), ne(swFirmwares.recordState, 'deleted')))
-      .limit(1);
-    if (!existing) throw new NotFoundException('Прошивка не найдена');
-    const item = await this.items.requireItem(existing.softwareId);
-    if (item.recordState !== 'active') {
-      throw new UnprocessableEntityException('Нельзя удалить прошивку у архивной программы');
+  /**
+   * Файл удалённой сборки освобождает место: запись к нему больше не ведёт, а весит
+   * он гигабайты. Сбой хранилища удаление не отменяет — осиротевший файл пишем в лог.
+   */
+  private async dropFile(fileId: string, what: string) {
+    if (!this.filesRemote.isEnabled()) return;
+    try {
+      await this.filesRemote.deleteFile(fileId);
+    } catch (err) {
+      this.logger.warn(
+        `${what} удалена, но файл ${fileId} в files-service не удалён: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
-
-    const [row] = await this.db.db
-      .update(swFirmwares)
-      .set({ recordState: 'deleted' })
-      .where(eq(swFirmwares.id, id))
-      .returning();
-    if (!row) throw new NotFoundException('Прошивка не найдена');
-
-    // Прошивка весит гигабайты, а удалённая запись к файлу больше не ведёт: без чистки
-    // место занято навсегда. Сбой хранилища удаление не отменяет — файл остаётся сиротой,
-    // про него пишем в лог, чтобы дочистить руками.
-    if (this.filesRemote.isEnabled()) {
-      try {
-        await this.filesRemote.deleteFile(row.fileId);
-      } catch (err) {
-        this.logger.warn(
-          `прошивка ${id} удалена, но файл ${row.fileId} в files-service не удалён: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }
-    return { ok: true };
   }
 }

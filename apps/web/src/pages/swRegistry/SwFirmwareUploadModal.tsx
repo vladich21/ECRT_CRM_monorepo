@@ -9,7 +9,7 @@ import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessa
 import { formatFileSize } from '@/utils/formatFileSize';
 import styles from './SwRegistryModals.module.scss';
 
-type FormValues = { version?: string; builtAt?: Dayjs | null; note?: string };
+type FormValues = { name?: string; version?: string; builtAt?: Dayjs | null; note?: string };
 
 /** Предел хранилища (TUS_MAX_SIZE): больше него загрузка сорвётся уже на первом запросе. */
 const MAX_FIRMWARE_BYTES = 10 * 1024 ** 3;
@@ -20,14 +20,29 @@ type UploadState =
   | { status: 'done'; filename: string; size: number; fileId: string; versionId: string }
   | { status: 'error'; filename: string; message: string; fileId?: string };
 
+export type FirmwareVersionSubmit = {
+  /** Наименование задаётся только у новой прошивки, у существующей его не спрашиваем. */
+  name?: string;
+  version: string;
+  builtAt: string | null;
+  versionNote: string | null;
+  fileId: string;
+  filename: string;
+};
+
 interface Props {
   open: boolean;
   itemId: string;
+  /** Прошивка, в которую грузим новую версию. Без неё окно заводит новую прошивку. */
+  firmware?: { id: string; name: string } | null;
+  /** Занятые номера версий: у новой прошивки пусто, у существующей — её линия. */
   takenVersions: string[];
+  /** Наименования других прошивок программы: подсказываем занятое до отправки. */
+  takenNames?: string[];
   confirmLoading?: boolean;
   submitError?: unknown;
   onCancel: () => void;
-  onSubmit: (payload: { version: string; builtAt: string | null; note: string | null; fileId: string; filename: string }) => void;
+  onSubmit: (payload: FirmwareVersionSubmit) => void;
 }
 
 function uploadedFileId(state: UploadState): string | undefined {
@@ -38,7 +53,9 @@ function uploadedFileId(state: UploadState): string | undefined {
 export function SwFirmwareUploadModal({
   open,
   itemId,
+  firmware,
   takenVersions,
+  takenNames = [],
   confirmLoading,
   submitError,
   onCancel,
@@ -62,10 +79,20 @@ export function SwFirmwareUploadModal({
     if (fileId) void swRegistryApi.discardFirmwareUpload(fileId).catch(() => undefined);
   };
 
+  /** Наименование новой прошивки предлагаем по имени файла: чаще всего оно и есть. */
+  const suggestName = (filename: string) => {
+    if (firmware) return;
+    const current = (form.getFieldValue('name') as string | undefined)?.trim();
+    if (current) return;
+    const base = filename.replace(/\.[^.]+$/, '').trim();
+    if (base) form.setFieldsValue({ name: base });
+  };
+
   const startUpload = (file: File) => {
     uploadHandle.current?.abort();
     discard(upload);
     setUpload({ status: 'uploading', filename: file.name, size: file.size, percent: 0 });
+    suggestName(file.name);
 
     // Ответы прежней (заменённой или отменённой) загрузки приходят позже — применяем только текущую.
     const isCurrent = () => uploadHandle.current === handle && !handle.isAborted();
@@ -109,9 +136,10 @@ export function SwFirmwareUploadModal({
     const values = await form.validateFields();
     if (upload.status !== 'done') return;
     onSubmit({
+      ...(firmware ? {} : { name: (values.name ?? '').trim() }),
       version: (values.version ?? '').trim(),
       builtAt: values.builtAt ? values.builtAt.format('YYYY-MM-DD') : null,
-      note: values.note?.trim() || null,
+      versionNote: values.note?.trim() || null,
       fileId: upload.fileId,
       filename: upload.filename,
     });
@@ -122,7 +150,7 @@ export function SwFirmwareUploadModal({
   return (
     <Modal
       open={open}
-      title='Загрузка прошивки'
+      title={firmware ? `Новая версия: ${firmware.name}` : 'Новая прошивка'}
       okText='Сохранить'
       cancelText='Отмена'
       onOk={submit}
@@ -134,6 +162,25 @@ export function SwFirmwareUploadModal({
       width={560}
     >
       <Form form={form} layout='vertical' requiredMark={false}>
+        {firmware ? null : (
+          <Form.Item
+            name='name'
+            label='Наименование прошивки'
+            extra='Например: основное ПО, загрузчик, образ ПЛИС — у каждой своя линия версий'
+            rules={[
+              { required: true, message: 'Укажите наименование' },
+              {
+                validator: (_rule, value: string | undefined) =>
+                  value && takenNames.includes(value.trim())
+                    ? Promise.reject(new Error('Такая прошивка у программы уже есть'))
+                    : Promise.resolve(),
+              },
+            ]}
+          >
+            <Input placeholder='Основное ПО' maxLength={255} autoFocus />
+          </Form.Item>
+        )}
+
         <Form.Item
           name='version'
           label='Версия прошивки'
@@ -147,14 +194,14 @@ export function SwFirmwareUploadModal({
             },
           ]}
         >
-          <Input placeholder='1.4.2' maxLength={50} autoFocus />
+          <Input placeholder='1.4.2' maxLength={50} autoFocus={Boolean(firmware)} />
         </Form.Item>
 
         <Form.Item name='builtAt' label='Дата сборки'>
           <DatePicker format='DD.MM.YYYY' style={{ width: '100%' }} placeholder='Выберите дату' />
         </Form.Item>
 
-        <Form.Item name='note' label='Примечание'>
+        <Form.Item name='note' label='Примечание к сборке'>
           <Input.TextArea rows={2} maxLength={1000} placeholder='Что изменилось в этой сборке' />
         </Form.Item>
 

@@ -8,6 +8,7 @@ import type {
   CreateStructurePayload,
   CreateSwDocumentPayload,
   CreateSwFirmwarePayload,
+  CreateSwFirmwareVersionPayload,
   CreateSwItemPayload,
   SwFileObjectType,
   UpdateSwItemPayload,
@@ -324,6 +325,39 @@ export function useCreateSwFirmware() {
     mutationFn: (payload: CreateSwFirmwarePayload) => swRegistryApi.createFirmware(payload),
     onSuccess: (_data, payload) => {
       void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(payload.itemId) });
+    },
+  });
+}
+
+export function useUpdateSwFirmware() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; itemId: string; payload: { name?: string; note?: string | null } }) =>
+      swRegistryApi.updateFirmware(id, payload),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
+    },
+  });
+}
+
+export function useCreateSwFirmwareVersion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ payload }: { payload: CreateSwFirmwareVersionPayload; itemId: string }) =>
+      swRegistryApi.createFirmwareVersion(payload),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
+    },
+  });
+}
+
+export function useDeleteSwFirmwareVersion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ versionId }: { versionId: string; itemId: string }) =>
+      swRegistryApi.deleteFirmwareVersion(versionId),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
     },
   });
 }

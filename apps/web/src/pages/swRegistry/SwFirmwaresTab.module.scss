@@ -25,21 +25,82 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 
-.row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+/* ── Прошивка: свой блок с линией версий ── */
+
+.firmware {
   border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border-radius: 10px;
+  padding: 10px 12px 12px;
   background: #fff;
 }
 
+.firmwareHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.firmwareTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.firmwareName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #262626;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.firmwareCount {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #8c8c8c;
+  font-variant-numeric: tabular-nums;
+}
+
+.firmwareActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.firmwareNote {
+  margin: 2px 0 6px;
+  font-size: 13px;
+  color: #595959;
+}
+
+/* ── Версия сборки ── */
+
+.version,
+.versionCurrent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+/* Текущая сборка выделена фоном: её скачивают чаще всего. */
+.versionCurrent {
+  margin-top: 6px;
+  background: #f6f9ff;
+  border: 1px solid #e6efff;
+}
+
 .icon {
-  font-size: 20px;
+  font-size: 18px;
   color: #1677ff;
   margin-top: 2px;
 }
@@ -56,13 +117,23 @@
   min-width: 0;
 }
 
-/* Версия — главное в строке: моношрифт и тёмный цвет, как обозначение у документа. */
-.version {
+/* Номер версии — главное в строке: моношрифт, как обозначение у документа. */
+.versionNo {
   flex-shrink: 0;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 14px;
   font-weight: 600;
   color: #262626;
+}
+
+.currentTag {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #1677ff;
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
 }
 
 .filename {
@@ -100,4 +171,18 @@
   display: flex;
   flex-shrink: 0;
   gap: 4px;
+}
+
+/* ── Прежние сборки ── */
+
+.history {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+.historyTitle {
+  padding: 0 10px 2px;
+  font-size: 12px;
+  color: #8c8c8c;
 }
