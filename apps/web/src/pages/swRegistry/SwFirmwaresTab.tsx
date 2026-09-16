@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import {
+  CaretDownOutlined,
+  CaretRightOutlined,
   CloudUploadOutlined,
   DeleteOutlined,
   DownloadOutlined,
@@ -7,7 +9,7 @@ import {
   FileZipOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Empty, Form, Input, Modal, Spin, Tooltip } from 'antd';
+import { Button, Dropdown, Empty, Form, Input, Modal, Spin, Tooltip, type MenuProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
@@ -58,6 +60,8 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
   const [renameFor, setRenameFor] = useState<SwFirmware | null>(null);
   const [renameForm] = Form.useForm<{ name: string; note?: string }>();
   const [submitError, setSubmitError] = useState<unknown>(undefined);
+  /** Раскрытая история: по умолчанию все свёрнуты, видна только текущая сборка. */
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(() => new Set());
   const pendingId = useRef('');
 
   const firmwares = firmwaresQuery.data ?? [];
@@ -143,13 +147,21 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
     );
   };
 
-  const renderVersion = (firmware: SwFirmware, version: SwFirmwareVersion, current: boolean) => (
-    <div key={version.id} className={current ? styles.versionCurrent : styles.version}>
+  const toggleHistory = (firmwareId: string) => {
+    setExpandedHistory((prev) => {
+      const next = new Set(prev);
+      if (next.has(firmwareId)) next.delete(firmwareId);
+      else next.add(firmwareId);
+      return next;
+    });
+  };
+
+  const renderPastVersion = (firmware: SwFirmware, version: SwFirmwareVersion) => (
+    <div key={version.id} className={styles.version}>
       <FileZipOutlined className={styles.icon} />
       <div className={styles.main}>
         <div className={styles.titleLine}>
           <span className={styles.versionNo}>{version.version}</span>
-          {current ? <span className={styles.currentTag}>текущая</span> : null}
           <span className={styles.filename} title={version.filename}>
             {version.filename}
           </span>
@@ -173,11 +185,17 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
       </div>
       <div className={styles.actions}>
         <Tooltip title='Скачать'>
-          <Button type='text' icon={<DownloadOutlined />} onClick={() => void download(version)} />
+          <Button type='text' size='small' icon={<DownloadOutlined />} onClick={() => void download(version)} />
         </Tooltip>
         {canEdit ? (
           <Tooltip title='Удалить версию'>
-            <Button type='text' danger icon={<DeleteOutlined />} onClick={() => removeVersion(firmware, version)} />
+            <Button
+              type='text'
+              size='small'
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => removeVersion(firmware, version)}
+            />
           </Tooltip>
         ) : null}
       </div>
@@ -209,18 +227,62 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
         <div className={styles.list}>
           {firmwares.map(firmware => {
             const [current, ...history] = firmware.versions;
+            const accordion = history.length > 0;
+            const open = accordion && expandedHistory.has(firmware.id);
             return (
               <section key={firmware.id} className={styles.firmware}>
-                <header className={styles.firmwareHead}>
-                  <div className={styles.firmwareTitle}>
-                    <span className={styles.firmwareName}>{firmware.name}</span>
-                    <span className={styles.firmwareCount}>
-                      {firmware.versions.length}{' '}
-                      {firmware.versions.length === 1 ? 'версия' : firmware.versions.length < 5 ? 'версии' : 'версий'}
-                    </span>
+                <div className={accordion ? `${styles.card} ${styles.cardToggle}` : styles.card}>
+                  {accordion ? (
+                    <button
+                      type='button'
+                      className={styles.caretBtn}
+                      aria-expanded={open}
+                      aria-label={open ? 'Свернуть прежние версии' : 'Показать прежние версии'}
+                      onClick={() => toggleHistory(firmware.id)}
+                    >
+                      {open ? <CaretDownOutlined /> : <CaretRightOutlined />}
+                    </button>
+                  ) : (
+                    <FileZipOutlined className={styles.icon} />
+                  )}
+                  <div
+                    className={styles.main}
+                    onClick={accordion ? () => toggleHistory(firmware.id) : undefined}
+                  >
+                    <div className={styles.titleLine}>
+                      <span className={styles.firmwareName}>{firmware.name}</span>
+                      {current ? <span className={styles.versionNo}>{current.version}</span> : null}
+                      {accordion && !open ? (
+                        <span className={styles.more}>ещё {history.length}</span>
+                      ) : null}
+                    </div>
+                    {firmware.note ? <div className={styles.note}>{firmware.note}</div> : null}
+                    {current ? (
+                      <>
+                        <div className={styles.filename} title={current.filename}>
+                          {current.filename}
+                        </div>
+                        <div className={styles.meta}>
+                          <span>{formatFileSize(current.sizeBytes ?? 0)}</span>
+                          <span>·</span>
+                          <span>сборка {formatDate(current.builtAt)}</span>
+                          <span>·</span>
+                          <span>
+                            загружена {formatDate(current.createdAt)}
+                            {current.createdByName ? `, ${current.createdByName}` : ''}
+                          </span>
+                          {current.sha256 ? (
+                            <Tooltip title={`SHA-256: ${current.sha256}`}>
+                              <span className={styles.hash}>{current.sha256.slice(0, 8)}</span>
+                            </Tooltip>
+                          ) : null}
+                        </div>
+                        {current.note ? <div className={styles.note}>{current.note}</div> : null}
+                      </>
+                    ) : null}
                   </div>
-                  {canEdit ? (
-                    <div className={styles.firmwareActions}>
+                  <div className={styles.actions}>
+                    {canEdit ? (
                       <Button
                         size='small'
                         icon={<CloudUploadOutlined />}
@@ -228,11 +290,28 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                       >
                         Загрузить версию
                       </Button>
+                    ) : null}
+                    {current ? (
+                      <Tooltip title='Скачать'>
+                        <Button type='text' icon={<DownloadOutlined />} onClick={() => void download(current)} />
+                      </Tooltip>
+                    ) : null}
+                    {canEdit ? (
                       <Dropdown
                         trigger={['click']}
                         menu={{
                           items: [
                             { key: 'rename', icon: <EditOutlined />, label: 'Переименовать' },
+                            ...(current
+                              ? ([
+                                  {
+                                    key: 'deleteVersion',
+                                    icon: <DeleteOutlined />,
+                                    label: 'Удалить версию',
+                                    danger: true,
+                                  },
+                                ] satisfies MenuProps['items'])
+                              : []),
                             { key: 'delete', icon: <DeleteOutlined />, label: 'Удалить прошивку', danger: true },
                           ],
                           onClick: ({ key }) => {
@@ -240,26 +319,18 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                               renameForm.setFieldsValue({ name: firmware.name, note: firmware.note ?? '' });
                               setRenameFor(firmware);
                             }
+                            if (key === 'deleteVersion' && current) removeVersion(firmware, current);
                             if (key === 'delete') removeFirmware(firmware);
                           },
                         }}
                       >
-                        <Button size='small' type='text'>
-                          ⋯
-                        </Button>
+                        <Button type='text'>⋯</Button>
                       </Dropdown>
-                    </div>
-                  ) : null}
-                </header>
-
-                {firmware.note ? <div className={styles.firmwareNote}>{firmware.note}</div> : null}
-
-                {current ? renderVersion(firmware, current, true) : null}
-                {history.length ? (
-                  <div className={styles.history}>
-                    <div className={styles.historyTitle}>Прежние сборки</div>
-                    {history.map(version => renderVersion(firmware, version, false))}
+                    ) : null}
                   </div>
+                </div>
+                {open ? (
+                  <div className={styles.history}>{history.map((version) => renderPastVersion(firmware, version))}</div>
                 ) : null}
               </section>
             );
