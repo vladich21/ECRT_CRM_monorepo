@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   date,
   index,
@@ -224,5 +225,28 @@ export const swItemPatents = pgTable(
   (t) => [
     uniqueIndex('sw_item_patents_uidx').on(t.softwareId, t.patentId),
     index('sw_item_patents_patent_idx').on(t.patentId),
+  ],
+);
+
+/** Прошивки программы: версия, дата сборки и ссылка на файл в хранилище. */
+export const swFirmwares = pgTable(
+  'sw_firmwares',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    softwareId: uuid('software_id').notNull(),
+    version: varchar('version', { length: 50 }).notNull(),
+    builtAt: date('built_at'),
+    note: varchar('note', { length: 1000 }),
+    fileId: uuid('file_id').notNull(),
+    filename: varchar('filename', { length: 255 }).notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'number' }),
+    sha256: varchar('sha256', { length: 64 }),
+    recordState: varchar('record_state', { length: 20 }).notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: uuid('created_by'),
+  },
+  (t) => [
+    index('sw_firmwares_software_idx').on(t.softwareId),
+    index('sw_firmwares_file_idx').on(t.fileId),
   ],
 );

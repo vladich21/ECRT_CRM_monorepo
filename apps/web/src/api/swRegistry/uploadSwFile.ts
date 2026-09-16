@@ -134,3 +134,63 @@ export function startSwDocumentDraftUpload(
     isAborted: () => aborted,
   };
 }
+
+/** Куски по 64 МиБ: прошивка на 10 ГБ одним запросом не пролезает через прокси и не переживает обрыв. */
+const FIRMWARE_CHUNK_SIZE = 64 * 1024 * 1024;
+
+/**
+ * Загрузка прошивки: файл едет в хранилище до создания записи. Прошивки весят гигабайты,
+ * поэтому окно показывает прогресс, а отмена отзывает уже зарезервированный файл.
+ */
+export function startSwFirmwareUpload(
+  file: File,
+  opts: {
+    itemId: string;
+    onTicket?: (ticket: SwDraftUploadTicket) => void;
+    onProgress?: (percent: number) => void;
+  },
+): SwDraftUpload {
+  let upload: Upload | null = null;
+  let aborted = false;
+
+  const promise = (async () => {
+    const ticket = await swRegistryApi.createFirmwareUploadTicket({
+      itemId: opts.itemId,
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+    });
+    if (aborted) {
+      void swRegistryApi.discardFirmwareUpload(ticket.fileId).catch(() => undefined);
+      throw new Error('upload aborted');
+    }
+    opts.onTicket?.({ fileId: ticket.fileId, versionId: ticket.versionId });
+
+    await new Promise<void>((resolve, reject) => {
+      const tus = new Upload(file, {
+        endpoint: ticket.upload.tusEndpoint,
+        metadata: ticket.upload.metadata,
+        chunkSize: FIRMWARE_CHUNK_SIZE,
+        retryDelays: [0, 1000, 3000, 5000, 10000, 20000],
+        removeFingerprintOnSuccess: true,
+        onProgress: (sent, total) => {
+          if (!aborted) opts.onProgress?.(total > 0 ? Math.floor((sent / total) * 100) : 0);
+        },
+        onError: error => reject(error),
+        onSuccess: () => resolve(),
+      });
+      upload = tus;
+      tus.start();
+    });
+
+    return { fileId: ticket.fileId, versionId: ticket.versionId };
+  })();
+
+  return {
+    promise,
+    abort: () => {
+      aborted = true;
+      void (upload as Upload | null)?.abort(true);
+    },
+    isAborted: () => aborted,
+  };
+}

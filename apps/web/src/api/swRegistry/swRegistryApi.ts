@@ -1,6 +1,7 @@
 import { apiClient } from '../clients';
 import type {
   AddSwItemPatentLinkPayload,
+  CreateSwFirmwarePayload,
   ChangeSwDocumentStatusPayload,
   CreateStructurePayload,
   CreateSwDocumentPayload,
@@ -8,6 +9,7 @@ import type {
   SwDocumentStatusesResponse,
   SwDocumentWriteResult,
   SwFileLinkResponse,
+  SwFirmware,
   SwItemDetail,
   SwItemListRow,
   SwItemPatentLink,
@@ -251,6 +253,46 @@ export const swRegistryApi = {
   ) => {
     const { data } = await apiClient.post(`/sw/files/${fileId}/confirm`, payload);
     return data;
+  },
+
+  listFirmwares: async (itemId: string): Promise<SwFirmware[]> => {
+    const { data } = await apiClient.get<SwFirmware[]>('/sw/registry/firmwares/list', {
+      params: { itemId },
+    });
+    return data;
+  },
+
+  createFirmwareUploadTicket: async (payload: {
+    itemId: string;
+    filename: string;
+    contentType?: string;
+  }) => {
+    const { data } = await apiClient.post<{
+      fileId: string;
+      versionId: string;
+      upload: { tusEndpoint: string; metadata: Record<string, string> };
+    }>('/sw/registry/firmwares/upload-ticket', payload);
+    return data;
+  },
+
+  discardFirmwareUpload: async (fileId: string) => {
+    await apiClient.delete(`/sw/registry/firmwares/upload-ticket/${fileId}`);
+  },
+
+  createFirmware: async (payload: CreateSwFirmwarePayload): Promise<SwFirmware> => {
+    const { data } = await apiClient.post<SwFirmware>('/sw/registry/firmwares', payload);
+    return data;
+  },
+
+  getFirmwareLink: async (id: string): Promise<{ fileId: string; url: string; expiresAt: string }> => {
+    const { data } = await apiClient.get<{ fileId: string; url: string; expiresAt: string }>(
+      `/sw/registry/firmwares/${id}/link`,
+    );
+    return data;
+  },
+
+  deleteFirmware: async (id: string) => {
+    await apiClient.delete(`/sw/registry/firmwares/${id}`);
   },
 
   getSwFileLink: async (fileId: string, version?: number): Promise<SwFileLinkResponse> => {

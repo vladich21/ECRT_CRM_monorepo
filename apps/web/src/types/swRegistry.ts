@@ -278,6 +278,29 @@ export type SwRegistryFile = {
   svnRepoUuid?: string | null;
 };
 
+/** Прошивка программы: собственная версия сборки и один файл (до десятков гигабайт). */
+export type SwFirmware = {
+  id: string;
+  version: string;
+  builtAt: string | null;
+  note: string | null;
+  fileId: string;
+  filename: string;
+  sizeBytes: number | null;
+  sha256: string | null;
+  createdAt: string;
+  createdByName: string | null;
+};
+
+export type CreateSwFirmwarePayload = {
+  itemId: string;
+  version: string;
+  builtAt?: string | null;
+  note?: string | null;
+  fileId: string;
+  filename: string;
+};
+
 export type SwFileLinkResponse = {
   fileId: string;
   version: number | null;

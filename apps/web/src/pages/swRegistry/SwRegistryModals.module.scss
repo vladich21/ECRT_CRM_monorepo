@@ -79,3 +79,64 @@
   font-weight: 600;
   color: rgba(0, 0, 0, 0.65);
 }
+
+/* Блок выбора файла: переключатель источника сверху, сам выбор под ним. */
+.fileBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+
+  > * {
+    max-width: 100%;
+  }
+}
+
+/* Текущая копия документа в окне правки: что заменяем. */
+.currentFileLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 13px;
+}
+
+/* ── Файл прошивки в окне загрузки: имя, размер и прогресс передачи одной карточкой ── */
+
+.uploadedFile {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+
+  > :global(.anticon) {
+    font-size: 20px;
+    color: #1677ff;
+    margin-top: 2px;
+  }
+}
+
+.uploadedFileBody {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.uploadedFileName {
+  font-size: 13px;
+  color: #262626;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uploadedFileMeta {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-variant-numeric: tabular-nums;
+}

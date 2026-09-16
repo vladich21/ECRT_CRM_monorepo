@@ -114,6 +114,7 @@ export function SwApprovalSheetModal({
 
           <div className={styles.formSectionTitle}>Файл листа утверждения</div>
 
+          <div className={styles.fileBlock}>
           {svnEnabled ? (
             <Radio.Group
               className={styles.fileSourceSwitch}
@@ -193,6 +194,7 @@ export function SwApprovalSheetModal({
             </Upload.Dragger>
           )}
 
+          </div>
         </Form>
       </Modal>
 

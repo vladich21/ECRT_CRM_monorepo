@@ -7,6 +7,7 @@ import type {
   ChangeSwDocumentStatusPayload,
   CreateStructurePayload,
   CreateSwDocumentPayload,
+  CreateSwFirmwarePayload,
   CreateSwItemPayload,
   SwFileObjectType,
   UpdateSwItemPayload,
@@ -305,6 +306,34 @@ export function useDetachSwFile() {
       void queryClient.invalidateQueries({
         queryKey: swRegistryQueryKeys.files(variables.objectType, variables.objectId),
       });
+    },
+  });
+}
+
+export function useSwFirmwares(itemId: string | undefined) {
+  return useQuery({
+    queryKey: swRegistryQueryKeys.firmwares(itemId ?? ''),
+    queryFn: () => swRegistryApi.listFirmwares(itemId!),
+    enabled: Boolean(itemId),
+  });
+}
+
+export function useCreateSwFirmware() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateSwFirmwarePayload) => swRegistryApi.createFirmware(payload),
+    onSuccess: (_data, payload) => {
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(payload.itemId) });
+    },
+  });
+}
+
+export function useDeleteSwFirmware() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; itemId: string }) => swRegistryApi.deleteFirmware(id),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
     },
   });
 }

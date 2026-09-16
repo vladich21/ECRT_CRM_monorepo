@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FileWordOutlined, FolderOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { App, Alert, Button, Modal, Spin } from 'antd';
+import { App, Alert, Button, Checkbox, Modal, Spin } from 'antd';
 
 import { formatFileSize } from '@/utils/formatFileSize';
 import styles from './SvnPickerModal.module.scss';
@@ -20,6 +20,11 @@ type Props = {
   itemId?: string;
   /** Начальный каталог: например, папка программы в SVN. */
   startPath?: string;
+  /**
+   * Обновление уже прикреплённой копии: открываем каталог этого файла и
+   * показываем только его — остальное содержимое по флажку, если нужен другой файл.
+   */
+  currentPath?: string | null;
   onClose: () => void;
   onDone?: () => void;
   /** Режим select: выбранный файл. */
@@ -60,6 +65,7 @@ export function SvnPickerModal({
   objectId,
   itemId,
   startPath = '',
+  currentPath,
   onClose,
   onDone,
   onSelect,
@@ -67,8 +73,20 @@ export function SvnPickerModal({
   const folderMode = mode === 'folder';
   const selectMode = mode === 'select';
   const { message } = App.useApp();
-  const [path, setPath] = useState(startPath);
+  const currentDir = currentPath ? currentPath.split('/').slice(0, -1).join('/') : null;
+  const currentName = currentPath ? (currentPath.split('/').pop() ?? null) : null;
+  const [path, setPath] = useState(currentDir ?? startPath);
   const [selected, setSelected] = useState<SvnEntry | null>(null);
+  /** Пока не сняли — в каталоге текущего файла виден только он сам. */
+  const [onlyCurrent, setOnlyCurrent] = useState(Boolean(currentPath));
+
+  // Открываем окно на каталоге обновляемого файла, а не там, где были в прошлый раз.
+  useEffect(() => {
+    if (!open) return;
+    setPath(currentDir ?? startPath);
+    setOnlyCurrent(Boolean(currentPath));
+    setSelected(null);
+  }, [open, currentDir, currentPath, startPath]);
 
   const listQuery = useQuery({
     queryKey: ['svn', 'browse', path],
@@ -110,7 +128,14 @@ export function SvnPickerModal({
     attachMut.mutate();
   };
 
-  const entries = listQuery.data ?? [];
+  const allEntries = listQuery.data ?? [];
+  // Фильтр действует только в каталоге самого файла: уйдя в другой, показываем всё.
+  const inCurrentDir = currentDir !== null && path === currentDir;
+  const entries =
+    onlyCurrent && inCurrentDir && currentName
+      ? allEntries.filter(e => e.kind === 'file' && e.name === currentName)
+      : allEntries;
+  const hiddenCount = allEntries.length - entries.length;
   const errorText = useMemo(() => {
     const err = listQuery.error as { response?: { data?: { message?: string } } } | null;
     return err?.response?.data?.message ?? (listQuery.isError ? 'Не удалось прочитать каталог SVN' : null);
@@ -131,7 +156,13 @@ export function SvnPickerModal({
     <Modal
       open={open}
       onCancel={onClose}
-      title={folderMode ? 'Выбор каталога программы в SVN' : 'Выбор файла в SVN конструкторов'}
+      title={
+        folderMode
+          ? 'Выбор каталога программы в SVN'
+          : currentPath
+            ? 'Обновление файла из SVN'
+            : 'Выбор файла в SVN конструкторов'
+      }
       width={860}
       destroyOnHidden
       footer={
@@ -158,6 +189,20 @@ export function SvnPickerModal({
           setSelected(null);
         }}
       />
+
+      {currentPath && inCurrentDir ? (
+        <Checkbox
+          className={styles.onlyCurrent}
+          checked={!onlyCurrent}
+          onChange={e => {
+            setOnlyCurrent(!e.target.checked);
+            setSelected(null);
+          }}
+        >
+          Показать остальное содержимое каталога
+          {onlyCurrent && hiddenCount > 0 ? ` (скрыто ${hiddenCount})` : ''}
+        </Checkbox>
+      ) : null}
 
       {errorText ? (
         <Alert
