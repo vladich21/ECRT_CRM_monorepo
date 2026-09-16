@@ -162,7 +162,6 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
       <div className={styles.main}>
         <div className={styles.titleLine}>
           <span className={styles.versionNo}>{version.version}</span>
-          <span className={styles.pastTag}>прежняя</span>
           <span className={styles.filename} title={version.filename}>
             {version.filename}
           </span>
@@ -259,9 +258,9 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                     {firmware.note ? <div className={styles.note}>{firmware.note}</div> : null}
                     {current ? (
                       <>
-                        <div className={styles.titleLine}>
-                          <span className={styles.versionNo}>{current.version}</span>
-                          <span className={styles.currentTag}>текущая</span>
+                        <div className={styles.currentLine}>
+                          <span className={styles.currentLabel}>Текущая</span>
+                          <span className={styles.currentVersion}>{current.version}</span>
                           <span className={styles.filename} title={current.filename}>
                             {current.filename}
                           </span>
