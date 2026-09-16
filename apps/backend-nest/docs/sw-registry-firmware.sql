@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS sw_firmware_versions (
 CREATE UNIQUE INDEX IF NOT EXISTS sw_firmware_versions_uidx
   ON sw_firmware_versions (firmware_id, version)
   WHERE record_state <> 'deleted';
+CREATE UNIQUE INDEX IF NOT EXISTS sw_firmware_versions_sha256_uidx
+  ON sw_firmware_versions (firmware_id, sha256)
+  WHERE record_state <> 'deleted' AND sha256 IS NOT NULL;
 CREATE INDEX IF NOT EXISTS sw_firmware_versions_firmware_idx
   ON sw_firmware_versions (firmware_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS sw_firmware_versions_file_idx ON sw_firmware_versions (file_id);

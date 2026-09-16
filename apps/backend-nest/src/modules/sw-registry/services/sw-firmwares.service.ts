@@ -12,7 +12,7 @@ import { DatabaseService } from '../../../database/database.service';
 import { FilesRemoteClient } from '../../files/services/files-remote.client';
 import { users } from '../../../database/schema';
 import { swFirmwares, swFirmwareVersions } from '../sw-registry.schema';
-import { formatPersonName } from '../sw-registry.util';
+import { formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
 import { SwItemsService } from './sw-items.service';
 
 /**
@@ -399,21 +399,35 @@ export class SwFirmwaresService {
     ready: Awaited<ReturnType<FilesRemoteClient['getFile']>>,
     userId?: string,
   ) {
-    const [row] = await this.db.db
-      .insert(swFirmwareVersions)
-      .values({
-        firmwareId,
-        version: this.normalizeVersion(dto.version),
-        builtAt: dto.builtAt || null,
-        note: dto.versionNote?.trim() || null,
-        fileId: dto.fileId,
-        filename: dto.filename.trim(),
-        sizeBytes: ready.currentVersion?.sizeBytes ?? null,
-        sha256: ready.currentVersion?.sha256 ?? null,
-        createdBy: userId ?? null,
-      })
-      .returning();
-    return row;
+    try {
+      const [row] = await this.db.db
+        .insert(swFirmwareVersions)
+        .values({
+          firmwareId,
+          version: this.normalizeVersion(dto.version),
+          builtAt: dto.builtAt || null,
+          note: dto.versionNote?.trim() || null,
+          fileId: dto.fileId,
+          filename: dto.filename.trim(),
+          sizeBytes: ready.currentVersion?.sizeBytes ?? null,
+          sha256: ready.currentVersion?.sha256 ?? null,
+          createdBy: userId ?? null,
+        })
+        .returning();
+      return row;
+    } catch (err) {
+      if (isPgUniqueViolation(err, 'sw_firmware_versions_sha256_uidx')) {
+        await this.assertFileNotLoaded(firmwareId, ready.currentVersion?.sha256 ?? null);
+      }
+      if (isPgUniqueViolation(err, 'sw_firmware_versions_uidx')) {
+        throw new ConflictException({
+          code: 'FIRMWARE_VERSION_TAKEN',
+          field: 'version',
+          message: `Версия ${this.normalizeVersion(dto.version)} у этой прошивки уже загружена`,
+        });
+      }
+      throw err;
+    }
   }
 
   /**

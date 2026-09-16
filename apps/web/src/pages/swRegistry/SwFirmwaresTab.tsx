@@ -274,7 +274,11 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
           firmware={uploadFor.firmware ? { id: uploadFor.firmware.id, name: uploadFor.firmware.name } : null}
           takenVersions={uploadFor.firmware?.versions.map(v => v.version) ?? []}
           existingBuilds={
-            uploadFor.firmware?.versions.map(v => ({ version: v.version, sizeBytes: v.sizeBytes })) ?? []
+            uploadFor.firmware?.versions.map(v => ({
+              version: v.version,
+              sizeBytes: v.sizeBytes,
+              sha256: v.sha256,
+            })) ?? []
           }
           takenNames={firmwares.map(f => f.name)}
           confirmLoading={createMut.isPending || createVersionMut.isPending}

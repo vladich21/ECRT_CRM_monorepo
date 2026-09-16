@@ -7,6 +7,12 @@ import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
 import { startSwFirmwareUpload, type SwDraftUpload } from '@/api/swRegistry/uploadSwFile';
 import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessage';
 import { formatFileSize } from '@/utils/formatFileSize';
+import {
+  findSameFirmwareBuild,
+  HASH_BEFORE_UPLOAD_BYTES,
+  sha256Hex,
+  type FirmwareBuildFingerprint,
+} from './swFirmwareDuplicate';
 import styles from './SwRegistryModals.module.scss';
 
 type FormValues = { name?: string; version?: string; builtAt?: Dayjs | null; note?: string };
@@ -37,8 +43,8 @@ interface Props {
   firmware?: { id: string; name: string } | null;
   /** Занятые номера версий: у новой прошивки пусто, у существующей — её линия. */
   takenVersions: string[];
-  /** Уже загруженные сборки этой прошивки: по размеру предупреждаем о том же файле до заливки. */
-  existingBuilds?: { version: string; sizeBytes: number | null }[];
+  /** Уже загруженные сборки этой прошивки: по хешу отсекаем тот же файл до заливки. */
+  existingBuilds?: FirmwareBuildFingerprint[];
   /** Наименования других прошивок программы: подсказываем занятое до отправки. */
   takenNames?: string[];
   confirmLoading?: boolean;
@@ -66,9 +72,10 @@ export function SwFirmwareUploadModal({
 }: Props) {
   const [form] = Form.useForm<FormValues>();
   const [upload, setUpload] = useState<UploadState>({ status: 'idle' });
-  /** Тот же файл в линию не принимают по хешу; по размеру предупреждаем заранее, до заливки гигабайтов. */
+  /** Совпал только размер: разные файлы так бывают, поэтому это предупреждение, а не отказ. */
   const [sameSizeVersion, setSameSizeVersion] = useState<string | null>(null);
   const uploadHandle = useRef<SwDraftUpload | null>(null);
+  const pickGen = useRef(0);
 
   useEffect(() => {
     if (open) {
@@ -76,6 +83,7 @@ export function SwFirmwareUploadModal({
       setUpload({ status: 'idle' });
       setSameSizeVersion(null);
       uploadHandle.current = null;
+      pickGen.current += 1;
     }
   }, [open, form]);
 
@@ -95,43 +103,79 @@ export function SwFirmwareUploadModal({
   };
 
   const startUpload = (file: File) => {
-    setSameSizeVersion(existingBuilds.find(b => b.sizeBytes === file.size)?.version ?? null);
     uploadHandle.current?.abort();
     discard(upload);
-    setUpload({ status: 'uploading', filename: file.name, size: file.size, percent: 0 });
+    pickGen.current += 1;
+    const gen = pickGen.current;
+    setSameSizeVersion(null);
     suggestName(file.name);
 
-    // Ответы прежней (заменённой или отменённой) загрузки приходят позже — применяем только текущую.
-    const isCurrent = () => uploadHandle.current === handle && !handle.isAborted();
-    const handle = startSwFirmwareUpload(file, {
-      itemId,
-      onTicket: ticket => {
-        if (!isCurrent()) return;
-        setUpload(current => (current.status === 'uploading' ? { ...current, fileId: ticket.fileId } : current));
-      },
-      onProgress: percent => {
-        if (!isCurrent()) return;
-        setUpload(current => (current.status === 'uploading' ? { ...current, percent } : current));
-      },
-    });
-    uploadHandle.current = handle;
-    handle.promise
-      .then(ticket => {
-        if (!isCurrent()) return;
-        setUpload({ status: 'done', filename: file.name, size: file.size, ...ticket });
+    const beginTransfer = () => {
+      if (gen !== pickGen.current) return;
+      setUpload({ status: 'uploading', filename: file.name, size: file.size, percent: 0 });
+
+      // Ответы прежней (заменённой или отменённой) загрузки приходят позже — применяем только текущую.
+      const isCurrent = () => gen === pickGen.current && uploadHandle.current === handle && !handle.isAborted();
+      const handle = startSwFirmwareUpload(file, {
+        itemId,
+        onTicket: ticket => {
+          if (!isCurrent()) return;
+          setUpload(current => (current.status === 'uploading' ? { ...current, fileId: ticket.fileId } : current));
+        },
+        onProgress: percent => {
+          if (!isCurrent()) return;
+          setUpload(current => (current.status === 'uploading' ? { ...current, percent } : current));
+        },
+      });
+      uploadHandle.current = handle;
+      handle.promise
+        .then(ticket => {
+          if (!isCurrent()) return;
+          setUpload({ status: 'done', filename: file.name, size: file.size, ...ticket });
+        })
+        .catch(() => {
+          if (!isCurrent()) return;
+          setUpload(current => ({
+            status: 'error',
+            filename: file.name,
+            message: 'Не удалось загрузить файл — выберите его ещё раз',
+            fileId: uploadedFileId(current),
+          }));
+        });
+    };
+
+    if (file.size > HASH_BEFORE_UPLOAD_BYTES) {
+      const same = findSameFirmwareBuild(existingBuilds, { size: file.size });
+      setSameSizeVersion(same?.by === 'size' ? same.version : null);
+      beginTransfer();
+      return;
+    }
+
+    setUpload({ status: 'uploading', filename: file.name, size: file.size, percent: 0 });
+    void sha256Hex(file)
+      .then((sha256) => {
+        if (gen !== pickGen.current) return;
+        const same = findSameFirmwareBuild(existingBuilds, { size: file.size, sha256 });
+        if (same?.by === 'hash') {
+          setUpload({
+            status: 'error',
+            filename: file.name,
+            message: `Этот файл уже загружен как версия ${same.version} — выберите другой`,
+          });
+          return;
+        }
+        beginTransfer();
       })
       .catch(() => {
-        if (!isCurrent()) return;
-        setUpload(current => ({
-          status: 'error',
-          filename: file.name,
-          message: 'Не удалось загрузить файл — выберите его ещё раз',
-          fileId: uploadedFileId(current),
-        }));
+        if (gen !== pickGen.current) return;
+        const same = findSameFirmwareBuild(existingBuilds, { size: file.size });
+        setSameSizeVersion(same?.by === 'size' ? same.version : null);
+        beginTransfer();
       });
   };
 
   const cancel = () => {
+    pickGen.current += 1;
     uploadHandle.current?.abort();
     uploadHandle.current = null;
     discard(upload);
@@ -267,6 +311,7 @@ export function SwFirmwareUploadModal({
                 type='text'
                 size='small'
                 onClick={() => {
+                  pickGen.current += 1;
                   uploadHandle.current?.abort();
                   uploadHandle.current = null;
                   discard(upload);
