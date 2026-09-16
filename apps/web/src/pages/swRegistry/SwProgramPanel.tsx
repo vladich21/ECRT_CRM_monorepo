@@ -346,6 +346,8 @@ export function SwProgramPanel({
                 objectType: 'sw_document',
                 objectId: doc.id,
                 path: replacement.svnPath,
+                // Замена, а не добавление: прежняя копия документа снимается.
+                replace: true,
               });
               message.success(`Файл обновлён из SVN (ревизия ${attached.revision})`);
             } catch (err) {
@@ -358,6 +360,7 @@ export function SwProgramPanel({
                 objectType: 'sw_document',
                 objectId: doc.id,
                 purpose: 'document',
+                replace: true,
               });
               message.success(`Файл «${replacement.localFile.name}» загружен`);
             } catch (err) {
@@ -428,7 +431,12 @@ export function SwProgramPanel({
           // Файл прикрепляем после сохранения листа: до этого объекта sw_sheet ещё нет.
           if (svnPath) {
             try {
-              const attached = await svnApi.attach({ objectType: 'sw_sheet', objectId: doc.id, path: svnPath });
+              const attached = await svnApi.attach({
+                objectType: 'sw_sheet',
+                objectId: doc.id,
+                path: svnPath,
+                replace: true,
+              });
               message.success(`Лист утверждения оформлен, файл из SVN (ревизия ${attached.revision})`);
             } catch (err) {
               message.warning('Лист сохранён, но файл из SVN прикрепить не удалось');
@@ -440,6 +448,7 @@ export function SwProgramPanel({
                 objectType: 'sw_sheet',
                 objectId: doc.id,
                 purpose: 'sheet',
+                replace: true,
               });
               message.success(`Лист утверждения оформлен, файл «${localFile.name}» загружен`);
             } catch (err) {

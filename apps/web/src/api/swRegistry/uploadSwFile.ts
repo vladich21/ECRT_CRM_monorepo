@@ -7,6 +7,8 @@ export type SwFileUploadMeta = {
   objectType: SwFileObjectType;
   objectId: string;
   purpose: SwFilePurpose;
+  /** Замена копии: прежние файлы записи снимаются вместе с файлами в хранилище. */
+  replace?: boolean;
 };
 
 function uploadViaTus(
@@ -43,6 +45,7 @@ export async function uploadSwRegistryFile(file: File, meta: SwFileUploadMeta): 
     purpose: meta.purpose,
     filename: file.name,
     versionId: ticket.versionId,
+    replace: meta.replace,
   });
 
   return ticket.fileId;

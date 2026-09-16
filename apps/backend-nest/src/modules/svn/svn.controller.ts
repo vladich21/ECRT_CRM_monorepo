@@ -53,7 +53,7 @@ export class SvnController {
   @Post('attach')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   attach(
-    @Body('body') dto: { objectType: string; objectId: string; path: string },
+    @Body('body') dto: { objectType: string; objectId: string; path: string; replace?: boolean },
     @Req() req: AuthReq,
   ) {
     return this.attachService.attach({
@@ -61,6 +61,7 @@ export class SvnController {
       objectId: dto.objectId,
       path: dto.path,
       userId: req.user?.user_id ?? '',
+      replace: Boolean(dto.replace),
     });
   }
 }

@@ -29,6 +29,7 @@ const LIST_TIMEOUT_MS = 60_000;
 export class SvnClient {
   private readonly logger = new Logger(SvnClient.name);
   private materializedKeyPath: string | null = null;
+  private knownHostsPath: { path: string; pinned: boolean } | null = null;
 
   constructor(private readonly config: ConfigService) {}
 
@@ -77,6 +78,33 @@ export class SvnClient {
   }
 
   /**
+   * Доверие к ключу хоста SVN. В контейнере известных хостов нет, и ssh отвечает
+   * «Host key verification failed» — svn при этом сообщает лишь о недоступности сервера.
+   * Если ключ хоста задан (SVN_SSH_KNOWN_HOSTS_BASE64) — сверяем строго по нему,
+   * иначе принимаем ключ при первом обращении и запоминаем его на время жизни контейнера.
+   */
+  private resolveKnownHosts(): { path: string; pinned: boolean } | null {
+    if (this.knownHostsPath && existsSync(this.knownHostsPath.path)) return this.knownHostsPath;
+    const encoded = (this.config.get<string>('SVN_SSH_KNOWN_HOSTS_BASE64') ?? '').trim();
+    try {
+      const dir = join(tmpdir(), 'svn-key');
+      mkdirSync(dir, { recursive: true, mode: 0o700 });
+      const target = join(dir, 'known_hosts');
+      if (encoded) {
+        const body = Buffer.from(encoded, 'base64').toString('utf8');
+        writeFileSync(target, body.endsWith('\n') ? body : `${body}\n`, { mode: 0o600 });
+      } else if (!existsSync(target)) {
+        writeFileSync(target, '', { mode: 0o600 });
+      }
+      this.knownHostsPath = { path: target, pinned: Boolean(encoded) };
+      return this.knownHostsPath;
+    } catch (err) {
+      this.logger.error('не удалось подготовить known_hosts для SVN', err as Error);
+      return null;
+    }
+  }
+
+  /**
    * Переменные окружения для svn: туннель к серверу конструкторов идёт по SSH,
    * поэтому ключ и пользователя передаём через SVN_SSH. IdentitiesOnly обязателен —
    * без него ssh перебирает все ключи агента и сервер рвёт связь на «too many
@@ -86,6 +114,15 @@ export class SvnClient {
     const { keyPath, user } = this.env();
     if (!keyPath) return process.env;
     const parts = ['ssh', '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-i', keyPath];
+    const knownHosts = this.resolveKnownHosts();
+    if (knownHosts) {
+      parts.push(
+        '-o',
+        `StrictHostKeyChecking=${knownHosts.pinned ? 'yes' : 'accept-new'}`,
+        '-o',
+        `UserKnownHostsFile=${knownHosts.path}`,
+      );
+    }
     if (user) parts.push('-l', user);
     return { ...process.env, SVN_SSH: parts.join(' ') };
   }

@@ -249,6 +249,7 @@ export const swRegistryApi = {
       purpose: string;
       filename: string;
       versionId?: string;
+      replace?: boolean;
     },
   ) => {
     const { data } = await apiClient.post(`/sw/files/${fileId}/confirm`, payload);

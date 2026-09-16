@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 
 import { DatabaseService } from '../../database/database.service';
 import { FilesRemoteClient } from '../files/services/files-remote.client';
 import { swDocuments, swFiles, swItems } from '../sw-registry/sw-registry.schema';
+import { supersedeSwFileLinks } from '../sw-registry/sw-files.supersede';
 import { archivedEditError } from '../sw-registry/sw-registry.util';
 import { SvnClient } from './svn.client';
 
@@ -28,6 +29,8 @@ export type SvnStoredFile = { fileId: string; filename: string; revision: number
 
 @Injectable()
 export class SvnAttachService {
+  private readonly logger = new Logger(SvnAttachService.name);
+
   constructor(
     private readonly db: DatabaseService,
     private readonly svn: SvnClient,
@@ -124,6 +127,8 @@ export class SvnAttachService {
     objectId: string;
     path: string;
     userId: string;
+    /** Замена копии: прежние привязки записи снимаются вместе с их файлами. */
+    replace?: boolean;
   }): Promise<{ fileId: string; filename: string; revision: number }> {
     await this.assertObjectActive(input.objectType, input.objectId);
 
@@ -157,6 +162,14 @@ export class SvnAttachService {
         svnRevision: stored.revision,
         svnRepoUuid: stored.repoUuid,
         createdBy: input.userId,
+      });
+    }
+
+    if (input.replace) {
+      await supersedeSwFileLinks(this.db, this.filesRemote, this.logger, {
+        objectType: input.objectType,
+        objectId: input.objectId,
+        keepFileId: stored.fileId,
       });
     }
 

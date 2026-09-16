@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDefined,
   IsIn,
   IsInt,
@@ -414,4 +415,9 @@ export class SwFileConfirmDto {
   @IsOptional()
   @IsUUID()
   versionId?: string;
+
+  /** Замена копии: прежние привязки этой записи снимаются (у документа копия одна). */
+  @IsOptional()
+  @IsBoolean()
+  replace?: boolean;
 }

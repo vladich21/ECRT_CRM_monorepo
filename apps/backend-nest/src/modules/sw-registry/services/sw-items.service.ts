@@ -266,10 +266,15 @@ export class SwItemsService {
           .orderBy(asc(swFiles.createdAt))
       : [];
 
-    /** Актуальная копия: сперва пришедшая из SVN, иначе последняя загруженная. */
+    /**
+     * Актуальная копия — последняя прикреплённая. Раньше предпочтение отдавалось копии
+     * из SVN, и замена файла с компьютера в карточке не показывалась: старая копия из
+     * SVN оставалась «актуальной». Замена теперь снимает прежнюю привязку, так что
+     * последняя запись и есть текущий файл.
+     */
     const pickFile = (objectId: string, objectType: 'sw_document' | 'sw_sheet') => {
       const own = links.filter((l) => l.objectId === objectId && l.objectType === objectType);
-      const actual = [...own].reverse().find((l) => l.svnPath) ?? own.at(-1);
+      const actual = own.at(-1);
       return actual
         ? {
             fileId: actual.fileId,

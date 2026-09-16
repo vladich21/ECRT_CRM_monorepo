@@ -100,7 +100,13 @@ export function SvnPickerModal({
     mutationFn: () =>
       folderMode
         ? svnApi.link({ itemId: itemId!, path })
-        : svnApi.attach({ objectType: objectType!, objectId: objectId!, path: selected!.path }),
+        : svnApi.attach({
+            objectType: objectType!,
+            objectId: objectId!,
+            path: selected!.path,
+            // Окно открыто ради обновления копии — новый файл заменяет прежний, а не добавляется к нему.
+            replace: Boolean(currentPath),
+          }),
     onSuccess: (result: { filename?: string; revision?: number; svnPath?: string }) => {
       message.success(
         folderMode
