@@ -6,7 +6,6 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
-  FileZipOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Empty, Form, Input, Modal, Spin, Tooltip, type MenuProps } from 'antd';
@@ -158,7 +157,6 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
 
   const renderPastVersion = (firmware: SwFirmware, version: SwFirmwareVersion) => (
     <div key={version.id} className={styles.version}>
-      <FileZipOutlined className={styles.icon} />
       <div className={styles.main}>
         <div className={styles.titleLine}>
           <span className={styles.versionNo}>{version.version}</span>
@@ -242,9 +240,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                     >
                       {open ? <CaretDownOutlined /> : <CaretRightOutlined />}
                     </button>
-                  ) : (
-                    <FileZipOutlined className={styles.icon} />
-                  )}
+                  ) : null}
                   <div
                     className={styles.main}
                     onClick={accordion ? () => toggleHistory(firmware.id) : undefined}
