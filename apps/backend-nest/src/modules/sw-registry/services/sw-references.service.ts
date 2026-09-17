@@ -78,6 +78,21 @@ export class SwReferencesService {
     }
   }
 
+  /** Лист утверждения разрешён, если у вида разработки есть статусы области sheet. */
+  async allowsApprovalSheet(developmentKindCode: string): Promise<boolean> {
+    const [row] = await this.db.db
+      .select({ statusCode: swRefStatusApplicability.statusCode })
+      .from(swRefStatusApplicability)
+      .where(
+        and(
+          eq(swRefStatusApplicability.developmentKindCode, developmentKindCode),
+          eq(swRefStatusApplicability.scope, 'sheet'),
+        ),
+      )
+      .limit(1);
+    return Boolean(row);
+  }
+
   async applicableStatuses(developmentKindCode: string, scope: 'document' | 'sheet') {
     const rows = await this.db.db
       .select({

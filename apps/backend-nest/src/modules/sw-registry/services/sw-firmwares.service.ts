@@ -8,10 +8,10 @@ import {
 } from '@nestjs/common';
 import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 
-import { DatabaseService } from '../../../database/database.service';
+import { DatabaseService, type DrizzleDb } from '../../../database/database.service';
 import { FilesRemoteClient } from '../../files/services/files-remote.client';
 import { users } from '../../../database/schema';
-import { swFirmwares, swFirmwareVersions } from '../sw-registry.schema';
+import { swFiles, swFirmwares, swFirmwareVersions } from '../sw-registry.schema';
 import { formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
 import { SwItemsService } from './sw-items.service';
 
@@ -129,7 +129,32 @@ export class SwFirmwaresService {
   /** Отказ от залитого, но не оформленного файла: окно закрыли, файл осиротел. */
   async discardUpload(fileId: string) {
     this.assertStorage();
-    await this.filesRemote.deleteFile(fileId).catch(() => undefined);
+    const [linkedVersion] = await this.db.db
+      .select({ id: swFirmwareVersions.id })
+      .from(swFirmwareVersions)
+      .where(eq(swFirmwareVersions.fileId, fileId))
+      .limit(1);
+    if (linkedVersion) {
+      throw new ConflictException({ code: 'FILE_IN_USE', message: 'Файл уже привязан к сборке прошивки' });
+    }
+    const [linkedFile] = await this.db.db
+      .select({ id: swFiles.id })
+      .from(swFiles)
+      .where(eq(swFiles.fileId, fileId))
+      .limit(1);
+    if (linkedFile) {
+      throw new ConflictException({ code: 'FILE_IN_USE', message: 'Файл уже привязан к записи реестра ПО' });
+    }
+
+    const remote = await this.filesRemote.getFile(fileId).catch(() => null);
+    if (!remote || remote.status === 'deleted') {
+      return { ok: true };
+    }
+    if (remote.entityType !== 'sw_firmware') {
+      throw new UnprocessableEntityException('Это не файл прошивки реестра ПО');
+    }
+
+    await this.filesRemote.deleteFile(fileId);
     return { ok: true };
   }
 
@@ -175,13 +200,25 @@ export class SwFirmwaresService {
     // готовности гигабайтов приходится минутами.
     const ready = await this.awaitFile(dto.fileId);
 
-    const [line] = await this.db.db
-      .insert(swFirmwares)
-      .values({ softwareId, name, note: dto.note?.trim() || null, createdBy: userId ?? null })
-      .returning();
-
-    await this.insertVersion(line.id, dto, ready, userId);
-    return line;
+    try {
+      return await this.db.db.transaction(async (tx) => {
+        const [line] = await tx
+          .insert(swFirmwares)
+          .values({ softwareId, name, note: dto.note?.trim() || null, createdBy: userId ?? null })
+          .returning();
+        await this.insertVersion(line.id, dto, ready, userId, tx);
+        return line;
+      });
+    } catch (err) {
+      if (isPgUniqueViolation(err, 'sw_firmwares_name_uidx')) {
+        throw new ConflictException({
+          code: 'FIRMWARE_NAME_TAKEN',
+          field: 'name',
+          message: `Прошивка «${name}» у этой программы уже есть — загрузите в неё новую версию`,
+        });
+      }
+      throw err;
+    }
   }
 
   /** Переименование прошивки и правка примечания линии. */
@@ -260,6 +297,20 @@ export class SwFirmwaresService {
       .set({ recordState: 'deleted' })
       .where(eq(swFirmwareVersions.id, id));
     await this.dropFile(version.fileId, `версия прошивки ${id}`);
+
+    const remaining = await this.db.db
+      .select({ id: swFirmwareVersions.id })
+      .from(swFirmwareVersions)
+      .where(
+        and(eq(swFirmwareVersions.firmwareId, version.firmwareId), ne(swFirmwareVersions.recordState, 'deleted')),
+      )
+      .limit(1);
+    if (!remaining.length) {
+      await this.db.db
+        .update(swFirmwares)
+        .set({ recordState: 'deleted' })
+        .where(eq(swFirmwares.id, version.firmwareId));
+    }
     return { ok: true };
   }
 
@@ -398,9 +449,10 @@ export class SwFirmwaresService {
     dto: { version: string; builtAt?: string | null; versionNote?: string | null; fileId: string; filename: string },
     ready: Awaited<ReturnType<FilesRemoteClient['getFile']>>,
     userId?: string,
+    db: Pick<DrizzleDb, 'insert'> = this.db.db,
   ) {
     try {
-      const [row] = await this.db.db
+      const [row] = await db
         .insert(swFirmwareVersions)
         .values({
           firmwareId,

@@ -23,6 +23,7 @@ import {
   useMarkSwItemDeleted,
   useRestoreSwDocument,
   useRestoreSwItem,
+  useSwFiles,
   useSwFirmwares,
   useSwItem,
   useSwItemPatentLinks,
@@ -52,10 +53,12 @@ import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './SwApprovalShee
 import { SwDocumentEditModal, type DocumentFileReplacement } from './SwDocumentEditModal';
 import { SwDocumentStatusModal } from './SwDocumentStatusModal';
 import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
+import { SwFilesTab } from './SwFilesTab';
 import { SwFirmwaresTab } from './SwFirmwaresTab';
 import { SwIpsPlacementModal } from './SwIpsPlacementModal';
 import { SwItemEditModal } from './SwItemEditModal';
 import { SwItemRidTab } from './SwItemRidTab';
+import { developmentKindAllowsApprovalSheet } from './swDesignationPreview';
 import styles from './SwStructurePage.module.scss';
 
 type Props = {
@@ -77,7 +80,7 @@ type StatusModalState = {
   scope: 'document' | 'sheet';
 };
 
-type ProgramTab = 'documents' | 'firmware' | 'rid';
+type ProgramTab = 'documents' | 'files' | 'firmware' | 'rid';
 
 export function SwProgramPanel({
   item,
@@ -110,17 +113,24 @@ export function SwProgramPanel({
   // Счётчики вкладок — из тех же запросов, что грузят сами вкладки: кэш общий, лишних обращений нет.
   const firmwaresQuery = useSwFirmwares(item.id);
   const ridLinksQuery = useSwItemPatentLinks(item.id);
+  const itemFilesQuery = useSwFiles('sw_item', item.id);
 
   const docKindsQuery = useSwReferences('documentKinds');
+  const applicabilityQuery = useSwReferences('statusApplicability');
   const requiresSheetByKind = useMemo(
     () => new Map((docKindsQuery.data ?? []).map(k => [k.code, Boolean(k.requiresApprovalSheet)])),
     [docKindsQuery.data],
   );
+  const sheetAllowed = useMemo(
+    () => developmentKindAllowsApprovalSheet(item.developmentKindCode, applicabilityQuery.data ?? []),
+    [applicabilityQuery.data, item.developmentKindCode],
+  );
 
-  // Вкладка — в адресе (tab=firmware|rid): ссылка из строки браузера открывает ту же вкладку. Без параметра —
+  // Вкладка — в адресе (tab=firmware|rid|files): ссылка из строки браузера открывает ту же вкладку. Без параметра —
   // комплект; ссылка из свода с фильтром статуса вкладку не несёт и потому открывает комплект.
   const tabParam = searchParams.get('tab');
-  const tab: ProgramTab = tabParam === 'firmware' || tabParam === 'rid' ? tabParam : 'documents';
+  const tab: ProgramTab =
+    tabParam === 'firmware' || tabParam === 'rid' || tabParam === 'files' ? tabParam : 'documents';
   const setTab = (next: ProgramTab) => {
     const params = new URLSearchParams(searchParams);
     if (next === 'documents') params.delete('tab');
@@ -161,6 +171,8 @@ export function SwProgramPanel({
     objectType: 'sw_document' | 'sw_sheet';
     /** Путь текущей копии: при обновлении проводник открывается на ней. */
     currentPath?: string | null;
+    /** Любая текущая копия (локальная или SVN) — SVN должен заменить её, а не добавить вторую. */
+    replace?: boolean;
   } | null>(null);
   const [folderPickerOpen, setFolderPickerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -214,6 +226,7 @@ export function SwProgramPanel({
   const contentLoading =
     detailQuery.isLoading ||
     docKindsQuery.isLoading ||
+    applicabilityQuery.isLoading ||
     Boolean(referencesLoading) ||
     firmwaresQuery.isLoading ||
     ridLinksQuery.isLoading;
@@ -247,6 +260,7 @@ export function SwProgramPanel({
   // читается как «ничего нет», а размер плашки фиксирован — строка вкладок не дёргается.
   const tabs: { key: ProgramTab; label: string; count: number | null }[] = [
     { key: 'documents', label: 'Комплект документации', count: detail ? documents.length : null },
+    { key: 'files', label: 'Файлы', count: itemFilesQuery.data?.length ?? null },
     { key: 'firmware', label: 'Прошивки', count: firmwaresQuery.data?.length ?? null },
     {
       key: 'rid',
@@ -691,7 +705,7 @@ export function SwProgramPanel({
                 onRestore={handleRestoreDoc}
                 onChangeStatus={(document, scope) => setStatusModal({ document, scope })}
                 onOpenIps={document => setIpsModalDoc(document)}
-                developmentKindCode={item.developmentKindCode}
+                sheetAllowed={sheetAllowed}
                 onSetupSheet={handleSetupSheet}
                 onRemoveSheet={handleRemoveSheet}
                 fileByDocument={fileByDocument}
@@ -702,6 +716,7 @@ export function SwProgramPanel({
                     designation: doc.sheetDesignation ?? doc.designation,
                     objectType: 'sw_sheet',
                     currentPath: sheetFileByDocument.get(doc.id)?.svnPath ?? null,
+                    replace: Boolean(sheetFileByDocument.get(doc.id)),
                   })
                 }
                 onPreview={setPreview}
@@ -714,11 +729,26 @@ export function SwProgramPanel({
                     designation: doc.designation,
                     objectType: 'sw_document',
                     currentPath: fileByDocument.get(doc.id)?.svnPath ?? null,
+                    replace: Boolean(fileByDocument.get(doc.id)),
                   })
                 }
               />
             )}
           </>
+        ) : null}
+
+        {tab === 'files' ? (
+          <div className={styles.programTabBody}>
+            <SwFilesTab
+              objectType='sw_item'
+              objectId={item.id}
+              purpose='spec'
+              title='Техническое задание и спецификации'
+              hint='Файлы программы, не входящие в комплект документации'
+              canEdit={canEditItem}
+              compact
+            />
+          </div>
         ) : null}
 
         {tab === 'firmware' ? (
@@ -754,6 +784,7 @@ export function SwProgramPanel({
           objectId={svnTarget.id}
           startPath={folderPath ?? ''}
           currentPath={svnTarget.currentPath ?? null}
+          replace={svnTarget.replace}
           onClose={() => setSvnTarget(null)}
           onDone={() => {
             void queryClient.invalidateQueries({ queryKey: ['sw'] });
@@ -790,7 +821,7 @@ export function SwProgramPanel({
         itemId={item.id}
         svnEnabled={svnEnabled}
         svnFolderPath={folderPath}
-        isRnd={item.developmentKindCode === 'rnd'}
+        sheetAllowed={sheetAllowed}
         programDesignation={item.designation}
         existingDocuments={documents}
         confirmLoading={createDocMut.isPending}

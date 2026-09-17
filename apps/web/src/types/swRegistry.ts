@@ -27,6 +27,9 @@ export type SwRefItem = {
   sortOrder?: number;
   requiresApprovalSheet?: boolean;
   isFinal?: boolean;
+  developmentKindCode?: string;
+  scope?: string;
+  statusCode?: string;
 };
 
 export type SwItemListRow = {

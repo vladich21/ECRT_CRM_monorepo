@@ -925,10 +925,10 @@
   gap: v.$spacing-md;
 }
 
-/* Файлы и связи с РИД не держат свою прокрутку — листается тело вкладки. */
+/* Как у комплекта: иначе flex-родитель с min-height: 0 схлопывает вкладку в пустой экран. */
 .programTabBody {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 140px;
   overflow: auto;
   overscroll-behavior: contain;
 }

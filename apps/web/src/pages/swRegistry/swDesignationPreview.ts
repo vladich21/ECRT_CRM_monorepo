@@ -14,6 +14,16 @@ export function assembleSheetDesignation(documentDesignation: string): string {
   return `${documentDesignation}-ЛУ`;
 }
 
+/** Лист утверждения допустим, если у вида разработки есть статусы области sheet — не хардкод rnd. */
+export function developmentKindAllowsApprovalSheet(
+  developmentKindCode: string,
+  applicability: { developmentKindCode?: string; scope?: string }[],
+): boolean {
+  return applicability.some(
+    (row) => row.developmentKindCode === developmentKindCode && row.scope === 'sheet',
+  );
+}
+
 export function formatIpsDisplay(ipsId: string | null, placedAt: string | null): string | null {
   if (!ipsId) return null;
   if (!placedAt) return ipsId;

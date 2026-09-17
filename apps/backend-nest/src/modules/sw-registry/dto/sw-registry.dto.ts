@@ -357,6 +357,98 @@ export class AddSwItemPatentDto {
   comment?: string | null;
 }
 
+export class SwFirmwareUploadTicketDto {
+  @IsUUID()
+  itemId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  filename!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  contentType?: string;
+}
+
+export class SwFirmwareCreateDto {
+  @IsUUID()
+  itemId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string | null;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  version!: string;
+
+  @IsOptional()
+  @IsString()
+  builtAt?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  versionNote?: string | null;
+
+  @IsUUID()
+  fileId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  filename!: string;
+}
+
+export class SwFirmwareCreateVersionDto {
+  @IsUUID()
+  firmwareId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  version!: string;
+
+  @IsOptional()
+  @IsString()
+  builtAt?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  versionNote?: string | null;
+
+  @IsUUID()
+  fileId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  filename!: string;
+}
+
+export class SwFirmwareUpdateDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string | null;
+}
+
 const SW_FILE_OBJECT_TYPES = ['sw_item', 'sw_document', 'sw_sheet'] as const;
 const SW_FILE_PURPOSES = ['document', 'sheet', 'spec'] as const;
 

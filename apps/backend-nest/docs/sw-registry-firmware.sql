@@ -5,15 +5,13 @@
 -- а сборки лежат в sw_firmware_versions: номер версии уникален внутри прошивки,
 -- а не в пределах всей программы.
 --
--- Выполнять на pmdb_stage, затем на проде. Идемпотентно.
+-- Выполнять на pmdb_stage, затем на проде. Идемпотентно: только CREATE IF NOT EXISTS.
+-- DROP TABLE нельзя: FK от sw_firmware_versions не даст удалить sw_firmwares,
+-- а CASCADE снесёт все прошивки.
 
 SET client_encoding TO 'UTF8';
 
 BEGIN;
-
--- Первая редакция таблицы держала версию и файл прямо в прошивке. Данных в ней
--- нет ни на стенде, ни на проде, поэтому раскладываем на две таблицы сразу.
-DROP TABLE IF EXISTS sw_firmwares;
 
 CREATE TABLE IF NOT EXISTS sw_firmwares (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,3 +61,10 @@ COMMENT ON COLUMN sw_firmware_versions.version IS 'Номер версии, ун
 COMMENT ON COLUMN sw_firmware_versions.size_bytes IS 'Размер файла: сборки крупные, показываем без обращения к хранилищу';
 
 COMMIT;
+
+-- Перед выкатом: файлы программ (ТЗ и спецификации). Если строки есть, вкладка
+-- «Файлы» в карточке программы должна их показывать.
+-- SELECT object_id, filename, created_at
+-- FROM sw_files
+-- WHERE object_type = 'sw_item'
+-- ORDER BY created_at;

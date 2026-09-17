@@ -25,8 +25,8 @@ type Props = {
   documents: SwDocumentListRow[];
   statusLabelByCode: Map<string, string>;
   requiresApprovalSheetByKind: Map<string, boolean>;
-  /** Вид разработки программы: лист утверждения бывает только у ОКР. */
-  developmentKindCode: string;
+  /** Вид разработки допускает лист: есть статусы области sheet, не хардкод rnd. */
+  sheetAllowed: boolean;
   canEdit: boolean;
   /** Документ, открытый в боковой панели: его строка подсвечена. */
   selectedDocumentId: string | null;
@@ -111,7 +111,7 @@ export function SwDocumentsTable({
   documents,
   statusLabelByCode,
   requiresApprovalSheetByKind,
-  developmentKindCode,
+  sheetAllowed,
   canEdit,
   selectedDocumentId,
   onOpenDocument,
@@ -149,9 +149,6 @@ export function SwDocumentsTable({
             const isArchived = doc.recordState === 'archived';
             const statusLabel = statusLabelByCode.get(doc.statusCode) ?? doc.statusCode;
             const sheetStatusLabel = doc.sheetStatusCode ? statusLabelByCode.get(doc.sheetStatusCode) : undefined;
-            // Лист утверждения предусмотрен только при ОКР: при серийном и покупном
-            // изделии бэкенд его запрещает, поэтому и предлагать нечего.
-            const sheetAllowed = developmentKindCode === 'rnd';
             const needsSheet = (requiresApprovalSheetByKind.get(doc.documentKindCode) ?? false) && sheetAllowed;
             const canChangeDoc = canEdit && !locked && !isArchived;
             const canChangeSheet = canChangeDoc && Boolean(doc.sheetStatusCode);
@@ -235,8 +232,7 @@ export function SwDocumentsTable({
                   />
                 </td>
                 <td onClick={e => e.stopPropagation()}>
-                  {needsSheet ? (
-                    doc.sheetStatusCode ? (
+                  {doc.sheetStatusCode ? (
                       <div className={styles.docTableSheetCell}>
                         {/* Тот же порядок чтения, что у документа: состояние — обозначение — объём. */}
                         <div className={styles.docTableSheetHead}>
@@ -324,8 +320,8 @@ export function SwDocumentsTable({
                           </div>
                         ) : null}
                       </div>
-                    ) : (
-                      <span className={styles.docTableMuted}>
+                  ) : needsSheet ? (
+                    <span className={styles.docTableMuted}>
                         не оформлен
                         {canChangeDoc ? (
                           <>
@@ -336,7 +332,6 @@ export function SwDocumentsTable({
                           </>
                         ) : null}
                       </span>
-                    )
                   ) : (
                     <span className={styles.docTableMuted}>—</span>
                   )}

@@ -43,7 +43,7 @@ type UploadState =
 interface Props {
   open: boolean;
   itemId: string;
-  isRnd: boolean;
+  sheetAllowed: boolean;
   programDesignation: string;
   svnEnabled: boolean;
   /** Каталог программы в SVN — с него открывается выбор файла. */
@@ -76,7 +76,7 @@ function FieldHint({ text }: { text?: string }) {
 export function SwDocumentCreateModal({
   open,
   itemId,
-  isRnd,
+  sheetAllowed,
   programDesignation,
   svnEnabled,
   svnFolderPath,
@@ -122,7 +122,7 @@ export function SwDocumentCreateModal({
   useEffect(() => {
     if (!open) return;
     form.resetFields();
-    form.setFieldsValue({ sheetsCount: 1, withApprovalSheet: isRnd });
+    form.setFieldsValue({ sheetsCount: 1, withApprovalSheet: sheetAllowed });
     setDocumentId(newDocumentId());
     setSource(svnEnabled ? 'svn' : 'upload');
     setSvnFile(null);
@@ -131,7 +131,7 @@ export function SwDocumentCreateModal({
     storedSvn.current = null;
     manualFields.current = new Set();
     derived.current = {};
-  }, [open, isRnd, svnEnabled, form]);
+  }, [open, sheetAllowed, svnEnabled, form]);
 
   /**
    * Обозначение, наименование и обозначение ЛУ собираются из вида и номера. Поле следует за ними,
@@ -158,7 +158,7 @@ export function SwDocumentCreateModal({
     if (nextSheet && (!currentSheet || currentSheet === derived.current.sheetDesignation)) {
       patch.approvalSheet = { ...values.approvalSheet, designation: nextSheet };
     }
-    if (isRnd && kind?.requiresApprovalSheet) {
+    if (sheetAllowed && kind?.requiresApprovalSheet) {
       patch.withApprovalSheet = true;
     }
 
@@ -315,7 +315,7 @@ export function SwDocumentCreateModal({
       letter: values.letter ?? null,
       name: values.name?.trim() || undefined,
     };
-    if (values.withApprovalSheet && isRnd) {
+    if (values.withApprovalSheet && sheetAllowed) {
       payload.approvalSheet = {
         designation: values.approvalSheet?.designation?.trim() || undefined,
         sheetsCount: values.approvalSheet?.sheetsCount ?? 1,
@@ -480,7 +480,7 @@ export function SwDocumentCreateModal({
           </Col>
         </Row>
 
-        {isRnd ? (
+        {sheetAllowed ? (
           <>
             <Form.Item
               name='withApprovalSheet'

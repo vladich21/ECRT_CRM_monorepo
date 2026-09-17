@@ -25,6 +25,8 @@ type Props = {
    * показываем только его — остальное содержимое по флажку, если нужен другой файл.
    */
   currentPath?: string | null;
+  /** Заменить текущую копию, даже если она загружена с компьютера и svnPath пуст. */
+  replace?: boolean;
   onClose: () => void;
   onDone?: () => void;
   /** Режим select: выбранный файл. */
@@ -66,6 +68,7 @@ export function SvnPickerModal({
   itemId,
   startPath = '',
   currentPath,
+  replace,
   onClose,
   onDone,
   onSelect,
@@ -105,7 +108,7 @@ export function SvnPickerModal({
             objectId: objectId!,
             path: selected!.path,
             // Окно открыто ради обновления копии — новый файл заменяет прежний, а не добавляется к нему.
-            replace: Boolean(currentPath),
+            replace: replace ?? Boolean(currentPath),
           }),
     onSuccess: (result: { filename?: string; revision?: number; svnPath?: string }) => {
       message.success(

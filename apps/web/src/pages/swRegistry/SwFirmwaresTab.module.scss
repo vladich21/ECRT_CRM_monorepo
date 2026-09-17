@@ -22,181 +22,64 @@
   padding: 24px 0;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.firmware {
-  display: flex;
-  flex-direction: column;
-}
-
-.card,
-.version {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 4px 8px 8px;
-}
-
-.card {
-  border-left: 3px solid #1677ff;
-}
-
-.cardToggle .main {
-  cursor: pointer;
-}
-
-.caretBtn {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin-top: 3px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #8c8c8c;
-  font-size: 10px;
-  cursor: pointer;
-}
-
-.caretBtn:hover {
-  color: #1677ff;
-}
-
-.caretBtn:focus-visible {
-  outline: 2px solid #1677ff;
-  outline-offset: 1px;
-  border-radius: 4px;
-}
-
-.more {
-  flex-shrink: 0;
-  font-size: 12px;
-  color: #8c8c8c;
-  font-variant-numeric: tabular-nums;
-}
-
-.main {
-  flex: 1 1 auto;
-  min-width: 0;
+.table {
+  :global(.ant-table-cell) {
+    vertical-align: top;
+  }
 }
 
 .firmwareName {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #262626;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.currentLine,
-.titleLine {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
+.pastName {
+  font-size: 13px;
+  color: #8c8c8c;
 }
 
-.currentLabel {
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #1677ff;
+.note {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8c8c8c;
 }
 
 .currentVersion,
-.versionNo {
-  flex-shrink: 0;
+.pastVersion {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-weight: 600;
 }
 
 .currentVersion {
-  font-size: 16px;
+  font-size: 14px;
   color: #1677ff;
 }
 
-.versionNo {
+.pastVersion {
   font-size: 13px;
-  color: #262626;
+  color: #8c8c8c;
 }
 
 .filename {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 1px;
-  font-size: 13px;
   color: #595959;
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  font-size: 12px;
-  color: #8c8c8c;
-  font-variant-numeric: tabular-nums;
 }
 
 .hash {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: #8c8c8c;
   cursor: help;
-}
-
-.note {
-  margin-top: 4px;
-  font-size: 13px;
-  color: #595959;
 }
 
 .actions {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
+  justify-content: flex-end;
   gap: 4px;
 }
 
-.history {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-left: 22px;
-}
-
-.history .version {
-  padding: 4px 0 4px 8px;
-  gap: 8px;
-  border-left: 3px solid #f0f0f0;
-}
-
-.history .versionNo {
-  font-size: 12px;
-  font-weight: 500;
+.pastRow {
   color: #8c8c8c;
-}
-
-.history .filename {
-  margin-top: 0;
-  font-size: 12px;
-}
-
-.history .meta {
-  font-size: 11px;
-}
-
-.history .note {
-  font-size: 12px;
+  background: #fafafa;
 }

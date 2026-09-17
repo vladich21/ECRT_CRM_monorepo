@@ -106,11 +106,11 @@ export class SwDocumentsService {
       });
     }
 
-    if (dto.approvalSheet && item.developmentKindCode !== 'rnd') {
+    if (dto.approvalSheet && !(await this.refs.allowsApprovalSheet(item.developmentKindCode))) {
       throw new UnprocessableEntityException({
         code: 'APPROVAL_SHEET_NOT_ALLOWED',
         field: 'withApprovalSheet',
-        message: 'Лист утверждения допустим только при виде разработки ОКР',
+        message: 'Лист утверждения допустим только при виде разработки с листом утверждения',
       });
     }
 
@@ -141,7 +141,7 @@ export class SwDocumentsService {
     let sheetDesignation: string | null = null;
     let sheetSheetsCount: number | null = null;
     let sheetStatusCode: string | null = null;
-    if (dto.approvalSheet && item.developmentKindCode === 'rnd') {
+    if (dto.approvalSheet) {
       sheetDesignation = dto.approvalSheet.designation
         ? normalizeDesignation(dto.approvalSheet.designation)
         : assembleSheetDesignation(designation);
@@ -393,6 +393,35 @@ export class SwDocumentsService {
     }
   }
 
+  /** Снятие листа: поля документа уже обнулены, привязки sw_sheet и файлы в хранилище убираем. */
+  private async detachSheetFiles(documentId: string) {
+    const links = await this.db.db
+      .select()
+      .from(swFiles)
+      .where(and(eq(swFiles.objectType, 'sw_sheet'), eq(swFiles.objectId, documentId)));
+    if (!links.length) return;
+
+    await this.db.db
+      .delete(swFiles)
+      .where(and(eq(swFiles.objectType, 'sw_sheet'), eq(swFiles.objectId, documentId)));
+
+    for (const link of links) {
+      const [other] = await this.db.db
+        .select({ id: swFiles.id })
+        .from(swFiles)
+        .where(eq(swFiles.fileId, link.fileId))
+        .limit(1);
+      if (other || !this.filesRemote.isEnabled()) continue;
+      try {
+        await this.filesRemote.deleteFile(link.fileId);
+      } catch (err) {
+        this.logger.warn(
+          `лист документа ${documentId} снят, файл ${link.fileId} в хранилище не удалён: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+  }
+
   /**
    * Убирает файл из SVN, так и не ставший привязкой. Привязанный не трогаем: при повторе с
    * перенесённым файлом его мог привязать соседний запрос. Сбой уборки не мешает ответу — пишем в лог.
@@ -419,8 +448,8 @@ export class SwDocumentsService {
       throw new UnprocessableEntityException('Нельзя редактировать архивный документ');
     }
     const item = await this.items.requireItem(current.softwareId);
-    if (dto.approvalSheet && item.developmentKindCode !== 'rnd') {
-      throw new UnprocessableEntityException('Лист утверждения допустим только при виде разработки ОКР');
+    if (dto.approvalSheet && !(await this.refs.allowsApprovalSheet(item.developmentKindCode))) {
+      throw new UnprocessableEntityException('Лист утверждения допустим только при виде разработки с листом утверждения');
     }
 
     // Вид и номер у живого документа меняются. Явное обозначение главнее; без него при смене
@@ -455,6 +484,7 @@ export class SwDocumentsService {
     let sheetDesignation = current.sheetDesignation;
     let sheetSheetsCount = current.sheetSheetsCount;
     let sheetStatusCode = current.sheetStatusCode;
+    const removeSheet = dto.approvalSheet === null && Boolean(current.sheetStatusCode);
     if (dto.approvalSheet === null) {
       sheetDesignation = null;
       sheetSheetsCount = null;
@@ -491,6 +521,9 @@ export class SwDocumentsService {
         })
         .where(eq(swDocuments.id, id))
         .returning();
+      if (removeSheet) {
+        await this.detachSheetFiles(id);
+      }
       return { ...this.toDto(row), warnings };
     } catch (err) {
       if (isPgUniqueViolation(err)) {

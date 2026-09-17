@@ -94,7 +94,7 @@ export function SwApprovalSheetModal({
         destroyOnHidden
         width={560}
       >
-        <Form form={form} layout='vertical' className={styles.form}>
+        <Form form={form} layout='vertical' className={styles.formCompact}>
           <Form.Item
             name='designation'
             label='Обозначение листа утверждения'

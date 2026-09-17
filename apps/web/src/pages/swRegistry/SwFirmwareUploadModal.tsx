@@ -17,7 +17,7 @@ import styles from './SwRegistryModals.module.scss';
 
 type FormValues = { name?: string; version?: string; builtAt?: Dayjs | null; note?: string };
 
-/** Предел хранилища (TUS_MAX_SIZE): больше него загрузка сорвётся уже на первом запросе. */
+/** Предел хранилища: совпадает с files-service TUS_MAX_SIZE (10 ГиБ, 10737418240). */
 const MAX_FIRMWARE_BYTES = 10 * 1024 ** 3;
 
 type UploadState =
