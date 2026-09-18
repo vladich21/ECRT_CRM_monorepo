@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SwItemListRow, SwRecordState, SwStructureNode } from '@/types/swRegistry';
+
 import {
   archivedStructureTree,
   countArchivedElements,
@@ -27,7 +28,10 @@ const program = (
 ) => ({ id, designation, shortName, fullName, element: { id: elementId }, responsible }) as SwItemListRow;
 
 // БИ06 → МСУ → (Системное ПО); БИ07 без программ.
-const tree = [node('bi06', 'БИ06', 'Блок индикации', [node('msu', 'МСУ', 'Модуль управления')]), node('bi07', 'БИ07', 'Пульт')];
+const tree = [
+  node('bi06', 'БИ06', 'Блок индикации', [node('msu', 'МСУ', 'Модуль управления')]),
+  node('bi07', 'БИ07', 'Пульт'),
+];
 const programs = groupProgramsByElement([
   program('p1', 'msu', 'RU.РУСВ.00010-01', 'Системное ПО', 'Системное программное обеспечение'),
   program('p2', 'msu', 'RU.РУСВ.00011-01', 'Прикладное ПО'),
@@ -53,10 +57,16 @@ describe('searchStructureTree', () => {
   });
 
   it('находит программу по обозначению и по полному наименованию', () => {
-    expect(searchStructureTree(tree, programs, '00011').programsByElement.get('msu')?.map(p => p.id)).toEqual(['p2']);
-    expect(searchStructureTree(tree, programs, 'программное').programsByElement.get('msu')?.map(p => p.id)).toEqual([
-      'p1',
-    ]);
+    expect(
+      searchStructureTree(tree, programs, '00011')
+        .programsByElement.get('msu')
+        ?.map(p => p.id),
+    ).toEqual(['p2']);
+    expect(
+      searchStructureTree(tree, programs, 'программное')
+        .programsByElement.get('msu')
+        ?.map(p => p.id),
+    ).toEqual(['p1']);
   });
 
   it('совпавший элемент показывает все свои программы и сам не раскрывается', () => {
@@ -96,10 +106,7 @@ describe('archivedStructureTree', () => {
   // Система (действует) → подсистема (действует, в ней архивная программа) и компонент (в архиве);
   // вторая система действует и без архивного.
   const fullTree = [
-    node('sys', 'СИС', 'Система', [
-      node('sub', 'ПОД', 'Подсистема'),
-      node('cmp', 'КОМ', 'Компонент', [], 'archived'),
-    ]),
+    node('sys', 'СИС', 'Система', [node('sub', 'ПОД', 'Подсистема'), node('cmp', 'КОМ', 'Компонент', [], 'archived')]),
     node('sys2', 'СИС2', 'Вторая система'),
   ];
 

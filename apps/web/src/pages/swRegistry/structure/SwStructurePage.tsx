@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { App, Button, Spin } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { App, Button, Spin } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -24,11 +24,13 @@ import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMess
 import { usePermissions } from '@/hooks/usePermissions';
 import { SECTIONS } from '@/shared/permissions';
 import type { CreateSwItemPayload, SwItemListRow, SwStructureNode } from '@/types/swRegistry';
+
 import { SwItemCreateModal } from '../items/SwItemCreateModal';
 import { SwProgramPanel } from '../program/SwProgramPanel';
 import { SwStructureDetailPanel, type SwStructureDetailActions } from './SwStructureDetailPanel';
 import { SwStructureElementModal } from './SwStructureElementModal';
 import styles from './SwStructurePage.module.scss';
+import { groupProgramsByElement, searchStructureTree } from './swStructurePrograms';
 import {
   collectStructurePathIds,
   countStructureNodes,
@@ -36,9 +38,9 @@ import {
   findStructureParent,
   firstStructureNode,
 } from './swStructureTree';
-import { groupProgramsByElement, searchStructureTree } from './swStructurePrograms';
 import { SwStructureTreeNode } from './SwStructureTreeNode';
 import { SwStructureTreeToolbar } from './SwStructureTreeToolbar';
+import { useStructureSelection } from './useStructureSelection';
 
 type ModalState =
   | { mode: 'create' }
@@ -72,8 +74,7 @@ export default function SwStructurePage() {
   // Всё, что определяет «куда смотрим», живёт в адресе: ссылка из строки браузера открывает ровно то же.
   //   archived=1 — архивные элементы и программы в том же дереве; старый view=archived сводим к этой галке;
   //   elementId, itemId — выбор; tab — вкладка панели программы; documentStatus/sheetStatus — фильтр из свода.
-  const showArchivedInTree =
-    searchParams.get('archived') === '1' || searchParams.get('view') === 'archived';
+  const showArchivedInTree = searchParams.get('archived') === '1' || searchParams.get('view') === 'archived';
   const selectedProgramId = searchParams.get('itemId');
 
   useEffect(() => {
@@ -85,8 +86,6 @@ export default function SwStructurePage() {
   }, [searchParams, setSearchParams]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('elementId'));
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [modalState, setModalState] = useState<ModalState | null>(null);
   /** Элемент, на котором регистрируется ПО из меню «+» в дереве. */
   const [programTarget, setProgramTarget] = useState<SwStructureNode | null>(null);
@@ -99,8 +98,7 @@ export default function SwStructurePage() {
   const statusesQuery = useSwReferences('statuses');
   const activeProgramsQuery = useSwItems({ recordState: 'active', limit: 500 });
   const archivedProgramsQuery = useSwItems({ recordState: 'archived', limit: 500 });
-  const programsLoading =
-    activeProgramsQuery.isLoading || (showArchivedInTree && archivedProgramsQuery.isLoading);
+  const programsLoading = activeProgramsQuery.isLoading || (showArchivedInTree && archivedProgramsQuery.isLoading);
 
   const createMut = useCreateSwStructure();
   const updateMut = useUpdateSwStructure();
@@ -111,18 +109,9 @@ export default function SwStructurePage() {
   const removeRespMut = useRemoveSwResponsible();
   const createProgramMut = useCreateSwItem();
 
-  const typeByCode = useMemo(
-    () => new Map((typesQuery.data ?? []).map(t => [t.code, t.name])),
-    [typesQuery.data],
-  );
-  const roleByCode = useMemo(
-    () => new Map((rolesQuery.data ?? []).map(r => [r.code, r.name])),
-    [rolesQuery.data],
-  );
-  const kindByCode = useMemo(
-    () => new Map((kindsQuery.data ?? []).map(k => [k.code, k.name])),
-    [kindsQuery.data],
-  );
+  const typeByCode = useMemo(() => new Map((typesQuery.data ?? []).map(t => [t.code, t.name])), [typesQuery.data]);
+  const roleByCode = useMemo(() => new Map((rolesQuery.data ?? []).map(r => [r.code, r.name])), [rolesQuery.data]);
+  const kindByCode = useMemo(() => new Map((kindsQuery.data ?? []).map(k => [k.code, k.name])), [kindsQuery.data]);
 
   const docKindByCode = useMemo(
     () => new Map((docKindsQuery.data ?? []).map(k => [k.code, k.name])),
@@ -153,19 +142,9 @@ export default function SwStructurePage() {
     [rawTree, programsByElement, searchQuery],
   );
   const tree = search.tree;
-  // Ветки с находками раскрыты поверх раскрытых вручную, иначе найденное в свёрнутой ветке не видно.
-  const visibleExpandedIds = useMemo(
-    () => (search.expandIds.size > 0 ? new Set([...expandedIds, ...search.expandIds]) : expandedIds),
-    [expandedIds, search.expandIds],
-  );
-
   const totalInTab = countStructureNodes(rawTree) + programs.length;
   const shownCount = searchQuery.trim() ? countStructureNodes(tree) + search.programCount : totalInTab;
 
-  const selectedNode = useMemo(
-    () => (selectedId ? findStructureNode(rawTree, selectedId) : null),
-    [rawTree, selectedId],
-  );
   // Программы, которых нет в дереве текущего режима (архивная из свода при дереве действующих, только что
   // ушедшая в архив), догружаем по id — иначе панель не открылась бы, а выбор молча ушёл бы на первый узел.
   const programFromList = useMemo(
@@ -186,163 +165,32 @@ export default function SwStructurePage() {
   const selectedProgram: SwItemListRow | null =
     resolvedProgram ?? (!programNotFound && lastProgram?.id === selectedProgramId ? lastProgram : null);
 
+  const selection = useStructureSelection({
+    rawTree,
+    tree,
+    structureLoading: structureQuery.isLoading,
+    selectedProgram,
+    selectedProgramId,
+    showArchivedInTree,
+  });
+  const { selectedId, selectedNode, expandedIds, setSelectedId } = selection;
+
   const parentNode = useMemo(
     () => (selectedId ? findStructureParent(rawTree, selectedId) : null),
     [rawTree, selectedId],
   );
 
-  const expandPath = useCallback((id: string, sourceTree: SwStructureNode[]) => {
-    const path = collectStructurePathIds(sourceTree, id);
-    if (path.length === 0) return;
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      for (const nodeId of path.slice(0, -1)) next.add(nodeId);
-      return next;
-    });
-  }, []);
+  const { selectNode, selectProgram, selectElementById, clearProgramSelection, changeShowArchived, toggleExpand } =
+    selection;
 
-  const selectNode = useCallback(
-    (node: SwStructureNode) => {
-      setSelectedId(node.id);
-      expandPath(node.id, rawTree);
-      // Раскрываем сам узел: иначе счётчик обещает программы, а в дереве их не видно.
-      setExpandedIds(prev => (prev.has(node.id) ? prev : new Set(prev).add(node.id)));
-      const next = new URLSearchParams(searchParams);
-      next.set('elementId', node.id);
-      dropProgramParams(next);
-      setSearchParams(next, { replace: true });
-    },
-    [expandPath, rawTree, searchParams, setSearchParams],
+  // Ветки с находками раскрыты поверх раскрытых вручную, иначе найденное в свёрнутой ветке не видно.
+  const visibleExpandedIds = useMemo(
+    () => (search.expandIds.size > 0 ? new Set([...expandedIds, ...search.expandIds]) : expandedIds),
+    [expandedIds, search.expandIds],
   );
-
-  const selectProgram = useCallback(
-    (item: SwItemListRow) => {
-      setSelectedId(item.element.id);
-      expandPath(item.element.id, rawTree);
-      setExpandedIds(prev => new Set(prev).add(item.element.id));
-      const next = new URLSearchParams(searchParams);
-      next.set('elementId', item.element.id);
-      // Вкладка панели сохраняется при переходе между программами; фильтр из свода и открытый документ — нет.
-      if (next.get('itemId') !== item.id) {
-        next.delete('documentStatus');
-        next.delete('sheetStatus');
-        dropDocumentParams(next);
-      }
-      next.set('itemId', item.id);
-      setSearchParams(next, { replace: true });
-    },
-    [expandPath, rawTree, searchParams, setSearchParams],
-  );
-
-  // Переход из панели программы к её элементу структуры.
-  const selectElementById = useCallback(
-    (elementId: string) => {
-      const node = findStructureNode(rawTree, elementId);
-      if (node) {
-        selectNode(node);
-        return;
-      }
-      // Элемента нет в текущем дереве (архивный, скрыт) — показываем архивные, выбор подхватит эффект по elementId.
-      const next = new URLSearchParams(searchParams);
-      next.set('elementId', elementId);
-      dropProgramParams(next);
-      next.set('archived', '1');
-      setSearchParams(next, { replace: true });
-    },
-    [rawTree, selectNode, searchParams, setSearchParams],
-  );
-
-  useEffect(() => {
-    if (structureQuery.isLoading || rawTree.length === 0) return;
-
-    const urlId = searchParams.get('elementId');
-    if (urlId && findStructureNode(rawTree, urlId)) {
-      setSelectedId(prev => (prev === urlId ? prev : urlId));
-      expandPath(urlId, rawTree);
-      return;
-    }
-
-    // Пришли с программой без элемента (свод, РИД): выбираем элемент программы.
-    // Пока программа грузится или не найдена — первый узел не подставляем.
-    if (selectedProgramId) {
-      if (!selectedProgram) return;
-      const elementId = selectedProgram.element.id;
-      if (findStructureNode(rawTree, elementId)) {
-        setSelectedId(elementId);
-        expandPath(elementId, rawTree);
-        const next = new URLSearchParams(searchParams);
-        next.set('elementId', elementId);
-        setSearchParams(next, { replace: true });
-        return;
-      }
-      if (!showArchivedInTree) {
-        const next = new URLSearchParams(searchParams);
-        next.set('archived', '1');
-        next.delete('view');
-        setSearchParams(next, { replace: true });
-      }
-      return;
-    }
-
-    if (selectedId && findStructureNode(rawTree, selectedId)) {
-      expandPath(selectedId, rawTree);
-      return;
-    }
-
-    const first = firstStructureNode(tree);
-    if (!first) return;
-
-    setSelectedId(first.id);
-    expandPath(first.id, rawTree);
-    const next = new URLSearchParams(searchParams);
-    next.set('elementId', first.id);
-    setSearchParams(next, { replace: true });
-  }, [
-    structureQuery.isLoading,
-    rawTree,
-    tree,
-    showArchivedInTree,
-    searchParams,
-    selectedId,
-    expandPath,
-    setSearchParams,
-    selectedProgramId,
-    selectedProgram,
-  ]);
-
-  // Выбрана программа — раскрываем её ветку, иначе непонятно, что выбрано.
-  useEffect(() => {
-    if (!selectedProgram || rawTree.length === 0) return;
-    const elementId = selectedProgram.element.id;
-    expandPath(elementId, rawTree);
-    setExpandedIds(prev => (prev.has(elementId) ? prev : new Set(prev).add(elementId)));
-  }, [selectedProgram, rawTree, expandPath]);
 
   const fail = (err: unknown) => {
     message.error(getApiErrorMessage(err) ?? 'Не удалось выполнить действие');
-  };
-
-  const clearProgramSelection = () => {
-    const next = new URLSearchParams(searchParams);
-    dropProgramParams(next);
-    setSearchParams(next, { replace: true });
-  };
-
-  const changeShowArchived = (value: boolean) => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('view');
-    if (value) next.set('archived', '1');
-    else {
-      next.delete('archived');
-      if (selectedProgram?.recordState === 'archived' || selectedNode?.recordState === 'archived') {
-        dropProgramParams(next);
-        if (selectedNode?.recordState === 'archived') {
-          next.delete('elementId');
-          setSelectedId(null);
-        }
-      }
-    }
-    setSearchParams(next, { replace: true });
   };
 
   const detailActions: SwStructureDetailActions = useMemo(
@@ -434,15 +282,6 @@ export default function SwStructurePage() {
         selectProgram(data);
       },
       onError: err => message.error(getApiErrorMessage(err) ?? 'Не удалось зарегистрировать программу'),
-    });
-  };
-
-  const toggleExpand = (id: string) => {
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
     });
   };
 

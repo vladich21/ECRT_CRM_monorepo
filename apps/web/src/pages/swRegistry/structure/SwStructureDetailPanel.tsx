@@ -1,13 +1,21 @@
 import { Fragment, useMemo } from 'react';
-import { DeleteOutlined, EditOutlined, InboxOutlined, MoreOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  InboxOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  UndoOutlined,
+} from '@ant-design/icons';
 import { App, Button, Dropdown, Spin, Tag, type MenuProps } from 'antd';
 import { Link } from 'react-router-dom';
 
 import { useSwItems, useSwStructurePatentLinks } from '@/api/swRegistry/swRegistryApiHooks';
 import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
+
+import styles from './SwStructureDetailPanel.module.scss';
 import { groupProgramsByResponsible } from './swStructurePrograms';
 import { getInitials } from './swStructureTree';
-import styles from './SwStructureDetailPanel.module.scss';
 
 export type SwStructureDetailActions = {
   onEdit: (node: SwStructureNode) => void;
