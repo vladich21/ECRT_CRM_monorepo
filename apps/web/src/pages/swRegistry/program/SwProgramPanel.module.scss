@@ -1,5 +1,6 @@
 /* Стили: SwProgramPanel. */
 @use '../../../styles/variables' as v;
+@use '../../../components/pageLayout/listPageShared' as lp;
 @use '../shared/styles/layout' as l;
 
 .card { @include l.card; }
@@ -20,6 +21,24 @@
     margin-left: 0;
   }
 }
+.programTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.programTab {
+  @include lp.filterTab;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+.programTabActive {
+  @include lp.filterTab;
+  @include lp.filterTabActive;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+.filterTabCount { @include lp.filterTabCount; }
 .branchDocs {
   margin-left: auto;
   font-size: 13px;
@@ -32,7 +51,6 @@
   font-size: 14px;
 }
 .branchLoading { @include l.branchLoading; }
-.card { @include l.card; }
 .programStack {
   display: flex;
   flex: 1 1 auto;

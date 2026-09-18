@@ -27,6 +27,10 @@
   color: v.$badge-info-text;
   border-color: v.$badge-info-border;
 }
+.statusAgreed,
+.statusApproved,
+.statusReceived,
+.statusAccepted,
 .statusIssued {
   background: v.$success-surface-bg;
   color: #389e0d;
