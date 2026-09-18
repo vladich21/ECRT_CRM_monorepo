@@ -7,7 +7,7 @@ import { useSwItems, useSwStructurePatentLinks } from '@/api/swRegistry/swRegist
 import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
 import { groupProgramsByResponsible } from './swStructurePrograms';
 import { getInitials } from './swStructureTree';
-import styles from './SwStructurePage.module.scss';
+import styles from './SwStructureDetailPanel.module.scss';
 
 export type SwStructureDetailActions = {
   onEdit: (node: SwStructureNode) => void;

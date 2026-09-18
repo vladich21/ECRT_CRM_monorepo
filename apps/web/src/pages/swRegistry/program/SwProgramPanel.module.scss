@@ -1,0 +1,80 @@
+/* Стили: SwProgramPanel. */
+@use '../../../styles/variables' as v;
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid #f0f0f0;
+}
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  /* Отступ строке задаёт она сама: нижний margin у заголовка сбивал центровку счётчика,
+     потому что align-items: center считает по margin-box. */
+  .cardTitle {
+    margin-bottom: 0;
+  }
+
+  .cardTitleCount {
+    margin-left: 0;
+  }
+}
+.branchDocs {
+  margin-left: auto;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+  font-variant-numeric: tabular-nums;
+}
+.branchEmpty {
+  padding: 12px 0 4px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+}
+.branchLoading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+.card {
+  min-width: 0;
+  max-width: 100%;
+}
+.programStack {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  min-width: 0;
+}
+.programDocsCard {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.docsTitleActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.docsFilter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
+}
+.programTabBody {
+  flex: 1 1 auto;
+  min-height: 140px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}

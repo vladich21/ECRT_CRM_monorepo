@@ -3,7 +3,7 @@ import { CaretDownOutlined, CaretRightOutlined, PlusOutlined } from '@ant-design
 import { Button, Dropdown, Tag, type MenuProps } from 'antd';
 
 import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
-import styles from './SwStructurePage.module.scss';
+import styles from './SwStructureTreeNode.module.scss';
 
 type Props = {
   node: SwStructureNode;

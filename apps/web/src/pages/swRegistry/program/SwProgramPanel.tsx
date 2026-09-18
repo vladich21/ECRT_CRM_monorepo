@@ -62,7 +62,7 @@ import { SwItemRidTab } from '../program/rid/SwItemRidTab';
 import { developmentKindAllowsApprovalSheet } from '../shared/swDesignationPreview';
 import type { SwFileChoice } from '../shared/SwFileSourcePicker';
 import { usePartnerShortName } from '../shared/usePartnerShortName';
-import styles from '../SwStructurePage.module.scss';
+import styles from './SwProgramPanel.module.scss';
 import { SwProgramHeader } from './SwProgramHeader';
 import { useProgramDocumentActions } from './useProgramDocumentActions';
 

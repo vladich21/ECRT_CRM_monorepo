@@ -1,0 +1,128 @@
+/* Стили: SwProgramHeader. */
+@use '../../../styles/variables' as v;
+
+.programHeadCard {
+  flex: none;
+  background: v.$bg-primary;
+  border: 1px solid v.$border-tertiary;
+  border-radius: v.$radius-xl;
+  padding: v.$spacing-2xl v.$spacing-3xl;
+}
+.programHeadRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: v.$spacing-2xl;
+}
+.programHeadTitle {
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-2xs;
+  min-width: 0;
+}
+.programEyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: v.$spacing-sm;
+  font-size: v.$font-sm;
+  line-height: v.$line-height-normal;
+  color: v.$text-quaternary;
+}
+.programDesignation {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.programState {
+  margin: 0;
+  font-size: v.$font-sm;
+}
+.programHeadName {
+  margin: 0;
+  font-size: v.$font-xl;
+  font-weight: 600;
+  line-height: v.$line-height-tight;
+  color: v.$text-primary;
+  overflow-wrap: anywhere;
+}
+.programFullName {
+  font-size: v.$font-md;
+  line-height: v.$line-height-normal;
+  color: v.$text-tertiary;
+}
+.programMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$spacing-xl v.$spacing-4xl;
+  margin: v.$spacing-xl 0 0;
+  padding-top: v.$spacing-xl;
+  border-top: 1px solid v.$border-tertiary;
+}
+.metaCellWide {
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-2xs;
+  min-width: 0;
+
+  dt {
+    font-size: v.$font-sm;
+    line-height: v.$line-height-normal;
+    color: v.$text-quaternary;
+  }
+
+  dd {
+    display: flex;
+    align-items: center;
+    gap: v.$spacing-xs;
+    min-width: 0;
+    min-height: 24px;
+    margin: 0;
+    font-size: v.$font-base;
+    line-height: v.$line-height-normal;
+    color: v.$text-secondary;
+  }
+}
+.metaCell {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+.metaCellWide {
+  flex: 1 1 260px;
+}
+.metaText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metaEmpty {
+  color: v.$text-placeholder;
+}
+.metaAction {
+  flex: none;
+  color: v.$text-quaternary;
+}
+.metaLink {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: v.$primary-color;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: v.$primary-light;
+    text-decoration: underline;
+  }
+}
+.programHeadActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: v.$spacing-md;
+}

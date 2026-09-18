@@ -92,7 +92,7 @@ const ProjectsListPage = lazy(() => import('../pages/referenceBooks/projects/Pro
 const UserDetailsPage = lazy(() => import('../pages/referenceBooks/users/UserDetailsPage'));
 const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersListPage'));
 const RolesListPage = lazy(() => import('../pages/admin/roles/RolesListPage'));
-const SwStructurePage = lazy(() => import('../pages/swRegistry/SwStructurePage'));
+const SwStructurePage = lazy(() => import('../pages/swRegistry/structure/SwStructurePage'));
 const SwItemsListPage = lazy(() => import('../pages/swRegistry/items/SwItemsListPage'));
 const SwSummaryPage = lazy(() => import('../pages/swRegistry/summary/SwSummaryPage'));
 

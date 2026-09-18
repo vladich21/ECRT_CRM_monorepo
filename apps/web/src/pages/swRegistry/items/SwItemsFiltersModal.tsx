@@ -1,7 +1,7 @@
 import { Button, Modal, Select } from 'antd';
 
 import type { SwStructureNode } from '@/types/swRegistry';
-import { flattenStructureOptions } from '../swStructureTree';
+import { flattenStructureOptions } from '../structure/swStructureTree';
 import styles from './SwItemsFiltersModal.module.scss';
 import type { SwItemsAdvancedFilters } from './SwItemsListPage.types';
 

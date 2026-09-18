@@ -3,7 +3,7 @@ import { Button, Dropdown, Tag, Tooltip, type MenuProps } from 'antd';
 
 import type { SwItemDetail, SwItemListRow } from '@/types/swRegistry';
 
-import styles from '../SwStructurePage.module.scss';
+import styles from './SwProgramHeader.module.scss';
 
 type Props = {
   item: SwItemListRow;

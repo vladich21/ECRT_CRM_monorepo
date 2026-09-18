@@ -24,8 +24,8 @@ import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMess
 import { usePermissions } from '@/hooks/usePermissions';
 import { SECTIONS } from '@/shared/permissions';
 import type { CreateSwItemPayload, SwItemListRow, SwStructureNode } from '@/types/swRegistry';
-import { SwItemCreateModal } from './items/SwItemCreateModal';
-import { SwProgramPanel } from './program/SwProgramPanel';
+import { SwItemCreateModal } from '../items/SwItemCreateModal';
+import { SwProgramPanel } from '../program/SwProgramPanel';
 import { SwStructureDetailPanel, type SwStructureDetailActions } from './SwStructureDetailPanel';
 import { SwStructureElementModal } from './SwStructureElementModal';
 import styles from './SwStructurePage.module.scss';

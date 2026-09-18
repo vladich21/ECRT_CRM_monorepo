@@ -1,7 +1,7 @@
 import { SearchOutlined } from '@ant-design/icons';
 import { Checkbox, Input } from 'antd';
 
-import styles from './SwStructurePage.module.scss';
+import styles from './SwStructureTreeToolbar.module.scss';
 
 type Props = {
   searchQuery: string;
