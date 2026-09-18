@@ -9,7 +9,7 @@ import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
 import type { SvnEntry } from '@/components/svnPicker/svnApi';
 import type { CreateSwDocumentPayload, SwDocumentListRow } from '@/types/swRegistry';
 import { formatFileSize } from '@/utils/formatFileSize';
-import { assembleDocumentDesignation, assembleSheetDesignation } from './swDesignationPreview';
+import { assembleDocumentDesignation, assembleSheetDesignation } from './shared/swDesignationPreview';
 import {
   buildDocumentCreateSaveWarnings,
   isDocumentIdTakenError,
@@ -17,7 +17,7 @@ import {
   type SwStoredSvnFile,
 } from './swDocumentCreateWarnings';
 import { parseSwDocumentFilename } from './swDocumentFilename';
-import styles from './SwRegistryModals.module.scss';
+import styles from './SwDocumentCreateModal.module.scss';
 
 const LETTER_OPTIONS = ['О', 'О₁', 'О₂', 'А', 'Б', 'В'].map(value => ({ value, label: value }));
 

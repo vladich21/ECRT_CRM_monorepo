@@ -49,20 +49,20 @@ import type {
 } from '@/types/swRegistry';
 
 import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './SwApprovalSheetModal';
-import { developmentKindAllowsApprovalSheet } from './swDesignationPreview';
+import { developmentKindAllowsApprovalSheet } from './shared/swDesignationPreview';
 import { SwDocumentCreateModal } from './SwDocumentCreateModal';
 import { SwDocumentDrawer, type SwDocumentDrawerTab } from './SwDocumentDrawer';
 import { SwDocumentEditModal, type DocumentFileReplacement } from './SwDocumentEditModal';
 import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
 import { SwDocumentStatusModal } from './SwDocumentStatusModal';
-import type { SwFileChoice } from './SwFileSourcePicker';
+import type { SwFileChoice } from './shared/SwFileSourcePicker';
 import { SwFilesTab } from './SwFilesTab';
 import { SwFirmwaresTab } from './SwFirmwaresTab';
 import { SwIpsPlacementModal } from './SwIpsPlacementModal';
 import { SwItemEditModal } from './items/SwItemEditModal';
 import { SwItemRidTab } from './SwItemRidTab';
 import styles from './SwStructurePage.module.scss';
-import { usePartnerShortName } from './usePartnerShortName';
+import { usePartnerShortName } from './shared/usePartnerShortName';
 
 type Props = {
   item: SwItemListRow;

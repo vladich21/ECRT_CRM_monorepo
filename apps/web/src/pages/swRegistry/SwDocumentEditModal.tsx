@@ -4,9 +4,9 @@ import { Col, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
 import { useSwReferences } from '@/api/swRegistry/swRegistryApiHooks';
 import type { SwDocumentFileRef, SwDocumentListRow, UpdateSwDocumentPayload } from '@/types/swRegistry';
 
-import { assembleDocumentDesignation, assembleSheetDesignation } from './swDesignationPreview';
-import { SwFileSourcePicker, type SwFileChoice } from './SwFileSourcePicker';
-import styles from './SwRegistryModals.module.scss';
+import { assembleDocumentDesignation, assembleSheetDesignation } from './shared/swDesignationPreview';
+import { SwFileSourcePicker, type SwFileChoice } from './shared/SwFileSourcePicker';
+import styles from './SwDocumentEditModal.module.scss';
 
 const LETTER_OPTIONS = ['О', 'О₁', 'О₂', 'А', 'Б', 'В'].map(value => ({ value, label: value }));
 

@@ -1,0 +1,12 @@
+@use './shared/styles/modals' as m;
+
+.alert { @include m.alert; }
+.checkboxHint { @include m.checkboxHint; }
+.checkboxRow { @include m.checkboxRow; }
+.fieldHint { @include m.fieldHint; }
+.fileEmpty { @include m.fileEmpty; }
+.fileMeta { @include m.fileMeta; }
+.fileName { @include m.fileName; }
+.fileRow { @include m.fileRow; }
+.fileSourceSwitch { @include m.fileSourceSwitch; }
+.formCompact { @include m.formCompact; }

@@ -1,0 +1,6 @@
+@use './shared/styles/modals' as m;
+
+.uploadedFile { @include m.uploadedFile; }
+.uploadedFileBody { @include m.uploadedFileBody; }
+.uploadedFileMeta { @include m.uploadedFileMeta; }
+.uploadedFileName { @include m.uploadedFileName; }

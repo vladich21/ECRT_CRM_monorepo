@@ -4,7 +4,7 @@ import { Alert, Col, Form, Input, Modal, Row, Select } from 'antd';
 import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
 import type { SwRefItem, SwStructureNode } from '@/types/swRegistry';
 import { collectSubtreeIds, flattenStructureOptions } from './swStructureTree';
-import styles from './SwRegistryModals.module.scss';
+import styles from './SwStructureElementModal.module.scss';
 
 type Mode = 'create' | 'edit' | 'child' | 'responsible';
 

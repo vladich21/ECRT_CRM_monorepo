@@ -6,7 +6,7 @@ import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
 import { useSwReferences, useSwStructure } from '@/api/swRegistry/swRegistryApiHooks';
 import type { SwItemDetail, UpdateSwItemPayload } from '@/types/swRegistry';
 import { flattenStructureOptions } from '../swStructureTree';
-import styles from '../SwRegistryModals.module.scss';
+import styles from './SwItemEditModal.module.scss';
 
 interface Props {
   open: boolean;

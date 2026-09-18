@@ -1,4 +1,6 @@
-.formCompact {
+/* Общие куски окон реестра ПО: форма, блок файла, карточка загруженного файла.
+   Подключается миксинами — у каждого окна свой .module.scss, чужие модули не импортируются. */
+@mixin formCompact {
   :global(.ant-form-item) {
     margin-bottom: 12px;
   }
@@ -8,27 +10,27 @@
   }
 }
 
-.alert {
+@mixin alert {
   margin-bottom: 12px;
 }
 
-.docHeader {
+@mixin docHeader {
   margin: 0 0 12px;
   font-size: 14px;
   color: #595959;
   line-height: 1.45;
 }
 
-.checkboxRow {
+@mixin checkboxRow {
   margin-bottom: 4px;
 }
 
-.checkboxHint {
+@mixin checkboxHint {
   color: #8c8c8c;
   font-weight: 400;
 }
 
-.fieldHint {
+@mixin fieldHint {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.45;
@@ -37,11 +39,11 @@
 
 /* ── Файл создаваемого документа: источник (SVN / компьютер) и выбранный файл ── */
 
-.fileSourceSwitch {
+@mixin fileSourceSwitch {
   margin-bottom: 8px;
 }
 
-.fileRow {
+@mixin fileRow {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -49,7 +51,7 @@
   min-height: 32px;
 }
 
-.fileName {
+@mixin fileName {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -58,20 +60,20 @@
   color: #262626;
 }
 
-.fileMeta {
+@mixin fileMeta {
   flex-shrink: 0;
   font-size: 12px;
   color: #8c8c8c;
   font-variant-numeric: tabular-nums;
 }
 
-.fileEmpty {
+@mixin fileEmpty {
   font-size: 13px;
   color: #bfbfbf;
 }
 
 /* Заголовок смыслового блока внутри формы: отделяет реквизиты листа утверждения. */
-.formSectionTitle {
+@mixin formSectionTitle {
   margin: 4px 0 12px;
   padding-top: 12px;
   border-top: 1px solid #f0f0f0;
@@ -81,7 +83,7 @@
 }
 
 /* Блок выбора файла: переключатель источника сверху, сам выбор под ним. */
-.fileBlock {
+@mixin fileBlock {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -93,7 +95,7 @@
 }
 
 /* Текущая копия документа в окне правки: что заменяем. */
-.currentFileLine {
+@mixin currentFileLine {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -107,7 +109,7 @@
 
 /* ── Файл прошивки в окне загрузки: имя, размер и прогресс передачи одной карточкой ── */
 
-.uploadedFile {
+@mixin uploadedFile {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -122,12 +124,12 @@
   }
 }
 
-.uploadedFileBody {
+@mixin uploadedFileBody {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.uploadedFileName {
+@mixin uploadedFileName {
   font-size: 13px;
   color: #262626;
   overflow: hidden;
@@ -135,7 +137,7 @@
   white-space: nowrap;
 }
 
-.uploadedFileMeta {
+@mixin uploadedFileMeta {
   font-size: 12px;
   color: #8c8c8c;
   font-variant-numeric: tabular-nums;

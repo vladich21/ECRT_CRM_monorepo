@@ -2,7 +2,7 @@ import { RightOutlined, UndoOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 
 import type { SwItemListRow } from '@/types/swRegistry';
-import { usePartnerShortName } from '../usePartnerShortName';
+import { usePartnerShortName } from '../shared/usePartnerShortName';
 import styles from './SwItemCard.module.scss';
 
 type Props = {

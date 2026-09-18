@@ -3,8 +3,8 @@ import { Alert, Col, DatePicker, Form, Input, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
-import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
-import styles from './SwRegistryModals.module.scss';
+import { formatSwStatusLabel, swStatusBadgeClass } from './shared/swStatusBadge';
+import styles from './SwIpsPlacementModal.module.scss';
 import pageStyles from './SwRegistryShared.module.scss';
 
 type Props = {

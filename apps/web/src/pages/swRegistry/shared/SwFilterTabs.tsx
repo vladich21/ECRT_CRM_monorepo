@@ -1,4 +1,4 @@
-import styles from './SwRegistry.module.scss';
+import styles from './SwFilterTabs.module.scss';
 
 export type SwFilterTab<T extends string> = {
   key: T;

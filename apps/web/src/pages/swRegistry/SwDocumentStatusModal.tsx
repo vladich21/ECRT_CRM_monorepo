@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 
 import { useSwDocumentStatuses } from '@/api/swRegistry/swRegistryApiHooks';
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
-import styles from './SwRegistryModals.module.scss';
+import styles from './SwDocumentStatusModal.module.scss';
 
 type Props = {
   open: boolean;

@@ -11,8 +11,8 @@ import {
 import { Button, Dropdown, Tooltip, type MenuProps } from 'antd';
 
 import type { SwDocumentFileRef, SwDocumentListRow } from '@/types/swRegistry';
-import { formatIpsDisplay } from './swDesignationPreview';
-import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
+import { formatIpsDisplay } from './shared/swDesignationPreview';
+import { formatSwStatusLabel, swStatusBadgeClass } from './shared/swStatusBadge';
 import styles from './SwRegistryShared.module.scss';
 import panelStyles from './SwStructurePage.module.scss';
 

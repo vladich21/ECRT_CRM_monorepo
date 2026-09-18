@@ -6,7 +6,7 @@ import type { SvnEntry } from '@/components/svnPicker/svnApi';
 import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
 import type { SwDocumentFileRef } from '@/types/swRegistry';
 
-import styles from './SwRegistryModals.module.scss';
+import styles from './SwFileSourcePicker.module.scss';
 
 /** Выбранный источник копии: либо путь в SVN, либо файл с компьютера. */
 export type SwFileChoice = { svnPath?: string; localFile?: File };

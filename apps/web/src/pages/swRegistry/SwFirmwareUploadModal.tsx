@@ -13,7 +13,7 @@ import {
   sha256Hex,
   type FirmwareBuildFingerprint,
 } from './swFirmwareDuplicate';
-import styles from './SwRegistryModals.module.scss';
+import styles from './SwFirmwareUploadModal.module.scss';
 
 type FormValues = { name?: string; version?: string; builtAt?: Dayjs | null; note?: string };
 

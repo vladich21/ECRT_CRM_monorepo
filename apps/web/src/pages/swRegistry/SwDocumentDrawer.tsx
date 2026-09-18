@@ -5,7 +5,7 @@ import { useSwFiles } from '@/api/swRegistry/swRegistryApiHooks';
 import { CommentsList } from '@/components/comments/CommentsList';
 import type { SwDocumentListRow } from '@/types/swRegistry';
 import { SwDocumentFilesTab } from './SwFilesTab';
-import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
+import { formatSwStatusLabel, swStatusBadgeClass } from './shared/swStatusBadge';
 import sharedStyles from './SwRegistryShared.module.scss';
 import styles from './SwStructurePage.module.scss';
 
