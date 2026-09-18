@@ -9,6 +9,8 @@ import { SwFirmwaresController } from './controllers/sw-firmwares.controller';
 import { SwItemsController } from './controllers/sw-items.controller';
 import { SwStructureController } from './controllers/sw-structure.controller';
 import { SwSummaryController } from './controllers/sw-summary.controller';
+import { SwDocumentCreateService } from './services/sw-document-create.service';
+import { SwDocumentStatusService } from './services/sw-document-status.service';
 import { SwDocumentsService } from './services/sw-documents.service';
 import { SwFilesService } from './services/sw-files.service';
 import { SwFirmwaresService } from './services/sw-firmwares.service';
@@ -32,6 +34,8 @@ import { SwSummaryService } from './services/sw-summary.service';
     SwStructureService,
     SwItemsService,
     SwDocumentsService,
+    SwDocumentCreateService,
+    SwDocumentStatusService,
     SwSummaryService,
     SwFilesService,
     SwFirmwaresService,

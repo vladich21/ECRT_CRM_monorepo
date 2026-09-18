@@ -11,7 +11,7 @@ import {
   SwDocumentUploadTicketDto,
   UpdateSwItemDto,
 } from '../dto/sw-registry.dto';
-import { SwDocumentsService } from '../services/sw-documents.service';
+import { SwDocumentCreateService } from '../services/sw-document-create.service';
 import { SwItemsService } from '../services/sw-items.service';
 
 type AuthReq = Request & { user?: { user_id?: string } };
@@ -20,7 +20,7 @@ type AuthReq = Request & { user?: { user_id?: string } };
 export class SwItemsController {
   constructor(
     private readonly items: SwItemsService,
-    private readonly documents: SwDocumentsService,
+    private readonly documentCreate: SwDocumentCreateService,
   ) {}
 
   @Get()
@@ -90,7 +90,7 @@ export class SwItemsController {
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   addDocument(@Param('id') id: string, @BodyPayload() dto: CreateSwDocumentDto, @Req() req: AuthReq) {
-    return this.documents.create(id, dto, req.user?.user_id);
+    return this.documentCreate.create(id, dto, req.user?.user_id);
   }
 
   /** Загрузка файла с компьютера для документа, которого ещё нет: браузер льёт байты tus-ом напрямую. */
@@ -102,14 +102,14 @@ export class SwItemsController {
     @BodyPayload() dto: SwDocumentUploadTicketDto,
     @Req() req: AuthReq,
   ) {
-    return this.documents.createUploadTicket(id, dto, req.user?.user_id);
+    return this.documentCreate.createUploadTicket(id, dto, req.user?.user_id);
   }
 
   /** Отказ от загруженного, но не использованного файла (окно закрыли без создания документа). */
   @Delete('detail/:id/documents/upload-ticket/:fileId')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   discardDocumentUpload(@Param('fileId') fileId: string) {
-    return this.documents.discardUpload(fileId);
+    return this.documentCreate.discardUpload(fileId);
   }
 
   @Get('detail/:id/patents')
