@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Form, Input, Modal, Select } from 'antd';
 import { useQuery } from '@tanstack/react-query';
+import { Form, Input, Modal, Select } from 'antd';
 
 import { patentApi } from '@/api/patents/patentApi';
 import { buildPatentSelectLabel } from '@/pages/referenceBooks/patentGrants/utils/patentGrantCardHelpers';

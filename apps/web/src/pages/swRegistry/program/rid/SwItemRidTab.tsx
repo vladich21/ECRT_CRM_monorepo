@@ -13,8 +13,9 @@ import { useOpenAntdDeleteConfirm } from '@/hooks/modals/confirmDelete';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
 import { useNotification } from '@/hooks/notifications/useNotification';
 import type { AddSwItemPatentLinkPayload } from '@/types/swRegistry';
+
 import { SwItemPatentLinkModal } from './SwItemPatentLinkModal';
-import styles from './SwRegistryShared.module.scss';
+import styles from './SwItemRidTab.module.scss';
 
 type SwItemRidTabProps = {
   itemId: string;

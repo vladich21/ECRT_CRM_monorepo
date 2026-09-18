@@ -7,6 +7,7 @@ import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
 import { startSwFirmwareUpload, type SwDraftUpload } from '@/api/swRegistry/uploadSwFile';
 import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessage';
 import { formatFileSize } from '@/utils/formatFileSize';
+
 import {
   findSameFirmwareBuild,
   HASH_BEFORE_UPLOAD_BYTES,
@@ -153,7 +154,7 @@ export function SwFirmwareUploadModal({
 
     setUpload({ status: 'uploading', filename: file.name, size: file.size, percent: 0 });
     void sha256Hex(file)
-      .then((sha256) => {
+      .then(sha256 => {
         if (gen !== pickGen.current) return;
         const same = findSameFirmwareBuild(existingBuilds, { size: file.size, sha256 });
         if (same?.by === 'hash') {
@@ -325,11 +326,7 @@ export function SwFirmwareUploadModal({
         </Form.Item>
 
         {submitError ? (
-          <Alert
-            type='error'
-            showIcon
-            message={getApiErrorMessage(submitError) ?? 'Не удалось сохранить прошивку'}
-          />
+          <Alert type='error' showIcon message={getApiErrorMessage(submitError) ?? 'Не удалось сохранить прошивку'} />
         ) : null}
       </Form>
     </Modal>

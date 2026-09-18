@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { CloudUploadOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Empty, Form, Input, Modal, Spin, Table, Tooltip, type MenuProps } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button, Empty, Form, Input, Modal, Spin, Table } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
@@ -18,46 +17,15 @@ import { useOpenAntdDeleteConfirm } from '@/customhooks/confirmDelete';
 import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessage';
 import { useNotification } from '@/hooks/notifications/useNotification';
 import type { SwFirmware, SwFirmwareVersion } from '@/types/swRegistry';
-import { formatFileSize } from '@/utils/formatFileSize';
 
+import { buildFirmwareColumns } from './swFirmwareColumns';
 import styles from './SwFirmwaresTab.module.scss';
+import { toTree, type FirmwareTreeRow } from './swFirmwareTree';
 import { SwFirmwareUploadModal, type FirmwareVersionSubmit } from './SwFirmwareUploadModal';
 
 interface Props {
   itemId: string;
   canEdit?: boolean;
-}
-
-type FirmwareTreeRow = {
-  key: string;
-  kind: 'firmware' | 'version';
-  firmware: SwFirmware;
-  version?: SwFirmwareVersion;
-  children?: FirmwareTreeRow[];
-};
-
-function formatDate(value: string | null): string {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString('ru-RU');
-}
-
-function toTree(firmwares: SwFirmware[]): FirmwareTreeRow[] {
-  return firmwares.map(firmware => {
-    const [current, ...history] = firmware.versions ?? [];
-    const children = history.map(version => ({
-      key: version.id,
-      kind: 'version' as const,
-      firmware,
-      version,
-    }));
-    return {
-      key: firmware.id,
-      kind: 'firmware' as const,
-      firmware,
-      version: current,
-      ...(children.length ? { children } : {}),
-    };
-  });
 }
 
 /**
@@ -170,160 +138,17 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
     );
   };
 
-  const columns: ColumnsType<FirmwareTreeRow> = [
-    {
-      title: 'Прошивка',
-      key: 'name',
-      ellipsis: true,
-      render: (_, row) => (
-        <div>
-          <div className={row.kind === 'firmware' ? styles.firmwareName : styles.pastName}>{row.firmware.name}</div>
-          {row.kind === 'firmware' && row.firmware.note ? <div className={styles.note}>{row.firmware.note}</div> : null}
-        </div>
-      ),
+  const columns = buildFirmwareColumns({
+    canEdit,
+    onUploadVersion: firmware => setUploadFor({ firmware }),
+    onDownload: version => void download(version),
+    onRename: firmware => {
+      renameForm.setFieldsValue({ name: firmware.name, note: firmware.note ?? '' });
+      setRenameFor(firmware);
     },
-    {
-      title: 'Версия',
-      key: 'version',
-      width: 140,
-      render: (_, row) => {
-        if (!row.version) return '—';
-        if (row.kind === 'firmware') {
-          return <span className={styles.currentVersion}>{row.version.version}</span>;
-        }
-        return <span className={styles.pastVersion}>{row.version.version}</span>;
-      },
-    },
-    {
-      title: 'Файл',
-      key: 'file',
-      ellipsis: true,
-      render: (_, row) =>
-        row.version ? (
-          <span className={styles.filename} title={row.version.filename}>
-            {row.version.filename}
-          </span>
-        ) : (
-          '—'
-        ),
-    },
-    {
-      title: 'Размер',
-      key: 'size',
-      width: 110,
-      render: (_, row) => (row.version ? formatFileSize(row.version.sizeBytes ?? 0) : '—'),
-    },
-    {
-      title: 'Сборка',
-      key: 'builtAt',
-      width: 120,
-      render: (_, row) => formatDate(row.version?.builtAt ?? null),
-    },
-    {
-      title: 'Загружена',
-      key: 'createdAt',
-      width: 180,
-      render: (_, row) => {
-        if (!row.version) return '—';
-        const who = row.version.createdByName ? `, ${row.version.createdByName}` : '';
-        return `${formatDate(row.version.createdAt)}${who}`;
-      },
-    },
-    {
-      title: 'SHA-256',
-      key: 'sha256',
-      width: 100,
-      render: (_, row) =>
-        row.version?.sha256 ? (
-          <Tooltip title={row.version.sha256}>
-            <span className={styles.hash}>{row.version.sha256.slice(0, 8)}</span>
-          </Tooltip>
-        ) : (
-          '—'
-        ),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: canEdit ? 168 : 48,
-      render: (_, row) => {
-        const version = row.version;
-        if (row.kind === 'firmware') {
-          return (
-            <div className={styles.actions}>
-              {canEdit ? (
-                <Button
-                  size='small'
-                  icon={<CloudUploadOutlined />}
-                  onClick={() => setUploadFor({ firmware: row.firmware })}
-                >
-                  Версия
-                </Button>
-              ) : null}
-              {version ? (
-                <Tooltip title='Скачать'>
-                  <Button type='text' icon={<DownloadOutlined />} onClick={() => void download(version)} />
-                </Tooltip>
-              ) : null}
-              {canEdit ? (
-                <Dropdown
-                  trigger={['click']}
-                  menu={{
-                    items: [
-                      { key: 'rename', icon: <EditOutlined />, label: 'Переименовать' },
-                      ...(version
-                        ? ([
-                            {
-                              key: 'deleteVersion',
-                              icon: <DeleteOutlined />,
-                              label: 'Удалить текущую версию',
-                              danger: true,
-                            },
-                          ] satisfies MenuProps['items'])
-                        : []),
-                      { key: 'delete', icon: <DeleteOutlined />, label: 'Удалить прошивку', danger: true },
-                    ],
-                    onClick: ({ key }) => {
-                      if (key === 'rename') {
-                        renameForm.setFieldsValue({
-                          name: row.firmware.name,
-                          note: row.firmware.note ?? '',
-                        });
-                        setRenameFor(row.firmware);
-                      }
-                      if (key === 'deleteVersion' && version) removeVersion(row.firmware, version);
-                      if (key === 'delete') removeFirmware(row.firmware);
-                    },
-                  }}
-                >
-                  <Button type='text'>⋯</Button>
-                </Dropdown>
-              ) : null}
-            </div>
-          );
-        }
-        if (!version) return null;
-        return (
-          <div className={styles.actions}>
-            <Tooltip title='Скачать'>
-              <Button type='text' size='small' icon={<DownloadOutlined />} onClick={() => void download(version)} />
-            </Tooltip>
-            {canEdit ? (
-              <Tooltip title='Удалить версию'>
-                <Button
-                  type='text'
-                  size='small'
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => removeVersion(row.firmware, version)}
-                />
-              </Tooltip>
-            ) : null}
-          </div>
-        );
-      },
-    },
-  ];
+    onRemoveVersion: removeVersion,
+    onRemoveFirmware: removeFirmware,
+  });
 
   return (
     <div className={styles.wrap}>

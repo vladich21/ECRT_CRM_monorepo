@@ -22,15 +22,15 @@ export function findSameFirmwareBuild(
 ): SameFirmwareBuild | null {
   const sha256 = file.sha256?.toLowerCase();
   if (sha256) {
-    const byHash = builds.find((build) => build.sha256?.toLowerCase() === sha256);
+    const byHash = builds.find(build => build.sha256?.toLowerCase() === sha256);
     if (byHash) return { version: byHash.version, by: 'hash' };
     return null;
   }
-  const bySize = builds.find((build) => build.sizeBytes != null && build.sizeBytes === file.size);
+  const bySize = builds.find(build => build.sizeBytes != null && build.sizeBytes === file.size);
   return bySize ? { version: bySize.version, by: 'size' } : null;
 }
 
 export async function sha256Hex(file: Blob): Promise<string> {
   const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
-  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }

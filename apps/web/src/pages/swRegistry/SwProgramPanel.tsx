@@ -56,11 +56,11 @@ import { SwDocumentEditModal, type DocumentFileReplacement } from './SwDocumentE
 import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
 import { SwDocumentStatusModal } from './SwDocumentStatusModal';
 import type { SwFileChoice } from './shared/SwFileSourcePicker';
-import { SwFilesTab } from './SwFilesTab';
-import { SwFirmwaresTab } from './SwFirmwaresTab';
+import { SwFilesTab } from './program/files/SwFilesTab';
+import { SwFirmwaresTab } from './program/firmwares/SwFirmwaresTab';
 import { SwIpsPlacementModal } from './SwIpsPlacementModal';
 import { SwItemEditModal } from './items/SwItemEditModal';
-import { SwItemRidTab } from './SwItemRidTab';
+import { SwItemRidTab } from './program/rid/SwItemRidTab';
 import styles from './SwStructurePage.module.scss';
 import { usePartnerShortName } from './shared/usePartnerShortName';
 

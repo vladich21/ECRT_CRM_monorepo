@@ -11,18 +11,16 @@ import { Button, Spin, Typography, Upload } from 'antd';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  useDetachSwFile,
-  useSwFiles,
-} from '@/api/swRegistry/swRegistryApiHooks';
-import { uploadSwRegistryFile, uploadSwRegistryFileVersion } from '@/api/swRegistry/uploadSwFile';
 import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
+import { useDetachSwFile, useSwFiles } from '@/api/swRegistry/swRegistryApiHooks';
+import { uploadSwRegistryFile, uploadSwRegistryFileVersion } from '@/api/swRegistry/uploadSwFile';
+import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
 import { useOpenAntdDeleteConfirm } from '@/customhooks/confirmDelete';
 import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessage';
 import { useNotification } from '@/hooks/notifications/useNotification';
 import type { SwFileObjectType, SwFilePurpose, SwRegistryFile } from '@/types/swRegistry';
 import { formatFileSize } from '@/utils/formatFileSize';
-import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
+
 import styles from './SwFilesTab.module.scss';
 
 const { Text, Title } = Typography;
@@ -169,12 +167,7 @@ export function SwFilesTab({
       aria-labelledby={`sw-files-${purpose}`}
     >
       {contextHolder}
-      <input
-        ref={versionInputRef}
-        type='file'
-        hidden
-        onChange={handleVersionSelected}
-      />
+      <input ref={versionInputRef} type='file' hidden onChange={handleVersionSelected} />
 
       <Title level={5} id={`sw-files-${purpose}`} className={styles.sectionTitle}>
         {title}
@@ -266,9 +259,7 @@ export function SwFilesTab({
           <p className='ant-upload-drag-icon'>
             <InboxOutlined />
           </p>
-          <p className='ant-upload-text'>
-            {uploading ? 'Загрузка…' : 'Перетащите файл или нажмите для выбора'}
-          </p>
+          <p className='ant-upload-text'>{uploading ? 'Загрузка…' : 'Перетащите файл или нажмите для выбора'}</p>
           <p className='ant-upload-hint'>
             <CloudUploadOutlined /> Загрузка через files-service с докачкой при обрыве
           </p>

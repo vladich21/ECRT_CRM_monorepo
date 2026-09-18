@@ -9,9 +9,10 @@ const builds = [
 
 describe('findSameFirmwareBuild', () => {
   it('совпадение хеша важнее размера', () => {
-    expect(
-      findSameFirmwareBuild(builds, { size: 2_000_000, sha256: 'C42F819A' + '0'.repeat(56) }),
-    ).toEqual({ version: '1.0.1', by: 'hash' });
+    expect(findSameFirmwareBuild(builds, { size: 2_000_000, sha256: 'C42F819A' + '0'.repeat(56) })).toEqual({
+      version: '1.0.1',
+      by: 'hash',
+    });
   });
 
   it('без хеша предупреждает по размеру', () => {
@@ -19,9 +20,7 @@ describe('findSameFirmwareBuild', () => {
   });
 
   it('другой хеш того же размера — это другой файл', () => {
-    expect(
-      findSameFirmwareBuild(builds, { size: 1_048_576, sha256: 'bbbbbbbb' + '0'.repeat(56) }),
-    ).toBeNull();
+    expect(findSameFirmwareBuild(builds, { size: 1_048_576, sha256: 'bbbbbbbb' + '0'.repeat(56) })).toBeNull();
   });
 
   it('новый файл не считается дублем', () => {
