@@ -1,0 +1,4 @@
+@use '../shared/styles/modals' as m;
+
+.alert { @include m.alert; }
+.formCompact { @include m.formCompact; }

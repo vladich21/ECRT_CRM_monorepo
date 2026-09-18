@@ -25,3 +25,15 @@ export const getRelativeTime = (dateString: string): string => {
 
   return `${day} ${month} в ${timeStr}`;
 };
+
+/**
+ * Дата в привычном виде: 17.09.2026. Пустое значение и нераспознанную дату
+ * показываем заглушкой — какой именно, решает место вызова: в карточках
+ * справочников исторически дефис, в реестре — тире.
+ */
+export function formatDateRu(value: string | Date | null | undefined, empty = '—'): string {
+  if (value === null || value === undefined) return empty;
+  if (typeof value === 'string' && !value.trim()) return empty;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? empty : date.toLocaleDateString('ru-RU');
+}

@@ -1,0 +1,7 @@
+/* Стили: SwIpsPlacementModal. */
+@use '../../../../styles/variables' as v;
+@use '../../shared/styles/modals' as m;
+
+
+.alert { @include m.alert; }
+.formCompact { @include m.formCompact; }

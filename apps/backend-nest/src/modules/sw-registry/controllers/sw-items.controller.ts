@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import type { Request } from 'express';
 
+import { BodyPayload } from '../../../shared/decorators/body-payload.decorator';
 import { RequirePermission } from '../../permissions/decorators/permission-meta';
 import { SECTIONS } from '../../../shared/permissions';
 import {
@@ -10,7 +11,7 @@ import {
   SwDocumentUploadTicketDto,
   UpdateSwItemDto,
 } from '../dto/sw-registry.dto';
-import { SwDocumentsService } from '../services/sw-documents.service';
+import { SwDocumentCreateService } from '../services/sw-document-create.service';
 import { SwItemsService } from '../services/sw-items.service';
 
 type AuthReq = Request & { user?: { user_id?: string } };
@@ -19,7 +20,7 @@ type AuthReq = Request & { user?: { user_id?: string } };
 export class SwItemsController {
   constructor(
     private readonly items: SwItemsService,
-    private readonly documents: SwDocumentsService,
+    private readonly documentCreate: SwDocumentCreateService,
   ) {}
 
   @Get()
@@ -51,7 +52,7 @@ export class SwItemsController {
   @Post()
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  create(@Body('body') dto: CreateSwItemDto, @Req() req: AuthReq) {
+  create(@BodyPayload() dto: CreateSwItemDto, @Req() req: AuthReq) {
     return this.items.create(dto, req.user?.user_id);
   }
 
@@ -63,7 +64,7 @@ export class SwItemsController {
 
   @Patch('detail/:id')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  update(@Param('id') id: string, @Body('body') dto: UpdateSwItemDto, @Req() req: AuthReq) {
+  update(@Param('id') id: string, @BodyPayload() dto: UpdateSwItemDto, @Req() req: AuthReq) {
     return this.items.update(id, dto, req.user?.user_id);
   }
 
@@ -88,8 +89,8 @@ export class SwItemsController {
   @Post('detail/:id/documents')
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  addDocument(@Param('id') id: string, @Body('body') dto: CreateSwDocumentDto, @Req() req: AuthReq) {
-    return this.documents.create(id, dto, req.user?.user_id);
+  addDocument(@Param('id') id: string, @BodyPayload() dto: CreateSwDocumentDto, @Req() req: AuthReq) {
+    return this.documentCreate.create(id, dto, req.user?.user_id);
   }
 
   /** Загрузка файла с компьютера для документа, которого ещё нет: браузер льёт байты tus-ом напрямую. */
@@ -98,17 +99,17 @@ export class SwItemsController {
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   createDocumentUploadTicket(
     @Param('id') id: string,
-    @Body('body') dto: SwDocumentUploadTicketDto,
+    @BodyPayload() dto: SwDocumentUploadTicketDto,
     @Req() req: AuthReq,
   ) {
-    return this.documents.createUploadTicket(id, dto, req.user?.user_id);
+    return this.documentCreate.createUploadTicket(id, dto, req.user?.user_id);
   }
 
   /** Отказ от загруженного, но не использованного файла (окно закрыли без создания документа). */
   @Delete('detail/:id/documents/upload-ticket/:fileId')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   discardDocumentUpload(@Param('fileId') fileId: string) {
-    return this.documents.discardUpload(fileId);
+    return this.documentCreate.discardUpload(fileId);
   }
 
   @Get('detail/:id/patents')
@@ -120,7 +121,7 @@ export class SwItemsController {
   @Post('detail/:id/patents')
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  addPatentLink(@Param('id') id: string, @Body('body') dto: AddSwItemPatentDto, @Req() req: AuthReq) {
+  addPatentLink(@Param('id') id: string, @BodyPayload() dto: AddSwItemPatentDto, @Req() req: AuthReq) {
     return this.items.addPatentLink(id, dto, req.user?.user_id);
   }
 

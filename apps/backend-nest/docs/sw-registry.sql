@@ -149,7 +149,8 @@ CREATE TABLE IF NOT EXISTS sw_documents (
 
 -- Уникально только обозначение: номер вида живой, перенумерация не должна упираться в индекс
 -- (индекс по «программа + вид + номер» снят скриптом scripts/sw-registry/01).
-CREATE UNIQUE INDEX IF NOT EXISTS sw_documents_designation_uidx ON sw_documents (designation);
+CREATE UNIQUE INDEX IF NOT EXISTS sw_documents_designation_uidx ON sw_documents (designation)
+  WHERE record_state <> 'deleted';
 CREATE INDEX IF NOT EXISTS sw_documents_software_idx ON sw_documents (software_id);
 CREATE INDEX IF NOT EXISTS sw_documents_status_idx ON sw_documents (status_code);
 

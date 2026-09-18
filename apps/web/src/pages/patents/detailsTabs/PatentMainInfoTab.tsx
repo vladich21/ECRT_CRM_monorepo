@@ -27,10 +27,8 @@ import {
 } from '@/pages/patents/utils/patentStatusDisplay';
 import { PatentRidFinanceCard } from './PatentRidFinanceCard';
 import styles from './PatentMainInfoTab.module.scss';
+import { formatDateRu } from '@/utils/formatDate';
 
-function formatDate(dateString: string) {
-  return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '-';
-}
 function getInitials(name: string) {
   return name
     .split(' ')
@@ -116,7 +114,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{formatDate(patent.registration_date)}</div>
+                <div className={styles.kpiValue}>{formatDateRu(patent.registration_date, '-')}</div>
                 <div className={styles.kpiLabel}>Дата регистрации</div>
               </div>
               <div className={styles.kpiIcon}>
@@ -216,7 +214,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Дата регистрации (ИЦ ЖТ)</span>
-                <span className={styles.infoValue}>{formatDate(patent.registration_date)}</span>
+                <span className={styles.infoValue}>{formatDateRu(patent.registration_date, '-')}</span>
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Номер регистрации (ЦИР)</span>
@@ -226,7 +224,7 @@ export default function PatentMainInfo({ patent }: { patent: Patent }) {
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Дата регистрации (ЦИР)</span>
-                <span className={styles.infoValue}>{formatDate(patent.registration_date_cir)}</span>
+                <span className={styles.infoValue}>{formatDateRu(patent.registration_date_cir, '-')}</span>
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Номер патентной заявки</span>

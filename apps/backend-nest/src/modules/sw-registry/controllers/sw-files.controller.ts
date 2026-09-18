@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -11,6 +10,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 
+import { BodyPayload } from '../../../shared/decorators/body-payload.decorator';
 import { RequirePermission } from '../../permissions/decorators/permission-meta';
 import { SECTIONS } from '../../../shared/permissions';
 import {
@@ -30,7 +30,7 @@ export class SwFilesController {
   @Post('ticket')
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  createTicket(@Body('body') dto: SwFileTicketDto, @Req() req: AuthReq) {
+  createTicket(@BodyPayload() dto: SwFileTicketDto, @Req() req: AuthReq) {
     return this.files.createTicket(dto, req.user?.user_id);
   }
 
@@ -39,7 +39,7 @@ export class SwFilesController {
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   createVersionTicket(
     @Param('fileId') fileId: string,
-    @Body('body') dto: SwFileVersionTicketDto,
+    @BodyPayload() dto: SwFileVersionTicketDto,
     @Req() req: AuthReq,
   ) {
     return this.files.createVersionTicket(fileId, dto, req.user?.user_id);
@@ -47,7 +47,7 @@ export class SwFilesController {
 
   @Post(':fileId/confirm')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  confirm(@Param('fileId') fileId: string, @Body('body') dto: SwFileConfirmDto, @Req() req: AuthReq) {
+  confirm(@Param('fileId') fileId: string, @BodyPayload() dto: SwFileConfirmDto, @Req() req: AuthReq) {
     return this.files.confirm(fileId, dto, req.user?.user_id);
   }
 

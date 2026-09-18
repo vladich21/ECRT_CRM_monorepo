@@ -9,12 +9,21 @@ import { and, asc, count, eq, exists, ilike, inArray, ne, or, sql, type SQL } fr
 
 import { DatabaseService } from '../../../database/database.service';
 import { partners, patents, users } from '../../../database/schema';
-import { swDocuments, swItemPatents, swItems, swRefDevelopmentKinds, swRefStatuses, swStructureElements } from '../sw-registry.schema';
+import {
+  swDocuments,
+  swFiles,
+  swItemPatents,
+  swItems,
+  swRefDevelopmentKinds,
+  swRefStatuses,
+  swStructureElements,
+} from '../sw-registry.schema';
 import type { AddSwItemPatentDto, CreateSwItemDto, UpdateSwItemDto } from '../dto/sw-registry.dto';
 import {
   archivedEditError,
   formatPersonName,
   gost19103Warning,
+  partnerDisplayName,
   isPgUniqueViolation,
   normalizeDesignation,
 } from '../sw-registry.util';
@@ -121,6 +130,7 @@ export class SwItemsService {
         elementCode: swStructureElements.code,
         elementName: swStructureElements.name,
         partnerName: partners.name,
+        partnerShortName: partners.shortName,
         lastName: users.lastName,
         firstName: users.firstName,
         middleName: users.middleName,
@@ -161,7 +171,11 @@ export class SwItemsService {
         shortName: r.item.shortName,
         fullName: r.item.fullName,
         element: { id: r.item.elementId, code: r.elementCode, name: r.elementName },
-        partner: { id: r.item.partnerId, name: r.partnerName ?? '' },
+        partner: {
+          id: r.item.partnerId,
+          name: partnerDisplayName(r.partnerShortName, r.partnerName),
+          shortName: (r.partnerShortName ?? '').trim(),
+        },
         responsible: {
           id: r.item.responsibleUserId,
           name: formatPersonName({ ...r, id: r.item.responsibleUserId }),
@@ -219,6 +233,7 @@ export class SwItemsService {
         elementCode: swStructureElements.code,
         elementName: swStructureElements.name,
         partnerName: partners.name,
+        partnerShortName: partners.shortName,
         lastName: users.lastName,
         firstName: users.firstName,
         middleName: users.middleName,
@@ -241,6 +256,42 @@ export class SwItemsService {
       .from(swItemPatents)
       .where(eq(swItemPatents.softwareId, id));
 
+    // Копии документов и листов забираем здесь же: запрос на каждый объект
+    // отдельно давал десяток обращений на одну программу и достраивал таблицу
+    // на глазах у пользователя.
+    const docIds = docs.map((d) => d.id);
+    const links = docIds.length
+      ? await this.db.db
+          .select()
+          .from(swFiles)
+          .where(
+            and(
+              inArray(swFiles.objectType, ['sw_document', 'sw_sheet']),
+              inArray(swFiles.objectId, docIds),
+            ),
+          )
+          .orderBy(asc(swFiles.createdAt))
+      : [];
+
+    /**
+     * Актуальная копия — последняя прикреплённая. Раньше предпочтение отдавалось копии
+     * из SVN, и замена файла с компьютера в карточке не показывалась: старая копия из
+     * SVN оставалась «актуальной». Замена теперь снимает прежнюю привязку, так что
+     * последняя запись и есть текущий файл.
+     */
+    const pickFile = (objectId: string, objectType: 'sw_document' | 'sw_sheet') => {
+      const own = links.filter((l) => l.objectId === objectId && l.objectType === objectType);
+      const actual = own.at(-1);
+      return actual
+        ? {
+            fileId: actual.fileId,
+            filename: actual.filename,
+            svnPath: actual.svnPath ?? null,
+            svnRevision: actual.svnRevision ?? null,
+          }
+        : null;
+    };
+
     return {
       ...this.toCard(row),
       patentsCount: Number(patentLinksCount?.n ?? 0),
@@ -260,6 +311,8 @@ export class SwItemsService {
         ipsPlacedAt: d.ipsPlacedAt,
         recordState: d.recordState,
         archivedByCascade: d.archivedByCascade,
+        file: pickFile(d.id, 'sw_document'),
+        sheetFile: d.sheetStatusCode ? pickFile(d.id, 'sw_sheet') : null,
       })),
     };
   }
@@ -470,6 +523,7 @@ export class SwItemsService {
     elementCode: string;
     elementName: string;
     partnerName: string | null;
+    partnerShortName: string | null;
     lastName: string | null;
     firstName: string | null;
     middleName: string | null;
@@ -480,7 +534,11 @@ export class SwItemsService {
       shortName: row.item.shortName,
       fullName: row.item.fullName,
       element: { id: row.item.elementId, code: row.elementCode, name: row.elementName },
-      partner: { id: row.item.partnerId, name: row.partnerName ?? '' },
+      partner: {
+        id: row.item.partnerId,
+        name: partnerDisplayName(row.partnerShortName, row.partnerName),
+        shortName: (row.partnerShortName ?? '').trim(),
+      },
       responsible: {
         id: row.item.responsibleUserId,
         name: formatPersonName({ ...row, id: row.item.responsibleUserId }),

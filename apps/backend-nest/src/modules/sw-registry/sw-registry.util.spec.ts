@@ -10,6 +10,7 @@ import {
   gost19103Warning,
   initialDocumentStatus,
   isPgUniqueViolation,
+  nextSheetDesignation,
   normalizeDesignation,
   padKindSequence,
 } from './sw-registry.util';
@@ -83,3 +84,36 @@ test('archivedEditError rejects archived records and says to restore them first'
 });
 
 console.log('sw-registry.util tests passed.');
+
+test('обозначение листа: собранное автоматически следует за документом', () => {
+  assert.equal(
+    nextSheetDesignation({
+      previousDocumentDesignation: 'РОФ.ГКМН.620013-01 12 01',
+      nextDocumentDesignation: 'РОФ.ГКМН.620013-01 12 02',
+      currentSheetDesignation: 'РОФ.ГКМН.620013-01 12 01-ЛУ',
+    }),
+    'РОФ.ГКМН.620013-01 12 02-ЛУ',
+  );
+});
+
+test('обозначение листа: заданное вручную не затирается', () => {
+  assert.equal(
+    nextSheetDesignation({
+      previousDocumentDesignation: 'РОФ.ГКМН.620013-01 12 01',
+      nextDocumentDesignation: 'РОФ.ГКМН.620013-01 12 02',
+      currentSheetDesignation: 'СВОЁ.ОБОЗНАЧЕНИЕ-ЛУ',
+    }),
+    'СВОЁ.ОБОЗНАЧЕНИЕ-ЛУ',
+  );
+});
+
+test('обозначение листа: без листа ничего не собирается', () => {
+  assert.equal(
+    nextSheetDesignation({
+      previousDocumentDesignation: 'A 12 01',
+      nextDocumentDesignation: 'A 12 02',
+      currentSheetDesignation: null,
+    }),
+    null,
+  );
+});

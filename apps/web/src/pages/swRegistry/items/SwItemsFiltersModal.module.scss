@@ -1,0 +1,7 @@
+@use '../../../styles/variables' as v;
+@use '../../../components/pageLayout/listPageShared' as lp;
+
+.filtersModalGrid    { @include lp.filtersModalGrid; }
+.filtersModalField   { @include lp.filtersModalField; }
+.filtersModalLabel   { @include lp.filtersModalLabel; }
+.filtersModalControl { @include lp.filtersModalControl; }

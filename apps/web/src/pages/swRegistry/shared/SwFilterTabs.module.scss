@@ -1,0 +1,48 @@
+/* Вкладки-фильтры реестра: действующие, архивные и счётчики. */
+@use '../../../styles/variables' as v;
+
+// Локальные оттенки вкладок — как было в общем модуле реестра.
+$portal-secondary: #1e293b;
+$portal-secondary-muted: #64748b;
+$portal-accent: #002f55;
+
+.filterTabs {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.filterTab {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: $portal-secondary-muted;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -4px;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: $portal-secondary;
+  }
+}
+.filterTabActive {
+  color: $portal-secondary;
+  border-bottom-color: $portal-accent;
+}
+.filterTabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 47, 85, 0.1);
+  color: $portal-accent;
+  margin-left: 6px;
+}

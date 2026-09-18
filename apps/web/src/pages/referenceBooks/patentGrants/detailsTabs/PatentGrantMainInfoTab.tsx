@@ -30,12 +30,10 @@ import {
   getContractDisplayLabel,
 } from '../utils/patentGrantCardHelpers';
 import styles from './PatentGrantMainInfoTab.module.scss';
+import { formatDateRu } from '@/utils/formatDate';
 
 const valueLink = `${styles.infoValue} ${styles.infoValueWide} ${styles.registryLink}`;
 
-function formatDate(dateString?: string) {
-  return dateString?.trim() ? new Date(dateString).toLocaleDateString('ru-RU') : '-';
-}
 
 interface PatentGrantMainInfoProps {
   patentGrant?: PatentGrant;
@@ -123,7 +121,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{formatDate(patentGrant.grant_date)}</div>
+                <div className={styles.kpiValue}>{formatDateRu(patentGrant.grant_date, '-')}</div>
                 <div className={styles.kpiLabel}>Дата выдачи</div>
               </div>
               <div className={styles.kpiIcon}>
@@ -135,7 +133,7 @@ function PatentGrantMainInfo({ patentGrant }: PatentGrantMainInfoProps) {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{formatDate(patentGrant.renewal_date)}</div>
+                <div className={styles.kpiValue}>{formatDateRu(patentGrant.renewal_date, '-')}</div>
                 <div className={styles.kpiLabel}>Дата продления</div>
               </div>
               <div className={styles.kpiIcon}>

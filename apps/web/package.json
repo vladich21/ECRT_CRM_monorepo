@@ -17,7 +17,7 @@
   "dependencies": {
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@emotion/styled": "^11.14.1",
-    "@svar-ui/react-gantt": "^2.3.4",
+    "@svar-ui/react-gantt": "2.6.1",
     "@tanstack/react-query": "^5.90.2",
     "antd": "^5.27.4",
     "axios": "^1.12.2",
@@ -34,6 +34,8 @@
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^24.6.1",
     "@types/react": "^19.1.16",
@@ -43,6 +45,7 @@
     "eslint": "^9.30.1",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
+    "jsdom": "^26.1.0",
     "prettier": "^3.8.1",
     "sass": "^1.93.2",
     "typescript": "^5.9.3",

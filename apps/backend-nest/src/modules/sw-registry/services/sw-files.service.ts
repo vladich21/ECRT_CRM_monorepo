@@ -17,6 +17,7 @@ import type {
   SwFileTicketDto,
   SwFileVersionTicketDto,
 } from '../dto/sw-registry.dto';
+import { supersedeSwFileLinks } from '../sw-files.supersede';
 import { swDocuments, swFiles, swItems } from '../sw-registry.schema';
 import { formatPersonName, isPgUniqueViolation } from '../sw-registry.util';
 
@@ -168,6 +169,13 @@ export class SwFilesService {
         .set({ filename, purpose: dto.purpose })
         .where(eq(swFiles.id, existing.id))
         .returning();
+      if (dto.replace) {
+        await supersedeSwFileLinks(this.db, this.filesRemote, this.logger, {
+          objectType: dto.objectType,
+          objectId: dto.objectId,
+          keepFileId: remoteFileId,
+        });
+      }
       return this.toFileDto(row, remote);
     }
 
@@ -188,6 +196,13 @@ export class SwFilesService {
           createdBy: userId,
         })
         .returning();
+      if (dto.replace) {
+        await supersedeSwFileLinks(this.db, this.filesRemote, this.logger, {
+          objectType: dto.objectType,
+          objectId: dto.objectId,
+          keepFileId: remoteFileId,
+        });
+      }
       return this.toFileDto(row, remote);
     } catch (err) {
       // Два подтверждения одного файла наперегонки: привязку создал соседний запрос.

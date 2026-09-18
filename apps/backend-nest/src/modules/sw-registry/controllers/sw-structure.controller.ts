@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -12,6 +11,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 
+import { BodyPayload } from '../../../shared/decorators/body-payload.decorator';
 import { RequirePermission } from '../../permissions/decorators/permission-meta';
 import { SECTIONS } from '../../../shared/permissions';
 import { AddStructureResponsibleDto, CreateStructureElementDto, UpdateStructureElementDto } from '../dto/sw-registry.dto';
@@ -38,13 +38,13 @@ export class SwStructureController {
   @Post()
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_STRUCTURE, 'edit')
-  create(@Body('body') dto: CreateStructureElementDto, @Req() req: AuthReq) {
+  create(@BodyPayload() dto: CreateStructureElementDto, @Req() req: AuthReq) {
     return this.service.create(dto, req.user?.user_id);
   }
 
   @Patch(':id')
   @RequirePermission(SECTIONS.SW_STRUCTURE, 'edit')
-  update(@Param('id') id: string, @Body('body') dto: UpdateStructureElementDto, @Req() req: AuthReq) {
+  update(@Param('id') id: string, @BodyPayload() dto: UpdateStructureElementDto, @Req() req: AuthReq) {
     return this.service.update(id, dto, req.user?.user_id);
   }
 
@@ -69,7 +69,7 @@ export class SwStructureController {
   @Post(':id/responsibles')
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_STRUCTURE, 'edit')
-  addResponsible(@Param('id') id: string, @Body('body') dto: AddStructureResponsibleDto) {
+  addResponsible(@Param('id') id: string, @BodyPayload() dto: AddStructureResponsibleDto) {
     return this.service.addResponsible(id, dto);
   }
 

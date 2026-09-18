@@ -31,7 +31,13 @@ export const svnApi = {
     const { data } = await apiClient.post<{ itemId: string; svnPath: string }>('/sw/registry/svn/link', input);
     return data;
   },
-  attach: async (input: { objectType: string; objectId: string; path: string }): Promise<SvnAttachResult> => {
+  /** replace — замена копии: прежние файлы записи снимаются (у документа копия одна). */
+  attach: async (input: {
+    objectType: string;
+    objectId: string;
+    path: string;
+    replace?: boolean;
+  }): Promise<SvnAttachResult> => {
     const { data } = await apiClient.post<SvnAttachResult>('/sw/registry/svn/attach', input);
     return data;
   },

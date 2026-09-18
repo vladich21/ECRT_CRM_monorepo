@@ -13,4 +13,5 @@ export const swRegistryQueryKeys = {
   summary: (params: Record<string, string | undefined>) => [...swRegistryQueryKeys.all, 'summary', params] as const,
   files: (objectType: string, objectId: string) =>
     [...swRegistryQueryKeys.all, 'files', objectType, objectId] as const,
+  firmwares: (itemId: string) => [...swRegistryQueryKeys.all, 'firmwares', itemId] as const,
 };

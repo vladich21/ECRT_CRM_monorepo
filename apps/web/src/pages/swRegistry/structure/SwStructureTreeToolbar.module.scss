@@ -1,0 +1,30 @@
+/* Стили: SwStructureTreeToolbar. */
+@use '../../../styles/variables' as v;
+@use '../../../components/pageLayout/listPageShared' as lp;
+
+.searchIcon      { @include lp.searchIcon; }
+.resultCount     { @include lp.resultCount; }
+.showArchived {
+  white-space: nowrap;
+  font-size: 14px;
+}
+.treeToolbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.treeToolbarRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.treeSearch {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: v.$radius-lg;
+}

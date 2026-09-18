@@ -3,7 +3,7 @@ import { DownloadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Modal, Spin, Tooltip } from 'antd';
 
-import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
+import { swFilesApi } from '@/api/swRegistry/files';
 import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
 import { useDocEditor } from './useDocEditor';
 import { viewerApi } from './viewerApi';
@@ -52,7 +52,7 @@ function Viewer({ fileId }: { fileId: string }) {
 export function DocumentViewerModal({ open, fileId, fileName, onClose }: Props) {
   const download = async () => {
     if (!fileId) return;
-    const link = await swRegistryApi.getSwFileLink(fileId);
+    const link = await swFilesApi.getSwFileLink(fileId);
     triggerFileDownload(link.url, fileName ?? 'document');
   };
 

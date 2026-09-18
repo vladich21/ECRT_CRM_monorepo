@@ -1,0 +1,6 @@
+@use './styles/modals' as m;
+
+.currentFileLine { @include m.currentFileLine; }
+.fileBlock { @include m.fileBlock; }
+.fileSourceSwitch { @include m.fileSourceSwitch; }
+.formSectionTitle { @include m.formSectionTitle; }

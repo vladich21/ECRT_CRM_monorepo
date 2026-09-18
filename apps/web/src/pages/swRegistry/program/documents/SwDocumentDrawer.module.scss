@@ -1,0 +1,60 @@
+/* Стили: SwDocumentDrawer. */
+@use '../../../../styles/variables' as v;
+@use '../../../../components/pageLayout/listPageShared' as lp;
+
+
+/* Из общего модуля страницы структуры: строка документа в таблице панели. */
+.filterTabCount  { @include lp.filterTabCount; }
+.programKind {
+  flex: none;
+  margin: 0;
+}
+.programTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.programTab {
+  @include lp.filterTab;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+.programTabActive {
+  @include lp.filterTab;
+  @include lp.filterTabActive;
+  padding: 6px 12px;
+  margin-bottom: 0;
+}
+.docDrawerTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.docDrawerDesignation {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: v.$font-base;
+  font-weight: 600;
+}
+.docDrawerName {
+  font-size: v.$font-md;
+  font-weight: 400;
+  color: v.$text-quaternary;
+  overflow-wrap: anywhere;
+}
+.docDrawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.docDrawerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.docDrawerMetaText {
+  font-size: v.$font-md;
+  color: v.$text-tertiary;
+}

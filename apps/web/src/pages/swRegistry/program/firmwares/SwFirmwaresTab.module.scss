@@ -1,0 +1,85 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.table {
+  :global(.ant-table-cell) {
+    vertical-align: top;
+  }
+}
+
+.firmwareName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.pastName {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.note {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.currentVersion,
+.pastVersion {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-weight: 600;
+}
+
+.currentVersion {
+  font-size: 14px;
+  color: #1677ff;
+}
+
+.pastVersion {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.filename {
+  color: #595959;
+}
+
+.hash {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: #8c8c8c;
+  cursor: help;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.pastRow {
+  color: #8c8c8c;
+  background: #fafafa;
+}

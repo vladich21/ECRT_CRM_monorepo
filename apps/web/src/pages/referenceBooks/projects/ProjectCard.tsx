@@ -5,10 +5,8 @@ import { mutedTagStyle } from '@/constants/statusBadgeSurfaces';
 import { Project } from '@/types/referenceTypes';
 import styles from './ProjectsListPage.module.scss';
 import { PROJECT_STATUS_CONFIG } from './ProjectsListPage.types';
+import { formatDateRu } from '@/utils/formatDate';
 
-function formatDate(dateStr: string) {
-  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '-';
-}
 type Props = {
   project: Project;
   managerName: string;
@@ -20,7 +18,7 @@ export function ProjectCard({ project, managerName, onClick }: Props) {
     !!project.is_deleted || project.status === 'cancelled' || project.status === 'completed';
   const periodStr =
     project.start_date || project.end_date
-      ? [project.start_date, project.end_date].filter(Boolean).map(formatDate).join(' - ')
+      ? [project.start_date, project.end_date].filter(Boolean).map(d => formatDateRu(d, '-')).join(' - ')
       : '-';
   return (
     <div

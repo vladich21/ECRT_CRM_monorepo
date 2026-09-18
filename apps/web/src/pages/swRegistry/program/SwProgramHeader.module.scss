@@ -1,0 +1,31 @@
+/* Стили: SwProgramHeader. */
+@use '../../../styles/variables' as v;
+@use '../shared/styles/layout' as l;
+
+.programHeadCard { @include l.programHeadCard; }
+.programHeadRow { @include l.programHeadRow; }
+.programHeadTitle { @include l.programHeadTitle; }
+.programEyebrow { @include l.programEyebrow; }
+.programDesignation { @include l.programDesignation; }
+.programState { @include l.programState; }
+.programHeadName { @include l.programHeadName; }
+.programFullName {
+  font-size: v.$font-md;
+  line-height: v.$line-height-normal;
+  color: v.$text-tertiary;
+}
+.programMeta { @include l.programMeta; }
+.metaCell { @include l.metaCell; }
+.metaCellWide { @include l.metaCellWide; }
+.metaText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metaAction {
+  flex: none;
+  color: v.$text-quaternary;
+}
+.metaLink { @include l.metaLink; }
+.programHeadActions { @include l.programHeadActions; }

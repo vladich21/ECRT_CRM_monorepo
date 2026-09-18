@@ -1,0 +1,93 @@
+/* Таблица свода: шапка разрезов, строки показателей и итоги. */
+@use '../../../styles/variables' as v;
+
+.tableCard {
+  background: #fff;
+  border: 1px solid v.$border-secondary;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: auto;
+}
+.tableWrap {
+  min-width: 960px;
+}
+.summaryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$font-sm;
+
+  th,
+  td {
+    border: 1px solid #f0f0f0;
+    padding: 8px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  thead th {
+    background: #fafafa;
+    font-weight: 600;
+    color: v.$text-secondary;
+    white-space: nowrap;
+  }
+}
+.rowLabelHeader {
+  text-align: left !important;
+  min-width: 280px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fafafa;
+}
+.rowLabelCell {
+  text-align: left !important;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #fff;
+  font-weight: 500;
+  color: v.$text-primary;
+}
+.rowLabelBold {
+  font-weight: 600;
+}
+.rowLabelArchived {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: v.$text-quaternary;
+  font-size: 11px;
+  font-weight: 500;
+}
+.cellLink {
+  color: #1677ff;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+.cellEmpty {
+  color: v.$text-quaternary;
+}
+
+.groupHeader th {
+  font-size: 12px;
+  font-weight: 600;
+  color: v.$text-tertiary;
+  border-bottom: none;
+}
+.statusHeader th {
+  font-size: 12px;
+  padding-top: 4px;
+}
+.totalsRow td {
+  background: #fafafa;
+  font-weight: 700;
+}
+.totalsRow .rowLabelCell {
+  background: #fafafa;
+}

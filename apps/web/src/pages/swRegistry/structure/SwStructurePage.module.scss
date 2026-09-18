@@ -1,0 +1,104 @@
+/* Стили: SwStructurePage. */
+@use '../../../styles/variables' as v;
+@use '../shared/styles/layout' as l;
+
+.wrap {
+  padding: 0;
+  /* Экран мастер-деталь: вписан в окно, страница целиком не прокручивается —
+     листаются только дерево и комплект документации. 64px шапка + 48px отступы Content. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: calc(100vh - 112px);
+
+  @media (max-width: 900px) {
+    height: auto;
+    display: block;
+  }
+
+  /* Кнопка antd как flex-элемент растянулась бы на всю ширину, а её содержимое
+     центрируется — «Назад» уезжал в середину строки. */
+  > :global(.ant-btn) {
+    flex: none;
+    align-self: flex-start;
+  }
+}
+.splitLayout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  @media (max-width: 900px) {
+    align-items: start;
+  }
+}
+.treePanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+
+  @media (max-width: 900px) {
+    max-height: calc(100vh - 280px);
+  }
+}
+.treeBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 8px 0;
+}
+.treeEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+  text-align: center;
+}
+.detailPanel {
+  min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+
+  @media (max-width: 900px) {
+    max-height: none;
+    overflow: visible;
+  }
+}
+.detailPanelFitted {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+
+  @media (max-width: 900px) {
+    max-height: none;
+    display: block;
+  }
+}
+.detailEmpty {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+.loading { @include l.loading; }
+.branchLoading { @include l.branchLoading; }
