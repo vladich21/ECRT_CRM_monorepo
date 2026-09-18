@@ -48,21 +48,22 @@ import type {
   UpdateSwItemPayload,
 } from '@/types/swRegistry';
 
-import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './program/documents/SwApprovalSheetModal';
-import { developmentKindAllowsApprovalSheet } from './shared/swDesignationPreview';
-import { SwDocumentCreateModal } from './program/documents/SwDocumentCreateModal';
-import { SwDocumentDrawer, type SwDocumentDrawerTab } from './program/documents/SwDocumentDrawer';
-import { SwDocumentEditModal, type DocumentFileReplacement } from './program/documents/SwDocumentEditModal';
-import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './program/documents/SwDocumentsTable';
-import { SwDocumentStatusModal } from './program/documents/SwDocumentStatusModal';
-import type { SwFileChoice } from './shared/SwFileSourcePicker';
-import { SwFilesTab } from './program/files/SwFilesTab';
-import { SwFirmwaresTab } from './program/firmwares/SwFirmwaresTab';
-import { SwIpsPlacementModal } from './program/documents/SwIpsPlacementModal';
-import { SwItemEditModal } from './items/SwItemEditModal';
-import { SwItemRidTab } from './program/rid/SwItemRidTab';
-import styles from './SwStructurePage.module.scss';
-import { usePartnerShortName } from './shared/usePartnerShortName';
+import { SwItemEditModal } from '../items/SwItemEditModal';
+import { SwApprovalSheetModal, type ApprovalSheetSubmit } from '../program/documents/SwApprovalSheetModal';
+import { SwDocumentCreateModal } from '../program/documents/SwDocumentCreateModal';
+import { SwDocumentDrawer, type SwDocumentDrawerTab } from '../program/documents/SwDocumentDrawer';
+import { SwDocumentEditModal, type DocumentFileReplacement } from '../program/documents/SwDocumentEditModal';
+import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from '../program/documents/SwDocumentsTable';
+import { SwDocumentStatusModal } from '../program/documents/SwDocumentStatusModal';
+import { SwIpsPlacementModal } from '../program/documents/SwIpsPlacementModal';
+import { SwFilesTab } from '../program/files/SwFilesTab';
+import { SwFirmwaresTab } from '../program/firmwares/SwFirmwaresTab';
+import { SwItemRidTab } from '../program/rid/SwItemRidTab';
+import { SwProgramHeader } from '../program/SwProgramHeader';
+import { developmentKindAllowsApprovalSheet } from '../shared/swDesignationPreview';
+import type { SwFileChoice } from '../shared/SwFileSourcePicker';
+import { usePartnerShortName } from '../shared/usePartnerShortName';
+import styles from '../SwStructurePage.module.scss';
 
 type Props = {
   item: SwItemListRow;
@@ -531,128 +532,29 @@ export function SwProgramPanel({
     statusModal?.scope === 'sheet' ? statusModal.document.sheetStatusCode : statusModal?.document.statusCode;
 
   // Редкие и необратимые действия с программой — в меню «⋯», как у строк комплекта: на виду только правка.
-  const itemMenuItems: NonNullable<MenuProps['items']> = [
-    isArchived
-      ? { key: 'restore', icon: <UndoOutlined />, label: 'Вернуть из архива' }
-      : { key: 'archive', icon: <InboxOutlined />, label: 'В архив' },
-    { type: 'divider' },
-    { key: 'delete', icon: <DeleteOutlined />, label: 'Удалить', danger: true },
-  ];
-  const handleItemMenu: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'archive') handleArchiveItem();
-    else if (key === 'restore') handleRestoreItem();
-    else if (key === 'delete') handleMarkItemDeleted();
-  };
   const itemActionPending = archiveItemMut.isPending || restoreItemMut.isPending || markItemDeletedMut.isPending;
   const developmentKindLabel = kindByCode.get(item.developmentKindCode) ?? item.developmentKindCode;
 
   return (
     <div className={styles.programStack}>
-      <header className={styles.programHeadCard}>
-        <div className={styles.programHeadRow}>
-          <div className={styles.programHeadTitle}>
-            <div className={styles.programEyebrow}>
-              <span className={styles.programDesignation}>{item.designation}</span>
-              <span aria-hidden>·</span>
-              <span>{developmentKindLabel}</span>
-              {isArchived ? (
-                <Tag bordered={false} className={styles.programState}>
-                  архивная
-                </Tag>
-              ) : null}
-            </div>
-            <h2 className={styles.programHeadName}>{item.shortName}</h2>
-            {fullNameDiffers ? <div className={styles.programFullName}>{item.fullName}</div> : null}
-          </div>
-          {canManageItem ? (
-            <div className={styles.programHeadActions}>
-              {/* Архивная программа только для чтения: правка возвращается вместе с программой из архива. */}
-              {canEditItem ? (
-                <Button size='small' icon={<EditOutlined />} disabled={!detail} onClick={() => setEditOpen(true)}>
-                  Редактировать
-                </Button>
-              ) : null}
-              <Dropdown
-                trigger={['click']}
-                placement='bottomRight'
-                menu={{ items: itemMenuItems, onClick: handleItemMenu }}
-              >
-                <Button
-                  size='small'
-                  icon={<MoreOutlined />}
-                  loading={itemActionPending}
-                  aria-label='Другие действия с программой'
-                />
-              </Dropdown>
-            </div>
-          ) : null}
-        </div>
-
-        <dl className={styles.programMeta}>
-          <div className={styles.metaCell}>
-            <dt>Элемент структуры</dt>
-            <dd title={`${item.element.code} — ${item.element.name}`}>
-              <button type='button' className={styles.metaLink} onClick={() => onSelectElement(item.element.id)}>
-                {item.element.name}
-              </button>
-            </dd>
-          </div>
-          <div className={styles.metaCell}>
-            <dt>Ответственный</dt>
-            <dd>
-              <span className={styles.metaText}>{item.responsible.name}</span>
-            </dd>
-          </div>
-          <div className={styles.metaCellWide}>
-            <dt>Разработчик</dt>
-            <dd title={partnerLabel}>
-              <span className={styles.metaText}>{partnerLabel}</span>
-            </dd>
-          </div>
-          {item.specUrl ? (
-            <div className={styles.metaCellWide}>
-              <dt>Техническое задание</dt>
-              <dd title={item.specUrl}>
-                <a href={item.specUrl} target='_blank' rel='noreferrer' className={styles.metaLink}>
-                  {item.specUrl}
-                </a>
-              </dd>
-            </div>
-          ) : null}
-          {svnEnabled ? (
-            <div className={styles.metaCellWide}>
-              <dt>Каталог в SVN</dt>
-              <dd>
-                {folderPath ? (
-                  <span className={styles.metaText} title={folderPath}>
-                    {folderPath}
-                  </span>
-                ) : (
-                  <span className={styles.metaEmpty}>не привязан</span>
-                )}
-                {canEditItem ? (
-                  folderPath ? (
-                    <Tooltip title='Изменить каталог'>
-                      <Button
-                        type='text'
-                        size='small'
-                        className={styles.metaAction}
-                        icon={<EditOutlined />}
-                        aria-label='Изменить каталог в SVN'
-                        onClick={() => setFolderPickerOpen(true)}
-                      />
-                    </Tooltip>
-                  ) : (
-                    <Button type='link' size='small' onClick={() => setFolderPickerOpen(true)}>
-                      Привязать
-                    </Button>
-                  )
-                ) : null}
-              </dd>
-            </div>
-          ) : null}
-        </dl>
-      </header>
+      <SwProgramHeader
+        item={item}
+        detail={detail}
+        labels={{ developmentKind: developmentKindLabel, partner: partnerLabel }}
+        folderPath={folderPath}
+        svnEnabled={svnEnabled}
+        isArchived={isArchived}
+        fullNameDiffers={fullNameDiffers}
+        canManageItem={canManageItem}
+        canEditItem={canEditItem}
+        itemActionPending={itemActionPending}
+        onEdit={() => setEditOpen(true)}
+        onArchive={handleArchiveItem}
+        onRestore={handleRestoreItem}
+        onMarkDeleted={handleMarkItemDeleted}
+        onPickFolder={() => setFolderPickerOpen(true)}
+        onSelectElement={onSelectElement}
+      />
 
       <div className={`${styles.card} ${styles.programDocsCard}`}>
         <div className={styles.cardTitleRow}>

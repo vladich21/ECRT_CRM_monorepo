@@ -11,6 +11,7 @@ import {
 import { Button, Dropdown, Tooltip, type MenuProps } from 'antd';
 
 import type { SwDocumentFileRef, SwDocumentListRow } from '@/types/swRegistry';
+
 import { formatIpsDisplay } from '../../shared/swDesignationPreview';
 import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
 import styles from './SwDocumentsTable.module.scss';
@@ -46,15 +47,7 @@ type Props = {
   onPickFromSvn: (doc: SwDocumentListRow) => void;
 };
 
-function StatusBadge({
-  statusCode,
-  label,
-  onClick,
-}: {
-  statusCode: string;
-  label: string;
-  onClick?: () => void;
-}) {
+function StatusBadge({ statusCode, label, onClick }: { statusCode: string; label: string; onClick?: () => void }) {
   const content = (
     <span className={swStatusBadgeClass(statusCode, styles)}>{formatSwStatusLabel(label, statusCode)}</span>
   );
@@ -230,105 +223,107 @@ export function SwDocumentsTable({
                 </td>
                 <td onClick={e => e.stopPropagation()}>
                   {doc.sheetStatusCode ? (
-                      <div className={styles.docTableSheetCell}>
-                        {/* Тот же порядок чтения, что у документа: состояние — обозначение — объём. */}
-                        <div className={styles.docTableSheetHead}>
-                          <StatusBadge
-                            statusCode={doc.sheetStatusCode}
-                            label={sheetStatusLabel ?? doc.sheetStatusCode}
-                            onClick={canChangeSheet ? () => onChangeStatus(doc, 'sheet') : undefined}
-                          />
-                          {canChangeDoc ? (
-                            <span className={`${styles.docActions} ${styles.docTableRowActions}`}>
-                              <Tooltip title='Изменить лист утверждения'>
-                                <Button
-                                  type='text'
-                                  size='small'
-                                  icon={<EditOutlined />}
-                                  aria-label='Изменить лист утверждения'
-                                  onClick={() => onSetupSheet(doc)}
-                                />
-                              </Tooltip>
-                              <Tooltip title='Удалить лист утверждения'>
-                                <Button
-                                  type='text'
-                                  size='small'
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  aria-label='Удалить лист утверждения'
-                                  onClick={() => onRemoveSheet(doc)}
-                                />
-                              </Tooltip>
-                            </span>
-                          ) : null}
-                        </div>
-                        {doc.sheetDesignation ? (
-                          <div className={styles.docTableSheetFileRow}>
-                            {sheetFile ? (
-                              <button
-                                type='button'
-                                className={styles.docTableSheetLink}
-                                title='Открыть лист утверждения'
-                                onClick={() => onPreview(sheetFile)}
-                              >
-                                <FileWordOutlined className={styles.docTableTitleIcon} />
-                                {doc.sheetDesignation}
-                              </button>
-                            ) : (
-                              <span className={styles.docTableDesignationLine} title={doc.sheetDesignation}>
-                                {doc.sheetDesignation}
-                              </span>
-                            )}
-                            <span className={`${styles.docActions} ${styles.docTableRowActions}`}>
-                              {svnEnabled && canChangeDoc ? (
-                                <Tooltip title={sheetFile ? 'Обновить файл листа из SVN' : 'Прикрепить файл листа из SVN'}>
-                                  <Button
-                                    type='text'
-                                    size='small'
-                                    icon={<CloudDownloadOutlined />}
-                                    aria-label={sheetFile ? 'Обновить файл листа из SVN' : 'Прикрепить файл листа из SVN'}
-                                    onClick={() => onPickSheetFromSvn(doc)}
-                                  />
-                                </Tooltip>
-                              ) : null}
-                              {sheetFile ? (
-                                <Tooltip title='Скачать лист утверждения'>
-                                  <Button
-                                    type='text'
-                                    size='small'
-                                    icon={<DownloadOutlined />}
-                                    aria-label='Скачать лист утверждения'
-                                    onClick={() => void onDownload(sheetFile)}
-                                  />
-                                </Tooltip>
-                              ) : null}
-                            </span>
-                          </div>
-                        ) : null}
-                        {doc.sheetSheetsCount || sheetFile?.svnPath ? (
-                          <div className={styles.docTableMeta}>
-                            {doc.sheetSheetsCount ? <span>{doc.sheetSheetsCount} л.</span> : null}
-                            {sheetFile?.svnPath ? (
-                              <span title={sheetFile.svnPath}>SVN r{sheetFile.svnRevision}</span>
-                            ) : null}
-                            {sheetFile?.svnPath && sheetNewerRevision && sheetNewerRevision !== sheetFile.svnRevision ? (
-                              <span className={styles.docSvnStale}>в SVN новее: r{sheetNewerRevision}</span>
-                            ) : null}
-                          </div>
+                    <div className={styles.docTableSheetCell}>
+                      {/* Тот же порядок чтения, что у документа: состояние — обозначение — объём. */}
+                      <div className={styles.docTableSheetHead}>
+                        <StatusBadge
+                          statusCode={doc.sheetStatusCode}
+                          label={sheetStatusLabel ?? doc.sheetStatusCode}
+                          onClick={canChangeSheet ? () => onChangeStatus(doc, 'sheet') : undefined}
+                        />
+                        {canChangeDoc ? (
+                          <span className={`${styles.docActions} ${styles.docTableRowActions}`}>
+                            <Tooltip title='Изменить лист утверждения'>
+                              <Button
+                                type='text'
+                                size='small'
+                                icon={<EditOutlined />}
+                                aria-label='Изменить лист утверждения'
+                                onClick={() => onSetupSheet(doc)}
+                              />
+                            </Tooltip>
+                            <Tooltip title='Удалить лист утверждения'>
+                              <Button
+                                type='text'
+                                size='small'
+                                danger
+                                icon={<DeleteOutlined />}
+                                aria-label='Удалить лист утверждения'
+                                onClick={() => onRemoveSheet(doc)}
+                              />
+                            </Tooltip>
+                          </span>
                         ) : null}
                       </div>
+                      {doc.sheetDesignation ? (
+                        <div className={styles.docTableSheetFileRow}>
+                          {sheetFile ? (
+                            <button
+                              type='button'
+                              className={styles.docTableSheetLink}
+                              title='Открыть лист утверждения'
+                              onClick={() => onPreview(sheetFile)}
+                            >
+                              <FileWordOutlined className={styles.docTableTitleIcon} />
+                              {doc.sheetDesignation}
+                            </button>
+                          ) : (
+                            <span className={styles.docTableDesignationLine} title={doc.sheetDesignation}>
+                              {doc.sheetDesignation}
+                            </span>
+                          )}
+                          <span className={`${styles.docActions} ${styles.docTableRowActions}`}>
+                            {svnEnabled && canChangeDoc ? (
+                              <Tooltip
+                                title={sheetFile ? 'Обновить файл листа из SVN' : 'Прикрепить файл листа из SVN'}
+                              >
+                                <Button
+                                  type='text'
+                                  size='small'
+                                  icon={<CloudDownloadOutlined />}
+                                  aria-label={sheetFile ? 'Обновить файл листа из SVN' : 'Прикрепить файл листа из SVN'}
+                                  onClick={() => onPickSheetFromSvn(doc)}
+                                />
+                              </Tooltip>
+                            ) : null}
+                            {sheetFile ? (
+                              <Tooltip title='Скачать лист утверждения'>
+                                <Button
+                                  type='text'
+                                  size='small'
+                                  icon={<DownloadOutlined />}
+                                  aria-label='Скачать лист утверждения'
+                                  onClick={() => void onDownload(sheetFile)}
+                                />
+                              </Tooltip>
+                            ) : null}
+                          </span>
+                        </div>
+                      ) : null}
+                      {doc.sheetSheetsCount || sheetFile?.svnPath ? (
+                        <div className={styles.docTableMeta}>
+                          {doc.sheetSheetsCount ? <span>{doc.sheetSheetsCount} л.</span> : null}
+                          {sheetFile?.svnPath ? (
+                            <span title={sheetFile.svnPath}>SVN r{sheetFile.svnRevision}</span>
+                          ) : null}
+                          {sheetFile?.svnPath && sheetNewerRevision && sheetNewerRevision !== sheetFile.svnRevision ? (
+                            <span className={styles.docSvnStale}>в SVN новее: r{sheetNewerRevision}</span>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
                   ) : needsSheet ? (
                     <span className={styles.docTableMuted}>
-                        не оформлен
-                        {canChangeDoc ? (
-                          <>
-                            {' · '}
-                            <button type='button' className={styles.docTableLinkBtn} onClick={() => onSetupSheet(doc)}>
-                              оформить
-                            </button>
-                          </>
-                        ) : null}
-                      </span>
+                      не оформлен
+                      {canChangeDoc ? (
+                        <>
+                          {' · '}
+                          <button type='button' className={styles.docTableLinkBtn} onClick={() => onSetupSheet(doc)}>
+                            оформить
+                          </button>
+                        </>
+                      ) : null}
+                    </span>
                   ) : (
                     <span className={styles.docTableMuted}>—</span>
                   )}

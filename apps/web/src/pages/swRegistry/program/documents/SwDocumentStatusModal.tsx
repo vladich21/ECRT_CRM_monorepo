@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 
 import { useSwDocumentStatuses } from '@/api/swRegistry/swRegistryApiHooks';
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
+
 import styles from './SwDocumentStatusModal.module.scss';
 
 type Props = {
@@ -84,7 +85,11 @@ export function SwDocumentStatusModal({
         {needsIps ? (
           <Row gutter={12}>
             <Col xs={24} md={14}>
-              <Form.Item name={['ips', 'id']} label='Идентификатор в IPS' rules={[{ required: true, message: 'Укажите ID' }]}>
+              <Form.Item
+                name={['ips', 'id']}
+                label='Идентификатор в IPS'
+                rules={[{ required: true, message: 'Укажите ID' }]}
+              >
                 <Input maxLength={100} />
               </Form.Item>
             </Col>

@@ -1,15 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CloudUploadOutlined, FileOutlined, FolderOpenOutlined } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Col, Form, Input, InputNumber, Modal, Progress, Radio, Row, Select, Upload } from 'antd';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Progress,
+  Radio,
+  Row,
+  Select,
+  Upload,
+} from 'antd';
 
 import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
 import { useSwReferences } from '@/api/swRegistry/swRegistryApiHooks';
 import { startSwDocumentDraftUpload, type SwDraftUpload } from '@/api/swRegistry/uploadSwFile';
-import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
 import type { SvnEntry } from '@/components/svnPicker/svnApi';
+import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
 import type { CreateSwDocumentPayload, SwDocumentListRow } from '@/types/swRegistry';
 import { formatFileSize } from '@/utils/formatFileSize';
+
 import { assembleDocumentDesignation, assembleSheetDesignation } from '../../shared/swDesignationPreview';
+import styles from './SwDocumentCreateModal.module.scss';
 import {
   buildDocumentCreateSaveWarnings,
   isDocumentIdTakenError,
@@ -17,7 +33,6 @@ import {
   type SwStoredSvnFile,
 } from './swDocumentCreateWarnings';
 import { parseSwDocumentFilename } from './swDocumentFilename';
-import styles from './SwDocumentCreateModal.module.scss';
 
 const LETTER_OPTIONS = ['О', 'О₁', 'О₂', 'А', 'Б', 'В'].map(value => ({ value, label: value }));
 
@@ -105,16 +120,11 @@ export function SwDocumentCreateModal({
   const designation = Form.useWatch('designation', form);
   const withSheet = Form.useWatch('withApprovalSheet', form);
 
-  const kindByCode = useMemo(
-    () => new Map((kindsQuery.data ?? []).map(k => [k.code, k])),
-    [kindsQuery.data],
-  );
+  const kindByCode = useMemo(() => new Map((kindsQuery.data ?? []).map(k => [k.code, k])), [kindsQuery.data]);
   const kindByGost = useMemo(
     () =>
       new Map(
-        (kindsQuery.data ?? [])
-          .filter(k => k.gostCode && k.isActive !== false)
-          .map(k => [k.gostCode as string, k]),
+        (kindsQuery.data ?? []).filter(k => k.gostCode && k.isActive !== false).map(k => [k.gostCode as string, k]),
       ),
     [kindsQuery.data],
   );
@@ -337,9 +347,7 @@ export function SwDocumentCreateModal({
       okText='Создать'
       width={760}
     >
-      {saveWarnings.form ? (
-        <Alert type='error' showIcon className={styles.alert} message={saveWarnings.form} />
-      ) : null}
+      {saveWarnings.form ? <Alert type='error' showIcon className={styles.alert} message={saveWarnings.form} /> : null}
 
       <Form
         form={form}
@@ -377,7 +385,9 @@ export function SwDocumentCreateModal({
                     {svnFile.name}
                   </span>
                   {svnFile.revision != null ? <span className={styles.fileMeta}>r{svnFile.revision}</span> : null}
-                  {svnFile.size != null ? <span className={styles.fileMeta}>{formatFileSize(svnFile.size)}</span> : null}
+                  {svnFile.size != null ? (
+                    <span className={styles.fileMeta}>{formatFileSize(svnFile.size)}</span>
+                  ) : null}
                 </>
               ) : (
                 <span className={styles.fileEmpty}>Файл не выбран</span>

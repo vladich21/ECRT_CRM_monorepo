@@ -3,6 +3,7 @@ import { Alert, Col, DatePicker, Form, Input, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
+
 import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
 import styles from './SwIpsPlacementModal.module.scss';
 
@@ -53,11 +54,7 @@ export function SwIpsPlacementModal({ open, document, confirmLoading, onCancel, 
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item
-              name='placedAt'
-              label='Дата размещения'
-              rules={[{ required: true, message: 'Укажите дату' }]}
-            >
+            <Form.Item name='placedAt' label='Дата размещения' rules={[{ required: true, message: 'Укажите дату' }]}>
               <DatePicker format='DD.MM.YYYY' style={{ width: '100%' }} placeholder='Выберите дату' />
             </Form.Item>
           </Col>
@@ -68,8 +65,8 @@ export function SwIpsPlacementModal({ open, document, confirmLoading, onCancel, 
           className={styles.alert}
           message={
             <>
-              После сохранения идентификатор и дата <strong>не изменяются</strong>. Документ и его лист
-              утверждения перейдут в финальный статус{' '}
+              После сохранения идентификатор и дата <strong>не изменяются</strong>. Документ и его лист утверждения
+              перейдут в финальный статус{' '}
               <span className={swStatusBadgeClass('in_ips', styles)}>
                 {formatSwStatusLabel('размещен в IPS', 'in_ips')}
               </span>{' '}

@@ -4,8 +4,9 @@ import { Drawer, Tag } from 'antd';
 import { useSwFiles } from '@/api/swRegistry/swRegistryApiHooks';
 import { CommentsList } from '@/components/comments/CommentsList';
 import type { SwDocumentListRow } from '@/types/swRegistry';
-import { SwDocumentFilesTab } from '../files/SwFilesTab';
+
 import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
+import { SwDocumentFilesTab } from '../files/SwFilesTab';
 import styles from './SwDocumentDrawer.module.scss';
 
 export type SwDocumentDrawerTab = 'files' | 'comments';
