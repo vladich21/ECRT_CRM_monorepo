@@ -1,17 +1,13 @@
 /* Стили: SwStructureDetailPanel. */
 @use '../../../styles/variables' as v;
+@use '../shared/styles/layout' as l;
 
 .detailStack {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-.card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  border: 1px solid #f0f0f0;
-}
+.card { @include l.card; }
 .cardTitle {
   margin: 0 0 14px;
   font-size: 16px;
@@ -161,89 +157,17 @@
   font-size: 14px;
   color: #bfbfbf;
 }
-.card {
-  min-width: 0;
-  max-width: 100%;
-}
-.programHeadCard {
-  flex: none;
-  background: v.$bg-primary;
-  border: 1px solid v.$border-tertiary;
-  border-radius: v.$radius-xl;
-  padding: v.$spacing-2xl v.$spacing-3xl;
-}
-.programHeadRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: v.$spacing-2xl;
-}
-.programHeadTitle {
-  display: flex;
-  flex-direction: column;
-  gap: v.$spacing-2xs;
-  min-width: 0;
-}
-.programEyebrow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: v.$spacing-sm;
-  font-size: v.$font-sm;
-  line-height: v.$line-height-normal;
-  color: v.$text-quaternary;
-}
-.programDesignation {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-.programState {
-  margin: 0;
-  font-size: v.$font-sm;
-}
-.programHeadName {
-  margin: 0;
-  font-size: v.$font-xl;
-  font-weight: 600;
-  line-height: v.$line-height-tight;
-  color: v.$text-primary;
-  overflow-wrap: anywhere;
-}
-.programMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: v.$spacing-xl v.$spacing-4xl;
-  margin: v.$spacing-xl 0 0;
-  padding-top: v.$spacing-xl;
-  border-top: 1px solid v.$border-tertiary;
-}
-.metaCellWide {
-  display: flex;
-  flex-direction: column;
-  gap: v.$spacing-2xs;
-  min-width: 0;
-
-  dt {
-    font-size: v.$font-sm;
-    line-height: v.$line-height-normal;
-    color: v.$text-quaternary;
-  }
-
-  dd {
-    display: flex;
-    align-items: center;
-    gap: v.$spacing-xs;
-    min-width: 0;
-    min-height: 24px;
-    margin: 0;
-    font-size: v.$font-base;
-    line-height: v.$line-height-normal;
-    color: v.$text-secondary;
-  }
-}
-.metaCellWide {
-  flex: 1 1 260px;
-}
+.card { @include l.card; }
+.programHeadCard { @include l.programHeadCard; }
+.programHeadRow { @include l.programHeadRow; }
+.programHeadTitle { @include l.programHeadTitle; }
+.programEyebrow { @include l.programEyebrow; }
+.programDesignation { @include l.programDesignation; }
+.programState { @include l.programState; }
+.programHeadName { @include l.programHeadName; }
+.programMeta { @include l.programMeta; }
+.metaCellWide { @include l.metaCellWide; }
+.metaCellWide { @include l.metaCellWide; }
 .metaEmpty {
   color: v.$text-placeholder;
 }
@@ -307,27 +231,5 @@
     text-decoration: underline;
   }
 }
-.metaLink {
-  min-width: 0;
-  max-width: 100%;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  color: v.$primary-color;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  &:hover {
-    color: v.$primary-light;
-    text-decoration: underline;
-  }
-}
-.programHeadActions {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: v.$spacing-md;
-}
+.metaLink { @include l.metaLink; }
+.programHeadActions { @include l.programHeadActions; }

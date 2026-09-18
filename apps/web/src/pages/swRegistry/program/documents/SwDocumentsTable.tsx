@@ -13,7 +13,7 @@ import { Button, Dropdown, Tooltip, type MenuProps } from 'antd';
 import type { SwDocumentFileRef, SwDocumentListRow } from '@/types/swRegistry';
 
 import { formatIpsDisplay } from '../../shared/swDesignationPreview';
-import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
+import { SwStatusBadge } from '../../shared/SwStatusBadge';
 import styles from './SwDocumentsTable.module.scss';
 
 /** Копия документа или его листа: приходит вместе с комплектом. */
@@ -46,18 +46,6 @@ type Props = {
   currentRevisions: Record<string, number>;
   onPickFromSvn: (doc: SwDocumentListRow) => void;
 };
-
-function StatusBadge({ statusCode, label, onClick }: { statusCode: string; label: string; onClick?: () => void }) {
-  const content = (
-    <span className={swStatusBadgeClass(statusCode, styles)}>{formatSwStatusLabel(label, statusCode)}</span>
-  );
-  if (!onClick) return content;
-  return (
-    <button type='button' className={styles.statusBadgeBtn} onClick={onClick}>
-      {content}
-    </button>
-  );
-}
 
 export function formatKindLabel(
   code: string,
@@ -215,7 +203,7 @@ export function SwDocumentsTable({
                   </div>
                 </td>
                 <td onClick={e => e.stopPropagation()}>
-                  <StatusBadge
+                  <SwStatusBadge
                     statusCode={doc.statusCode}
                     label={statusLabel}
                     onClick={canChangeDoc ? () => onChangeStatus(doc, 'document') : undefined}
@@ -226,7 +214,7 @@ export function SwDocumentsTable({
                     <div className={styles.docTableSheetCell}>
                       {/* Тот же порядок чтения, что у документа: состояние — обозначение — объём. */}
                       <div className={styles.docTableSheetHead}>
-                        <StatusBadge
+                        <SwStatusBadge
                           statusCode={doc.sheetStatusCode}
                           label={sheetStatusLabel ?? doc.sheetStatusCode}
                           onClick={canChangeSheet ? () => onChangeStatus(doc, 'sheet') : undefined}

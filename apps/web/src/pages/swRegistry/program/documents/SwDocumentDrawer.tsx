@@ -5,7 +5,7 @@ import { useSwFiles } from '@/api/swRegistry/swRegistryApiHooks';
 import { CommentsList } from '@/components/comments/CommentsList';
 import type { SwDocumentListRow } from '@/types/swRegistry';
 
-import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
+import { SwStatusBadge } from '../../shared/SwStatusBadge';
 import { SwDocumentFilesTab } from '../files/SwFilesTab';
 import styles from './SwDocumentDrawer.module.scss';
 
@@ -75,9 +75,7 @@ export function SwDocumentDrawer({ document, kindLabel, statusLabel, tab, onTabC
             <span className={styles.docDrawerMetaText}>
               {shown.sheetsCount} л.{shown.letter ? ` · литера ${shown.letter}` : ''}
             </span>
-            <span className={swStatusBadgeClass(shown.statusCode, styles)}>
-              {formatSwStatusLabel(statusLabel ?? shown.statusCode, shown.statusCode)}
-            </span>
+            <SwStatusBadge statusCode={shown.statusCode} label={statusLabel} />
             {isArchived ? (
               <Tag bordered={false} className={styles.programKind}>
                 архивный

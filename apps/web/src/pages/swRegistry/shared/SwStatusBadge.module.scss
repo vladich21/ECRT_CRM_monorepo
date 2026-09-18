@@ -1,0 +1,65 @@
+/* Бейдж статуса документа и листа утверждения: один вид на весь реестр. */
+@use '../../../styles/variables' as v;
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: v.$font-sm;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.statusDefault {
+  background: v.$badge-neutral-bg;
+  color: v.$badge-neutral-text;
+  border-color: v.$badge-neutral-border;
+}
+.statusDevelopment {
+  background: v.$badge-neutral-bg;
+  color: v.$badge-neutral-text;
+  border-color: v.$badge-neutral-border;
+}
+.statusInApproval {
+  background: v.$badge-info-bg;
+  color: v.$badge-info-text;
+  border-color: v.$badge-info-border;
+}
+.statusIssued {
+  background: v.$success-surface-bg;
+  color: #389e0d;
+  border-color: v.$success-surface-border;
+}
+.statusRevision {
+  background: v.$badge-danger-bg;
+  color: v.$badge-danger-text;
+  border-color: v.$badge-danger-border;
+}
+.statusInRework {
+  background: v.$badge-warning-bg;
+  color: v.$badge-warning-text;
+  border-color: v.$badge-warning-border;
+}
+.statusCancelled {
+  background: v.$badge-archive-bg;
+  color: v.$badge-archive-text;
+  border-color: v.$badge-archive-border;
+}
+.statusInIps {
+  background: #f9f0ff;
+  color: #722ed1;
+  border-color: #efdbff;
+}
+.statusBadgeBtn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+
+  &:hover .statusBadge {
+    filter: brightness(0.96);
+  }
+}

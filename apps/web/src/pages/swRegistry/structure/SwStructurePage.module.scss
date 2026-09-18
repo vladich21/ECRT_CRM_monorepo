@@ -1,5 +1,6 @@
 /* Стили: SwStructurePage. */
 @use '../../../styles/variables' as v;
+@use '../shared/styles/layout' as l;
 
 .wrap {
   padding: 0;
@@ -99,12 +100,5 @@
   color: #8c8c8c;
   font-size: 14px;
 }
-.loading {
-  padding: v.$spacing-4xl;
-  text-align: center;
-}
-.branchLoading {
-  display: flex;
-  justify-content: center;
-  padding: 24px 0;
-}
+.loading { @include l.loading; }
+.branchLoading { @include l.branchLoading; }

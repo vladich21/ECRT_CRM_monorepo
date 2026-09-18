@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
 
-import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
+import { SwStatusBadge } from '../../shared/SwStatusBadge';
 import styles from './SwIpsPlacementModal.module.scss';
 
 type Props = {
@@ -67,9 +67,7 @@ export function SwIpsPlacementModal({ open, document, confirmLoading, onCancel, 
             <>
               После сохранения идентификатор и дата <strong>не изменяются</strong>. Документ и его лист утверждения
               перейдут в финальный статус{' '}
-              <span className={swStatusBadgeClass('in_ips', styles)}>
-                {formatSwStatusLabel('размещен в IPS', 'in_ips')}
-              </span>{' '}
+              <SwStatusBadge statusCode='in_ips' label='размещен в IPS' />{' '}
               — переход из него невозможен. Ответственный за ПО получит уведомление.
             </>
           }

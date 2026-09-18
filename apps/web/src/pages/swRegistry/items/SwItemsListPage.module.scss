@@ -1,5 +1,6 @@
 @use '../../../styles/variables' as v;
 @use '../../../components/pageLayout/listPageShared' as lp;
+@use '../shared/styles/layout' as l;
 
 .wrap {
   padding: 0;
@@ -13,10 +14,7 @@
   opacity: 0.65;
   transition: opacity 0.15s ease;
 }
-.loading {
-  padding: v.$spacing-4xl;
-  text-align: center;
-}
+.loading { @include l.loading; }
 .empty {
   text-align: center;
   padding: 60px 0;
