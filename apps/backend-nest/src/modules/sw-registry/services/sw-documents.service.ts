@@ -13,6 +13,7 @@ import { DatabaseService } from '../../../database/database.service';
 import type { FilesServiceFileResponse } from '../../files/files-remote.types';
 import { FilesRemoteClient } from '../../files/services/files-remote.client';
 import { SvnAttachService } from '../../svn/svn-attach.service';
+import { supersedeSwFileLinks } from '../sw-files.supersede';
 import { swDocuments, swFiles, swRefDocumentKinds } from '../sw-registry.schema';
 import type {
   ChangeSwDocumentStatusDto,
@@ -394,32 +395,11 @@ export class SwDocumentsService {
   }
 
   /** Снятие листа: поля документа уже обнулены, привязки sw_sheet и файлы в хранилище убираем. */
-  private async detachSheetFiles(documentId: string) {
-    const links = await this.db.db
-      .select()
-      .from(swFiles)
-      .where(and(eq(swFiles.objectType, 'sw_sheet'), eq(swFiles.objectId, documentId)));
-    if (!links.length) return;
-
-    await this.db.db
-      .delete(swFiles)
-      .where(and(eq(swFiles.objectType, 'sw_sheet'), eq(swFiles.objectId, documentId)));
-
-    for (const link of links) {
-      const [other] = await this.db.db
-        .select({ id: swFiles.id })
-        .from(swFiles)
-        .where(eq(swFiles.fileId, link.fileId))
-        .limit(1);
-      if (other || !this.filesRemote.isEnabled()) continue;
-      try {
-        await this.filesRemote.deleteFile(link.fileId);
-      } catch (err) {
-        this.logger.warn(
-          `лист документа ${documentId} снят, файл ${link.fileId} в хранилище не удалён: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }
+  private detachSheetFiles(documentId: string) {
+    return supersedeSwFileLinks(this.db, this.filesRemote, this.logger, {
+      objectType: 'sw_sheet',
+      objectId: documentId,
+    });
   }
 
   /**
@@ -563,6 +543,22 @@ export class SwDocumentsService {
       .set({ recordState: 'archived', archivedByCascade: false, updatedAt: new Date() })
       .where(eq(swDocuments.id, id));
     return { id, archived: true };
+  }
+
+  async markDeleted(id: string) {
+    const doc = await this.requireDoc(id);
+    if (doc.recordState === 'deleted') {
+      throw new UnprocessableEntityException('Документ уже удалён');
+    }
+    const item = await this.items.requireItem(doc.softwareId);
+    if (item.recordState !== 'active') {
+      throw new UnprocessableEntityException('Нельзя удалить документ архивной программы');
+    }
+    await this.db.db
+      .update(swDocuments)
+      .set({ recordState: 'deleted', updatedAt: new Date() })
+      .where(eq(swDocuments.id, id));
+    return { id, deleted: true };
   }
 
   async restore(id: string) {

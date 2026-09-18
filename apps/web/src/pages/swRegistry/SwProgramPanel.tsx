@@ -14,12 +14,11 @@ import { useSearchParams } from 'react-router-dom';
 
 import { commentQueryKeys } from '@/api/comments/commentQueryKeys';
 import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
-import { swRegistryQueryKeys } from '@/api/swRegistry/swRegistryQueryKeys';
 import {
-  useArchiveSwDocument,
   useArchiveSwItem,
   useChangeSwDocumentStatus,
   useCreateSwDocument,
+  useMarkSwDocumentDeleted,
   useMarkSwItemDeleted,
   useRestoreSwDocument,
   useRestoreSwItem,
@@ -31,10 +30,12 @@ import {
   useUpdateSwDocument,
   useUpdateSwItem,
 } from '@/api/swRegistry/swRegistryApiHooks';
+import { swRegistryQueryKeys } from '@/api/swRegistry/swRegistryQueryKeys';
+import { uploadSwRegistryFile } from '@/api/swRegistry/uploadSwFile';
 import { DocumentViewerModal } from '@/components/documentViewer/DocumentViewerModal';
-import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
-import { svnApi } from '@/components/svnPicker/svnApi';
 import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
+import { svnApi } from '@/components/svnPicker/svnApi';
+import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
 import { usePermissions } from '@/hooks/usePermissions';
 import { SECTIONS } from '@/shared/permissions';
@@ -46,20 +47,22 @@ import type {
   UpdateSwDocumentPayload,
   UpdateSwItemPayload,
 } from '@/types/swRegistry';
+
+import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './SwApprovalSheetModal';
+import { developmentKindAllowsApprovalSheet } from './swDesignationPreview';
 import { SwDocumentCreateModal } from './SwDocumentCreateModal';
 import { SwDocumentDrawer, type SwDocumentDrawerTab } from './SwDocumentDrawer';
-import { uploadSwRegistryFile } from '@/api/swRegistry/uploadSwFile';
-import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './SwApprovalSheetModal';
 import { SwDocumentEditModal, type DocumentFileReplacement } from './SwDocumentEditModal';
-import { SwDocumentStatusModal } from './SwDocumentStatusModal';
 import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
+import { SwDocumentStatusModal } from './SwDocumentStatusModal';
+import type { SwFileChoice } from './SwFileSourcePicker';
 import { SwFilesTab } from './SwFilesTab';
 import { SwFirmwaresTab } from './SwFirmwaresTab';
 import { SwIpsPlacementModal } from './SwIpsPlacementModal';
 import { SwItemEditModal } from './SwItemEditModal';
 import { SwItemRidTab } from './SwItemRidTab';
-import { developmentKindAllowsApprovalSheet } from './swDesignationPreview';
 import styles from './SwStructurePage.module.scss';
+import { usePartnerShortName } from './usePartnerShortName';
 
 type Props = {
   item: SwItemListRow;
@@ -115,6 +118,7 @@ export function SwProgramPanel({
   const ridLinksQuery = useSwItemPatentLinks(item.id);
   const itemFilesQuery = useSwFiles('sw_item', item.id);
 
+  const partnerLabel = usePartnerShortName(item.partner.id, item.partner.shortName || item.partner.name);
   const docKindsQuery = useSwReferences('documentKinds');
   const applicabilityQuery = useSwReferences('statusApplicability');
   const requiresSheetByKind = useMemo(
@@ -190,7 +194,7 @@ export function SwProgramPanel({
   const createDocMut = useCreateSwDocument();
   const changeStatusMut = useChangeSwDocumentStatus();
   const updateDocMut = useUpdateSwDocument();
-  const archiveDocMut = useArchiveSwDocument();
+  const deleteDocMut = useMarkSwDocumentDeleted();
   const restoreDocMut = useRestoreSwDocument();
 
   const svnStatus = useQuery({
@@ -315,14 +319,14 @@ export function SwProgramPanel({
 
   const handleMarkItemDeleted = () => {
     modal.confirm({
-      title: 'Пометить программу удаленной?',
+      title: 'Удалить программу?',
       content: 'Запись исчезнет из реестра и свода. Действие необратимо.',
-      okText: 'Пометить удаленным',
+      okText: 'Удалить',
       okButtonProps: { danger: true },
       onOk: () =>
         markItemDeletedMut.mutate(item.id, {
           onSuccess: () => {
-            message.success('Программа помечена удаленной');
+            message.success('Программа удалена');
             onDeleted();
           },
           onError: fail,
@@ -348,6 +352,47 @@ export function SwProgramPanel({
     );
   };
 
+  /**
+   * Копию прикрепляем после сохранения реквизитов: сама запись не должна зависеть
+   * от доступности SVN или хранилища, а объекта листа до сохранения ещё нет.
+   * Всегда замена, а не добавление: у документа и листа копия одна.
+   */
+  const attachChoice = async (
+    choice: SwFileChoice | undefined,
+    target: { objectType: 'sw_document' | 'sw_sheet'; objectId: string; purpose: 'document' | 'sheet' },
+    texts: {
+      svnOk: (revision?: number) => string;
+      uploadOk: (filename: string) => string;
+      /** Сбой прикрепления саму запись не отменяет — говорим об этом прямо. */
+      failed: (source: 'svn' | 'upload') => string;
+    },
+  ): Promise<boolean> => {
+    if (!choice?.svnPath && !choice?.localFile) return false;
+    try {
+      if (choice.svnPath) {
+        const attached = await svnApi.attach({
+          objectType: target.objectType,
+          objectId: target.objectId,
+          path: choice.svnPath,
+          replace: true,
+        });
+        message.success(texts.svnOk(attached.revision));
+      } else if (choice.localFile) {
+        await uploadSwRegistryFile(choice.localFile, {
+          objectType: target.objectType,
+          objectId: target.objectId,
+          purpose: target.purpose,
+          replace: true,
+        });
+        message.success(texts.uploadOk(choice.localFile.name));
+      }
+    } catch (err) {
+      message.warning(texts.failed(choice.svnPath ? 'svn' : 'upload'));
+      fail(err);
+    }
+    return true;
+  };
+
   const submitEditDoc = (payload: UpdateSwDocumentPayload, replacement?: DocumentFileReplacement) => {
     if (!editDoc) return;
     const doc = editDoc;
@@ -358,36 +403,18 @@ export function SwProgramPanel({
           if (data.warnings?.length) message.warning(data.warnings.join(' '));
           else message.success('Документ обновлен');
 
-          // Копию заменяем после реквизитов: сохранение документа не должно
-          // зависеть от доступности SVN или хранилища.
-          if (replacement?.svnPath) {
-            try {
-              const attached = await svnApi.attach({
-                objectType: 'sw_document',
-                objectId: doc.id,
-                path: replacement.svnPath,
-                // Замена, а не добавление: прежняя копия документа снимается.
-                replace: true,
-              });
-              message.success(`Файл обновлён из SVN (ревизия ${attached.revision})`);
-            } catch (err) {
-              message.warning('Документ сохранён, но файл из SVN прикрепить не удалось');
-              fail(err);
-            }
-          } else if (replacement?.localFile) {
-            try {
-              await uploadSwRegistryFile(replacement.localFile, {
-                objectType: 'sw_document',
-                objectId: doc.id,
-                purpose: 'document',
-                replace: true,
-              });
-              message.success(`Файл «${replacement.localFile.name}» загружен`);
-            } catch (err) {
-              message.warning('Документ сохранён, но файл загрузить не удалось');
-              fail(err);
-            }
-          }
+          await attachChoice(
+            replacement,
+            { objectType: 'sw_document', objectId: doc.id, purpose: 'document' },
+            {
+              svnOk: revision => `Файл обновлён из SVN (ревизия ${revision})`,
+              uploadOk: filename => `Файл «${filename}» загружен`,
+              failed: source =>
+                source === 'svn'
+                  ? 'Документ сохранён, но файл из SVN прикрепить не удалось'
+                  : 'Документ сохранён, но файл загрузить не удалось',
+            },
+          );
           void queryClient.invalidateQueries({ queryKey: ['sw'] });
           setEditDoc(null);
         },
@@ -396,15 +423,18 @@ export function SwProgramPanel({
     );
   };
 
-  const handleArchiveDoc = (document: SwDocumentListRow) => {
+  const handleDeleteDoc = (document: SwDocumentListRow) => {
     modal.confirm({
-      title: 'Перевести документ в архив?',
-      content: 'Документ исчезнет из действующего комплекта, но останется в своде и архиве программы.',
-      okText: 'В архив',
+      title: `Удалить документ «${document.designation}»?`,
+      content: 'Документ исчезнет из комплекта и свода. Обозначение можно будет завести заново.',
+      okText: 'Удалить',
       okButtonProps: { danger: true },
       onOk: () =>
-        archiveDocMut.mutate(document.id, {
-          onSuccess: () => message.success('Документ в архиве'),
+        deleteDocMut.mutate(document.id, {
+          onSuccess: () => {
+            message.success('Документ удалён');
+            if (openDocumentId === document.id) closeDocument();
+          },
           onError: fail,
         }),
     });
@@ -448,34 +478,19 @@ export function SwProgramPanel({
       { id: doc.id, payload: { approvalSheet: sheet } },
       {
         onSuccess: async () => {
-          // Файл прикрепляем после сохранения листа: до этого объекта sw_sheet ещё нет.
-          if (svnPath) {
-            try {
-              const attached = await svnApi.attach({
-                objectType: 'sw_sheet',
-                objectId: doc.id,
-                path: svnPath,
-                replace: true,
-              });
-              message.success(`Лист утверждения оформлен, файл из SVN (ревизия ${attached.revision})`);
-            } catch (err) {
-              message.warning('Лист сохранён, но файл из SVN прикрепить не удалось');
-              fail(err);
-            }
-          } else if (localFile) {
-            try {
-              await uploadSwRegistryFile(localFile, {
-                objectType: 'sw_sheet',
-                objectId: doc.id,
-                purpose: 'sheet',
-                replace: true,
-              });
-              message.success(`Лист утверждения оформлен, файл «${localFile.name}» загружен`);
-            } catch (err) {
-              message.warning('Лист сохранён, но файл загрузить не удалось');
-              fail(err);
-            }
-          } else {
+          const withFile = await attachChoice(
+            { svnPath, localFile },
+            { objectType: 'sw_sheet', objectId: doc.id, purpose: 'sheet' },
+            {
+              svnOk: revision => `Лист утверждения оформлен, файл из SVN (ревизия ${revision})`,
+              uploadOk: filename => `Лист утверждения оформлен, файл «${filename}» загружен`,
+              failed: source =>
+                source === 'svn'
+                  ? 'Лист сохранён, но файл из SVN прикрепить не удалось'
+                  : 'Лист сохранён, но файл загрузить не удалось',
+            },
+          );
+          if (!withFile) {
             message.success(wasOformlen ? 'Лист утверждения изменён' : 'Лист утверждения оформлен');
           }
           void queryClient.invalidateQueries({ queryKey: ['sw'] });
@@ -521,7 +536,7 @@ export function SwProgramPanel({
       ? { key: 'restore', icon: <UndoOutlined />, label: 'Вернуть из архива' }
       : { key: 'archive', icon: <InboxOutlined />, label: 'В архив' },
     { type: 'divider' },
-    { key: 'delete', icon: <DeleteOutlined />, label: 'Пометить удаленным', danger: true },
+    { key: 'delete', icon: <DeleteOutlined />, label: 'Удалить', danger: true },
   ];
   const handleItemMenu: MenuProps['onClick'] = ({ key }) => {
     if (key === 'archive') handleArchiveItem();
@@ -557,7 +572,11 @@ export function SwProgramPanel({
                   Редактировать
                 </Button>
               ) : null}
-              <Dropdown trigger={['click']} placement='bottomRight' menu={{ items: itemMenuItems, onClick: handleItemMenu }}>
+              <Dropdown
+                trigger={['click']}
+                placement='bottomRight'
+                menu={{ items: itemMenuItems, onClick: handleItemMenu }}
+              >
                 <Button
                   size='small'
                   icon={<MoreOutlined />}
@@ -586,8 +605,8 @@ export function SwProgramPanel({
           </div>
           <div className={styles.metaCellWide}>
             <dt>Разработчик</dt>
-            <dd title={item.partner.name}>
-              <span className={styles.metaText}>{item.partner.name}</span>
+            <dd title={partnerLabel}>
+              <span className={styles.metaText}>{partnerLabel}</span>
             </dd>
           </div>
           {item.specUrl ? (
@@ -701,7 +720,7 @@ export function SwProgramPanel({
                 selectedDocumentId={drawerDocument?.id ?? null}
                 onOpenDocument={openDocument}
                 onEdit={document => setEditDoc(document)}
-                onArchive={handleArchiveDoc}
+                onDelete={handleDeleteDoc}
                 onRestore={handleRestoreDoc}
                 onChangeStatus={(document, scope) => setStatusModal({ document, scope })}
                 onOpenIps={document => setIpsModalDoc(document)}

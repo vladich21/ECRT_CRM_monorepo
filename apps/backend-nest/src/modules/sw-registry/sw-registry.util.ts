@@ -62,6 +62,13 @@ export function formatPersonName(row: {
   return name || String(row.id);
 }
 
+/** Как в справочнике контрагентов: короткое имя, полное — только если короткого нет. */
+export function partnerDisplayName(shortName: string | null | undefined, name: string | null | undefined): string {
+  const short = (shortName ?? '').trim();
+  const full = (name ?? '').trim();
+  return short || full;
+}
+
 /** Ошибка Postgres. drizzle-orm с 0.44 заворачивает её в DrizzleQueryError, исходная лежит в cause. */
 function pgErrorOf(err: unknown): { code?: unknown; constraint?: unknown } | null {
   let current: unknown = err;

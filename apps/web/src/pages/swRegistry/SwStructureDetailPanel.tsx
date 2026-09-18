@@ -88,9 +88,9 @@ export function SwStructureDetailPanel({
 
   const confirmMarkDeleted = () =>
     modal.confirm({
-      title: 'Пометить ветку удаленной?',
+      title: 'Удалить ветку?',
       content: 'Элементы, программы и документы исчезнут из реестра и свода. Действие необратимо.',
-      okText: 'Пометить удаленным',
+      okText: 'Удалить',
       okButtonProps: { danger: true },
       onOk: () => actions.onMarkDeleted(node),
     });
@@ -100,7 +100,7 @@ export function SwStructureDetailPanel({
     isArchived
       ? { key: 'restore', icon: <UndoOutlined />, label: 'Вернуть из архива' }
       : { key: 'archive', icon: <InboxOutlined />, label: 'В архив' },
-    { key: 'delete', icon: <DeleteOutlined />, label: 'Пометить удаленным', danger: true },
+    { key: 'delete', icon: <DeleteOutlined />, label: 'Удалить', danger: true },
   ];
   const handleMenu: MenuProps['onClick'] = ({ key }) => {
     if (key === 'archive') confirmArchive();

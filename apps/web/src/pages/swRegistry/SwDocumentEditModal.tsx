@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CloudUploadOutlined, FileWordOutlined, FolderOpenOutlined } from '@ant-design/icons';
-import { Alert, Button, Col, Form, Input, InputNumber, Modal, Radio, Row, Select, Upload } from 'antd';
-
-import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
-import type { SvnEntry } from '@/components/svnPicker/svnApi';
+import { Col, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
 
 import { useSwReferences } from '@/api/swRegistry/swRegistryApiHooks';
 import type { SwDocumentFileRef, SwDocumentListRow, UpdateSwDocumentPayload } from '@/types/swRegistry';
+
 import { assembleDocumentDesignation, assembleSheetDesignation } from './swDesignationPreview';
+import { SwFileSourcePicker, type SwFileChoice } from './SwFileSourcePicker';
 import styles from './SwRegistryModals.module.scss';
 
 const LETTER_OPTIONS = ['О', 'О₁', 'О₂', 'А', 'Б', 'В'].map(value => ({ value, label: value }));
@@ -24,9 +22,7 @@ type FormValues = {
 };
 
 /** Замена копии документа: выбирается здесь, применяется после сохранения реквизитов. */
-export type DocumentFileReplacement = { svnPath?: string; localFile?: File };
-
-type FileSource = 'svn' | 'upload';
+export type DocumentFileReplacement = SwFileChoice;
 
 interface Props {
   open: boolean;
@@ -54,18 +50,12 @@ export function SwDocumentEditModal({
   onSubmit,
 }: Props) {
   const [form] = Form.useForm<FormValues>();
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [svnFile, setSvnFile] = useState<SvnEntry | null>(null);
-  const [localFile, setLocalFile] = useState<File | null>(null);
-  const [source, setSource] = useState<FileSource>(svnEnabled ? 'svn' : 'upload');
+  const [fileChoice, setFileChoice] = useState<SwFileChoice | null>(null);
   const kindsQuery = useSwReferences('documentKinds');
   /** Последнее собранное обозначение: поле следует за видом и номером, пока совпадает с ним. */
   const derivedDesignation = useRef<string | undefined>(undefined);
 
-  const kindByCode = useMemo(
-    () => new Map((kindsQuery.data ?? []).map(k => [k.code, k])),
-    [kindsQuery.data],
-  );
+  const kindByCode = useMemo(() => new Map((kindsQuery.data ?? []).map(k => [k.code, k])), [kindsQuery.data]);
 
   const assemble = (kindCode?: string, sequenceNo?: number) => {
     const gost = kindCode ? kindByCode.get(kindCode)?.gostCode : undefined;
@@ -84,9 +74,7 @@ export function SwDocumentEditModal({
       sheetDesignation: document.sheetDesignation ?? undefined,
       sheetSheetsCount: document.sheetSheetsCount ?? undefined,
     });
-    setSvnFile(null);
-    setLocalFile(null);
-    setSource(svnEnabled ? 'svn' : 'upload');
+    setFileChoice(null);
   }, [open, document, form]);
 
   // Справочник видов может прийти позже формы: без него не понять, собрано ли обозначение или задано руками.
@@ -103,31 +91,27 @@ export function SwDocumentEditModal({
     .map(k => ({ value: k.code, label: k.gostCode ? `${k.gostCode} · ${k.name}` : k.name }));
 
   const handleFinish = (values: FormValues) => {
-    const replacement: DocumentFileReplacement | undefined =
-      source === 'svn' && svnFile
-        ? { svnPath: svnFile.path }
-        : source === 'upload' && localFile
-          ? { localFile }
-          : undefined;
-    onSubmit({
-      documentKindCode: values.documentKindCode,
-      kindSequenceNo: values.kindSequenceNo,
-      designation: values.designation?.trim() || undefined,
-      name: values.name,
-      sheetsCount: values.sheetsCount,
-      letter: values.letter ?? null,
-      // Лист утверждения правится здесь же; снимают его отдельным действием в меню строки.
-      approvalSheet: document?.sheetStatusCode
-        ? {
-            designation: values.sheetDesignation?.trim() || undefined,
-            sheetsCount: values.sheetSheetsCount ?? undefined,
-          }
-        : undefined,
-    }, replacement);
+    onSubmit(
+      {
+        documentKindCode: values.documentKindCode,
+        kindSequenceNo: values.kindSequenceNo,
+        designation: values.designation?.trim() || undefined,
+        name: values.name,
+        sheetsCount: values.sheetsCount,
+        letter: values.letter ?? null,
+        // Лист утверждения правится здесь же; снимают его отдельным действием в меню строки.
+        approvalSheet: document?.sheetStatusCode
+          ? {
+              designation: values.sheetDesignation?.trim() || undefined,
+              sheetsCount: values.sheetSheetsCount ?? undefined,
+            }
+          : undefined,
+      },
+      fileChoice ?? undefined,
+    );
   };
 
   return (
-    <>
     <Modal
       title='Изменить документ'
       open={open}
@@ -219,82 +203,14 @@ export function SwDocumentEditModal({
           </Col>
         </Row>
 
-        <div className={styles.formSectionTitle}>Файл документа</div>
-        <div className={styles.fileBlock}>
-          {svnEnabled ? (
-            <Radio.Group
-              className={styles.fileSourceSwitch}
-              optionType='button'
-              size='small'
-              value={source}
-              onChange={e => {
-                setSource(e.target.value as FileSource);
-                setSvnFile(null);
-                setLocalFile(null);
-              }}
-              options={[
-                { value: 'svn', label: 'Из SVN' },
-                { value: 'upload', label: 'С компьютера' },
-              ]}
-            />
-          ) : null}
-
-          {source === 'svn' ? (
-            svnFile ? (
-              <Alert
-                type='success'
-                showIcon
-                icon={<FileWordOutlined />}
-                message={svnFile.name}
-                description={svnFile.path}
-                action={
-                  <Button size='small' onClick={() => setSvnFile(null)}>
-                    Убрать
-                  </Button>
-                }
-              />
-            ) : (
-              <>
-                {file ? (
-                  <div className={styles.currentFileLine} title={file.svnPath ?? undefined}>
-                    <FileWordOutlined /> {file.filename}
-                    {file.svnRevision ? ` · SVN r${file.svnRevision}` : ''}
-                  </div>
-                ) : null}
-                <Button icon={<FolderOpenOutlined />} onClick={() => setPickerOpen(true)}>
-                  {file ? 'Заменить файлом из SVN' : 'Выбрать файл в SVN'}
-                </Button>
-              </>
-            )
-          ) : localFile ? (
-            <Alert
-              type='success'
-              showIcon
-              icon={<FileWordOutlined />}
-              message={localFile.name}
-              description={`${Math.round(localFile.size / 1024)} КБ`}
-              action={
-                <Button size='small' onClick={() => setLocalFile(null)}>
-                  Убрать
-                </Button>
-              }
-            />
-          ) : (
-            <Upload.Dragger
-              multiple={false}
-              showUploadList={false}
-              beforeUpload={f => {
-                setLocalFile(f);
-                return Upload.LIST_IGNORE;
-              }}
-            >
-              <p className='ant-upload-drag-icon'>
-                <CloudUploadOutlined />
-              </p>
-              <p className='ant-upload-text'>Перетащите файл или нажмите для выбора</p>
-            </Upload.Dragger>
-          )}
-        </div>
+        <SwFileSourcePicker
+          title='Файл документа'
+          current={file ?? null}
+          svnEnabled={svnEnabled}
+          svnFolderPath={svnFolderPath}
+          value={fileChoice}
+          onChange={setFileChoice}
+        />
 
         {document?.sheetStatusCode ? (
           <>
@@ -323,20 +239,5 @@ export function SwDocumentEditModal({
         ) : null}
       </Form>
     </Modal>
-
-      {pickerOpen ? (
-        <SvnPickerModal
-          open
-          mode='select'
-          startPath={svnFolderPath ?? ''}
-          currentPath={file?.svnPath ?? null}
-          onClose={() => setPickerOpen(false)}
-          onSelect={entry => {
-            setSvnFile(entry);
-            setPickerOpen(false);
-          }}
-        />
-      ) : null}
-    </>
   );
 }

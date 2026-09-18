@@ -28,9 +28,7 @@ import { SwItemCreateModal } from './SwItemCreateModal';
 import { SwProgramPanel } from './SwProgramPanel';
 import { SwStructureDetailPanel, type SwStructureDetailActions } from './SwStructureDetailPanel';
 import { SwStructureElementModal } from './SwStructureElementModal';
-import { SwStructureListFiltersBar } from './SwStructureListFiltersBar';
 import styles from './SwStructurePage.module.scss';
-import type { SwStructureFilterTab } from './SwStructurePage.types';
 import {
   collectStructurePathIds,
   countStructureNodes,
@@ -38,12 +36,7 @@ import {
   findStructureParent,
   firstStructureNode,
 } from './swStructureTree';
-import {
-  archivedStructureTree,
-  countArchivedElements,
-  groupProgramsByElement,
-  searchStructureTree,
-} from './swStructurePrograms';
+import { groupProgramsByElement, searchStructureTree } from './swStructurePrograms';
 import { SwStructureTreeNode } from './SwStructureTreeNode';
 import { SwStructureTreeToolbar } from './SwStructureTreeToolbar';
 
@@ -52,15 +45,6 @@ type ModalState =
   | { mode: 'edit'; node: SwStructureNode }
   | { mode: 'child'; node: SwStructureNode }
   | { mode: 'responsible'; node: SwStructureNode };
-
-/**
- * Какое дерево грузить. Вкладка «Архивные» строится из полного дерева: архивный элемент под действующим
- * родителем и программа, ушедшая в архив одна, видны только вместе с веткой до них.
- */
-function resolveFetchRecordState(tab: SwStructureFilterTab, showArchivedInTree: boolean): string {
-  if (tab === 'archived') return 'all';
-  return showArchivedInTree ? 'all' : 'active';
-}
 
 /** Открытый в боковой панели документ относится к программе и уходит при смене программы. */
 function dropDocumentParams(params: URLSearchParams) {
@@ -86,13 +70,19 @@ export default function SwStructurePage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Всё, что определяет «куда смотрим», живёт в адресе: ссылка из строки браузера открывает ровно то же.
-  //   view=archived — вкладка «Архивные»; archived=1 — архивные в дереве действующих;
+  //   archived=1 — архивные элементы и программы в том же дереве; старый view=archived сводим к этой галке;
   //   elementId, itemId — выбор; tab — вкладка панели программы; documentStatus/sheetStatus — фильтр из свода.
-  // Параметры по умолчанию в адрес не пишем. Каждый обработчик меняет адрес одним setSearchParams:
-  // два вызова подряд строятся от одного и того же searchParams, и второй затирает первый.
-  const filterTab: SwStructureFilterTab = searchParams.get('view') === 'archived' ? 'archived' : 'active';
-  const showArchivedInTree = searchParams.get('archived') === '1';
+  const showArchivedInTree =
+    searchParams.get('archived') === '1' || searchParams.get('view') === 'archived';
   const selectedProgramId = searchParams.get('itemId');
+
+  useEffect(() => {
+    if (searchParams.get('view') !== 'archived') return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('view');
+    next.set('archived', '1');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('elementId'));
@@ -101,25 +91,16 @@ export default function SwStructurePage() {
   /** Элемент, на котором регистрируется ПО из меню «+» в дереве. */
   const [programTarget, setProgramTarget] = useState<SwStructureNode | null>(null);
 
-  const fetchRecordState = resolveFetchRecordState(filterTab, showArchivedInTree);
-  const structureQuery = useSwStructure(fetchRecordState);
-  const activeTreeQuery = useSwStructure('active');
-  // Полное дерево — для счётчика вкладки «Архивные»: архивные элементы бывают и под действующими родителями.
-  const allTreeQuery = useSwStructure('all');
+  const structureQuery = useSwStructure(showArchivedInTree ? 'all' : 'active');
   const typesQuery = useSwReferences('elementTypes');
   const rolesQuery = useSwReferences('responsibilityRoles');
   const kindsQuery = useSwReferences('developmentKinds');
   const docKindsQuery = useSwReferences('documentKinds');
   const statusesQuery = useSwReferences('statuses');
-  // Программы грузим целиком: из них строится список программ узла. Какие показать — по режиму дерева:
-  // действующие, архивные (вкладка «Архивные») или те и другие («Показывать архивные»). API отдаёт один статус
-  // за запрос, поэтому запросов два; оба грузятся всегда — из них считаются вкладки «Действующие» и «Архивные».
-  const showActivePrograms = filterTab !== 'archived';
-  const showArchivedPrograms = filterTab === 'archived' || showArchivedInTree;
   const activeProgramsQuery = useSwItems({ recordState: 'active', limit: 500 });
   const archivedProgramsQuery = useSwItems({ recordState: 'archived', limit: 500 });
   const programsLoading =
-    (showActivePrograms && activeProgramsQuery.isLoading) || (showArchivedPrograms && archivedProgramsQuery.isLoading);
+    activeProgramsQuery.isLoading || (showArchivedInTree && archivedProgramsQuery.isLoading);
 
   const createMut = useCreateSwStructure();
   const updateMut = useUpdateSwStructure();
@@ -156,25 +137,16 @@ export default function SwStructurePage() {
     [statusesQuery.data],
   );
 
-  // Выключенный запрос хранит данные прошлого режима — берём только те, что относятся к текущему.
   const programs = useMemo(
     () => [
-      ...(showActivePrograms ? (activeProgramsQuery.data?.items ?? []) : []),
-      ...(showArchivedPrograms ? (archivedProgramsQuery.data?.items ?? []) : []),
+      ...(activeProgramsQuery.data?.items ?? []),
+      ...(showArchivedInTree ? (archivedProgramsQuery.data?.items ?? []) : []),
     ],
-    [showActivePrograms, showArchivedPrograms, activeProgramsQuery.data, archivedProgramsQuery.data],
+    [showArchivedInTree, activeProgramsQuery.data, archivedProgramsQuery.data],
   );
   const programsByElement = useMemo(() => groupProgramsByElement(programs), [programs]);
 
-  // На вкладке «Архивные» из полного дерева остаются архивные элементы и элементы с архивными программами,
-  // вместе с веткой до них; действующие элементы на этом пути — только навигация.
-  const rawTree = useMemo(
-    () =>
-      filterTab === 'archived'
-        ? archivedStructureTree(structureQuery.data ?? [], programsByElement)
-        : (structureQuery.data ?? []),
-    [filterTab, structureQuery.data, programsByElement],
-  );
+  const rawTree = structureQuery.data ?? [];
   // Поиск идёт по элементам и по программам: дерево показывает программы из выдачи.
   const search = useMemo(
     () => searchStructureTree(rawTree, programsByElement, searchQuery),
@@ -187,16 +159,8 @@ export default function SwStructurePage() {
     [expandedIds, search.expandIds],
   );
 
-  // Все счётчики считают одинаково — элементы плюс программы: вкладки «Действующие» и «Архивные» и «N из M»
-  // над деревом. На вкладке «Архивные» действующие элементы — только путь к архивному, в счёт они не идут.
-  const countElements = filterTab === 'archived' ? countArchivedElements : countStructureNodes;
-  const totalInTab = countElements(rawTree) + programs.length;
-  const shownCount = searchQuery.trim() ? countElements(tree) + search.programCount : totalInTab;
-  const activeCount =
-    countStructureNodes(activeTreeQuery.data ?? []) + (activeProgramsQuery.data?.items.length ?? 0);
-  // В архиве бывают и элементы под действующими родителями, и программы, ушедшие в архив поодиночке.
-  const archivedCount =
-    countArchivedElements(allTreeQuery.data ?? []) + (archivedProgramsQuery.data?.items.length ?? 0);
+  const totalInTab = countStructureNodes(rawTree) + programs.length;
+  const shownCount = searchQuery.trim() ? countStructureNodes(tree) + search.programCount : totalInTab;
 
   const selectedNode = useMemo(
     () => (selectedId ? findStructureNode(rawTree, selectedId) : null),
@@ -282,10 +246,10 @@ export default function SwStructurePage() {
       const next = new URLSearchParams(searchParams);
       next.set('elementId', elementId);
       dropProgramParams(next);
-      if (filterTab === 'active') next.set('archived', '1');
+      next.set('archived', '1');
       setSearchParams(next, { replace: true });
     },
-    [rawTree, selectNode, searchParams, setSearchParams, filterTab],
+    [rawTree, selectNode, searchParams, setSearchParams],
   );
 
   useEffect(() => {
@@ -311,10 +275,10 @@ export default function SwStructurePage() {
         setSearchParams(next, { replace: true });
         return;
       }
-      // Элемент программы в архиве и скрыт — показываем архивные, иначе программу не найти в дереве.
-      if (filterTab === 'active' && !showArchivedInTree) {
+      if (!showArchivedInTree) {
         const next = new URLSearchParams(searchParams);
         next.set('archived', '1');
+        next.delete('view');
         setSearchParams(next, { replace: true });
       }
       return;
@@ -337,7 +301,6 @@ export default function SwStructurePage() {
     structureQuery.isLoading,
     rawTree,
     tree,
-    filterTab,
     showArchivedInTree,
     searchParams,
     selectedId,
@@ -365,19 +328,20 @@ export default function SwStructurePage() {
     setSearchParams(next, { replace: true });
   };
 
-  const changeFilterTab = (tab: SwStructureFilterTab) => {
-    setSelectedId(null);
-    const next = new URLSearchParams(searchParams);
-    if (tab === 'archived') next.set('view', 'archived');
-    else next.delete('view');
-    dropProgramParams(next);
-    setSearchParams(next, { replace: true });
-  };
-
   const changeShowArchived = (value: boolean) => {
     const next = new URLSearchParams(searchParams);
+    next.delete('view');
     if (value) next.set('archived', '1');
-    else next.delete('archived');
+    else {
+      next.delete('archived');
+      if (selectedProgram?.recordState === 'archived' || selectedNode?.recordState === 'archived') {
+        dropProgramParams(next);
+        if (selectedNode?.recordState === 'archived') {
+          next.delete('elementId');
+          setSelectedId(null);
+        }
+      }
+    }
     setSearchParams(next, { replace: true });
   };
 
@@ -398,7 +362,7 @@ export default function SwStructurePage() {
       onMarkDeleted: node =>
         markDeletedMut.mutate(node.id, {
           onSuccess: () => {
-            message.success('Ветка помечена удаленной');
+            message.success('Ветка удалена');
             setSelectedId(null);
             const next = new URLSearchParams(searchParams);
             next.delete('elementId');
@@ -497,9 +461,8 @@ export default function SwStructurePage() {
 
   const isInitialLoad = structureQuery.isLoading && !structureQuery.data;
 
-  // «+» у элемента: добавлять можно только в действующее дерево; у архивного элемента «+» скрывает сам узел.
-  const canAddElement = canEdit && filterTab === 'active';
-  const canAddProgram = canCreateProgram && filterTab === 'active';
+  const canAddElement = canEdit;
+  const canAddProgram = canCreateProgram;
 
   return (
     <div className={styles.wrap}>
@@ -509,16 +472,6 @@ export default function SwStructurePage() {
         title='Реестр программного обеспечения'
         titleWeight='medium'
         subtitle='структура изделия, программы и комплекты документации'
-        filters={
-          !isInitialLoad ? (
-            <SwStructureListFiltersBar
-              activeTab={filterTab}
-              onTabChange={changeFilterTab}
-              activeCount={activeCount}
-              archivedCount={archivedCount}
-            />
-          ) : undefined
-        }
       />
 
       {isInitialLoad ? (
@@ -533,7 +486,6 @@ export default function SwStructurePage() {
               onSearchChange={setSearchQuery}
               shownCount={shownCount}
               totalCount={totalInTab}
-              showArchivedToggle={filterTab === 'active'}
               showArchived={showArchivedInTree}
               onShowArchivedChange={changeShowArchived}
             />
@@ -563,9 +515,8 @@ export default function SwStructurePage() {
                 <div className={styles.treeEmpty}>Ничего не найдено</div>
               ) : (
                 <div className={styles.treeEmpty}>
-                  {filterTab === 'archived' ? 'Архивных элементов нет' : 'Элементов пока нет'}
-                  {/* Пустое дерево: выбрать родителя не из чего, поэтому первый элемент создаётся отсюда. */}
-                  {canEdit && filterTab === 'active' ? (
+                  Элементов пока нет
+                  {canEdit ? (
                     <Button type='link' icon={<PlusOutlined />} onClick={() => setModalState({ mode: 'create' })}>
                       Создать первый элемент
                     </Button>
@@ -616,7 +567,7 @@ export default function SwStructurePage() {
         open={modalState != null}
         mode={modalMode}
         node={modalState && 'node' in modalState ? modalState.node : null}
-        tree={activeTreeQuery.data ?? rawTree}
+        tree={rawTree}
         elementTypes={typesQuery.data ?? []}
         roles={rolesQuery.data ?? []}
         confirmLoading={createMut.isPending || updateMut.isPending || addRespMut.isPending}

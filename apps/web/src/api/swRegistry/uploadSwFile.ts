@@ -11,11 +11,7 @@ export type SwFileUploadMeta = {
   replace?: boolean;
 };
 
-function uploadViaTus(
-  file: File,
-  endpoint: string,
-  metadata: Record<string, string>,
-): Promise<void> {
+function uploadViaTus(file: File, endpoint: string, metadata: Record<string, string>): Promise<void> {
   return new Promise((resolve, reject) => {
     const upload = new Upload(file, {
       endpoint,
@@ -79,10 +75,70 @@ export type SwDraftUpload = {
   isAborted: () => boolean;
 };
 
+type DraftUploadTicketResponse = SwDraftUploadTicket & {
+  upload: { tusEndpoint: string; metadata: Record<string, string> };
+};
+
 /**
- * Загрузка файла для документа, которого ещё нет: тикет записывает файл на зарезервированный id,
- * документ с привязкой создаётся потом одним запросом. Подтверждения нет — его заменяет создание.
+ * Загрузка файла на зарезервированный id: запись с привязкой создаётся потом, одним запросом.
+ * Отличаются только тикет, отказ от него и настройки передачи, поэтому ход у обеих загрузок общий.
  * `onTicket` отдаёт fileId сразу: при отмене окна от файла надо отказаться, даже если он не догрузился.
+ */
+function startDraftUpload(
+  file: File,
+  opts: {
+    createTicket: () => Promise<DraftUploadTicketResponse>;
+    /** Отменили, пока выдавался тикет: fileId знаем только мы — отказываемся от файла сами. */
+    discardTicket: (fileId: string) => void;
+    tusOptions?: { chunkSize?: number; retryDelays?: number[] };
+    onTicket?: (ticket: SwDraftUploadTicket) => void;
+    onProgress?: (percent: number) => void;
+  },
+): SwDraftUpload {
+  let upload: Upload | null = null;
+  let aborted = false;
+
+  const promise = (async () => {
+    const ticket = await opts.createTicket();
+    if (aborted) {
+      opts.discardTicket(ticket.fileId);
+      throw new Error('upload aborted');
+    }
+    opts.onTicket?.({ fileId: ticket.fileId, versionId: ticket.versionId });
+
+    await new Promise<void>((resolve, reject) => {
+      const tus = new Upload(file, {
+        endpoint: ticket.upload.tusEndpoint,
+        metadata: ticket.upload.metadata,
+        retryDelays: opts.tusOptions?.retryDelays ?? [0, 1000, 3000, 5000, 10000],
+        ...(opts.tusOptions?.chunkSize ? { chunkSize: opts.tusOptions.chunkSize } : {}),
+        removeFingerprintOnSuccess: true,
+        onProgress: (sent, total) => {
+          if (!aborted) opts.onProgress?.(total > 0 ? Math.floor((sent / total) * 100) : 0);
+        },
+        onError: error => reject(error),
+        onSuccess: () => resolve(),
+      });
+      upload = tus;
+      tus.start();
+    });
+
+    return { fileId: ticket.fileId, versionId: ticket.versionId };
+  })();
+
+  return {
+    promise,
+    abort: () => {
+      aborted = true;
+      // Приведение типа: внутри промиса upload уже присвоен, но для TS он так и остался null.
+      void (upload as Upload | null)?.abort(true);
+    },
+    isAborted: () => aborted,
+  };
+}
+
+/**
+ * Загрузка файла для документа, которого ещё нет. Подтверждения нет — его заменяет создание документа.
  */
 export function startSwDocumentDraftUpload(
   file: File,
@@ -93,49 +149,17 @@ export function startSwDocumentDraftUpload(
     onProgress?: (percent: number) => void;
   },
 ): SwDraftUpload {
-  let upload: Upload | null = null;
-  let aborted = false;
-
-  const promise = (async () => {
-    const ticket = await swRegistryApi.createDocumentUploadTicket(opts.itemId, {
-      documentId: opts.documentId,
-      filename: file.name,
-      contentType: file.type || 'application/octet-stream',
-    });
-    if (aborted) {
-      // Отменили, пока выдавался тикет: fileId знаем только мы — отказываемся от файла сами, иначе он осиротеет.
-      void swRegistryApi.discardDocumentUpload(opts.itemId, ticket.fileId).catch(() => undefined);
-      throw new Error('upload aborted');
-    }
-    opts.onTicket?.({ fileId: ticket.fileId, versionId: ticket.versionId });
-
-    await new Promise<void>((resolve, reject) => {
-      const tus = new Upload(file, {
-        endpoint: ticket.upload.tusEndpoint,
-        metadata: ticket.upload.metadata,
-        retryDelays: [0, 1000, 3000, 5000, 10000],
-        removeFingerprintOnSuccess: true,
-        onProgress: (sent, total) => {
-          if (!aborted) opts.onProgress?.(total > 0 ? Math.floor((sent / total) * 100) : 0);
-        },
-        onError: error => reject(error),
-        onSuccess: () => resolve(),
-      });
-      upload = tus;
-      tus.start();
-    });
-
-    return { fileId: ticket.fileId, versionId: ticket.versionId };
-  })();
-
-  return {
-    promise,
-    abort: () => {
-      aborted = true;
-      void (upload as Upload | null)?.abort(true);
-    },
-    isAborted: () => aborted,
-  };
+  return startDraftUpload(file, {
+    createTicket: () =>
+      swRegistryApi.createDocumentUploadTicket(opts.itemId, {
+        documentId: opts.documentId,
+        filename: file.name,
+        contentType: file.type || 'application/octet-stream',
+      }),
+    discardTicket: fileId => void swRegistryApi.discardDocumentUpload(opts.itemId, fileId).catch(() => undefined),
+    onTicket: opts.onTicket,
+    onProgress: opts.onProgress,
+  });
 }
 
 /** Куски по 64 МиБ: прошивка на 10 ГБ одним запросом не пролезает через прокси и не переживает обрыв. */
@@ -143,7 +167,7 @@ const FIRMWARE_CHUNK_SIZE = 64 * 1024 * 1024;
 
 /**
  * Загрузка прошивки: файл едет в хранилище до создания записи. Прошивки весят гигабайты,
- * поэтому окно показывает прогресс, а отмена отзывает уже зарезервированный файл.
+ * поэтому передача идёт кусками, а повторов при обрыве больше.
  */
 export function startSwFirmwareUpload(
   file: File,
@@ -153,47 +177,16 @@ export function startSwFirmwareUpload(
     onProgress?: (percent: number) => void;
   },
 ): SwDraftUpload {
-  let upload: Upload | null = null;
-  let aborted = false;
-
-  const promise = (async () => {
-    const ticket = await swRegistryApi.createFirmwareUploadTicket({
-      itemId: opts.itemId,
-      filename: file.name,
-      contentType: file.type || 'application/octet-stream',
-    });
-    if (aborted) {
-      void swRegistryApi.discardFirmwareUpload(ticket.fileId).catch(() => undefined);
-      throw new Error('upload aborted');
-    }
-    opts.onTicket?.({ fileId: ticket.fileId, versionId: ticket.versionId });
-
-    await new Promise<void>((resolve, reject) => {
-      const tus = new Upload(file, {
-        endpoint: ticket.upload.tusEndpoint,
-        metadata: ticket.upload.metadata,
-        chunkSize: FIRMWARE_CHUNK_SIZE,
-        retryDelays: [0, 1000, 3000, 5000, 10000, 20000],
-        removeFingerprintOnSuccess: true,
-        onProgress: (sent, total) => {
-          if (!aborted) opts.onProgress?.(total > 0 ? Math.floor((sent / total) * 100) : 0);
-        },
-        onError: error => reject(error),
-        onSuccess: () => resolve(),
-      });
-      upload = tus;
-      tus.start();
-    });
-
-    return { fileId: ticket.fileId, versionId: ticket.versionId };
-  })();
-
-  return {
-    promise,
-    abort: () => {
-      aborted = true;
-      void (upload as Upload | null)?.abort(true);
-    },
-    isAborted: () => aborted,
-  };
+  return startDraftUpload(file, {
+    createTicket: () =>
+      swRegistryApi.createFirmwareUploadTicket({
+        itemId: opts.itemId,
+        filename: file.name,
+        contentType: file.type || 'application/octet-stream',
+      }),
+    discardTicket: fileId => void swRegistryApi.discardFirmwareUpload(fileId).catch(() => undefined),
+    tusOptions: { chunkSize: FIRMWARE_CHUNK_SIZE, retryDelays: [0, 1000, 3000, 5000, 10000, 20000] },
+    onTicket: opts.onTicket,
+    onProgress: opts.onProgress,
+  });
 }

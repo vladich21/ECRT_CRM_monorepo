@@ -174,7 +174,7 @@ export function SwStructureTreeNode({
               <span className={styles.treeProgramName} title={`${item.designation} — ${item.fullName}`}>
                 {item.shortName}
               </span>
-              {/* Как у архивного элемента: бейдж виден и на вкладке «Архивные», и при «Показывать архивные». */}
+              {/* Бейдж виден, когда включены архивные: иначе этой программы в дереве нет. */}
               {item.recordState === 'archived' ? (
                 <Tag bordered={false} className={styles.treeArchivedTag}>
                   архивная

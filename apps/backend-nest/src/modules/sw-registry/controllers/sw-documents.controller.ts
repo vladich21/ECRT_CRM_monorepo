@@ -48,4 +48,10 @@ export class SwDocumentsController {
   restore(@Param('id') id: string) {
     return this.documents.restore(id);
   }
+
+  @Post('detail/:id/mark-deleted')
+  @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
+  markDeleted(@Param('id') id: string) {
+    return this.documents.markDeleted(id);
+  }
 }

@@ -1,11 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import {
-  CloudUploadOutlined,
-  DeleteOutlined,
-  DownloadOutlined,
-  EditOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { CloudUploadOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Empty, Form, Input, Modal, Spin, Table, Tooltip, type MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
@@ -19,14 +13,15 @@ import {
   useSwFirmwares,
   useUpdateSwFirmware,
 } from '@/api/swRegistry/swRegistryApiHooks';
+import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
 import { useOpenAntdDeleteConfirm } from '@/customhooks/confirmDelete';
 import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessage';
 import { useNotification } from '@/hooks/notifications/useNotification';
 import type { SwFirmware, SwFirmwareVersion } from '@/types/swRegistry';
 import { formatFileSize } from '@/utils/formatFileSize';
-import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
-import { SwFirmwareUploadModal, type FirmwareVersionSubmit } from './SwFirmwareUploadModal';
+
 import styles from './SwFirmwaresTab.module.scss';
+import { SwFirmwareUploadModal, type FirmwareVersionSubmit } from './SwFirmwareUploadModal';
 
 interface Props {
   itemId: string;
@@ -47,9 +42,9 @@ function formatDate(value: string | null): string {
 }
 
 function toTree(firmwares: SwFirmware[]): FirmwareTreeRow[] {
-  return firmwares.map((firmware) => {
+  return firmwares.map(firmware => {
     const [current, ...history] = firmware.versions ?? [];
-    const children = history.map((version) => ({
+    const children = history.map(version => ({
       key: version.id,
       kind: 'version' as const,
       firmware,
@@ -85,7 +80,8 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
   const [renameFor, setRenameFor] = useState<SwFirmware | null>(null);
   const [renameForm] = Form.useForm<{ name: string; note?: string }>();
   const [submitError, setSubmitError] = useState<unknown>(undefined);
-  const pendingId = useRef('');
+  /** Что подтверждают прямо сейчас: getVariables читает это уже после открытия окна. */
+  const pending = useRef<{ versionId?: string; firmwareId?: string }>({});
 
   const firmwares = firmwaresQuery.data ?? [];
   const treeData = useMemo(() => toTree(firmwares), [firmwares]);
@@ -100,11 +96,11 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
   };
 
   const removeVersion = (firmware: SwFirmware, version: SwFirmwareVersion) => {
-    pendingId.current = version.id;
+    pending.current = { versionId: version.id };
     const last = (firmware.versions ?? []).length === 1;
     openDeleteConfirm({
       mutation: deleteVersionMut,
-      getVariables: () => ({ versionId: pendingId.current, itemId }),
+      getVariables: () => ({ versionId: pending.current.versionId ?? version.id, itemId }),
       showNotification,
       title: `Удалить версию ${version.version} прошивки «${firmware.name}»?`,
       content: last
@@ -117,10 +113,10 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
   };
 
   const removeFirmware = (firmware: SwFirmware) => {
-    pendingId.current = firmware.id;
+    pending.current = { firmwareId: firmware.id };
     openDeleteConfirm({
       mutation: deleteMut,
-      getVariables: () => ({ id: pendingId.current, itemId }),
+      getVariables: () => ({ id: pending.current.firmwareId ?? firmware.id, itemId }),
       showNotification,
       title: `Удалить прошивку «${firmware.name}»?`,
       content: `Вместе с ней уйдут все её версии (${firmware.versions.length}) и их файлы.`,
@@ -181,12 +177,8 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
       ellipsis: true,
       render: (_, row) => (
         <div>
-          <div className={row.kind === 'firmware' ? styles.firmwareName : styles.pastName}>
-            {row.firmware.name}
-          </div>
-          {row.kind === 'firmware' && row.firmware.note ? (
-            <div className={styles.note}>{row.firmware.note}</div>
-          ) : null}
+          <div className={row.kind === 'firmware' ? styles.firmwareName : styles.pastName}>{row.firmware.name}</div>
+          {row.kind === 'firmware' && row.firmware.note ? <div className={styles.note}>{row.firmware.note}</div> : null}
         </div>
       ),
     },
@@ -255,6 +247,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
       key: 'actions',
       width: canEdit ? 168 : 48,
       render: (_, row) => {
+        const version = row.version;
         if (row.kind === 'firmware') {
           return (
             <div className={styles.actions}>
@@ -267,9 +260,9 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                   Версия
                 </Button>
               ) : null}
-              {row.version ? (
+              {version ? (
                 <Tooltip title='Скачать'>
-                  <Button type='text' icon={<DownloadOutlined />} onClick={() => void download(row.version!)} />
+                  <Button type='text' icon={<DownloadOutlined />} onClick={() => void download(version)} />
                 </Tooltip>
               ) : null}
               {canEdit ? (
@@ -278,7 +271,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                   menu={{
                     items: [
                       { key: 'rename', icon: <EditOutlined />, label: 'Переименовать' },
-                      ...(row.version
+                      ...(version
                         ? ([
                             {
                               key: 'deleteVersion',
@@ -298,7 +291,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                         });
                         setRenameFor(row.firmware);
                       }
-                      if (key === 'deleteVersion' && row.version) removeVersion(row.firmware, row.version);
+                      if (key === 'deleteVersion' && version) removeVersion(row.firmware, version);
                       if (key === 'delete') removeFirmware(row.firmware);
                     },
                   }}
@@ -309,11 +302,11 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
             </div>
           );
         }
-        if (!row.version) return null;
+        if (!version) return null;
         return (
           <div className={styles.actions}>
             <Tooltip title='Скачать'>
-              <Button type='text' size='small' icon={<DownloadOutlined />} onClick={() => void download(row.version!)} />
+              <Button type='text' size='small' icon={<DownloadOutlined />} onClick={() => void download(version)} />
             </Tooltip>
             {canEdit ? (
               <Tooltip title='Удалить версию'>
@@ -322,7 +315,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
                   size='small'
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={() => removeVersion(row.firmware, row.version!)}
+                  onClick={() => removeVersion(row.firmware, version)}
                 />
               </Tooltip>
             ) : null}
@@ -362,7 +355,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
           columns={columns}
           dataSource={treeData}
           expandable={{ indentSize: 20 }}
-          rowClassName={(row) => (row.kind === 'version' ? styles.pastRow : '')}
+          rowClassName={row => (row.kind === 'version' ? styles.pastRow : '')}
         />
       )}
 

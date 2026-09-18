@@ -29,16 +29,19 @@ export function SwDocumentStatusModal({
   const statusesQuery = useSwDocumentStatuses(document?.id, open);
   const statusCode = Form.useWatch('statusCode', form);
 
+  const options = (() => {
+    const list = [...(statusesQuery.data?.[scope] ?? [])];
+    if (currentStatusCode && !list.some(s => s.code === currentStatusCode)) {
+      list.unshift({ code: currentStatusCode, name: currentStatusCode });
+    }
+    return list.map(s => ({ value: s.code, label: s.name }));
+  })();
+
   useEffect(() => {
     if (!open) return;
     form.resetFields();
-  }, [open, form]);
-
-  const options = (statusesQuery.data?.[scope] ?? []).map(s => ({
-    value: s.code,
-    label: s.name,
-    disabled: s.code === currentStatusCode,
-  }));
+    if (currentStatusCode) form.setFieldsValue({ statusCode: currentStatusCode });
+  }, [open, document?.id, scope, currentStatusCode, form, statusesQuery.data]);
 
   const selected = (statusesQuery.data?.[scope] ?? []).find(s => s.code === statusCode);
   const needsIps = selected?.requiresIps === true;

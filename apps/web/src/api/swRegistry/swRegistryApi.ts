@@ -177,6 +177,11 @@ export const swRegistryApi = {
     return data;
   },
 
+  markDocumentDeleted: async (id: string) => {
+    const { data } = await apiClient.post(`/sw/documents/detail/${id}/mark-deleted`);
+    return data;
+  },
+
   archiveDocument: async (id: string) => {
     const { data } = await apiClient.post(`/sw/documents/detail/${id}/archive`);
     return data;

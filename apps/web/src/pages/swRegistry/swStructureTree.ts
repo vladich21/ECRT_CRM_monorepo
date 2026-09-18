@@ -2,15 +2,13 @@ import type { SwStructureNode } from '@/types/swRegistry';
 
 export function flattenStructureOptions(
   nodes: SwStructureNode[],
-  prefix = '',
   excludeIds?: Set<string>,
 ): { value: string; label: string }[] {
   const out: { value: string; label: string }[] = [];
   for (const node of nodes) {
     if (excludeIds?.has(node.id)) continue;
-    const label = prefix ? `${prefix} / ${node.code} ${node.name}` : `${node.code} ${node.name}`;
-    out.push({ value: node.id, label });
-    out.push(...flattenStructureOptions(node.children ?? [], label, excludeIds));
+    out.push({ value: node.id, label: `${node.code} ${node.name}` });
+    out.push(...flattenStructureOptions(node.children ?? [], excludeIds));
   }
   return out;
 }

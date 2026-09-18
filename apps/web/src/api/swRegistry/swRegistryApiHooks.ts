@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { swRegistryApi } from './swRegistryApi';
-import { swRegistryQueryKeys } from './swRegistryQueryKeys';
 import type {
   AddSwItemPatentLinkPayload,
   ChangeSwDocumentStatusPayload,
@@ -11,9 +9,11 @@ import type {
   CreateSwFirmwareVersionPayload,
   CreateSwItemPayload,
   SwFileObjectType,
-  UpdateSwItemPayload,
   UpdateSwDocumentPayload,
+  UpdateSwItemPayload,
 } from '../../types/swRegistry';
+import { swRegistryApi } from './swRegistryApi';
+import { swRegistryQueryKeys } from './swRegistryQueryKeys';
 
 export function useSwStructure(recordState = 'active') {
   return useQuery({
@@ -256,6 +256,17 @@ export function useUpdateSwDocument() {
   });
 }
 
+export function useMarkSwDocumentDeleted() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => swRegistryApi.markDocumentDeleted(id),
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.document(id) });
+    },
+  });
+}
+
 export function useArchiveSwDocument() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -319,55 +330,42 @@ export function useSwFirmwares(itemId: string | undefined) {
   });
 }
 
-export function useCreateSwFirmware() {
+/**
+ * Все правки прошивок обновляют один список — список прошивок программы, поэтому
+ * переменные у них одной формы: `itemId` (чей список перечитать) плюс само действие.
+ */
+function useFirmwareMutation<V extends { itemId: string }, R>(run: (variables: V) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateSwFirmwarePayload) => swRegistryApi.createFirmware(payload),
-    onSuccess: (_data, payload) => {
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(payload.itemId) });
+    mutationFn: run,
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
     },
   });
+}
+
+export function useCreateSwFirmware() {
+  return useFirmwareMutation((payload: CreateSwFirmwarePayload) => swRegistryApi.createFirmware(payload));
 }
 
 export function useUpdateSwFirmware() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, payload }: { id: string; itemId: string; payload: { name?: string; note?: string | null } }) =>
-      swRegistryApi.updateFirmware(id, payload),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
-    },
-  });
+  return useFirmwareMutation((v: { id: string; itemId: string; payload: { name?: string; note?: string | null } }) =>
+    swRegistryApi.updateFirmware(v.id, v.payload),
+  );
 }
 
 export function useCreateSwFirmwareVersion() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ payload }: { payload: CreateSwFirmwareVersionPayload; itemId: string }) =>
-      swRegistryApi.createFirmwareVersion(payload),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
-    },
-  });
+  return useFirmwareMutation((v: { itemId: string; payload: CreateSwFirmwareVersionPayload }) =>
+    swRegistryApi.createFirmwareVersion(v.payload),
+  );
 }
 
 export function useDeleteSwFirmwareVersion() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ versionId }: { versionId: string; itemId: string }) =>
-      swRegistryApi.deleteFirmwareVersion(versionId),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
-    },
-  });
+  return useFirmwareMutation((v: { itemId: string; versionId: string }) =>
+    swRegistryApi.deleteFirmwareVersion(v.versionId),
+  );
 }
 
 export function useDeleteSwFirmware() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id }: { id: string; itemId: string }) => swRegistryApi.deleteFirmware(id),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: swRegistryQueryKeys.firmwares(variables.itemId) });
-    },
-  });
+  return useFirmwareMutation((v: { itemId: string; id: string }) => swRegistryApi.deleteFirmware(v.id));
 }

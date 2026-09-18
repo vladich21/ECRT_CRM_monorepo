@@ -38,7 +38,7 @@ export type SwItemListRow = {
   shortName: string;
   fullName: string;
   element: { id: string; code: string; name: string };
-  partner: { id: string; name: string };
+  partner: { id: string; name: string; shortName?: string };
   responsible: { id: string; name: string };
   developmentKindCode: string;
   specUrl: string | null;

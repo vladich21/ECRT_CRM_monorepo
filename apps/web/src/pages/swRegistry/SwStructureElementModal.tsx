@@ -52,7 +52,7 @@ export function SwStructureElementModal({
   }, [open, mode, node, form]);
 
   const excludeIds = mode === 'edit' && node ? collectSubtreeIds(node) : undefined;
-  const parentOptions = flattenStructureOptions(tree, '', excludeIds);
+  const parentOptions = flattenStructureOptions(tree, excludeIds);
   const typeOptions = elementTypes.filter(t => t.isActive !== false).map(t => ({ value: t.code, label: t.name }));
   const roleOptions = roles.filter(t => t.isActive !== false).map(t => ({ value: t.code, label: t.name }));
   const refsEmpty = typeOptions.length === 0 && mode !== 'responsible';

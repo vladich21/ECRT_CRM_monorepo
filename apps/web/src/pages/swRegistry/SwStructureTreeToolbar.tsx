@@ -8,8 +8,6 @@ type Props = {
   onSearchChange: (value: string) => void;
   shownCount: number;
   totalCount: number;
-  /** Чекбокс имеет смысл только на вкладке действующих: архивная вкладка и так показывает архив. */
-  showArchivedToggle: boolean;
   showArchived: boolean;
   onShowArchivedChange: (value: boolean) => void;
 };
@@ -20,7 +18,6 @@ export function SwStructureTreeToolbar({
   onSearchChange,
   shownCount,
   totalCount,
-  showArchivedToggle,
   showArchived,
   onShowArchivedChange,
 }: Props) {
@@ -40,13 +37,11 @@ export function SwStructureTreeToolbar({
         </span>
       </div>
 
-      {showArchivedToggle ? (
-        <div className={styles.treeToolbarRow}>
-          <Checkbox checked={showArchived} onChange={e => onShowArchivedChange(e.target.checked)}>
-            <span className={styles.showArchived}>Показывать архивные</span>
-          </Checkbox>
-        </div>
-      ) : null}
+      <div className={styles.treeToolbarRow}>
+        <Checkbox checked={showArchived} onChange={e => onShowArchivedChange(e.target.checked)}>
+          <span className={styles.showArchived}>Показывать архивные</span>
+        </Checkbox>
+      </div>
     </div>
   );
 }

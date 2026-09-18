@@ -6,37 +6,29 @@ import type { FilesRemoteClient } from '../files/services/files-remote.client';
 import { swFiles } from './sw-registry.schema';
 
 /**
- * Замена копии: у документа и листа утверждения копия одна, поэтому после
- * прикрепления новой прежние привязки снимаются, а их файлы удаляются из
- * хранилища — иначе в списке остаётся старый файл, и «обновить» выглядит как
- * «добавить ещё один». Сбой хранилища замену не отменяет: привязки уже нет,
- * осиротевший файл пишем в лог.
+ * Снимает привязки записи и удаляет их файлы из хранилища.
+ *
+ * Два случая на одном ходу: замена копии (у документа и листа копия одна, прежние
+ * привязки снимаются — иначе «обновить» выглядит как «добавить ещё один») и снятие
+ * записи целиком, когда оставлять нечего (`keepFileId` не передан). Сбой хранилища
+ * замену не отменяет: привязки уже нет, осиротевший файл пишем в лог.
  */
 export async function supersedeSwFileLinks(
   db: DatabaseService,
   filesRemote: FilesRemoteClient,
   logger: Logger,
-  params: { objectType: string; objectId: string; keepFileId: string },
+  params: { objectType: string; objectId: string; keepFileId?: string | null },
 ): Promise<number> {
-  const stale = await db.db
-    .select({ id: swFiles.id, fileId: swFiles.fileId })
-    .from(swFiles)
-    .where(
-      and(
-        eq(swFiles.objectType, params.objectType),
-        eq(swFiles.objectId, params.objectId),
-        ne(swFiles.fileId, params.keepFileId),
-      ),
-    );
+  const scope = and(
+    eq(swFiles.objectType, params.objectType),
+    eq(swFiles.objectId, params.objectId),
+    ...(params.keepFileId ? [ne(swFiles.fileId, params.keepFileId)] : []),
+  );
+
+  const stale = await db.db.select({ id: swFiles.id, fileId: swFiles.fileId }).from(swFiles).where(scope);
   if (!stale.length) return 0;
 
-  await db.db.delete(swFiles).where(
-    and(
-      eq(swFiles.objectType, params.objectType),
-      eq(swFiles.objectId, params.objectId),
-      ne(swFiles.fileId, params.keepFileId),
-    ),
-  );
+  await db.db.delete(swFiles).where(scope);
 
   if (filesRemote.isEnabled()) {
     for (const link of stale) {
@@ -51,7 +43,7 @@ export async function supersedeSwFileLinks(
         await filesRemote.deleteFile(link.fileId);
       } catch (err) {
         logger.warn(
-          `копия заменена, но файл ${link.fileId} в files-service не удалён: ${err instanceof Error ? err.message : String(err)}`,
+          `привязка ${params.objectType} ${params.objectId} снята, но файл ${link.fileId} в files-service не удалён: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }

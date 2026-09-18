@@ -4,7 +4,6 @@ import {
   DownloadOutlined,
   EditOutlined,
   FileWordOutlined,
-  InboxOutlined,
   MoreOutlined,
   PaperClipOutlined,
   UndoOutlined,
@@ -17,7 +16,6 @@ import { formatSwStatusLabel, swStatusBadgeClass } from './swStatusBadge';
 import styles from './SwRegistryShared.module.scss';
 import panelStyles from './SwStructurePage.module.scss';
 
-/** Актуальный файл документа: пришедший из SVN, иначе последний загруженный. */
 /** Копия документа или его листа: приходит вместе с комплектом. */
 export type SwDocumentFile = SwDocumentFileRef;
 
@@ -32,7 +30,7 @@ type Props = {
   selectedDocumentId: string | null;
   onOpenDocument: (doc: SwDocumentListRow) => void;
   onEdit: (doc: SwDocumentListRow) => void;
-  onArchive: (doc: SwDocumentListRow) => void;
+  onDelete: (doc: SwDocumentListRow) => void;
   onRestore: (doc: SwDocumentListRow) => void;
   onChangeStatus: (doc: SwDocumentListRow, scope: 'document' | 'sheet') => void;
   onOpenIps: (doc: SwDocumentListRow) => void;
@@ -81,8 +79,8 @@ export function formatKindLabel(
 
 /**
  * Меню «⋯» строки. Файлы и комментарии открываются всем (и с клавиатуры — строка кликается только мышью).
- * Правка и архив — при праве на комплект; документ, ушедший в архив с программой или элементом, возвращается
- * только вместе с ними.
+ * Правка и удаление — при праве на комплект; документ, ушедший в архив с программой, возвращается
+ * только вместе с ней.
  */
 function rowMenuItems(doc: SwDocumentListRow, canEdit: boolean): NonNullable<MenuProps['items']> {
   const items: NonNullable<MenuProps['items']> = [
@@ -98,8 +96,8 @@ function rowMenuItems(doc: SwDocumentListRow, canEdit: boolean): NonNullable<Men
   items.push(
     { type: 'divider' },
     { key: 'edit', icon: <EditOutlined />, label: 'Редактировать' },
+    { key: 'delete', icon: <DeleteOutlined />, label: 'Удалить', danger: true },
   );
-  items.push({ key: 'archive', icon: <InboxOutlined />, label: 'В архив' });
   return items;
 }
 
@@ -116,7 +114,7 @@ export function SwDocumentsTable({
   selectedDocumentId,
   onOpenDocument,
   onEdit,
-  onArchive,
+  onDelete,
   onRestore,
   onChangeStatus,
   onOpenIps,
@@ -168,7 +166,7 @@ export function SwDocumentsTable({
             const handleMenu: MenuProps['onClick'] = ({ key }) => {
               if (key === 'open') onOpenDocument(doc);
               else if (key === 'edit') onEdit(doc);
-              else if (key === 'archive') onArchive(doc);
+              else if (key === 'delete') onDelete(doc);
               else if (key === 'restore') onRestore(doc);
             };
 

@@ -173,28 +173,9 @@ export class SwFirmwaresService {
     userId?: string,
   ) {
     await this.requireActiveItem(softwareId);
+    // Длину и непустоту проверяет DTO — здесь остаются только правила самой прошивки.
     const name = dto.name.trim();
-    if (!name) throw new UnprocessableEntityException('Укажите наименование прошивки');
-    if (name.length > 255) throw new UnprocessableEntityException('Наименование длиннее 255 символов');
-
-    const [taken] = await this.db.db
-      .select({ id: swFirmwares.id })
-      .from(swFirmwares)
-      .where(
-        and(
-          eq(swFirmwares.softwareId, softwareId),
-          eq(swFirmwares.name, name),
-          ne(swFirmwares.recordState, 'deleted'),
-        ),
-      )
-      .limit(1);
-    if (taken) {
-      throw new ConflictException({
-        code: 'FIRMWARE_NAME_TAKEN',
-        field: 'name',
-        message: `Прошивка «${name}» у этой программы уже есть — загрузите в неё новую версию`,
-      });
-    }
+    await this.assertNameFree(softwareId, name);
 
     // Файл проверяем до создания записи: линия без сборки не нужна, а ждать
     // готовности гигабайтов приходится минутами.
@@ -210,15 +191,42 @@ export class SwFirmwaresService {
         return line;
       });
     } catch (err) {
-      if (isPgUniqueViolation(err, 'sw_firmwares_name_uidx')) {
-        throw new ConflictException({
-          code: 'FIRMWARE_NAME_TAKEN',
-          field: 'name',
-          message: `Прошивка «${name}» у этой программы уже есть — загрузите в неё новую версию`,
-        });
-      }
+      this.rethrowNameTaken(err, name);
       throw err;
     }
+  }
+
+  /**
+   * Имя прошивки уникально внутри программы. Предпроверка отвечает понятным сообщением,
+   * гонку добирает частичный уникальный индекс — см. rethrowNameTaken.
+   */
+  private async assertNameFree(softwareId: string, name: string, exceptId?: string) {
+    const [taken] = await this.db.db
+      .select({ id: swFirmwares.id })
+      .from(swFirmwares)
+      .where(
+        and(
+          eq(swFirmwares.softwareId, softwareId),
+          eq(swFirmwares.name, name),
+          ne(swFirmwares.recordState, 'deleted'),
+          ...(exceptId ? [ne(swFirmwares.id, exceptId)] : []),
+        ),
+      )
+      .limit(1);
+    if (taken) this.throwNameTaken(name);
+  }
+
+  private throwNameTaken(name: string): never {
+    throw new ConflictException({
+      code: 'FIRMWARE_NAME_TAKEN',
+      field: 'name',
+      message: `Прошивка «${name}» у этой программы уже есть — загрузите в неё новую версию`,
+    });
+  }
+
+  /** Второй запрос успел занять имя между проверкой и записью: 23505 вместо 500. */
+  private rethrowNameTaken(err: unknown, name: string) {
+    if (isPgUniqueViolation(err, 'sw_firmwares_name_uidx')) this.throwNameTaken(name);
   }
 
   /** Переименование прошивки и правка примечания линии. */
@@ -227,37 +235,22 @@ export class SwFirmwaresService {
     await this.requireActiveItem(line.softwareId);
 
     const name = dto.name?.trim();
-    if (name !== undefined && !name) throw new UnprocessableEntityException('Укажите наименование прошивки');
-    if (name && name !== line.name) {
-      const [taken] = await this.db.db
-        .select({ id: swFirmwares.id })
-        .from(swFirmwares)
-        .where(
-          and(
-            eq(swFirmwares.softwareId, line.softwareId),
-            eq(swFirmwares.name, name),
-            ne(swFirmwares.recordState, 'deleted'),
-          ),
-        )
-        .limit(1);
-      if (taken) {
-        throw new ConflictException({
-          code: 'FIRMWARE_NAME_TAKEN',
-          field: 'name',
-          message: `Прошивка «${name}» у этой программы уже есть`,
-        });
-      }
-    }
+    if (name && name !== line.name) await this.assertNameFree(line.softwareId, name, id);
 
-    const [row] = await this.db.db
-      .update(swFirmwares)
-      .set({
-        ...(name ? { name } : {}),
-        ...(dto.note !== undefined ? { note: dto.note?.trim() || null } : {}),
-      })
-      .where(eq(swFirmwares.id, id))
-      .returning();
-    return row;
+    try {
+      const [row] = await this.db.db
+        .update(swFirmwares)
+        .set({
+          ...(name ? { name } : {}),
+          ...(dto.note !== undefined ? { note: dto.note?.trim() || null } : {}),
+        })
+        .where(eq(swFirmwares.id, id))
+        .returning();
+      return row;
+    } catch (err) {
+      this.rethrowNameTaken(err, name ?? line.name);
+      throw err;
+    }
   }
 
   /** Новая сборка существующей прошивки. */

@@ -23,6 +23,7 @@ import {
   archivedEditError,
   formatPersonName,
   gost19103Warning,
+  partnerDisplayName,
   isPgUniqueViolation,
   normalizeDesignation,
 } from '../sw-registry.util';
@@ -129,6 +130,7 @@ export class SwItemsService {
         elementCode: swStructureElements.code,
         elementName: swStructureElements.name,
         partnerName: partners.name,
+        partnerShortName: partners.shortName,
         lastName: users.lastName,
         firstName: users.firstName,
         middleName: users.middleName,
@@ -169,7 +171,11 @@ export class SwItemsService {
         shortName: r.item.shortName,
         fullName: r.item.fullName,
         element: { id: r.item.elementId, code: r.elementCode, name: r.elementName },
-        partner: { id: r.item.partnerId, name: r.partnerName ?? '' },
+        partner: {
+          id: r.item.partnerId,
+          name: partnerDisplayName(r.partnerShortName, r.partnerName),
+          shortName: (r.partnerShortName ?? '').trim(),
+        },
         responsible: {
           id: r.item.responsibleUserId,
           name: formatPersonName({ ...r, id: r.item.responsibleUserId }),
@@ -227,6 +233,7 @@ export class SwItemsService {
         elementCode: swStructureElements.code,
         elementName: swStructureElements.name,
         partnerName: partners.name,
+        partnerShortName: partners.shortName,
         lastName: users.lastName,
         firstName: users.firstName,
         middleName: users.middleName,
@@ -516,6 +523,7 @@ export class SwItemsService {
     elementCode: string;
     elementName: string;
     partnerName: string | null;
+    partnerShortName: string | null;
     lastName: string | null;
     firstName: string | null;
     middleName: string | null;
@@ -526,7 +534,11 @@ export class SwItemsService {
       shortName: row.item.shortName,
       fullName: row.item.fullName,
       element: { id: row.item.elementId, code: row.elementCode, name: row.elementName },
-      partner: { id: row.item.partnerId, name: row.partnerName ?? '' },
+      partner: {
+        id: row.item.partnerId,
+        name: partnerDisplayName(row.partnerShortName, row.partnerName),
+        shortName: (row.partnerShortName ?? '').trim(),
+      },
       responsible: {
         id: row.item.responsibleUserId,
         name: formatPersonName({ ...row, id: row.item.responsibleUserId }),

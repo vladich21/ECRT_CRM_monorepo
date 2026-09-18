@@ -2,6 +2,7 @@ import { RightOutlined, UndoOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 
 import type { SwItemListRow } from '@/types/swRegistry';
+import { usePartnerShortName } from './usePartnerShortName';
 import styles from './SwItemsListPage.module.scss';
 
 type Props = {
@@ -18,6 +19,7 @@ function formatElementPath(element: SwItemListRow['element']) {
 }
 
 export function SwItemCard({ item, kindLabel, statusLabels, onClick, onRestore, restoreLoading }: Props) {
+  const partnerLabel = usePartnerShortName(item.partner.id, item.partner.shortName || item.partner.name);
   const statusEntries = Object.entries(item.statusSummary ?? {}).filter(([, n]) => n > 0);
   const isArchived = item.recordState === 'archived';
 
@@ -39,7 +41,7 @@ export function SwItemCard({ item, kindLabel, statusLabels, onClick, onRestore, 
         <div className={styles.responsibleRow}>
           <UserOutlined style={{ fontSize: 14, flexShrink: 0 }} />
           <span className={styles.responsibleName}>
-            {item.responsible.name} · {item.partner.name}
+            {item.responsible.name} · {partnerLabel}
           </span>
         </div>
         <div className={styles.chipsRow}>

@@ -240,7 +240,7 @@ export function SwFirmwareUploadModal({
             {
               validator: (_rule, value: string | undefined) =>
                 value && takenVersions.includes(value.trim())
-                  ? Promise.reject(new Error('Такая версия у программы уже загружена'))
+                  ? Promise.reject(new Error('Такая версия у этой прошивки уже загружена'))
                   : Promise.resolve(),
             },
           ]}
