@@ -63,7 +63,7 @@ export type PurchaseRequestDetail = PurchaseRequestListRow & {
   department_name: string | null;
   tech_acceptor_id: string;
   tech_acceptor_name: string | null;
-  funding_source: string;
+  funding_source: string | null;
   income_contract_id: string | null;
   income_contract_name: string | null;
   income_stage_id: string | null;
@@ -82,6 +82,7 @@ export type PurchaseRequestDetail = PurchaseRequestListRow & {
   purchase_method_name: string | null;
   method_justification: string | null;
   routed_contract_id: string | null;
+  suggested_lead_manager_id: string | null;
 };
 
 export type PurchaseRequestsListParams = {
@@ -118,7 +119,7 @@ export type CreatePurchaseRequestPayload = {
   project_id: string;
   department_id: string;
   tech_acceptor_id: string;
-  funding_source: FundingSource;
+  funding_source?: FundingSource | null;
   is_urgent?: boolean;
   amount?: number;
   income_contract_id?: string | null;
@@ -483,4 +484,10 @@ export type ChoosePurchaseRoutePayload = {
   updated_at: string;
   kind: PurchaseRouteKind;
   base_contract_id?: string | null;
+};
+
+export type PurchaseRequestChain = {
+  request: { id: string; number: number; title: string };
+  income: { id: string; title: string; stage: { id: string; title: string } | null } | null;
+  documents: Array<{ kind: string; id: string; title: string }>;
 };

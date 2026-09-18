@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
-import { CalendarOutlined, ProjectOutlined, ShoppingOutlined } from '@ant-design/icons';
+import { ApartmentOutlined, CalendarOutlined, ProjectOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { Tag, Typography } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
 
+import { usePurchaseRequestChain } from '@/api/procurement/requests/procurementRequestApiHooks';
 import type { PurchaseRequestDetail } from '@/api/procurement/requests/procurementRequestApi';
 
 import styles from './PurchaseRequestMainInfo.module.scss';
 import {
+  chainDocumentKindLabel,
   FUNDING_SOURCE_LABELS,
   formatPurchaseRequestAmount,
   formatPurchaseRequestDate,
@@ -46,6 +48,7 @@ export function PurchaseRequestMainInfo({ request }: Props) {
   const returnPath = `${location.pathname}${location.search}`;
   const funding =
     FUNDING_SOURCE_LABELS[request.funding_source as keyof typeof FUNDING_SOURCE_LABELS] ?? request.funding_source;
+  const { data: chain } = usePurchaseRequestChain(request.id);
 
   return (
     <div className={styles.layout}>
@@ -134,6 +137,28 @@ export function PurchaseRequestMainInfo({ request }: Props) {
             </MetaRow>
           </div>
         </section>
+
+        {chain && chain.documents.length > 0 ? (
+          <section className={styles.card} aria-labelledby='purchase-request-chain'>
+            <h3 id='purchase-request-chain' className={styles.sectionTitle}>
+              <ApartmentOutlined className={styles.sectionTitleIcon} aria-hidden />
+              Цепочка происхождения
+            </h3>
+            <div className={styles.metaList}>
+              {chain.documents.map(doc => (
+                <MetaRow key={doc.id} label={chainDocumentKindLabel(doc.kind)}>
+                  {doc.kind === 'contract' ? (
+                    <Link to={`/contracts/${doc.id}`} state={{ from: returnPath }} className={styles.contractLink}>
+                      {doc.title}
+                    </Link>
+                  ) : (
+                    doc.title
+                  )}
+                </MetaRow>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </aside>
     </div>
   );

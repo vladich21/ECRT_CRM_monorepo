@@ -17,12 +17,21 @@ const COMMENT_REQUIRED: ApprovalDecisionType[] = ['rejected', 'returned_to_initi
 
 type ApprovalDecisionModalData = {
   processId: string;
+  entityType?: string;
+  currentStepOrder?: number;
   canDelegate?: boolean;
   canReturnToPrevious?: boolean;
   previousSteps?: { step_order: number; name: string }[];
   labels?: Partial<Record<ApprovalDecisionType, string>>;
   approveBlockedReason?: string | null;
+  decisionContext?: Record<string, unknown>;
 };
+
+const PURCHASE_REQUEST_FUNDING_OPTIONS = [
+  { value: 'income_contract', label: 'Доходный договор' },
+  { value: 'investment_program', label: 'Инвестпрограмма' },
+  { value: 'budget', label: 'Бюджет' },
+];
 
 export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, modalData: rawModalData }) => {
   const modalData = (rawModalData ?? {}) as ApprovalDecisionModalData;
@@ -42,6 +51,20 @@ export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, 
   const previousSteps: { step_order: number; name: string }[] = modalData?.previousSteps ?? [];
   const labels = modalData?.labels ?? {};
   const approveBlockedReason = modalData?.approveBlockedReason ?? null;
+  const decisionContext = modalData?.decisionContext ?? {};
+
+  const isPurchaseRequestFundingStep =
+    modalData?.entityType === 'purchase_request' && modalData?.currentStepOrder === 2;
+  const isPurchaseRequestLeadStep = modalData?.entityType === 'purchase_request' && modalData?.currentStepOrder === 3;
+  const [fundingSource, setFundingSource] = useState<string | undefined>(
+    () => (decisionContext.fundingSource as string | null | undefined) ?? undefined,
+  );
+  const [leadManagerId, setLeadManagerId] = useState<string | undefined>(
+    () =>
+      (decisionContext.currentLeadId as string | null | undefined) ??
+      (decisionContext.suggestedLeadId as string | null | undefined) ??
+      undefined,
+  );
 
   const options = [
     { label: labels.approved ?? 'Согласовать', value: 'approved' },
@@ -63,6 +86,13 @@ export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, 
 
   const submit = async () => {
     try {
+      const decisionData: Record<string, unknown> = {};
+      if (decisionType === 'approved' && isPurchaseRequestFundingStep && fundingSource) {
+        decisionData.funding_source = fundingSource;
+      }
+      if (decisionType === 'approved' && isPurchaseRequestLeadStep && leadManagerId) {
+        decisionData.lead_manager_id = leadManagerId;
+      }
       await decide.mutateAsync({
         processId,
         payload: {
@@ -71,6 +101,7 @@ export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, 
           return_to_step: decisionType === 'returned_to_step' ? returnToStep : undefined,
           delegated_to: decisionType === 'delegated' ? delegatedTo : undefined,
           delegation_mode: decisionType === 'delegated' ? delegationMode : undefined,
+          decision_data: Object.keys(decisionData).length > 0 ? decisionData : undefined,
         },
       });
       message.success('Решение сохранено');
@@ -95,6 +126,24 @@ export const ApprovalDecisionModal: React.FC<ModalShellProps> = ({ open, title, 
             options={options}
           />
         </Form.Item>
+
+        {decisionType === 'approved' && isPurchaseRequestFundingStep ? (
+          <Form.Item label='Источник финансирования'>
+            <Select
+              value={fundingSource}
+              onChange={setFundingSource}
+              options={PURCHASE_REQUEST_FUNDING_OPTIONS}
+              placeholder='Источник (можно оставить как есть)'
+              allowClear
+            />
+          </Form.Item>
+        ) : null}
+
+        {decisionType === 'approved' && isPurchaseRequestLeadStep ? (
+          <Form.Item label='Ведущий ОУП'>
+            <EmployeeSelect value={leadManagerId} onChange={v => setLeadManagerId(v as string)} />
+          </Form.Item>
+        ) : null}
 
         {decisionType === 'returned_to_step' ? (
           <Form.Item label='Вернуть на шаг' required>

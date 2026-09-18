@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
+  DeleteOutlined,
   DollarOutlined,
   EditOutlined,
   ProjectOutlined,
@@ -21,6 +22,7 @@ import {
 } from '@/api/procurement/requests/procurementRequestApi';
 import {
   useAssignPurchaseRequestLead,
+  useDeletePurchaseRequest,
   usePurchaseRequestComparison,
   usePurchaseRequestDetail,
   useReplacePurchaseRequestIncomeContract,
@@ -48,6 +50,7 @@ import { PurchaseRequestAssignLeadModal } from './PurchaseRequestAssignLeadModal
 import { PurchaseRequestChangeIncomeModal } from './PurchaseRequestChangeIncomeModal';
 import { PurchaseRequestElaboration } from './PurchaseRequestElaboration';
 import { PurchaseRequestJournal } from './PurchaseRequestJournal';
+import { PurchaseRequestSubmitModal } from './PurchaseRequestSubmitModal';
 import {
   formatPurchaseRequestAmount,
   formatPurchaseRequestDate,
@@ -66,6 +69,7 @@ import {
   canSetPurchaseRequestMethod,
   canSubmitPurchaseRequest,
   needsIncomeContractForApprove,
+  SUBMIT_MANDATORY_STEP_ORDERS,
 } from './purchaseRequestPolicy';
 
 const REQUISITES_TAB = 'requisites';
@@ -118,12 +122,14 @@ export default function PurchaseRequestCardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
+  const [submitOpen, setSubmitOpen] = useState(false);
   const { showNotification, contextHolder } = useNotification();
   const userId = useAuthStore(state => state.user?.id);
   const openModal = useModalStore(state => state.openModal);
   const { data: request, isLoading, isError, refetch } = usePurchaseRequestDetail(requestId);
   const { mutate: replaceIncome, isPending: replacingIncome } = useReplacePurchaseRequestIncomeContract();
   const { mutate: submit, isPending: submitting } = useSubmitPurchaseRequest();
+  const { mutate: deleteRequest, isPending: deleting } = useDeletePurchaseRequest();
   const { mutate: sendToAgreement, isPending: sendingAgreement } = useSendPurchaseRequestToAgreement();
   const { mutate: assignLead, isPending: assigningLead } = useAssignPurchaseRequestLead();
   const { data: approvalState } = useApprovalState(PURCHASE_REQUEST_ENTITY_TYPE, request?.id);
@@ -232,7 +238,7 @@ export default function PurchaseRequestCardPage() {
           if (axios.isAxiosError(error) && error.response?.status === 428) {
             Modal.confirm({
               title: 'Срок действия КП истекает',
-              content: 'До конца срока КП меньше 5 рабочих дней. Отправить на согласование всё равно?',
+              content: 'До конца срока КП меньше 5 рабочих дней. Отправить на согласование все равно?',
               okText: 'Отправить',
               cancelText: 'Отмена',
               onOk: () => postToAgreement(true),
@@ -262,7 +268,7 @@ export default function PurchaseRequestCardPage() {
     if (comparison?.quotes.some(quote => quote.is_expiring)) {
       Modal.confirm({
         title: 'Срок действия КП истекает',
-        content: 'До конца срока КП меньше 5 рабочих дней. Отправить на согласование всё равно?',
+        content: 'До конца срока КП меньше 5 рабочих дней. Отправить на согласование все равно?',
         okText: 'Отправить',
         cancelText: 'Отмена',
         onOk: () => postToAgreement(true),
@@ -304,28 +310,35 @@ export default function PurchaseRequestCardPage() {
             </Button>
           </CanAccess>
         ) : null}
-        {canSubmit ? (
+        {canEditDraft ? (
           <CanAccess section={SECTIONS.PROCUREMENT_REQUESTS} action='edit'>
-            <Button
-              type='primary'
-              icon={<SendOutlined />}
-              loading={submitting}
-              onClick={() => {
-                submit(request.id, {
+            <Popconfirm
+              title='Удалить черновик?'
+              description='Запрос будет удалён без возможности восстановления из интерфейса.'
+              okText='Удалить'
+              okButtonProps={{ danger: true }}
+              cancelText='Отмена'
+              onConfirm={() => {
+                deleteRequest(request.id, {
                   onSuccess: () => {
-                    setTab(APPROVAL_TAB);
-                    showNotification('success', 'Запрос отправлен на утверждение');
+                    showNotification('success', 'Запрос удалён');
+                    navigate('/procurement/requests');
                   },
                   onError: error => {
-                    if (axios.isAxiosError(error) && error.response?.status === 409) {
-                      showNotification('error', 'Отправить можно только черновик');
-                      return;
-                    }
-                    showNotification('error', 'Не удалось отправить', getApiErrorMessage(error) ?? 'Ошибка отправки');
+                    showNotification('error', 'Не удалось удалить', getApiErrorMessage(error) ?? 'Ошибка удаления');
                   },
                 });
               }}
             >
+              <Button type='primary' danger icon={<DeleteOutlined />} loading={deleting}>
+                Удалить
+              </Button>
+            </Popconfirm>
+          </CanAccess>
+        ) : null}
+        {canSubmit ? (
+          <CanAccess section={SECTIONS.PROCUREMENT_REQUESTS} action='edit'>
+            <Button type='primary' icon={<SendOutlined />} loading={submitting} onClick={() => setSubmitOpen(true)}>
               Отправить
             </Button>
           </CanAccess>
@@ -338,7 +351,7 @@ export default function PurchaseRequestCardPage() {
         {cancellableProcessId ? (
           <Popconfirm
             title={`${cancelLabel}?`}
-            description='Запрос вернётся на предыдущий шаг, принятые решения сбросятся.'
+            description='Запрос вернется на предыдущий шаг, принятые решения сбросятся.'
             okText='Отменить'
             cancelText='Нет'
             okButtonProps={{ danger: true }}
@@ -352,7 +365,7 @@ export default function PurchaseRequestCardPage() {
               }
             }}
           >
-            <Button danger icon={<StopOutlined />} loading={cancelling}>
+            <Button type='primary' danger icon={<StopOutlined />} loading={cancelling}>
               {cancelLabel}
             </Button>
           </Popconfirm>
@@ -425,6 +438,15 @@ export default function PurchaseRequestCardPage() {
                   showAgreementPanel
                     ? 'Еще не отправлено. Кнопка «Отправить на согласование» — в шапке карточки.'
                     : 'Еще не отправлено. Кнопка «Отправить» — в шапке карточки.'
+                }
+                decisionContext={
+                  showAgreementPanel
+                    ? undefined
+                    : {
+                        fundingSource: request.funding_source,
+                        currentLeadId: request.lead_manager_id,
+                        suggestedLeadId: request.suggested_lead_manager_id,
+                      }
                 }
               />
             </>
@@ -512,6 +534,30 @@ export default function PurchaseRequestCardPage() {
                   return;
                 }
                 showNotification('error', 'Не удалось назначить ведущего', getApiErrorMessage(error) ?? 'Ошибка');
+              },
+            },
+          );
+        }}
+      />
+      <PurchaseRequestSubmitModal
+        open={submitOpen}
+        confirmLoading={submitting}
+        onCancel={() => setSubmitOpen(false)}
+        onConfirm={includeInitiatorHead => {
+          submit(
+            { id: request.id, includedStepOrders: includeInitiatorHead ? undefined : SUBMIT_MANDATORY_STEP_ORDERS },
+            {
+              onSuccess: () => {
+                setSubmitOpen(false);
+                setTab(APPROVAL_TAB);
+                showNotification('success', 'Запрос отправлен на утверждение');
+              },
+              onError: error => {
+                if (axios.isAxiosError(error) && error.response?.status === 409) {
+                  showNotification('error', 'Отправить можно только черновик');
+                  return;
+                }
+                showNotification('error', 'Не удалось отправить', getApiErrorMessage(error) ?? 'Ошибка отправки');
               },
             },
           );

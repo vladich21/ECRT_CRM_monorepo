@@ -14,7 +14,11 @@ import {
   PURCHASE_REQUEST_AGREEMENT_ENTITY_TYPE,
   type PurchaseRequestTransitionAction,
 } from '../../procurement-requests/domain/purchase-request.transitions';
-import { purchaseRequests } from '../../procurement-requests/procurement-requests.schema';
+import {
+  purchaseQuotes,
+  purchaseRequestSelectionReasons,
+  purchaseRequests,
+} from '../../procurement-requests/procurement-requests.schema';
 import type { ApprovalEntity, EntityHandler } from './entity-handler.interface';
 import type { DrizzleTx } from '../types/approval.types';
 
@@ -115,19 +119,44 @@ export class PurchaseRequestAgreementHandler implements EntityHandler {
     action: PurchaseRequestTransitionAction,
   ): Promise<void> {
     const id = entity.id as string;
+    const from = String(entity.status ?? '');
     let next: string;
     try {
-      next = nextStatus(String(entity.status ?? ''), action);
+      next = nextStatus(from, action);
     } catch (error) {
       if (error instanceof IllegalPurchaseRequestTransition) {
         throw new ConflictException(error.message);
       }
       throw error;
     }
+    const kickedBack = from === 'in_agreement' && (action === 'reject' || action === 'return');
     await tx
       .update(purchaseRequests)
-      .set({ status: next, updatedAt: new Date() })
+      .set({
+        status: next,
+        updatedAt: new Date(),
+        ...(kickedBack ? this.decisionResetPatch() : {}),
+      })
       .where(eq(purchaseRequests.id, id));
+    if (kickedBack) {
+      await tx.delete(purchaseRequestSelectionReasons).where(eq(purchaseRequestSelectionReasons.requestId, id));
+      await tx.update(purchaseQuotes).set({ excludedFromNmcd: false }).where(eq(purchaseQuotes.requestId, id));
+    }
     entity.status = next;
+  }
+
+  /**
+   * БП-28: возврат/отклонение на согласовании после проработки сбрасывает НМЦД
+   * и выбор поставщика — ведущий ОУП пересматривает решения, а не отправляет старые.
+   */
+  private decisionResetPatch() {
+    return {
+      priceMethod: null,
+      priceMethodNote: null,
+      initialMaxPrice: null,
+      nmcdSnapshot: null,
+      selectedQuoteId: null,
+      selectionNote: null,
+    };
   }
 }

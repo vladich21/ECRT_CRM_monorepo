@@ -7,7 +7,7 @@ export type PurchaseRequestPatchSnapshot = {
   projectId: string;
   departmentId: string;
   techAcceptorId: string;
-  fundingSource: string;
+  fundingSource: string | null;
   expertPrice: string | null;
   amount: string | null;
   currencyCode: string;
@@ -36,7 +36,7 @@ export type PurchaseRequestPatchInput = {
   income_stage_id?: string | null;
 };
 
-/** Поля, значение которых реально сменилось. Ключ в PATCH ≠ изменение. */
+/** Поля, значение которых реально сменилось. Ключ в PATCH ? изменение. */
 export function changedRequisiteFields(
   existing: PurchaseRequestPatchSnapshot,
   dto: PurchaseRequestPatchInput,

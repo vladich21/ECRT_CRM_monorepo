@@ -143,6 +143,8 @@ export interface MakeDecisionPayload {
   delegated_to?: string;
   delegation_mode?: DelegationMode;
   return_to_step?: number;
+  /** Данные конкретного шага — интерпретирует backend-handler сущности (funding_source / lead_manager_id и т.п.). */
+  decision_data?: Record<string, unknown>;
 }
 
 export interface MyTaskItem {

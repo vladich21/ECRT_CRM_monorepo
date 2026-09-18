@@ -104,7 +104,7 @@ export const purchaseRequests = pgTable(
     currencyCode: varchar('currency_code', { length: 3 }).notNull().default('RUB'),
     vatRateId: uuid('vat_rate_id'),
     vatIncluded: boolean('vat_included').notNull().default(true),
-    fundingSource: varchar('funding_source', { length: 30 }).notNull(),
+    fundingSource: varchar('funding_source', { length: 30 }),
     priceMethod: varchar('price_method', { length: 30 }),
     priceMethodNote: text('price_method_note'),
     initialMaxPrice: numeric('initial_max_price', { precision: 15, scale: 2 }),
@@ -296,7 +296,7 @@ export const purchaseRequestEvents = pgTable(
   (t) => [    index('purchase_request_events_request_idx').on(t.requestId, t.createdAt)],
 );
 
-/** S13: запрос → расходный договор. ДС/заказ появятся в ФС-2 теми же kind. */
+/** S13: запрос > расходный договор. ДС/заказ появятся в ФС-2 теми же kind. */
 export const purchaseRequestDocuments = pgTable(
   'purchase_request_documents',
   {

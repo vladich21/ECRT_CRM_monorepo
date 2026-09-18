@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import { and, asc, eq } from 'drizzle-orm';
 
@@ -128,11 +127,9 @@ export class PurchaseMethodService {
     catalog: Awaited<ReturnType<PurchaseMethodService['loadCatalog']>>,
   ) {
     const netKopecks = numericToKopecks(request.initialMaxPrice);
-    if (netKopecks == null) {
-      throw new UnprocessableEntityException('НМЦД без суммы — способ закупки недоступен');
-    }
     const vatPercent = request.vatPercent != null ? Number(request.vatPercent) : null;
-    const grossKopecks = grossFromNetKopecks(netKopecks, Number.isFinite(vatPercent) ? vatPercent : null);
+    const grossKopecks =
+      netKopecks == null ? null : grossFromNetKopecks(netKopecks, Number.isFinite(vatPercent) ? vatPercent : null);
     return evaluatePurchaseMethods(
       catalog.map(row => ({
         id: row.id,

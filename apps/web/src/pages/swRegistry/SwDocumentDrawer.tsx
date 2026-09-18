@@ -28,14 +28,12 @@ type Props = {
  * смены статуса. Статусы и IPS остаются в строке таблицы — здесь их не дублируем.
  */
 export function SwDocumentDrawer({ document, kindLabel, statusLabel, tab, onTabChange, canEdit, onClose }: Props) {
-  // Пока панель закрывается, документа уже нет — показываем последний, иначе шапка мигнёт пустой.
   const lastDocument = useRef<SwDocumentListRow | null>(null);
   if (document) lastDocument.current = document;
   const shown = document ?? lastDocument.current;
 
   const documentId = shown?.id;
   const hasSheet = Boolean(shown?.sheetStatusCode);
-  // Счётчик вкладки — из тех же запросов, что грузит сама вкладка: кэш общий, лишних обращений нет.
   const docFilesQuery = useSwFiles('sw_document', documentId, Boolean(documentId));
   const sheetFilesQuery = useSwFiles('sw_sheet', documentId, Boolean(documentId) && hasSheet);
 
@@ -108,7 +106,6 @@ export function SwDocumentDrawer({ document, kindLabel, statusLabel, tab, onTabC
             ))}
           </div>
 
-          {/* key по документу: смена документа без закрытия панели не унесёт черновик комментария или загрузку в чужой. */}
           {tab === 'files' ? (
             <SwDocumentFilesTab
               key={shown.id}

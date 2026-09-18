@@ -6,7 +6,7 @@ export type FundingLink = {
 };
 
 export function resolveFundingLink(
-  source: FundingSource,
+  source: FundingSource | null | undefined,
   contractId?: string | null,
   stageId?: string | null,
 ): FundingLink {

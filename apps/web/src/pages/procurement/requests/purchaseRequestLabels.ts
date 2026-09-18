@@ -227,6 +227,18 @@ export const PRICE_METHOD_OPTIONS = PRICE_METHODS.map(value => ({
   label: PRICE_METHOD_LABELS[value],
 }));
 
+const CHAIN_DOCUMENT_KIND_LABELS: Record<string, string> = {
+  contract: 'Расходный договор',
+  tender: 'Тендер',
+  invoice: 'Счет',
+  amendment: 'Доп. соглашение',
+  order: 'Заказ',
+};
+
+export function chainDocumentKindLabel(kind: string): string {
+  return CHAIN_DOCUMENT_KIND_LABELS[kind] ?? 'Документ';
+}
+
 export function formatPurchaseRequestDateTime(iso: string | null | undefined): string {
   if (!iso) return '—';
   const date = new Date(iso);

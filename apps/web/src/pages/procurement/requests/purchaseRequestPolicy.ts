@@ -1,3 +1,6 @@
+/** ВИ-4: шаг 1 «Руководитель инициатора» необязательный, 2 «РП» и 3 «Начальник ОУП» — всегда. */
+export const SUBMIT_MANDATORY_STEP_ORDERS = [2, 3];
+
 /** Зеркало backend `canPatchDraft`. Остальные роли/статусы — в policy следующих слайсов, не в JSX. */
 export function canEditPurchaseRequestDraft(
   request: { status: string; initiator_id: string },
@@ -16,7 +19,7 @@ export function canSubmitPurchaseRequest(
 
 /** Зеркало backend `canChangeIncomeLink`. Ветку correction после расходного — ФС-2. */
 export function canChangePurchaseRequestIncomeLink(
-  request: { funding_source: string; initiator_id: string; lead_manager_id: string | null; status: string },
+  request: { funding_source: string | null; initiator_id: string; lead_manager_id: string | null; status: string },
   actorId: string | undefined,
   extras?: { canApprove?: boolean },
 ): boolean {
@@ -29,7 +32,7 @@ export function canChangePurchaseRequestIncomeLink(
 
 /** ЗАП-20: утвердить нельзя, пока нет доходного договора. Пустой этап не блокирует. */
 export function needsIncomeContractForApprove(request: {
-  funding_source: string;
+  funding_source: string | null;
   income_contract_id: string | null;
 }): boolean {
   return request.funding_source === 'income_contract' && !request.income_contract_id;

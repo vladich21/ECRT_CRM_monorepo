@@ -114,7 +114,7 @@ export function toUpdatePayload(
   if (canWrite('tech_acceptor_id') && next.tech_acceptor_id !== previous.tech_acceptor_id) {
     payload.tech_acceptor_id = next.tech_acceptor_id;
   }
-  if (canWrite('funding_source') && next.funding_source !== previous.funding_source) {
+  if (canWrite('funding_source') && next.funding_source !== previous.funding_source && next.funding_source != null) {
     payload.funding_source = next.funding_source;
   }
   if (canWrite('is_urgent') && Boolean(next.is_urgent) !== Boolean(previous.is_urgent)) {

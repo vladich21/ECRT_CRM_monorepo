@@ -1,8 +1,10 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDefined,
   IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -39,8 +41,9 @@ export class CreatePurchaseRequestDto {
   @IsUUID()
   tech_acceptor_id!: string;
 
+  @IsOptional()
   @IsIn(FUNDING_SOURCES)
-  funding_source!: (typeof FUNDING_SOURCES)[number];
+  funding_source?: (typeof FUNDING_SOURCES)[number];
 
   @IsOptional()
   @Transform(({ value }) => (value === '' ? null : value))
@@ -225,6 +228,21 @@ export class AssignPurchaseRequestLeadEnvelopeDto {
   @ValidateNested()
   @Type(() => AssignPurchaseRequestLeadDto)
   body!: AssignPurchaseRequestLeadDto;
+}
+
+/** ВИ-4: шаг «Руководитель инициатора» необязательный — инициатор решает при отправке. */
+export class SubmitPurchaseRequestDto {
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  included_step_orders?: number[];
+}
+
+export class SubmitPurchaseRequestEnvelopeDto {
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => SubmitPurchaseRequestDto)
+  body!: SubmitPurchaseRequestDto;
 }
 
 export class AddPurchaseRequestSupplierDto {

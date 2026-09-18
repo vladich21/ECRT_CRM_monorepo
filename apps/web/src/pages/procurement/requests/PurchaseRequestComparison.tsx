@@ -168,14 +168,14 @@ export function PurchaseRequestComparison({ request, canEdit, pane }: Props) {
           ) : data ? (
             <div className={styles.stack}>
               <NmcdCard
-                key={`nmcd-${data.request_updated_at}`}
+                key={`nmcd-${data.price_method ?? ''}-${data.initial_max_price ?? ''}-${data.price_method_note ?? ''}`}
                 canEdit={canEdit}
                 comparison={data}
                 saving={fixing}
                 onSubmit={handleFix}
               />
               <SelectSupplierCard
-                key={`pick-${data.request_updated_at}`}
+                key={`pick-${data.selected_quote_id ?? ''}-${data.reason_codes.join(',')}`}
                 canEdit={canEdit}
                 comparison={data}
                 reasons={reasons}
@@ -230,14 +230,14 @@ function NmcdCard(props: {
           {comparison.price_method === 'impossible' ? null : (
             <span className={styles.factMeta}>
               {comparison.nmcd_snapshot?.excluded.length
-                ? `Исключено КП из расчёта: ${comparison.nmcd_snapshot.excluded.length}`
-                : 'Все КП учтены в расчёте'}
+                ? `Исключено КП из расчета: ${comparison.nmcd_snapshot.excluded.length}`
+                : 'Все КП учтены в расчете'}
             </span>
           )}
           {comparison.price_method_note ? <p className={styles.note}>{comparison.price_method_note}</p> : null}
         </div>
       ) : (
-        <p className={styles.emptyLine}>Ещё не зафиксирована</p>
+        <p className={styles.emptyLine}>Еще не зафиксирована</p>
       )}
       {canEdit && editing && method === 'market' && comparison.market_preview.ok ? (
         <p className={styles.hint}>
@@ -250,7 +250,7 @@ function NmcdCard(props: {
         <Form
           form={form}
           layout='vertical'
-          key={comparison.request_updated_at}
+          key={`${comparison.price_method ?? ''}-${comparison.initial_max_price ?? ''}-${comparison.price_method_note ?? ''}`}
           initialValues={{
             method: (comparison.price_method as PriceMethod | null) ?? 'market',
             amount: comparison.initial_max_price != null ? Number(comparison.initial_max_price) : undefined,
@@ -350,12 +350,12 @@ function SelectSupplierCard(props: {
           {comparison.selection_note ? <p className={styles.note}>{comparison.selection_note}</p> : null}
         </div>
       ) : (
-        <p className={styles.emptyLine}>Ещё не выбран</p>
+        <p className={styles.emptyLine}>Еще не выбран</p>
       )}
       {canEdit && editing ? (
         <Form
           layout='vertical'
-          key={`${comparison.request_updated_at}-${comparison.selected_quote_id ?? ''}`}
+          key={`${comparison.selected_quote_id ?? ''}-${comparison.reason_codes.join(',')}`}
           initialValues={{
             quote_id: comparison.selected_quote_id ?? undefined,
             reason_codes: comparison.reason_codes,

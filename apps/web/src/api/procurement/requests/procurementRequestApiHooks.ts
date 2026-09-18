@@ -49,6 +49,14 @@ export function usePurchaseRequestJournal(id: string | undefined, enabled = true
   });
 }
 
+export function usePurchaseRequestChain(id: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: procurementRequestQueryKeys.chain(id ?? ''),
+    queryFn: () => procurementRequestApi.getChain(id!),
+    enabled: Boolean(id) && enabled,
+  });
+}
+
 export function useCreatePurchaseRequest() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -71,6 +79,16 @@ export function useUpdatePurchaseRequest() {
   });
 }
 
+export function useDeletePurchaseRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => procurementRequestApi.delete(id),
+    onSuccess: () => {
+      void invalidateProcurementRequestQueries(queryClient);
+    },
+  });
+}
+
 export function useReplacePurchaseRequestIncomeContract() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -87,8 +105,9 @@ export function useReplacePurchaseRequestIncomeContract() {
 export function useSubmitPurchaseRequest() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => procurementRequestApi.submit(id),
-    onSuccess: (detail, id) => {
+    mutationFn: ({ id, includedStepOrders }: { id: string; includedStepOrders?: number[] }) =>
+      procurementRequestApi.submit(id, includedStepOrders),
+    onSuccess: (detail, { id }) => {
       void invalidateProcurementRequestQueries(queryClient);
       void invalidateApprovalQueries(queryClient);
       queryClient.setQueryData(procurementRequestQueryKeys.one(id), detail);

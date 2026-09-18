@@ -10,6 +10,7 @@ import {
   type PurchaseRequestComparison,
   type PurchaseRequestDetail,
   type PurchaseRequestJournalEntry,
+  type PurchaseRequestChain,
   type PurchaseRequestListRow,
   type PurchaseRequestsListParams,
   type PurchaseRequestSupplierCandidate,
@@ -52,6 +53,7 @@ export type {
   PurchaseQuotePaymentTerm,
   VatRateOption,
   QuoteSnapshot,
+  PurchaseRequestChain,
   PurchaseRequestComparison,
   SelectionReasonOption,
   PriceMethod,
@@ -124,6 +126,10 @@ export const procurementRequestApi = {
     return data;
   },
 
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/procurement/requests/detail/${id}`);
+  },
+
   getJournal: async (id: string): Promise<PurchaseRequestJournalEntry[]> => {
     const { data } = await apiClient.get<{ data: PurchaseRequestJournalEntry[] }>(
       `/procurement/requests/detail/${id}/journal`,
@@ -139,8 +145,10 @@ export const procurementRequestApi = {
     return data;
   },
 
-  submit: async (id: string): Promise<PurchaseRequestDetail> => {
-    const { data } = await apiClient.post<PurchaseRequestDetail>(`/procurement/requests/detail/${id}/submit`, {});
+  submit: async (id: string, includedStepOrders?: number[]): Promise<PurchaseRequestDetail> => {
+    const { data } = await apiClient.post<PurchaseRequestDetail>(`/procurement/requests/detail/${id}/submit`, {
+      body: { included_step_orders: includedStepOrders },
+    });
     return data;
   },
 
@@ -240,6 +248,11 @@ export const procurementRequestApi = {
 
   chooseRoute: async (id: string, payload: ChoosePurchaseRoutePayload): Promise<PurchaseRequestDetail> => {
     const { data } = await apiClient.post<PurchaseRequestDetail>(`/procurement/requests/detail/${id}/route`, payload);
+    return data;
+  },
+
+  getChain: async (id: string): Promise<PurchaseRequestChain> => {
+    const { data } = await apiClient.get<PurchaseRequestChain>(`/procurement/requests/detail/${id}/chain`);
     return data;
   },
 };

@@ -7,7 +7,7 @@ export type QuotePaymentType = (typeof QUOTE_PAYMENT_TYPES)[number];
 export const QUOTE_DAY_KINDS = ['calendar', 'working'] as const;
 export type QuoteDayKind = (typeof QUOTE_DAY_KINDS)[number];
 
-/** numeric(5,2) в копейках доли: 100.00% → 10000. */
+/** numeric(5,2) в копейках доли: 100.00% > 10000. */
 export const SHARE_TOTAL_CENTS = 10_000;
 
 export const MAX_PAYMENT_TERM_LINES = 20;

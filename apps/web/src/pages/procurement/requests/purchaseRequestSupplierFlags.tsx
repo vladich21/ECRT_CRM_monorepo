@@ -26,13 +26,13 @@ function scoreLabel(score: number | null | undefined): string {
 
 /** Снимки, записанные до появления балла, хранят только категорию — балл в них не выдумываем. */
 function snapshotHint(snapshot: PartnerProcurementFlags | null): string {
-  if (!snapshot) return 'Снимок на момент добавления не сохранён';
+  if (!snapshot) return 'Снимок на момент добавления не сохранен';
   const parts: string[] = [];
   if (snapshot.evaluation_score != null) parts.push(`балл ${formatEvaluationScoreDisplay(snapshot.evaluation_score)}`);
   if (snapshot.evaluation_category) parts.push(`категория ${snapshot.evaluation_category}`);
   if (parts.length === 0) parts.push('оценки не было');
   if (snapshot.blocked_on_project) parts.push('блок по проекту');
-  if (!snapshot.is_approved) parts.push('не утверждён');
+  if (!snapshot.is_approved) parts.push('не утвержден');
   return `При добавлении в запрос: ${parts.join(', ')}`;
 }
 

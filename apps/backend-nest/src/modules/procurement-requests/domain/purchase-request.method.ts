@@ -52,9 +52,25 @@ export function isAboveClosedCap(
 
 export function evaluatePurchaseMethods(
   methods: PurchaseMethodThresholdInput[],
-  netKopecks: number,
-  grossKopecks: number,
+  netKopecks: number | null,
+  grossKopecks: number | null,
 ): EvaluatedPurchaseMethod[] {
+  // БП-33: НМЦД может быть не обоснована ни одним методом (price_method = 'impossible') —
+  // сравнивать с порогом нечего. БП-2 по духу: сумма не доказана «ниже потолка»,
+  // поэтому допустим только способ без верхней границы (закупочная комиссия).
+  if (netKopecks == null || grossKopecks == null) {
+    return methods.map(method => {
+      const allowed = method.amount_to_kopecks == null;
+      return {
+        ...method,
+        compare_kopecks: 0,
+        in_threshold: false,
+        allowed,
+        requires_justification: allowed,
+      };
+    });
+  }
+
   const aboveCap = isAboveClosedCap(methods, netKopecks, grossKopecks);
   return methods.map(method => {
     const compare_kopecks = amountKopecksForVatBase(method.vat_base, netKopecks, grossKopecks);

@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { DatabaseService } from '../../../database/database.service';
 import { projects, relRoleSectionPermissions, relUsersRoles, sections, tasks, users } from '../../../database/schema';
 import { SECTIONS } from '../../../shared/permissions';
+import { FUNDING_SOURCES } from '../../procurement-requests/domain/purchase-request.enums';
 import { needsIncomeContractForApprove } from '../../procurement-requests/domain/purchase-request.funding';
 import { ASSIGN_LEAD_TASK_TYPE } from '../../procurement-requests/domain/purchase-request.oup';
 import {
@@ -82,6 +83,33 @@ export class PurchaseRequestEntityHandler implements EntityHandler {
 
   async onStart(tx: DrizzleTx, entity: ApprovalEntity): Promise<void> {
     await this.applyStatus(tx, entity, 'submit');
+  }
+
+  /**
+   * ВИ-4, шаги 2 и 3 маршрута `purchase_request_vi4` (см. `docs/procurement-requests-vi4-hierarchy.sql`):
+   * шаг 2 — РП проекта, попутно выбирает источник финансирования;
+   * шаг 3 — начальник ОУП, попутно может сразу назначить ведущего (не обязательно —
+   * если не выбрал здесь, доступна отдельная кнопка «Назначить», как раньше).
+   */
+  async onApproveStep(
+    tx: DrizzleTx,
+    entity: ApprovalEntity,
+    stepOrder: number,
+    data: Record<string, unknown> | undefined,
+  ): Promise<void> {
+    const id = entity.id as string;
+    if (stepOrder === 2) {
+      const source = data?.funding_source;
+      if (typeof source === 'string' && (FUNDING_SOURCES as readonly string[]).includes(source)) {
+        await tx.update(purchaseRequests).set({ fundingSource: source }).where(eq(purchaseRequests.id, id));
+      }
+    }
+    if (stepOrder === 3) {
+      const leadId = data?.lead_manager_id;
+      if (typeof leadId === 'string' && leadId.trim()) {
+        await tx.update(purchaseRequests).set({ leadManagerId: leadId }).where(eq(purchaseRequests.id, id));
+      }
+    }
   }
 
   async onApproveFinal(tx: DrizzleTx, entity: ApprovalEntity): Promise<void> {

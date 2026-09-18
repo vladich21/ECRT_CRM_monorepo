@@ -26,6 +26,20 @@ export interface EntityHandler {
   resolveTaskPriority?(entity: ApprovalEntity): 'low' | 'normal' | 'high' | 'urgent' | undefined;
 
   onStart(tx: DrizzleTx, entity: ApprovalEntity): Promise<void>;
+
+  /**
+   * Вызывается на КАЖДОМ «согласовать» (не только на финальном шаге), до проверки,
+   * закрыт ли шаг целиком. Данные шага (например, кто на этом шаге что выбрал) —
+   * `decision_data` из тела решения, генератору маршрута неизвестны, интерпретирует
+   * только сам handler по entityType + stepOrder.
+   */
+  onApproveStep?(
+    tx: DrizzleTx,
+    entity: ApprovalEntity,
+    stepOrder: number,
+    decisionData: Record<string, unknown> | undefined,
+  ): Promise<void>;
+
   onApproveFinal(tx: DrizzleTx, entity: ApprovalEntity): Promise<void>;
   onReject(tx: DrizzleTx, entity: ApprovalEntity): Promise<void>;
   onReturnToInitiator(tx: DrizzleTx, entity: ApprovalEntity): Promise<void>;

@@ -47,7 +47,7 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
         },
       });
       setEditing(false);
-      showNotification('success', 'Способ закупки сохранён');
+      showNotification('success', 'Способ закупки сохранен');
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {
         showNotification('error', 'Карточка изменена', 'Обновите данные и повторите сохранение');
@@ -163,8 +163,14 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
                           {method.id === data.recommended_method_id ? <Tag color='blue'>рекомендуется</Tag> : null}
                           {method.in_threshold ? <Tag color='success'>подходит</Tag> : null}
                           {!method.allowed ? (
-                            <Tooltip title='Сумма выше верхнего порога: такая закупка проводится только через закупочную комиссию'>
-                              <Tag>недоступен при этой сумме</Tag>
+                            <Tooltip
+                              title={
+                                data.amount_net == null
+                                  ? 'Цена не обоснована ни одним методом — способ без верхней границы допустим, остальные недоступны'
+                                  : 'Сумма выше верхнего порога: такая закупка проводится только через закупочную комиссию'
+                              }
+                            >
+                              <Tag>{data.amount_net == null ? 'недоступен без суммы' : 'недоступен при этой сумме'}</Tag>
                             </Tooltip>
                           ) : null}
                           {method.allowed && method.requires_justification ? (
@@ -200,7 +206,7 @@ export function PurchaseRequestMethod({ request, canEdit, canRoute }: Props) {
               </div>
             </Form>
           ) : null}
-          {!canEdit && !methodSaved ? <p className={styles.bounds}>Способ ещё не выбран</p> : null}
+          {!canEdit && !methodSaved ? <p className={styles.bounds}>Способ еще не выбран</p> : null}
         </section>
         <RouteCard
           request={request}
@@ -225,7 +231,7 @@ function ReadOnlyMethod({
 }) {
   const current = methods.find(method => method.id === request.purchase_method_id);
   if (!current) {
-    return <p className={styles.bounds}>Способ ещё не выбран</p>;
+    return <p className={styles.bounds}>Способ еще не выбран</p>;
   }
   return (
     <div className={`${styles.methodCard} ${styles.methodCardActive}`}>
@@ -263,7 +269,7 @@ function RouteCard({
       {!methodSaved ? (
         <p className={styles.hint}>Сначала сохраните способ закупки — затем можно оформить расходный договор.</p>
       ) : contractId ? (
-        <p className={styles.hint}>Расходный договор создан. Дальше работа идёт уже в карточке договора.</p>
+        <p className={styles.hint}>Расходный договор создан. Дальше работа идет уже в карточке договора.</p>
       ) : (
         <p className={styles.hint}>По выбранному способу оформляется расходный договор.</p>
       )}

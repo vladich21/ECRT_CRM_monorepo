@@ -30,6 +30,7 @@ export type FundingSource = (typeof FUNDING_SOURCES)[number];
 /** numeric(15, 2): 13 цифр до запятой. Иначе Postgres 22003, не 400. */
 export const MONEY_NUMERIC_MAX = 9_999_999_999_999.99;
 
+/** Источник финансирования необязателен для инициатора — заполняется позже (по итогам встречи 2026-09-16). */
 export const REQUIRED_CREATE_FIELDS = [
   'subject',
   'justification',
@@ -37,5 +38,4 @@ export const REQUIRED_CREATE_FIELDS = [
   'project_id',
   'tech_acceptor_id',
   'department_id',
-  'funding_source',
 ] as const;

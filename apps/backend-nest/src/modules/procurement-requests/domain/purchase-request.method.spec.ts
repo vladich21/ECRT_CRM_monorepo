@@ -72,3 +72,17 @@ test('out of threshold without text is need_justification', () => {
   assert.equal(purchaseMethodSelectError(rows.medium, null), 'need_justification');
   assert.equal(purchaseMethodSelectError(rows.medium, 'особый случай'), null);
 });
+
+test('БП-33: цена не обоснована (impossible) — допустим только способ без верхней границы', () => {
+  const rows = Object.fromEntries(
+    evaluatePurchaseMethods(SEEDED, null, null).map(row => [row.code, row]),
+  );
+  assert.equal(rows.small.allowed, false);
+  assert.equal(rows.medium.allowed, false);
+  assert.equal(rows.commission.allowed, true);
+  assert.equal(rows.small.in_threshold, false);
+  assert.equal(rows.commission.in_threshold, false);
+  assert.equal(purchaseMethodSelectError(rows.small, 'хочу малую'), 'forbidden');
+  assert.equal(purchaseMethodSelectError(rows.commission, null), 'need_justification');
+  assert.equal(purchaseMethodSelectError(rows.commission, 'цена не обоснована ни одним методом'), null);
+});

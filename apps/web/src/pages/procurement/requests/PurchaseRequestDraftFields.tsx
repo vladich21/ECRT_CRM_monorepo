@@ -24,7 +24,7 @@ export type PurchaseRequestDraftFormValues = {
   project_id: string;
   department_id: string;
   tech_acceptor_id: string;
-  funding_source: FundingSource;
+  funding_source?: FundingSource | null;
   is_urgent: boolean;
   amount?: number | null;
   income_contract_id?: string | null;
@@ -185,12 +185,13 @@ export function PurchaseRequestDraftFields({
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item
-            label='Источник финансирования'
-            name='funding_source'
-            rules={[{ required: true, message: 'Выберите источник' }]}
-          >
-            <Select options={fundingOptions} placeholder='Источник' disabled={off('funding_source')} />
+          <Form.Item label='Источник финансирования' name='funding_source'>
+            <Select
+              options={fundingOptions}
+              placeholder='Источник финансирования'
+              allowClear
+              disabled={off('funding_source')}
+            />
           </Form.Item>
         </Col>
         {showIncomeLink ? (

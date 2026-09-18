@@ -60,6 +60,7 @@ const detail: PurchaseRequestDetail = {
   purchase_method_name: null,
   method_justification: null,
   routed_contract_id: null,
+  suggested_lead_manager_id: null,
 };
 
 describe('toCreatePayload funding link', () => {

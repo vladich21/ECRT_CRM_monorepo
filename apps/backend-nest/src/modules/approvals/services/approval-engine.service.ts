@@ -245,6 +245,7 @@ export class ApprovalEngineService {
         processId,
         steps as RouteStepRow[],
         includedStepOrders,
+        { ownerId: handler.resolveOwnerId(entity), initiatedBy: userId },
       );
       const firstStep = snap.steps.find((s) => s.isIncluded);
       if (!firstStep) throw new BadRequestException('Нет включённых шагов согласования');
@@ -367,6 +368,7 @@ export class ApprovalEngineService {
       let intent: NotifyIntent = {};
       switch (dto.decision_type) {
         case 'approved':
+          await handler.onApproveStep?.(tx, entity, process.currentStepOrder, dto.decision_data);
           intent = await this.handleApproval(tx, process, currentStep, userId, handler, entity);
           break;
         case 'rejected':

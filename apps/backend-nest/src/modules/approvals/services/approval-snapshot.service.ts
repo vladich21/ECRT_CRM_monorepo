@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import {
   approvalProcessSteps,
@@ -6,8 +6,12 @@ import {
   relApprovalProcessStepAssignees,
   relApprovalStepAssignees,
 } from '../../../database/schema';
+import { AssigneeResolver } from '../resolvers/assignee.resolver';
 import { STEP_ROLE_APPROVER_FINAL, type DrizzleTx } from '../types/approval.types';
 import { isStepOrderIncluded } from '../utils/approval-step-inclusion';
+
+/** Типы, которые можно предсказать заранее — не требуют выбора при старте. */
+const EAGERLY_RESOLVABLE_TYPES = ['document_owner', 'initiator_head', 'owner_or_head'];
 
 /** Шаг шаблона (approval_route_steps), нужный для снапшота. */
 export interface RouteStepRow {
@@ -50,11 +54,16 @@ export interface SnapshotResult {
  */
 @Injectable()
 export class ApprovalSnapshotService {
+  private readonly logger = new Logger(ApprovalSnapshotService.name);
+
+  constructor(private readonly resolver: AssigneeResolver) {}
+
   async snapshot(
     tx: DrizzleTx,
     processId: string,
     routeSteps: RouteStepRow[],
     includedStepOrders: number[],
+    previewCtx: { ownerId: string | null; initiatedBy: string },
   ): Promise<SnapshotResult> {
     const roleRows = await tx
       .select({
@@ -96,7 +105,7 @@ export class ApprovalSnapshotService {
         .returning({ id: approvalProcessSteps.id });
       const processStepId = inserted[0].id;
 
-      // Снапшот назначенцев - только для статичного списка (employee) и включённых шагов.
+      // Снапшот назначенцев - для статичного списка (employee) и включённых шагов.
       if (isIncluded && step.assignmentType === 'employee') {
         const assignees = await tx
           .select({
@@ -112,6 +121,34 @@ export class ApprovalSnapshotService {
               employeeId: a.employeeId,
               position: a.position ?? 0,
             })),
+          );
+        }
+      }
+
+      // Превью для будущих шагов с предсказуемым назначением (document_owner /
+      // initiator_head / owner_or_head) — чтобы в маршруте сразу было видно, кто
+      // будет согласовывать, а не «назначим при переходе на шаг». Не блокирует
+      // старт процесса: если сейчас не резолвится (например, у проекта нет РП),
+      // просто не показываем превью, ошибка всплывёт по-старому при переходе на шаг.
+      if (isIncluded && EAGERLY_RESOLVABLE_TYPES.includes(step.assignmentType)) {
+        try {
+          const previewed = await this.resolver.resolve(
+            tx,
+            { id: step.id, stepOrder: step.stepOrder, name: step.name, assignmentType: step.assignmentType },
+            { initiatedBy: previewCtx.initiatedBy, runtimeData: {}, ownerId: previewCtx.ownerId },
+          );
+          if (previewed.length) {
+            await tx.insert(relApprovalProcessStepAssignees).values(
+              previewed.map((a) => ({
+                processStepId,
+                employeeId: a.assigneeId,
+                position: a.position ?? 0,
+              })),
+            );
+          }
+        } catch (error) {
+          this.logger.debug(
+            `Превью назначенца шага «${step.name}» недоступно: ${error instanceof Error ? error.message : error}`,
           );
         }
       }

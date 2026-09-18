@@ -9,20 +9,13 @@ import { svnApi, type SvnEntry } from './svnApi';
 
 type Props = {
   open: boolean;
-  /**
-   * Что делаем: file — прикрепить файл к существующему объекту, folder — назначить каталог программе,
-   * select — только выбрать файл (документ ещё не создан, файл прикрепится при сохранении).
-   */
   mode?: 'file' | 'folder' | 'select';
   objectType?: 'sw_item' | 'sw_document' | 'sw_sheet';
   objectId?: string;
-  /** Программа, которой назначается каталог (в режиме folder). */
   itemId?: string;
-  /** Начальный каталог: например, папка программы в SVN. */
   startPath?: string;
   onClose: () => void;
   onDone?: () => void;
-  /** Режим select: выбранный файл. */
   onSelect?: (entry: SvnEntry) => void;
 };
 
@@ -87,7 +80,7 @@ export function SvnPickerModal({
       message.success(
         folderMode
           ? `Программа связана с каталогом «${result.svnPath || 'корень'}»`
-          : `Файл «${result.filename}» прикреплён из SVN (ревизия ${result.revision})`,
+          : `Файл «${result.filename}» прикреплен из SVN (ревизия ${result.revision})`,
       );
       onDone?.();
       onClose();

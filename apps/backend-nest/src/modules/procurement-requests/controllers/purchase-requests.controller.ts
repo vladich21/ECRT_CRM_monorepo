@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
 
 import { RequirePermission } from '../../permissions/decorators/permission-meta';
 import { SECTIONS, type SectionPermission } from '../../../shared/permissions';
@@ -8,6 +8,7 @@ import {
   AddPurchaseRequestSupplierEnvelopeDto,
   CreatePurchaseRequestEnvelopeDto,
   ReplaceIncomeContractEnvelopeDto,
+  SubmitPurchaseRequestEnvelopeDto,
   UpdatePurchaseRequestEnvelopeDto,
 } from '../dto/purchase-request.dto';
 import {
@@ -93,7 +94,7 @@ export class PurchaseRequestsController {
     return this.nmcd.fixPrice(id, envelope.body, req.user!.user_id);
   }
 
-  /** Выбор поставщика: quote + ≥1 причина. Без Guard секции (урок Абрамова). */
+  /** Выбор поставщика: quote + ?1 причина. Без Guard секции (урок Абрамова). */
   @Post('detail/:id/supplier')
   selectSupplier(
     @Param('id') id: string,
@@ -182,6 +183,14 @@ export class PurchaseRequestsController {
     return this.service.update(id, envelope.body, req.user!.user_id);
   }
 
+  /** Ш-2: удалить можно только черновик, и только инициатор — policy в сервисе. */
+  @Delete('detail/:id')
+  @HttpCode(204)
+  @RequirePermission(SECTIONS.PROCUREMENT_REQUESTS, 'edit')
+  delete(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.service.delete(id, req.user!.user_id);
+  }
+
   /** ВИ-3/ВИ-4: инициатор, ведущий или текущий утверждающий. Policy в сервисе. */
   @Put('detail/:id/income-contract')
   replaceIncomeContract(
@@ -204,9 +213,13 @@ export class PurchaseRequestsController {
 
   @Post('detail/:id/submit')
   @RequirePermission(SECTIONS.PROCUREMENT_REQUESTS, 'edit')
-  submit(@Param('id') id: string, @Req() req: RequestWithUser) {
+  submit(
+    @Param('id') id: string,
+    @Body() envelope: SubmitPurchaseRequestEnvelopeDto,
+    @Req() req: RequestWithUser,
+  ) {
     const permissions = (req.user as { sectionPermissions?: SectionPermission[] } | undefined)?.sectionPermissions;
-    return this.service.submit(id, req.user!.user_id, permissions);
+    return this.service.submit(id, envelope.body, req.user!.user_id, permissions);
   }
 
   /** S11: ведущий ОУП. Policy в сервисе, не секция (урок Абрамова). 428 — БП-35. */

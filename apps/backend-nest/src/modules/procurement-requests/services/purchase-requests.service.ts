@@ -6,7 +6,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { and, count, desc, eq, ilike, inArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray, isNotNull, ne, or, sql, type SQL } from 'drizzle-orm';
 
 import { parsePagination } from '../../../common/pagination';
 import { DatabaseService } from '../../../database/database.service';
@@ -34,6 +34,7 @@ import {
 import {
   canAssignLead,
   canChangeIncomeLink,
+  canPatchDraft,
   canPatchElaboration,
   canSubmitPurchaseRequest,
   forbiddenPatchFields,
@@ -65,6 +66,7 @@ import type {
   AssignPurchaseRequestLeadDto,
   CreatePurchaseRequestDto,
   ReplaceIncomeContractDto,
+  SubmitPurchaseRequestDto,
   UpdatePurchaseRequestDto,
 } from '../dto/purchase-request.dto';
 import {
@@ -292,6 +294,20 @@ export class PurchaseRequestsService {
       )
       .limit(1);
 
+    /** ЗАП: «ведущий тянется от проекта автоматически» — подсказка начальнику ОУП на шаге 3 ВИ-4. */
+    const [suggestedLead] = await this.db.db
+      .select({ leadManagerId: purchaseRequests.leadManagerId })
+      .from(purchaseRequests)
+      .where(
+        and(
+          eq(purchaseRequests.projectId, row.projectId),
+          ne(purchaseRequests.id, id),
+          isNotNull(purchaseRequests.leadManagerId),
+        ),
+      )
+      .orderBy(desc(purchaseRequests.number))
+      .limit(1);
+
     return {
       ...toListRow(row),
       justification: row.justification,
@@ -319,6 +335,7 @@ export class PurchaseRequestsService {
       purchase_method_name: row.purchaseMethodName ?? null,
       method_justification: row.methodJustification,
       routed_contract_id: routed?.entityId ?? null,
+      suggested_lead_manager_id: suggestedLead?.leadManagerId ?? null,
     };
   }
 
@@ -326,6 +343,24 @@ export class PurchaseRequestsService {
   async getByIdForUser(id: string, actorId: string, permissions: SectionPermission[] | undefined) {
     await this.assertCanView(id, actorId, permissions);
     return this.getById(id);
+  }
+
+  /**
+   * Удалить можно только черновик, и только его инициатор — Ш-2, «удалить».
+   * Физическое удаление: черновик ещё не в согласовании, терять нечего, а
+   * дочерние строки (события, поставщики, КП) снимаются самим FK ON DELETE CASCADE.
+   */
+  async delete(id: string, actorId: string): Promise<void> {
+    const [existing] = await this.db.db
+      .select({ status: purchaseRequests.status, initiatorId: purchaseRequests.initiatorId })
+      .from(purchaseRequests)
+      .where(eq(purchaseRequests.id, id))
+      .limit(1);
+    if (!existing) throw new NotFoundException('Запрос на закупку не найден');
+    if (!canPatchDraft({ status: existing.status, initiatorId: existing.initiatorId, actorId })) {
+      throw new ForbiddenException('Удалить можно только свой черновик');
+    }
+    await this.db.db.delete(purchaseRequests).where(eq(purchaseRequests.id, id));
   }
 
   async update(id: string, dto: UpdatePurchaseRequestDto, actorId: string) {
@@ -391,7 +426,7 @@ export class PurchaseRequestsService {
     const nextRequestDate = existing.requestDate;
     assertRequiredDate(nextRequestDate, nextRequired);
 
-    const nextSource = (dto.funding_source ?? existing.fundingSource) as FundingSource;
+    const nextSource = (dto.funding_source ?? existing.fundingSource) as FundingSource | null;
     const fundingLink = resolveFundingLink(
       nextSource,
       dto.income_contract_id !== undefined ? dto.income_contract_id : existing.incomeContractId,
@@ -752,7 +787,12 @@ export class PurchaseRequestsService {
     };
   }
 
-  async submit(id: string, actorId: string, permissions: SectionPermission[] | undefined) {
+  async submit(
+    id: string,
+    dto: SubmitPurchaseRequestDto,
+    actorId: string,
+    permissions: SectionPermission[] | undefined,
+  ) {
     const [existing] = await this.db.db
       .select({
         id: purchaseRequests.id,
@@ -794,6 +834,7 @@ export class PurchaseRequestsService {
         entity_type: PURCHASE_REQUEST_ENTITY_TYPE,
         entity_id: id,
         route_id: routeId,
+        included_step_orders: dto.included_step_orders,
       },
       actorId,
       permissions,

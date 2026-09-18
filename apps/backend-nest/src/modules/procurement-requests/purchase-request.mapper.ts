@@ -107,7 +107,7 @@ export type PurchaseRequestDetail = PurchaseRequestListRow & {
   department_name: string | null;
   tech_acceptor_id: string;
   tech_acceptor_name: string | null;
-  funding_source: string;
+  funding_source: string | null;
   income_contract_id: string | null;
   income_contract_name: string | null;
   income_stage_id: string | null;
@@ -126,6 +126,7 @@ export type PurchaseRequestDetail = PurchaseRequestListRow & {
   purchase_method_name: string | null;
   method_justification: string | null;
   routed_contract_id: string | null;
+  suggested_lead_manager_id: string | null;
 };
 
 export function formatContractTitle(number: string | null | undefined, name: string | null | undefined): string | null {

@@ -95,11 +95,8 @@ export function SwDocumentCreateModal({
   const [svnPickerOpen, setSvnPickerOpen] = useState(false);
   const [upload, setUpload] = useState<UploadState>({ status: 'idle' });
   const uploadHandle = useRef<SwDraftUpload | null>(null);
-  /** Файл из SVN, уже перенесённый бэком при отказе создания: повтор берёт его, а не качает заново. */
   const storedSvn = useRef<SwStoredSvnFile | null>(null);
-  /** Поля, которые человек правил сам: разбор имени файла их не трогает. */
   const manualFields = useRef(new Set<keyof FormValues>());
-  /** Последние собранные значения: поле следует за видом и номером, пока совпадает с ними. */
   const derived = useRef<{ designation?: string; name?: string; sheetDesignation?: string }>({});
 
   const designation = Form.useWatch('designation', form);
@@ -245,7 +242,7 @@ export function SwDocumentCreateModal({
         setUpload(current => ({
           status: 'error',
           filename: file.name,
-          message: 'Не удалось загрузить файл — выберите его ещё раз',
+          message: 'Не удалось загрузить файл — выберите его еще раз',
           fileId: uploadedFileId(current),
         }));
       });
@@ -530,7 +527,6 @@ export function SwDocumentCreateModal({
           startPath={svnFolderPath ?? ''}
           onClose={() => setSvnPickerOpen(false)}
           onSelect={entry => {
-            // Перенесённый файл относится к прежнему выбору — при смене файла он не нужен.
             if (storedSvn.current && storedSvn.current.path !== entry.path) discardStoredSvn();
             setSvnFile(entry);
             applyFilename(entry.name);

@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS purchase_requests (
   currency_code varchar(3) NOT NULL DEFAULT 'RUB',
   vat_rate_id uuid,
   vat_included boolean NOT NULL DEFAULT true,
-  funding_source varchar(30) NOT NULL,
+  funding_source varchar(30),
   price_method varchar(30),
   price_method_note text,
   initial_max_price numeric(15, 2),

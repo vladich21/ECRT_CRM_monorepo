@@ -13,6 +13,7 @@ export const procurementRequestQueryKeys = {
   quotes: (id: string) => [...procurementRequestQueryKeys.all, 'quotes', id] as const,
   comparison: (id: string) => [...procurementRequestQueryKeys.all, 'comparison', id] as const,
   methods: (id: string) => [...procurementRequestQueryKeys.all, 'methods', id] as const,
+  chain: (id: string) => [...procurementRequestQueryKeys.all, 'chain', id] as const,
   vatRates: () => [...procurementRequestQueryKeys.all, 'vat-rates'] as const,
   selectionReasons: () => [...procurementRequestQueryKeys.all, 'selection-reasons'] as const,
 };

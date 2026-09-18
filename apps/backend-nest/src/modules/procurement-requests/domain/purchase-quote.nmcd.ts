@@ -10,7 +10,7 @@ export function kopecksToAmount(kopecks: number): string {
 
 /**
  * КП вводится с НДС. Рынок (БП-34) считает среднее без НДС.
- * vatPercent 22 → делим на 1.22; 0 или пусто — нетто = гросс.
+ * vatPercent 22 > делим на 1.22; 0 или пусто — нетто = гросс.
  */
 export function netFromGrossKopecks(grossKopecks: number, vatPercent: number | null): number {
   if (vatPercent == null || vatPercent <= 0) return grossKopecks;
@@ -29,7 +29,7 @@ export function meanKopecks(values: number[]): number {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
-/** |value − avg| / avg > 33%. avg = 0 — выбросов нет. */
+/** |value ? avg| / avg > 33%. avg = 0 — выбросов нет. */
 export function isMarketOutlier(netKopecks: number, averageKopecks: number): boolean {
   if (averageKopecks <= 0) return false;
   return Math.abs(netKopecks - averageKopecks) * 100 > MARKET_OUTLIER_PERCENT * averageKopecks;
@@ -155,7 +155,7 @@ export function pickBestQuoteIds(quotes: ComparisonBestInput[]): ComparisonBestI
   return { price, delivery, warranty };
 }
 
-/** Отклонение цены КП от экспертной: (value − expert) / expert, в процентах. */
+/** Отклонение цены КП от экспертной: (value ? expert) / expert, в процентах. */
 export function deviationFromExpertPercent(valueKopecks: number, expertKopecks: number): string | null {
   if (expertKopecks <= 0) return null;
   return ((valueKopecks - expertKopecks) / expertKopecks * 100).toFixed(1);

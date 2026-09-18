@@ -101,7 +101,7 @@ export function PurchaseRequestQuotes({ request, canEdit }: Props) {
             await uploadQuoteFile(saved.id, file);
             await refetch();
           } catch {
-            showNotification('warning', 'КП сохранено', 'Файл не загрузился — приложите его ещё раз');
+            showNotification('warning', 'КП сохранено', 'Файл не загрузился — приложите его еще раз');
             setModalOpen(false);
             setEditing(null);
             return;
@@ -130,7 +130,7 @@ export function PurchaseRequestQuotes({ request, canEdit }: Props) {
             await uploadQuoteFile(saved.id, file);
             await refetch();
           } catch {
-            showNotification('warning', 'КП сохранено', 'Файл не загрузился — откройте КП и приложите ещё раз');
+            showNotification('warning', 'КП сохранено', 'Файл не загрузился — откройте КП и приложите еще раз');
             setModalOpen(false);
             setEditing(null);
             return;

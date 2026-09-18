@@ -229,7 +229,7 @@ export function PurchaseRequestQuoteModal({
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item label={editing ? 'Ещё файл' : 'Файл КП'}>
+            <Form.Item label={editing ? 'Еще файл' : 'Файл КП'}>
               {editing && editing.files.length > 0 ? (
                 <div className={styles.files}>
                   {editing.files.map(fileRow => (

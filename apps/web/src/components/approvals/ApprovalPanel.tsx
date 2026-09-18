@@ -61,6 +61,8 @@ interface ApprovalPanelProps {
   hideCancel?: boolean;
   /** Принятие решения вынесено в шапку карточки. */
   hideDecision?: boolean;
+  /** Доп. данные для полей решения конкретного шага — интерпретирует entity-handler по entityType. */
+  decisionContext?: Record<string, unknown>;
 }
 
 function ProcessLayout({
@@ -136,6 +138,7 @@ export function ApprovalPanel({
   hideGenericStart,
   hideCancel,
   hideDecision,
+  decisionContext,
 }: ApprovalPanelProps) {
   const params = useParams();
   const entityId = entityIdProp ?? (params[`${entityType}Id`] as string | undefined);
@@ -187,12 +190,14 @@ export function ApprovalPanel({
       title: 'Принятие решения',
       modalData: {
         processId: process.id,
+        entityType,
         currentStepOrder: process.current_step_order,
         canDelegate: currentStep?.can_delegate ?? false,
         canReturnToPrevious: currentStep?.can_return_to_previous ?? false,
         previousSteps,
         labels: decisionLabels,
         approveBlockedReason,
+        decisionContext,
       },
       onConfirm: () => {},
       onCancel: () => {},
