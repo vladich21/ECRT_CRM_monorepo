@@ -48,17 +48,17 @@ import type {
   UpdateSwItemPayload,
 } from '@/types/swRegistry';
 
-import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './SwApprovalSheetModal';
+import { SwApprovalSheetModal, type ApprovalSheetSubmit } from './program/documents/SwApprovalSheetModal';
 import { developmentKindAllowsApprovalSheet } from './shared/swDesignationPreview';
-import { SwDocumentCreateModal } from './SwDocumentCreateModal';
-import { SwDocumentDrawer, type SwDocumentDrawerTab } from './SwDocumentDrawer';
-import { SwDocumentEditModal, type DocumentFileReplacement } from './SwDocumentEditModal';
-import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './SwDocumentsTable';
-import { SwDocumentStatusModal } from './SwDocumentStatusModal';
+import { SwDocumentCreateModal } from './program/documents/SwDocumentCreateModal';
+import { SwDocumentDrawer, type SwDocumentDrawerTab } from './program/documents/SwDocumentDrawer';
+import { SwDocumentEditModal, type DocumentFileReplacement } from './program/documents/SwDocumentEditModal';
+import { formatKindLabel, SwDocumentsTable, type SwDocumentFile } from './program/documents/SwDocumentsTable';
+import { SwDocumentStatusModal } from './program/documents/SwDocumentStatusModal';
 import type { SwFileChoice } from './shared/SwFileSourcePicker';
 import { SwFilesTab } from './program/files/SwFilesTab';
 import { SwFirmwaresTab } from './program/firmwares/SwFirmwaresTab';
-import { SwIpsPlacementModal } from './SwIpsPlacementModal';
+import { SwIpsPlacementModal } from './program/documents/SwIpsPlacementModal';
 import { SwItemEditModal } from './items/SwItemEditModal';
 import { SwItemRidTab } from './program/rid/SwItemRidTab';
 import styles from './SwStructurePage.module.scss';

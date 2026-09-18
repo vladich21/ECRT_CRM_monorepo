@@ -3,9 +3,8 @@ import { Alert, Col, DatePicker, Form, Input, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
-import { formatSwStatusLabel, swStatusBadgeClass } from './shared/swStatusBadge';
+import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
 import styles from './SwIpsPlacementModal.module.scss';
-import pageStyles from './SwRegistryShared.module.scss';
 
 type Props = {
   open: boolean;
@@ -71,7 +70,7 @@ export function SwIpsPlacementModal({ open, document, confirmLoading, onCancel, 
             <>
               После сохранения идентификатор и дата <strong>не изменяются</strong>. Документ и его лист
               утверждения перейдут в финальный статус{' '}
-              <span className={swStatusBadgeClass('in_ips', pageStyles)}>
+              <span className={swStatusBadgeClass('in_ips', styles)}>
                 {formatSwStatusLabel('размещен в IPS', 'in_ips')}
               </span>{' '}
               — переход из него невозможен. Ответственный за ПО получит уведомление.

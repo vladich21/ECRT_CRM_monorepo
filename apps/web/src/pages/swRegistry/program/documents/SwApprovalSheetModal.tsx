@@ -3,8 +3,8 @@ import { Form, Input, InputNumber, Modal } from 'antd';
 
 import type { SwDocumentFileRef, SwDocumentListRow } from '@/types/swRegistry';
 
-import { assembleSheetDesignation } from './shared/swDesignationPreview';
-import { SwFileSourcePicker, type SwFileChoice } from './shared/SwFileSourcePicker';
+import { assembleSheetDesignation } from '../../shared/swDesignationPreview';
+import { SwFileSourcePicker, type SwFileChoice } from '../../shared/SwFileSourcePicker';
 import styles from './SwApprovalSheetModal.module.scss';
 
 type FormValues = {

@@ -1,117 +1,5 @@
-@use '../../styles/variables' as v;
-@use '../../components/pageLayout/listPageShared' as lp;
-
-.sectionCard {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px 24px;
-  border: 1px solid #e8e8e8;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-
-
-.cardTitleRowBetween {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-
-  .cardTitle {
-    margin: 0;
-  }
-}
-
-.cardTitle {
-  margin: 0 0 14px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #141414;
-}
-
-.infoRows {
-  display: flex;
-  flex-direction: column;
-}
-
-.infoRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f5f5f5;
-
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  &:first-child {
-    padding-top: 0;
-  }
-}
-
-.infoLabel {
-  font-size: 14px;
-  color: #8c8c8c;
-  flex-shrink: 0;
-}
-
-.infoValue {
-  font-size: 14px;
-  font-weight: 600;
-  color: #262626;
-  text-align: right;
-  max-width: 65%;
-  word-break: break-word;
-}
-
-
-.headerMetaChip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 12px;
-  line-height: 1.35;
-  padding: 2px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.88);
-  font-weight: 500;
-}
-
-.archiveBtn:global(.ant-btn) {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  color: #fff !important;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.16) !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
-    color: #fff !important;
-  }
-}
-
-.restoreBtn:global(.ant-btn) {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  color: #fff !important;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.16) !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
-    color: #fff !important;
-  }
-}
-
-
-
-
-
-
-
-
+/* Стили: SwDocumentsTable. */
+@use '../../../../styles/variables' as v;
 
 .docTableLinkBtn {
   border: none;
@@ -125,7 +13,6 @@
     text-decoration: underline;
   }
 }
-
 .statusBadge {
   display: inline-flex;
   align-items: center;
@@ -137,59 +24,46 @@
   white-space: nowrap;
   border: 1px solid transparent;
 }
-
 .statusDefault {
   background: v.$badge-neutral-bg;
   color: v.$badge-neutral-text;
   border-color: v.$badge-neutral-border;
 }
-
 .statusDevelopment {
   background: v.$badge-neutral-bg;
   color: v.$badge-neutral-text;
   border-color: v.$badge-neutral-border;
 }
-
 .statusInApproval {
   background: v.$badge-info-bg;
   color: v.$badge-info-text;
   border-color: v.$badge-info-border;
 }
-
-.statusAgreed,
-.statusApproved,
-.statusReceived,
-.statusAccepted,
 .statusIssued {
   background: v.$success-surface-bg;
   color: #389e0d;
   border-color: v.$success-surface-border;
 }
-
 .statusRevision {
   background: v.$badge-danger-bg;
   color: v.$badge-danger-text;
   border-color: v.$badge-danger-border;
 }
-
 .statusInRework {
   background: v.$badge-warning-bg;
   color: v.$badge-warning-text;
   border-color: v.$badge-warning-border;
 }
-
 .statusCancelled {
   background: v.$badge-archive-bg;
   color: v.$badge-archive-text;
   border-color: v.$badge-archive-border;
 }
-
 .statusInIps {
   background: #f9f0ff;
   color: #722ed1;
   border-color: #efdbff;
 }
-
 .statusBadgeBtn {
   border: none;
   background: none;
@@ -201,27 +75,20 @@
     filter: brightness(0.96);
   }
 }
-
 .docTableIps {
   font-size: 13px;
   color: #595959;
   word-break: break-all;
 }
-
-
-/* Колонка листа утверждения: статус, реквизиты и действия с самим листом. */
 .docTableSheetCell {
   min-width: 0;
 }
-
 .docTableSheetHead {
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
 }
-
-/* Реквизиты документа под наименованием: объём, литера, происхождение из SVN. */
 .docTableMeta {
   display: flex;
   align-items: center;
@@ -232,26 +99,12 @@
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
 }
-
-.docTableSheetDesignation {
-  flex: 1 1 100%;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: rgba(0, 0, 0, 0.45);
-  font-size: 12px;
-}
-
-/* ── Ячейка документа: наименование ведёт, обозначение и служебное отступают ── */
-
 .docTableTitleRow {
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
 }
-
 .docTableTitle {
   display: inline-flex;
   align-items: center;
@@ -274,19 +127,16 @@
     text-decoration: underline;
   }
 }
-
 .docTableTitleIcon {
   flex: none;
   color: #2b579a;
   font-size: 15px;
 }
-
 .docTableTitleText {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .docTableSubline {
   margin-top: 2px;
   overflow: hidden;
@@ -295,8 +145,6 @@
   color: rgba(0, 0, 0, 0.55);
   font-size: 13px;
 }
-
-/* Обозначение листа утверждения: тот же код-стиль, что и у документа, но тише. */
 .docTableDesignationLine {
   margin-top: 2px;
   overflow: hidden;
@@ -306,8 +154,6 @@
   font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
 }
-
-/* Строка файла листа утверждения: обозначение ведёт к файлу, действия рядом. */
 .docTableSheetFileRow {
   display: flex;
   align-items: center;
@@ -315,7 +161,6 @@
   min-width: 0;
   margin-top: 2px;
 }
-
 .docTableSheetLink {
   display: inline-flex;
   align-items: center;
@@ -337,12 +182,69 @@
     text-decoration: underline;
   }
 }
-
-/* Место под действия резервируется заранее: файлы приезжают отдельным запросом,
-   и без резерва строка дёргается, когда появляется кнопка скачивания. */
 .docTableRowActions {
   display: inline-flex;
   flex: none;
   gap: 0;
   min-width: 52px;
+}
+
+/* Из общего модуля страницы структуры: строка документа в таблице панели. */
+.docTableWrap {
+  /* Прокручивается только комплект: реквизиты программы и дерево остаются на месте. */
+  margin-top: 4px;
+  max-width: 100%;
+  flex: 1 1 auto;
+  min-height: 140px;
+  overflow: auto;
+  overscroll-behavior: contain;
+
+  @media (max-width: 900px) {
+    flex: none;
+    max-height: min(60vh, 520px);
+  }
+}
+.docActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+
+  .programDocTable tr:hover & {
+    opacity: 1;
+  }
+}
+.programDocTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.docRowSelected td {
+  background: v.$bg-active;
+}
+.docTableMenuCol {
+  /* Колонка действий: кнопка «⋯» стояла у самого края и читалась как обрез таблицы. */
+  width: 52px;
+  padding-right: 12px !important;
+  text-align: right;
+
+  /* :global — класс кнопки принадлежит antd, в css-модуле он иначе получит хеш и не совпадёт. */
+  :global(.ant-btn) {
+    border: 1px solid transparent;
+    color: rgba(0, 0, 0, 0.55);
+
+    &:hover {
+      border-color: #d9d9d9;
+      background: #fafafa;
+      color: rgba(0, 0, 0, 0.88);
+    }
+  }
+}
+.docSvnStale {
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #ad4e00;
+  white-space: nowrap;
 }

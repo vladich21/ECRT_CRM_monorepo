@@ -1,4 +1,4 @@
-@use './shared/styles/modals' as m;
+@use '../../shared/styles/modals' as m;
 
 .docHeader { @include m.docHeader; }
 .formCompact { @include m.formCompact; }

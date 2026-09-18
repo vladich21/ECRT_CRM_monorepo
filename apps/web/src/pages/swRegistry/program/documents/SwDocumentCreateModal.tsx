@@ -9,7 +9,7 @@ import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';
 import type { SvnEntry } from '@/components/svnPicker/svnApi';
 import type { CreateSwDocumentPayload, SwDocumentListRow } from '@/types/swRegistry';
 import { formatFileSize } from '@/utils/formatFileSize';
-import { assembleDocumentDesignation, assembleSheetDesignation } from './shared/swDesignationPreview';
+import { assembleDocumentDesignation, assembleSheetDesignation } from '../../shared/swDesignationPreview';
 import {
   buildDocumentCreateSaveWarnings,
   isDocumentIdTakenError,

@@ -11,10 +11,9 @@ import {
 import { Button, Dropdown, Tooltip, type MenuProps } from 'antd';
 
 import type { SwDocumentFileRef, SwDocumentListRow } from '@/types/swRegistry';
-import { formatIpsDisplay } from './shared/swDesignationPreview';
-import { formatSwStatusLabel, swStatusBadgeClass } from './shared/swStatusBadge';
-import styles from './SwRegistryShared.module.scss';
-import panelStyles from './SwStructurePage.module.scss';
+import { formatIpsDisplay } from '../../shared/swDesignationPreview';
+import { formatSwStatusLabel, swStatusBadgeClass } from '../../shared/swStatusBadge';
+import styles from './SwDocumentsTable.module.scss';
 
 /** Копия документа или его листа: приходит вместе с комплектом. */
 export type SwDocumentFile = SwDocumentFileRef;
@@ -130,15 +129,15 @@ export function SwDocumentsTable({
   onPickFromSvn,
 }: Props) {
   return (
-    <div className={panelStyles.docTableWrap}>
-      <table className={`${styles.docTable} ${panelStyles.programDocTable}`}>
+    <div className={styles.docTableWrap}>
+      <table className={`${styles.docTable} ${styles.programDocTable}`}>
         <thead>
           <tr>
             <th>Документ</th>
             <th>Статус документа</th>
             <th>Лист утверждения</th>
             <th>IPS</th>
-            <th className={panelStyles.docTableMenuCol} aria-label='Действия' />
+            <th className={styles.docTableMenuCol} aria-label='Действия' />
           </tr>
         </thead>
         <tbody>
@@ -158,7 +157,7 @@ export function SwDocumentsTable({
             const rowClass = [
               styles.docTableRow,
               isArchived ? styles.docTableRowArchived : '',
-              doc.id === selectedDocumentId ? panelStyles.docRowSelected : '',
+              doc.id === selectedDocumentId ? styles.docRowSelected : '',
             ]
               .filter(Boolean)
               .join(' ');
@@ -185,7 +184,7 @@ export function SwDocumentsTable({
                       {file ? <FileWordOutlined className={styles.docTableTitleIcon} /> : null}
                       <span className={styles.docTableTitleText}>{doc.designation}</span>
                     </button>
-                    <span className={`${panelStyles.docActions} ${styles.docTableRowActions}`}>
+                    <span className={`${styles.docActions} ${styles.docTableRowActions}`}>
                       {svnEnabled && canChangeDoc ? (
                         <Tooltip title={file ? 'Обновить файл из SVN' : 'Прикрепить файл из SVN'}>
                           <Button
@@ -218,7 +217,7 @@ export function SwDocumentsTable({
                     {doc.letter ? <span>литера {doc.letter}</span> : null}
                     {file?.svnPath ? <span title={file.svnPath}>SVN r{file.svnRevision}</span> : null}
                     {file?.svnPath && newerRevision && newerRevision !== file.svnRevision ? (
-                      <span className={panelStyles.docSvnStale}>в SVN новее: r{newerRevision}</span>
+                      <span className={styles.docSvnStale}>в SVN новее: r{newerRevision}</span>
                     ) : null}
                   </div>
                 </td>
@@ -240,7 +239,7 @@ export function SwDocumentsTable({
                             onClick={canChangeSheet ? () => onChangeStatus(doc, 'sheet') : undefined}
                           />
                           {canChangeDoc ? (
-                            <span className={`${panelStyles.docActions} ${styles.docTableRowActions}`}>
+                            <span className={`${styles.docActions} ${styles.docTableRowActions}`}>
                               <Tooltip title='Изменить лист утверждения'>
                                 <Button
                                   type='text'
@@ -280,7 +279,7 @@ export function SwDocumentsTable({
                                 {doc.sheetDesignation}
                               </span>
                             )}
-                            <span className={`${panelStyles.docActions} ${styles.docTableRowActions}`}>
+                            <span className={`${styles.docActions} ${styles.docTableRowActions}`}>
                               {svnEnabled && canChangeDoc ? (
                                 <Tooltip title={sheetFile ? 'Обновить файл листа из SVN' : 'Прикрепить файл листа из SVN'}>
                                   <Button
@@ -313,7 +312,7 @@ export function SwDocumentsTable({
                               <span title={sheetFile.svnPath}>SVN r{sheetFile.svnRevision}</span>
                             ) : null}
                             {sheetFile?.svnPath && sheetNewerRevision && sheetNewerRevision !== sheetFile.svnRevision ? (
-                              <span className={panelStyles.docSvnStale}>в SVN новее: r{sheetNewerRevision}</span>
+                              <span className={styles.docSvnStale}>в SVN новее: r{sheetNewerRevision}</span>
                             ) : null}
                           </div>
                         ) : null}
@@ -345,7 +344,7 @@ export function SwDocumentsTable({
                     <span className={styles.docTableMuted}>—</span>
                   )}
                 </td>
-                <td className={panelStyles.docTableMenuCol} onClick={e => e.stopPropagation()}>
+                <td className={styles.docTableMenuCol} onClick={e => e.stopPropagation()}>
                   <Dropdown
                     trigger={['click']}
                     placement='bottomRight'

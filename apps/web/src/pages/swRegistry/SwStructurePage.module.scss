@@ -30,7 +30,6 @@
 .filterTabs      { @include lp.filterTabs; }
 .filterTab       { @include lp.filterTab; }
 .filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
-.filterTabCount  { @include lp.filterTabCount; }
 
 .showArchived {
   white-space: nowrap;
@@ -578,10 +577,6 @@
   white-space: nowrap;
 }
 
-.programKind {
-  flex: none;
-  margin: 0;
-}
 
 .programElement {
   flex: none;
@@ -602,20 +597,6 @@
   color: rgba(0, 0, 0, 0.25);
 }
 
-.docTableWrap {
-  /* Прокручивается только комплект: реквизиты программы и дерево остаются на месте. */
-  margin-top: 4px;
-  max-width: 100%;
-  flex: 1 1 auto;
-  min-height: 140px;
-  overflow: auto;
-  overscroll-behavior: contain;
-
-  @media (max-width: 900px) {
-    flex: none;
-    max-height: min(60vh, 520px);
-  }
-}
 
 /* ── Шапка программы ─────────────────────────────────────────────
    Один шрифт и три уровня текста: наименование — главное; значения реквизитов — основной текст;
@@ -840,24 +821,8 @@
   min-width: 0;
 }
 
-.docActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  opacity: 0.55;
-  transition: opacity 0.15s;
-
-  .programDocTable tr:hover & {
-    opacity: 1;
-  }
-}
 
 /* Таблица комплекта в панели программы: шапка остаётся на месте, листаются строки. */
-.programDocTable th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
 
 .docsTitleActions {
   display: flex;
@@ -877,25 +842,8 @@
 
 /* Вкладки панели программы: те же, что над экраном, только компактнее и без
    отрицательного отступа — здесь они стоят в заголовке карточки. */
-.programTabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-width: 0;
-}
 
-.programTab {
-  @include lp.filterTab;
-  padding: 6px 12px;
-  margin-bottom: 0;
-}
 
-.programTabActive {
-  @include lp.filterTab;
-  @include lp.filterTabActive;
-  padding: 6px 12px;
-  margin-bottom: 0;
-}
 
 /* Элемент структуры в реквизитах программы: переход к нему в дереве. */
 .metaLink {
@@ -968,74 +916,7 @@
 }
 
 /* Документ, открытый в боковой панели. */
-.docRowSelected td {
-  background: v.$bg-active;
-}
 
 /* Меню «⋯» строки комплекта. */
-.docTableMenuCol {
-  /* Колонка действий: кнопка «⋯» стояла у самого края и читалась как обрез таблицы. */
-  width: 52px;
-  padding-right: 12px !important;
-  text-align: right;
-
-  /* :global — класс кнопки принадлежит antd, в css-модуле он иначе получит хеш и не совпадёт. */
-  :global(.ant-btn) {
-    border: 1px solid transparent;
-    color: rgba(0, 0, 0, 0.55);
-
-    &:hover {
-      border-color: #d9d9d9;
-      background: #fafafa;
-      color: rgba(0, 0, 0, 0.88);
-    }
-  }
-}
 
 /* Боковая панель документа комплекта. */
-.docDrawerTitle {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.docDrawerDesignation {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: v.$font-base;
-  font-weight: 600;
-}
-
-.docDrawerName {
-  font-size: v.$font-md;
-  font-weight: 400;
-  color: v.$text-quaternary;
-  overflow-wrap: anywhere;
-}
-
-.docDrawerBody {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.docDrawerMeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.docDrawerMetaText {
-  font-size: v.$font-md;
-  color: v.$text-tertiary;
-}
-
-.docSvnStale {
-  padding: 1px 6px;
-  border-radius: 8px;
-  background: #fff7e6;
-  color: #ad4e00;
-  white-space: nowrap;
-}
-
