@@ -66,14 +66,6 @@ export default function SwStructurePage() {
   const showArchivedInTree = searchParams.get('archived') === '1' || searchParams.get('view') === 'archived';
   const selectedProgramId = searchParams.get('itemId');
 
-  useEffect(() => {
-    if (searchParams.get('view') !== 'archived') return;
-    const next = new URLSearchParams(searchParams);
-    next.delete('view');
-    next.set('archived', '1');
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [modalState, setModalState] = useState<ModalState | null>(null);
   /** Элемент, на котором регистрируется ПО из меню «+» в дереве. */

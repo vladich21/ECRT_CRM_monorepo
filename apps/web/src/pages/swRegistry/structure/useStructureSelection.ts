@@ -36,6 +36,16 @@ export function useStructureSelection(input: {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('elementId'));
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+
+  // Ссылки из прежней версии экрана носили вкладку view=archived; сводим их к галке,
+  // чтобы дальше в адресе был один способ сказать «показывать архивные».
+  useEffect(() => {
+    if (searchParams.get('view') !== 'archived') return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('view');
+    next.set('archived', '1');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
   const selectedNode = useMemo(
     () => (selectedId ? findStructureNode(rawTree, selectedId) : null),
     [rawTree, selectedId],
