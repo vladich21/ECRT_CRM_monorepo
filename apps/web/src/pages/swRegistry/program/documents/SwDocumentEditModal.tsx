@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Col, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
 
-import { useSwReferences } from '@/api/swRegistry/swRegistryApiHooks';
+import { useSwReferences } from '@/api/swRegistry/referencesHooks';
 import type { SwDocumentFileRef, SwDocumentListRow, UpdateSwDocumentPayload } from '@/types/swRegistry';
 
 import { assembleDocumentDesignation, assembleSheetDesignation } from '../../shared/swDesignationPreview';

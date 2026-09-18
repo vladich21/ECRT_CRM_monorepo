@@ -3,15 +3,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Form, Input, Modal, Spin, Table } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
-import {
-  useCreateSwFirmware,
-  useCreateSwFirmwareVersion,
-  useDeleteSwFirmware,
-  useDeleteSwFirmwareVersion,
-  useSwFirmwares,
-  useUpdateSwFirmware,
-} from '@/api/swRegistry/swRegistryApiHooks';
+import { swFirmwaresApi } from '@/api/swRegistry/firmwares';
+import { useCreateSwFirmware, useCreateSwFirmwareVersion, useDeleteSwFirmware, useDeleteSwFirmwareVersion, useSwFirmwares, useUpdateSwFirmware } from '@/api/swRegistry/firmwaresHooks';
 import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
 import { useOpenAntdDeleteConfirm } from '@/customhooks/confirmDelete';
 import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessage';
@@ -56,7 +49,7 @@ export function SwFirmwaresTab({ itemId, canEdit }: Props) {
 
   const download = async (version: SwFirmwareVersion) => {
     try {
-      const link = await swRegistryApi.getFirmwareVersionLink(version.id);
+      const link = await swFirmwaresApi.getFirmwareVersionLink(version.id);
       triggerFileDownload(link.url, version.filename);
     } catch (err) {
       showNotification('error', 'Ошибка', getApiErrorMessage(err) ?? 'Не удалось получить ссылку на файл');

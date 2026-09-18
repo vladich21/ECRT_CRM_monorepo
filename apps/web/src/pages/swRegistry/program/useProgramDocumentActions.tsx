@@ -3,13 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { App } from 'antd';
 
 import { commentQueryKeys } from '@/api/comments/commentQueryKeys';
-import {
-  useChangeSwDocumentStatus,
-  useCreateSwDocument,
-  useMarkSwDocumentDeleted,
-  useRestoreSwDocument,
-  useUpdateSwDocument,
-} from '@/api/swRegistry/swRegistryApiHooks';
+import { useChangeSwDocumentStatus, useCreateSwDocument, useMarkSwDocumentDeleted, useRestoreSwDocument, useUpdateSwDocument } from '@/api/swRegistry/documentsHooks';
 import { uploadSwRegistryFile } from '@/api/swRegistry/uploadSwFile';
 import { svnApi } from '@/components/svnPicker/svnApi';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';

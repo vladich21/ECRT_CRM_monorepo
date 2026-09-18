@@ -16,8 +16,7 @@ import {
   Upload,
 } from 'antd';
 
-import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
-import { useSwReferences } from '@/api/swRegistry/swRegistryApiHooks';
+import { useSwReferences } from '@/api/swRegistry/referencesHooks';
 import { startSwDocumentDraftUpload, type SwDraftUpload } from '@/api/swRegistry/uploadSwFile';
 import type { SvnEntry } from '@/components/svnPicker/svnApi';
 import { SvnPickerModal } from '@/components/svnPicker/SvnPickerModal';

@@ -10,7 +10,8 @@ import {
 import { App, Button, Dropdown, Spin, Tag, type MenuProps } from 'antd';
 import { Link } from 'react-router-dom';
 
-import { useSwItems, useSwStructurePatentLinks } from '@/api/swRegistry/swRegistryApiHooks';
+import { useSwItems } from '@/api/swRegistry/itemsHooks';
+import { useSwStructurePatentLinks } from '@/api/swRegistry/structureHooks';
 import type { SwItemListRow, SwStructureNode } from '@/types/swRegistry';
 
 import styles from './SwStructureDetailPanel.module.scss';

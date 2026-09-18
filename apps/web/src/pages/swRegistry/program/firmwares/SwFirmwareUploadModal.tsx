@@ -3,7 +3,7 @@ import { CloudUploadOutlined, FileZipOutlined } from '@ant-design/icons';
 import { Alert, Button, DatePicker, Form, Input, Modal, Progress, Upload } from 'antd';
 import type { Dayjs } from 'dayjs';
 
-import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
+import { swFirmwaresApi } from '@/api/swRegistry/firmwares';
 import { startSwFirmwareUpload, type SwDraftUpload } from '@/api/swRegistry/uploadSwFile';
 import { getApiErrorMessage } from '@/customhooks/confirmDelete/getApiErrorMessage';
 import { formatFileSize } from '@/utils/formatFileSize';
@@ -91,7 +91,7 @@ export function SwFirmwareUploadModal({
   /** Отказ от залитого файла: без записи он останется в хранилище навсегда. */
   const discard = (state: UploadState) => {
     const fileId = uploadedFileId(state);
-    if (fileId) void swRegistryApi.discardFirmwareUpload(fileId).catch(() => undefined);
+    if (fileId) void swFirmwaresApi.discardFirmwareUpload(fileId).catch(() => undefined);
   };
 
   /** Наименование новой прошивки предлагаем по имени файла: чаще всего оно и есть. */

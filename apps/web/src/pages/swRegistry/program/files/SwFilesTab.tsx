@@ -11,8 +11,8 @@ import { Button, Spin, Typography, Upload } from 'antd';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { useNavigate } from 'react-router-dom';
 
-import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
-import { useDetachSwFile, useSwFiles } from '@/api/swRegistry/swRegistryApiHooks';
+import { swFilesApi } from '@/api/swRegistry/files';
+import { useDetachSwFile, useSwFiles } from '@/api/swRegistry/filesHooks';
 import { uploadSwRegistryFile, uploadSwRegistryFileVersion } from '@/api/swRegistry/uploadSwFile';
 import { triggerFileDownload } from '@/components/filePreview/FilePreviewModal';
 import { useOpenAntdDeleteConfirm } from '@/customhooks/confirmDelete';
@@ -100,7 +100,7 @@ export function SwFilesTab({
 
   const handleDownload = async (file: SwRegistryFile, version?: number) => {
     try {
-      const link = await swRegistryApi.getSwFileLink(file.fileId, version);
+      const link = await swFilesApi.getSwFileLink(file.fileId, version);
       triggerFileDownload(link.url, file.filename);
     } catch (err) {
       showNotification('error', 'Ошибка', getApiErrorMessage(err) ?? 'Не удалось получить ссылку на файл');

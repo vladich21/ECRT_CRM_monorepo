@@ -1,7 +1,9 @@
 import { Upload } from 'tus-js-client';
 
 import type { SwFileObjectType, SwFilePurpose } from '../../types/swRegistry';
-import { swRegistryApi } from './swRegistryApi';
+import { swDocumentsApi } from '@/api/swRegistry/documents';
+import { swFilesApi } from '@/api/swRegistry/files';
+import { swFirmwaresApi } from '@/api/swRegistry/firmwares';
 
 export type SwFileUploadMeta = {
   objectType: SwFileObjectType;
@@ -26,7 +28,7 @@ function uploadViaTus(file: File, endpoint: string, metadata: Record<string, str
 }
 
 export async function uploadSwRegistryFile(file: File, meta: SwFileUploadMeta): Promise<string> {
-  const ticket = await swRegistryApi.createSwFileTicket({
+  const ticket = await swFilesApi.createSwFileTicket({
     objectType: meta.objectType,
     objectId: meta.objectId,
     purpose: meta.purpose,
@@ -35,7 +37,7 @@ export async function uploadSwRegistryFile(file: File, meta: SwFileUploadMeta): 
   });
 
   await uploadViaTus(file, ticket.upload.tusEndpoint, ticket.upload.metadata);
-  await swRegistryApi.confirmSwFile(ticket.fileId, {
+  await swFilesApi.confirmSwFile(ticket.fileId, {
     objectType: meta.objectType,
     objectId: meta.objectId,
     purpose: meta.purpose,
@@ -52,13 +54,13 @@ export async function uploadSwRegistryFileVersion(
   remoteFileId: string,
   meta: SwFileUploadMeta,
 ): Promise<void> {
-  const ticket = await swRegistryApi.createSwFileVersionTicket(remoteFileId, {
+  const ticket = await swFilesApi.createSwFileVersionTicket(remoteFileId, {
     filename: file.name,
     contentType: file.type || 'application/octet-stream',
   });
 
   await uploadViaTus(file, ticket.upload.tusEndpoint, ticket.upload.metadata);
-  await swRegistryApi.confirmSwFile(remoteFileId, {
+  await swFilesApi.confirmSwFile(remoteFileId, {
     objectType: meta.objectType,
     objectId: meta.objectId,
     purpose: meta.purpose,
@@ -151,12 +153,12 @@ export function startSwDocumentDraftUpload(
 ): SwDraftUpload {
   return startDraftUpload(file, {
     createTicket: () =>
-      swRegistryApi.createDocumentUploadTicket(opts.itemId, {
+      swDocumentsApi.createDocumentUploadTicket(opts.itemId, {
         documentId: opts.documentId,
         filename: file.name,
         contentType: file.type || 'application/octet-stream',
       }),
-    discardTicket: fileId => void swRegistryApi.discardDocumentUpload(opts.itemId, fileId).catch(() => undefined),
+    discardTicket: fileId => void swDocumentsApi.discardDocumentUpload(opts.itemId, fileId).catch(() => undefined),
     onTicket: opts.onTicket,
     onProgress: opts.onProgress,
   });
@@ -179,12 +181,12 @@ export function startSwFirmwareUpload(
 ): SwDraftUpload {
   return startDraftUpload(file, {
     createTicket: () =>
-      swRegistryApi.createFirmwareUploadTicket({
+      swFirmwaresApi.createFirmwareUploadTicket({
         itemId: opts.itemId,
         filename: file.name,
         contentType: file.type || 'application/octet-stream',
       }),
-    discardTicket: fileId => void swRegistryApi.discardFirmwareUpload(fileId).catch(() => undefined),
+    discardTicket: fileId => void swFirmwaresApi.discardFirmwareUpload(fileId).catch(() => undefined),
     tusOptions: { chunkSize: FIRMWARE_CHUNK_SIZE, retryDelays: [0, 1000, 3000, 5000, 10000, 20000] },
     onTicket: opts.onTicket,
     onProgress: opts.onProgress,

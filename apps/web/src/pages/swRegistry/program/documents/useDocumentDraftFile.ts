@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
+import { swDocumentsApi } from '@/api/swRegistry/documents';
 import { startSwDocumentDraftUpload, type SwDraftUpload } from '@/api/swRegistry/uploadSwFile';
 import type { SvnEntry } from '@/components/svnPicker/svnApi';
 import type { CreateSwDocumentPayload } from '@/types/swRegistry';
@@ -63,13 +63,13 @@ export function useDocumentDraftFile(input: {
 
   const discardUpload = (state: UploadState) => {
     const fileId = uploadedFileId(state);
-    if (fileId) void swRegistryApi.discardDocumentUpload(itemId, fileId).catch(() => undefined);
+    if (fileId) void swDocumentsApi.discardDocumentUpload(itemId, fileId).catch(() => undefined);
   };
 
   const discardStoredSvn = () => {
     const stored = storedSvn.current;
     storedSvn.current = null;
-    if (stored) void swRegistryApi.discardDocumentUpload(itemId, stored.fileId).catch(() => undefined);
+    if (stored) void swDocumentsApi.discardDocumentUpload(itemId, stored.fileId).catch(() => undefined);
   };
 
   // Отказ создания. Файл из SVN, который бэк уже перенёс, запоминаем для повтора. Занятый id документа

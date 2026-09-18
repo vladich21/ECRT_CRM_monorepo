@@ -4,13 +4,9 @@ import { App, Alert, Button, Pagination, Spin } from 'antd';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
-import {
-  useCreateSwItem,
-  useRestoreSwItem,
-  useSwItems,
-  useSwReferences,
-  useSwStructure,
-} from '@/api/swRegistry/swRegistryApiHooks';
+import { useCreateSwItem, useRestoreSwItem, useSwItems } from '@/api/swRegistry/itemsHooks';
+import { useSwReferences } from '@/api/swRegistry/referencesHooks';
+import { useSwStructure } from '@/api/swRegistry/structureHooks';
 import { BackButton } from '@/components/backButton/BackButton';
 import { CanAccess } from '@/components/canAccess/CanAccess';
 import { NotFound } from '@/components/notFound/NotFound';

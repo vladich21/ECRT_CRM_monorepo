@@ -3,11 +3,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { App, Button } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 
-import {
-  useAddSwItemPatentLink,
-  useRemoveSwItemPatentLink,
-  useSwItemPatentLinks,
-} from '@/api/swRegistry/swRegistryApiHooks';
+import { useAddSwItemPatentLink, useRemoveSwItemPatentLink, useSwItemPatentLinks } from '@/api/swRegistry/itemsHooks';
 import { Loader } from '@/components/loader/Loader';
 import { useOpenAntdDeleteConfirm } from '@/hooks/modals/confirmDelete';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';

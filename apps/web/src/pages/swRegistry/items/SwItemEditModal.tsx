@@ -3,7 +3,8 @@ import { Col, Form, Input, Modal, Row, Select } from 'antd';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
-import { useSwReferences, useSwStructure } from '@/api/swRegistry/swRegistryApiHooks';
+import { useSwReferences } from '@/api/swRegistry/referencesHooks';
+import { useSwStructure } from '@/api/swRegistry/structureHooks';
 import type { SwItemDetail, UpdateSwItemPayload } from '@/types/swRegistry';
 import { flattenStructureOptions } from '../structure/swStructureTree';
 import styles from './SwItemEditModal.module.scss';

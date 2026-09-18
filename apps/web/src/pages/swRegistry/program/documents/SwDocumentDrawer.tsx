@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Drawer, Tag } from 'antd';
 
-import { useSwFiles } from '@/api/swRegistry/swRegistryApiHooks';
+import { useSwFiles } from '@/api/swRegistry/filesHooks';
 import { CommentsList } from '@/components/comments/CommentsList';
 import type { SwDocumentListRow } from '@/types/swRegistry';
 

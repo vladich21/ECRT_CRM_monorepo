@@ -4,7 +4,9 @@ import { App, Button, Spin } from 'antd';
 import { useLocation } from 'react-router-dom';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
-import { useSwReferences, useSwStructure, useSwSummary } from '@/api/swRegistry/swRegistryApiHooks';
+import { useSwReferences } from '@/api/swRegistry/referencesHooks';
+import { useSwStructure } from '@/api/swRegistry/structureHooks';
+import { useSwSummary } from '@/api/swRegistry/summaryHooks';
 import { BackButton } from '@/components/backButton/BackButton';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';

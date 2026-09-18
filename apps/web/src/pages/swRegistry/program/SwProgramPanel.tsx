@@ -13,23 +13,12 @@ import { App, Button, Dropdown, Spin, Tag, Tooltip, type MenuProps } from 'antd'
 import { useSearchParams } from 'react-router-dom';
 
 import { commentQueryKeys } from '@/api/comments/commentQueryKeys';
-import { swRegistryApi } from '@/api/swRegistry/swRegistryApi';
-import {
-  useArchiveSwItem,
-  useChangeSwDocumentStatus,
-  useCreateSwDocument,
-  useMarkSwDocumentDeleted,
-  useMarkSwItemDeleted,
-  useRestoreSwDocument,
-  useRestoreSwItem,
-  useSwFiles,
-  useSwFirmwares,
-  useSwItem,
-  useSwItemPatentLinks,
-  useSwReferences,
-  useUpdateSwDocument,
-  useUpdateSwItem,
-} from '@/api/swRegistry/swRegistryApiHooks';
+import { swFilesApi } from '@/api/swRegistry/files';
+import { useChangeSwDocumentStatus, useCreateSwDocument, useMarkSwDocumentDeleted, useRestoreSwDocument, useUpdateSwDocument } from '@/api/swRegistry/documentsHooks';
+import { useSwFiles } from '@/api/swRegistry/filesHooks';
+import { useSwFirmwares } from '@/api/swRegistry/firmwaresHooks';
+import { useArchiveSwItem, useMarkSwItemDeleted, useRestoreSwItem, useSwItem, useSwItemPatentLinks, useUpdateSwItem } from '@/api/swRegistry/itemsHooks';
+import { useSwReferences } from '@/api/swRegistry/referencesHooks';
 import { swRegistryQueryKeys } from '@/api/swRegistry/swRegistryQueryKeys';
 import { uploadSwRegistryFile } from '@/api/swRegistry/uploadSwFile';
 import { DocumentViewerModal } from '@/components/documentViewer/DocumentViewerModal';
@@ -200,7 +189,7 @@ export function SwProgramPanel({
   const queryClient = useQueryClient();
 
   const downloadFile = async (file: SwDocumentFile) => {
-    const link = await swRegistryApi.getSwFileLink(file.fileId);
+    const link = await swFilesApi.getSwFileLink(file.fileId);
     triggerFileDownload(link.url, file.filename);
   };
 

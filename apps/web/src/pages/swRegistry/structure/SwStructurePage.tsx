@@ -3,20 +3,9 @@ import { PlusOutlined } from '@ant-design/icons';
 import { App, Button, Spin } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 
-import {
-  useAddSwResponsible,
-  useArchiveSwStructure,
-  useCreateSwItem,
-  useCreateSwStructure,
-  useMarkSwStructureDeleted,
-  useRemoveSwResponsible,
-  useRestoreSwStructure,
-  useSwItem,
-  useSwItems,
-  useSwReferences,
-  useSwStructure,
-  useUpdateSwStructure,
-} from '@/api/swRegistry/swRegistryApiHooks';
+import { useCreateSwItem, useSwItem, useSwItems } from '@/api/swRegistry/itemsHooks';
+import { useSwReferences } from '@/api/swRegistry/referencesHooks';
+import { useAddSwResponsible, useArchiveSwStructure, useCreateSwStructure, useMarkSwStructureDeleted, useRemoveSwResponsible, useRestoreSwStructure, useSwStructure, useUpdateSwStructure } from '@/api/swRegistry/structureHooks';
 import { BackButton } from '@/components/backButton/BackButton';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';

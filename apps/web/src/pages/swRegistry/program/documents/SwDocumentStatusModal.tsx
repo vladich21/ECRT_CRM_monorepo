@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Col, DatePicker, Form, Input, Modal, Row, Select } from 'antd';
 import dayjs from 'dayjs';
 
-import { useSwDocumentStatuses } from '@/api/swRegistry/swRegistryApiHooks';
+import { useSwDocumentStatuses } from '@/api/swRegistry/documentsHooks';
 import type { ChangeSwDocumentStatusPayload, SwDocumentListRow } from '@/types/swRegistry';
 
 import styles from './SwDocumentStatusModal.module.scss';
