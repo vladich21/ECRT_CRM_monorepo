@@ -59,7 +59,7 @@ import type { SwFileChoice } from './SwFileSourcePicker';
 import { SwFilesTab } from './SwFilesTab';
 import { SwFirmwaresTab } from './SwFirmwaresTab';
 import { SwIpsPlacementModal } from './SwIpsPlacementModal';
-import { SwItemEditModal } from './SwItemEditModal';
+import { SwItemEditModal } from './items/SwItemEditModal';
 import { SwItemRidTab } from './SwItemRidTab';
 import styles from './SwStructurePage.module.scss';
 import { usePartnerShortName } from './usePartnerShortName';

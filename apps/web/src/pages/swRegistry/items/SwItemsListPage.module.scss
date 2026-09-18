@@ -1,0 +1,28 @@
+@use '../../../styles/variables' as v;
+@use '../../../components/pageLayout/listPageShared' as lp;
+
+.wrap {
+  padding: 0;
+}
+.filtersBtnActive { @include lp.filtersBtnActive; }
+.filtersBadge     { @include lp.filtersBadge; }
+.cardList {
+  margin-top: 16px;
+}
+.cardListDimmed {
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+.loading {
+  padding: v.$spacing-4xl;
+  text-align: center;
+}
+.empty {
+  text-align: center;
+  padding: 60px 0;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+.pagination {
+  @include lp.pagination;
+}

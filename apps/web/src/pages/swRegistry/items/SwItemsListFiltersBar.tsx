@@ -3,7 +3,7 @@ import { Input } from 'antd';
 
 import type { SwItemsTabCounts } from '@/types/swRegistry';
 import { SW_ITEMS_FILTER_TABS, type SwItemsFilterTab } from './SwItemsListPage.types';
-import styles from './SwItemsListPage.module.scss';
+import styles from './SwItemsListFiltersBar.module.scss';
 
 type Props = {
   activeTab: SwItemsFilterTab;

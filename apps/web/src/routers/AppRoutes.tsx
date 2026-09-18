@@ -93,7 +93,7 @@ const UserDetailsPage = lazy(() => import('../pages/referenceBooks/users/UserDet
 const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersListPage'));
 const RolesListPage = lazy(() => import('../pages/admin/roles/RolesListPage'));
 const SwStructurePage = lazy(() => import('../pages/swRegistry/SwStructurePage'));
-const SwItemsListPage = lazy(() => import('../pages/swRegistry/SwItemsListPage'));
+const SwItemsListPage = lazy(() => import('../pages/swRegistry/items/SwItemsListPage'));
 const SwSummaryPage = lazy(() => import('../pages/swRegistry/summary/SwSummaryPage'));
 
 const Private = ({ children }: { children: React.ReactNode }) => <PrivateRoute>{children}</PrivateRoute>;

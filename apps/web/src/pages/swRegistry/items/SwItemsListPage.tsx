@@ -29,7 +29,7 @@ import { SwItemCard } from './SwItemCard';
 import { SwItemCreateModal } from './SwItemCreateModal';
 import { SwItemsFiltersModal } from './SwItemsFiltersModal';
 import { SwItemsListFiltersBar } from './SwItemsListFiltersBar';
-import { resolveSwRegistryBackPath, readSwRegistryReturnState } from './swRegistryNavigation';
+import { resolveSwRegistryBackPath, readSwRegistryReturnState } from '../swRegistryNavigation';
 import styles from './SwItemsListPage.module.scss';
 import {
   DEFAULT_SW_ITEMS_FILTERS,

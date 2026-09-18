@@ -11,12 +11,12 @@ import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
 import { exportSwSummaryToExcel } from './swSummaryExportToExcel';
 import { SwFilterTabs } from '../SwFilterTabs';
-import { SwItemsFiltersModal } from '../SwItemsFiltersModal';
+import { SwItemsFiltersModal } from '../items/SwItemsFiltersModal';
 import { SwSummaryTable } from './SwSummaryTable';
 import { buildSwRegistryReturnPath } from '../swRegistryNavigation';
 import { SUMMARY_BY_LABEL, type SummaryBy } from './swSummaryNavigation';
 import styles from './SwSummaryPage.module.scss';
-import type { SwItemsAdvancedFilters } from '../SwItemsListPage.types';
+import type { SwItemsAdvancedFilters } from '../items/SwItemsListPage.types';
 
 const SUMMARY_TABS: { key: SummaryBy; label: string }[] = [
   { key: 'element', label: 'Структурный элемент' },

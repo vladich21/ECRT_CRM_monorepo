@@ -2,8 +2,8 @@ import { RightOutlined, UndoOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 
 import type { SwItemListRow } from '@/types/swRegistry';
-import { usePartnerShortName } from './usePartnerShortName';
-import styles from './SwItemsListPage.module.scss';
+import { usePartnerShortName } from '../usePartnerShortName';
+import styles from './SwItemCard.module.scss';
 
 type Props = {
   item: SwItemListRow;

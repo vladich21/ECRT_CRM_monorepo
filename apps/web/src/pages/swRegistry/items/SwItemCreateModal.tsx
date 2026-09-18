@@ -1,61 +1,85 @@
 import { useEffect } from 'react';
-import { Col, Form, Input, Modal, Row, Select } from 'antd';
+import { Alert, Col, Form, Input, Modal, Row, Select } from 'antd';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
 import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
 import { useSwReferences, useSwStructure } from '@/api/swRegistry/swRegistryApiHooks';
-import type { SwItemDetail, UpdateSwItemPayload } from '@/types/swRegistry';
-import { flattenStructureOptions } from './swStructureTree';
-import styles from './SwRegistryModals.module.scss';
+import type { CreateSwItemPayload } from '@/types/swRegistry';
+import { flattenStructureOptions } from '../swStructureTree';
+import styles from '../SwRegistryModals.module.scss';
 
 interface Props {
   open: boolean;
-  item: SwItemDetail | null;
+  defaultElementId?: string;
   confirmLoading?: boolean;
   onCancel: () => void;
-  onSubmit: (payload: UpdateSwItemPayload) => void;
+  onSubmit: (payload: CreateSwItemPayload) => void;
 }
 
-export function SwItemEditModal({ open, item, confirmLoading, onCancel, onSubmit }: Props) {
-  const [form] = Form.useForm<UpdateSwItemPayload>();
+export function SwItemCreateModal({ open, defaultElementId, confirmLoading, onCancel, onSubmit }: Props) {
+  const [form] = Form.useForm<CreateSwItemPayload>();
   const structureQuery = useSwStructure('active');
   const kindsQuery = useSwReferences('developmentKinds');
   const { data: refData } = useReferenceData(['partners']);
 
   useEffect(() => {
-    if (!open || !item) return;
-    form.setFieldsValue({
-      designation: item.designation,
-      elementId: item.element.id,
-      shortName: item.shortName,
-      fullName: item.fullName,
-      partnerId: item.partner.id,
-      responsibleUserId: item.responsible.id,
-      developmentKindCode: item.developmentKindCode,
-      specUrl: item.specUrl ?? undefined,
-    });
-  }, [open, item, form]);
+    if (!open) return;
+    form.resetFields();
+    if (defaultElementId) {
+      form.setFieldsValue({ elementId: defaultElementId });
+    }
+  }, [open, defaultElementId, form]);
 
   const elementOptions = flattenStructureOptions(structureQuery.data ?? []);
   const kindOptions = (kindsQuery.data ?? [])
     .filter(k => k.isActive !== false)
     .map(k => ({ value: k.code, label: k.name }));
   const partnerOptions = (refData?.partners ?? []).map(p => ({ value: p.id, label: p.name }));
+  const refsFailed = kindsQuery.isError;
+  const structureFailed = structureQuery.isError;
 
   return (
     <Modal
-      title='Изменить программу'
+      title='Добавить программу'
       open={open}
       onCancel={onCancel}
       onOk={() => form.submit()}
       confirmLoading={confirmLoading}
       destroyOnHidden
-      okText='Сохранить'
+      okText='Создать'
       width={780}
     >
       <Form form={form} layout='vertical' className={styles.formCompact} onFinish={onSubmit}>
+        {refsFailed ? (
+          <Alert
+            type='error'
+            showIcon
+            className={styles.alert}
+            message='Не удалось загрузить справочники'
+            description='Проверьте права sw.references и выполнение sw-registry.sql в БД.'
+          />
+        ) : null}
+        {structureFailed ? (
+          <Alert
+            type='error'
+            showIcon
+            className={styles.alert}
+            message='Не удалось загрузить структуру'
+            description='Нужны права sw.structure и хотя бы один элемент в дереве.'
+          />
+        ) : null}
+        {!structureFailed && elementOptions.length === 0 ? (
+          <Alert
+            type='info'
+            showIcon
+            className={styles.alert}
+            message='Элементов структуры пока нет'
+            description='Сначала создайте элемент в разделе «Структура систем».'
+          />
+        ) : null}
+
         <Form.Item name='designation' label='Обозначение' rules={[{ required: true, message: 'Укажите обозначение' }]}>
-          <Input maxLength={100} />
+          <Input maxLength={100} placeholder='РОФ.ГКМН.620013-01' />
         </Form.Item>
 
         <Row gutter={12}>
@@ -66,7 +90,7 @@ export function SwItemEditModal({ open, item, confirmLoading, onCancel, onSubmit
           </Col>
           <Col xs={24} md={10}>
             <Form.Item name='developmentKindCode' label='Вид разработки' rules={[{ required: true, message: 'Выберите вид' }]}>
-              <Select options={kindOptions} />
+              <Select options={kindOptions} loading={kindsQuery.isLoading} />
             </Form.Item>
           </Col>
         </Row>
@@ -76,13 +100,19 @@ export function SwItemEditModal({ open, item, confirmLoading, onCancel, onSubmit
         </Form.Item>
 
         <Form.Item name='elementId' label='Элемент структуры' rules={[{ required: true, message: 'Выберите элемент' }]}>
-          <Select options={elementOptions} showSearch optionFilterProp='label' />
+          <Select
+            options={elementOptions}
+            showSearch
+            optionFilterProp='label'
+            loading={structureQuery.isLoading}
+            placeholder='Система / подсистема'
+          />
         </Form.Item>
 
         <Row gutter={12}>
           <Col xs={24} md={12}>
             <Form.Item name='partnerId' label='Разработчик' rules={[{ required: true, message: 'Выберите контрагента' }]}>
-              <Select options={partnerOptions} showSearch optionFilterProp='label' />
+              <Select options={partnerOptions} showSearch optionFilterProp='label' placeholder='Контрагент' />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>

@@ -1,38 +1,5 @@
-@use '../../styles/variables' as v;
-@use '../../components/pageLayout/listPageShared' as lp;
-
-.wrap {
-  padding: 0;
-}
-
-.filtersBtnActive { @include lp.filtersBtnActive; }
-.filtersBadge     { @include lp.filtersBadge; }
-
-.filtersModalGrid    { @include lp.filtersModalGrid; }
-.filtersModalField   { @include lp.filtersModalField; }
-.filtersModalLabel   { @include lp.filtersModalLabel; }
-.filtersModalControl { @include lp.filtersModalControl; }
-
-.filterSection   { @include lp.filterSection; }
-.filterTabsRow   { @include lp.filterTabsRow; justify-content: space-between; }
-.filterTabsRight { @include lp.filterTabsRight; }
-.searchInTabsRow { @include lp.searchInput; }
-.searchIcon      { @include lp.searchIcon; }
-.resultCount     { @include lp.resultCount; }
-
-.filterTabs      { @include lp.filterTabs; }
-.filterTab       { @include lp.filterTab; }
-.filterTabActive { @include lp.filterTab; @include lp.filterTabActive; }
-.filterTabCount  { @include lp.filterTabCount; }
-
-.cardList {
-  margin-top: 16px;
-}
-
-.cardListDimmed {
-  opacity: 0.65;
-  transition: opacity 0.15s ease;
-}
+@use '../../../styles/variables' as v;
+@use '../../../components/pageLayout/listPageShared' as lp;
 
 .card {
   background: #fff;
@@ -53,12 +20,10 @@
     border-color: #d0e4ff;
   }
 }
-
 .mainInfo {
   flex: 1;
   min-width: 0;
 }
-
 .cardHeading {
   font-weight: 500;
   font-size: 16px;
@@ -66,7 +31,6 @@
   line-height: 1.4;
   margin-bottom: 8px;
 }
-
 .responsibleRow {
   display: flex;
   align-items: center;
@@ -76,7 +40,6 @@
   margin-bottom: 10px;
   min-width: 0;
 }
-
 .responsibleName {
   line-height: 1.4;
   min-width: 0;
@@ -84,14 +47,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .chipsRow {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
-
 .chipTight {
   display: inline-flex;
   align-items: center;
@@ -104,16 +65,13 @@
   background: #fafafa;
   color: #595959;
 }
-
 .kindChip {
   composes: chipTight;
   text-transform: lowercase;
 }
-
 .elementChip {
   composes: chipTight;
 }
-
 .docsChip {
   composes: chipTight;
   border: none;
@@ -121,7 +79,6 @@
   padding-left: 0;
   color: #8c8c8c;
 }
-
 .statusChip {
   font-size: 12px;
   line-height: 1.35;
@@ -129,7 +86,6 @@
   margin-inline-end: 0;
   border-radius: 6px;
 }
-
 .cardTrailing {
   display: flex;
   align-items: center;
@@ -137,31 +93,13 @@
   flex-shrink: 0;
   margin-left: auto;
 }
-
 .activityCol {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
 }
-
 .arrow {
   color: #d9d9d9;
   font-size: 12px;
-}
-
-.loading {
-  padding: v.$spacing-4xl;
-  text-align: center;
-}
-
-.empty {
-  text-align: center;
-  padding: 60px 0;
-  color: #8c8c8c;
-  font-size: 14px;
-}
-
-.pagination {
-  @include lp.pagination;
 }

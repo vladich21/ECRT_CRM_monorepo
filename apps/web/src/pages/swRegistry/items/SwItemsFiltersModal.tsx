@@ -1,8 +1,8 @@
 import { Button, Modal, Select } from 'antd';
 
 import type { SwStructureNode } from '@/types/swRegistry';
-import { flattenStructureOptions } from './swStructureTree';
-import styles from './SwItemsListPage.module.scss';
+import { flattenStructureOptions } from '../swStructureTree';
+import styles from './SwItemsFiltersModal.module.scss';
 import type { SwItemsAdvancedFilters } from './SwItemsListPage.types';
 
 type SelectOption = { label: string; value: string };
