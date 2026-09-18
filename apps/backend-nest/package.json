@@ -11,7 +11,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "test:pagination": "node --import tsx --test src/common/pagination.spec.ts",
-    "test:sw-registry": "node --import tsx --test src/modules/sw-registry/sw-registry.util.spec.ts src/modules/sw-registry/sw-list-query.validation.spec.ts"
+    "test:sw-registry": "node --import tsx --test src/modules/sw-registry/sw-registry.util.spec.ts src/modules/sw-registry/sw-list-query.validation.spec.ts src/shared/decorators/body-payload.spec.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

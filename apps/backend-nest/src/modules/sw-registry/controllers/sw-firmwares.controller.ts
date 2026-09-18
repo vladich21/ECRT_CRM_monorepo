@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -13,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 
+import { BodyPayload } from '../../../shared/decorators/body-payload.decorator';
 import { RequirePermission } from '../../permissions/decorators/permission-meta';
 import { SECTIONS } from '../../../shared/permissions';
 import {
@@ -41,7 +41,7 @@ export class SwFirmwaresController {
   @Post('upload-ticket')
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  ticket(@Body('body') dto: SwFirmwareUploadTicketDto, @Req() req: AuthReq) {
+  ticket(@BodyPayload() dto: SwFirmwareUploadTicketDto, @Req() req: AuthReq) {
     return this.firmwares.createUploadTicket(
       dto.itemId,
       { filename: dto.filename, contentType: dto.contentType },
@@ -60,7 +60,7 @@ export class SwFirmwaresController {
   @Post('versions')
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  createVersion(@Body('body') dto: SwFirmwareCreateVersionDto, @Req() req: AuthReq) {
+  createVersion(@BodyPayload() dto: SwFirmwareCreateVersionDto, @Req() req: AuthReq) {
     return this.firmwares.createVersion(dto.firmwareId, dto, req.user?.user_id);
   }
 
@@ -80,13 +80,13 @@ export class SwFirmwaresController {
   @Post()
   @HttpCode(201)
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  create(@Body('body') dto: SwFirmwareCreateDto, @Req() req: AuthReq) {
+  create(@BodyPayload() dto: SwFirmwareCreateDto, @Req() req: AuthReq) {
     return this.firmwares.createLine(dto.itemId, dto, req.user?.user_id);
   }
 
   @Patch(':id')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body('body') dto: SwFirmwareUpdateDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @BodyPayload() dto: SwFirmwareUpdateDto) {
     return this.firmwares.updateLine(id, dto);
   }
 

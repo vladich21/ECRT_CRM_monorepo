@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 
+import { BodyPayload } from '../../../shared/decorators/body-payload.decorator';
 import { RequirePermission } from '../../permissions/decorators/permission-meta';
 import { SECTIONS } from '../../../shared/permissions';
 import { ChangeSwDocumentStatusDto, UpdateSwDocumentDto } from '../dto/sw-registry.dto';
@@ -21,7 +22,7 @@ export class SwDocumentsController {
 
   @Patch('detail/:id')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  update(@Param('id') id: string, @Body('body') dto: UpdateSwDocumentDto, @Req() req: AuthReq) {
+  update(@Param('id') id: string, @BodyPayload() dto: UpdateSwDocumentDto, @Req() req: AuthReq) {
     return this.documents.update(id, dto, req.user?.user_id);
   }
 
@@ -33,7 +34,7 @@ export class SwDocumentsController {
 
   @Post('detail/:id/status')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  changeStatus(@Param('id') id: string, @Body('body') dto: ChangeSwDocumentStatusDto, @Req() req: AuthReq) {
+  changeStatus(@Param('id') id: string, @BodyPayload() dto: ChangeSwDocumentStatusDto, @Req() req: AuthReq) {
     return this.documents.changeStatus(id, dto, req.user?.user_id);
   }
 

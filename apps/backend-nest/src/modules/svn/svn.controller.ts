@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req } from '@nestjs/common';
 import type { Request } from 'express';
 
+import { BodyPayload } from '../../shared/decorators/body-payload.decorator';
 import { RequirePermission } from '../permissions/decorators/permission-meta';
 import { SECTIONS } from '../../shared/permissions';
 import { SvnAttachService } from './svn-attach.service';
@@ -38,14 +39,14 @@ export class SvnController {
   /** Текущие ревизии файлов в SVN — чтобы показать, где копия в реестре отстала. */
   @Post('revisions')
   @RequirePermission(SECTIONS.SW_ITEMS, 'read')
-  revisions(@Body('body') dto: { paths: string[] }) {
+  revisions(@BodyPayload() dto: { paths: string[] }) {
     return this.svn.currentRevisions(dto?.paths ?? []);
   }
 
   /** Привязка программы к её каталогу в SVN. */
   @Post('link')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
-  link(@Body('body') dto: { itemId: string; path: string }) {
+  link(@BodyPayload() dto: { itemId: string; path: string }) {
     return this.attachService.linkFolder(dto.itemId, dto.path ?? '');
   }
 
@@ -53,7 +54,7 @@ export class SvnController {
   @Post('attach')
   @RequirePermission(SECTIONS.SW_ITEMS, 'edit')
   attach(
-    @Body('body') dto: { objectType: string; objectId: string; path: string; replace?: boolean },
+    @BodyPayload() dto: { objectType: string; objectId: string; path: string; replace?: boolean },
     @Req() req: AuthReq,
   ) {
     return this.attachService.attach({
