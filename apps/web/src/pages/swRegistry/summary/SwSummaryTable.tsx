@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { SwSummaryResponse, SwSummaryRow } from '@/types/swRegistry';
 import { buildSummaryDrillHref, type SummaryBy } from './swSummaryNavigation';
 import { getSummaryStatusShortLabel } from './swSummaryStatusLabels';
-import styles from './SwSummaryPage.module.scss';
+import styles from './SwSummaryTable.module.scss';
 
 type SwSummaryTableProps = {
   by: SummaryBy;

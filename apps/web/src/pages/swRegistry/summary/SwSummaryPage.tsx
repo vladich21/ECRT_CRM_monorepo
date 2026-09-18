@@ -9,15 +9,14 @@ import { BackButton } from '@/components/backButton/BackButton';
 import { NotFound } from '@/components/notFound/NotFound';
 import { PageHeader } from '@/components/pageLayout/PageHeader';
 import { getApiErrorMessage } from '@/hooks/modals/confirmDelete/getApiErrorMessage';
-import { exportSwSummaryToExcel } from './export/swSummaryExportToExcel';
-import { SwFilterTabs } from './SwFilterTabs';
-import { SwItemsFiltersModal } from './SwItemsFiltersModal';
+import { exportSwSummaryToExcel } from './swSummaryExportToExcel';
+import { SwFilterTabs } from '../SwFilterTabs';
+import { SwItemsFiltersModal } from '../SwItemsFiltersModal';
 import { SwSummaryTable } from './SwSummaryTable';
-import { buildSwRegistryReturnPath } from './swRegistryNavigation';
+import { buildSwRegistryReturnPath } from '../swRegistryNavigation';
 import { SUMMARY_BY_LABEL, type SummaryBy } from './swSummaryNavigation';
 import styles from './SwSummaryPage.module.scss';
-import listStyles from './SwItemsListPage.module.scss';
-import type { SwItemsAdvancedFilters } from './SwItemsListPage.types';
+import type { SwItemsAdvancedFilters } from '../SwItemsListPage.types';
 
 const SUMMARY_TABS: { key: SummaryBy; label: string }[] = [
   { key: 'element', label: 'Структурный элемент' },
@@ -106,10 +105,10 @@ export default function SwSummaryPage() {
                 setDraftFilters(appliedFilters);
                 setFiltersOpen(true);
               }}
-              className={activeFiltersCount > 0 ? listStyles.filtersBtnActive : undefined}
+              className={activeFiltersCount > 0 ? styles.filtersBtnActive : undefined}
             >
               Фильтры
-              {activeFiltersCount > 0 ? <span className={listStyles.filtersBadge}>{activeFiltersCount}</span> : null}
+              {activeFiltersCount > 0 ? <span className={styles.filtersBadge}>{activeFiltersCount}</span> : null}
             </Button>
             <Button
               type='default'

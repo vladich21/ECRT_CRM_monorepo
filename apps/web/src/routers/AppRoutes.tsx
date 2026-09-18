@@ -94,7 +94,7 @@ const UsersListPage = lazy(() => import('../pages/referenceBooks/users/UsersList
 const RolesListPage = lazy(() => import('../pages/admin/roles/RolesListPage'));
 const SwStructurePage = lazy(() => import('../pages/swRegistry/SwStructurePage'));
 const SwItemsListPage = lazy(() => import('../pages/swRegistry/SwItemsListPage'));
-const SwSummaryPage = lazy(() => import('../pages/swRegistry/SwSummaryPage'));
+const SwSummaryPage = lazy(() => import('../pages/swRegistry/summary/SwSummaryPage'));
 
 const Private = ({ children }: { children: React.ReactNode }) => <PrivateRoute>{children}</PrivateRoute>;
 

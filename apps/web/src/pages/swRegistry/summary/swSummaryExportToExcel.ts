@@ -2,8 +2,8 @@ import { exportRegistryToExcel } from '@/components/registryExport/registryExpor
 import type { RegistryExportCellValue } from '@/components/registryExport/registryExportTypes';
 import type { SwSummaryResponse, SwSummaryRow } from '@/types/swRegistry';
 
-import { getSummaryStatusShortLabel } from '../swSummaryStatusLabels';
-import { SUMMARY_BY_LABEL, type SummaryBy } from '../swSummaryNavigation';
+import { getSummaryStatusShortLabel } from './swSummaryStatusLabels';
+import { SUMMARY_BY_LABEL, type SummaryBy } from './swSummaryNavigation';
 
 type SummaryExportColumnKey = 'row' | `doc_${string}` | `sheet_${string}`;
 
