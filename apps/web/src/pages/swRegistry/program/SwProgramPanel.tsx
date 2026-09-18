@@ -37,7 +37,7 @@ import type {
   UpdateSwItemPayload,
 } from '@/types/swRegistry';
 
-import { SwItemEditModal } from '../items/SwItemEditModal';
+import { SwItemModal } from '../items/SwItemModal';
 import { SwApprovalSheetModal, type ApprovalSheetSubmit } from '../program/documents/SwApprovalSheetModal';
 import { SwDocumentCreateModal } from '../program/documents/SwDocumentCreateModal';
 import { SwDocumentDrawer, type SwDocumentDrawerTab } from '../program/documents/SwDocumentDrawer';
@@ -514,7 +514,8 @@ export function SwProgramPanel({
         onClose={closeDocument}
       />
 
-      <SwItemEditModal
+      <SwItemModal
+        mode='edit'
         open={editOpen}
         item={detail ?? null}
         confirmLoading={updateItemMut.isPending}

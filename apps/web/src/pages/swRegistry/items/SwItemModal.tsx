@@ -2,34 +2,65 @@ import { useEffect } from 'react';
 import { Alert, Col, Form, Input, Modal, Row, Select } from 'antd';
 
 import { useReferenceData } from '@/api/hooks/useReferences';
-import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
 import { useSwReferences } from '@/api/swRegistry/referencesHooks';
 import { useSwStructure } from '@/api/swRegistry/structureHooks';
-import type { CreateSwItemPayload } from '@/types/swRegistry';
-import { flattenStructureOptions } from '../structure/swStructureTree';
-import styles from './SwItemCreateModal.module.scss';
+import { EmployeeSelect } from '@/components/approvals/EmployeeSelect';
+import type { CreateSwItemPayload, SwItemDetail, UpdateSwItemPayload } from '@/types/swRegistry';
 
-interface Props {
+import { flattenStructureOptions } from '../structure/swStructureTree';
+import styles from './SwItemModal.module.scss';
+
+type Props = {
   open: boolean;
-  defaultElementId?: string;
   confirmLoading?: boolean;
   onCancel: () => void;
-  onSubmit: (payload: CreateSwItemPayload) => void;
-}
+} & (
+  | {
+      mode: 'create';
+      /** Элемент, на котором заводят программу: приходит из «+» в дереве. */
+      defaultElementId?: string;
+      onSubmit: (payload: CreateSwItemPayload) => void;
+    }
+  | {
+      mode: 'edit';
+      item: SwItemDetail | null;
+      onSubmit: (payload: UpdateSwItemPayload) => void;
+    }
+);
 
-export function SwItemCreateModal({ open, defaultElementId, confirmLoading, onCancel, onSubmit }: Props) {
+/**
+ * Программа: заведение и правка. Поля у них одни и те же, разница только в том,
+ * чем заполняется форма и как называются кнопки, поэтому окно одно на оба случая —
+ * раньше это были две копии, которые расходились в мелочах.
+ */
+export function SwItemModal(props: Props) {
+  const { open, confirmLoading, onCancel, mode } = props;
   const [form] = Form.useForm<CreateSwItemPayload>();
   const structureQuery = useSwStructure('active');
   const kindsQuery = useSwReferences('developmentKinds');
   const { data: refData } = useReferenceData(['partners']);
 
+  const item = mode === 'edit' ? props.item : null;
+  const defaultElementId = mode === 'create' ? props.defaultElementId : undefined;
+
   useEffect(() => {
     if (!open) return;
     form.resetFields();
-    if (defaultElementId) {
-      form.setFieldsValue({ elementId: defaultElementId });
+    if (item) {
+      form.setFieldsValue({
+        designation: item.designation,
+        elementId: item.element.id,
+        shortName: item.shortName,
+        fullName: item.fullName,
+        partnerId: item.partner.id,
+        responsibleUserId: item.responsible.id,
+        developmentKindCode: item.developmentKindCode,
+        specUrl: item.specUrl ?? undefined,
+      });
+      return;
     }
-  }, [open, defaultElementId, form]);
+    if (defaultElementId) form.setFieldsValue({ elementId: defaultElementId });
+  }, [open, item, defaultElementId, form]);
 
   const elementOptions = flattenStructureOptions(structureQuery.data ?? []);
   const kindOptions = (kindsQuery.data ?? [])
@@ -39,18 +70,23 @@ export function SwItemCreateModal({ open, defaultElementId, confirmLoading, onCa
   const refsFailed = kindsQuery.isError;
   const structureFailed = structureQuery.isError;
 
+  const submit = (values: CreateSwItemPayload) => {
+    if (props.mode === 'edit') props.onSubmit(values as UpdateSwItemPayload);
+    else props.onSubmit(values);
+  };
+
   return (
     <Modal
-      title='Добавить программу'
+      title={mode === 'edit' ? 'Изменить программу' : 'Добавить программу'}
       open={open}
       onCancel={onCancel}
       onOk={() => form.submit()}
       confirmLoading={confirmLoading}
       destroyOnHidden
-      okText='Создать'
+      okText={mode === 'edit' ? 'Сохранить' : 'Создать'}
       width={780}
     >
-      <Form form={form} layout='vertical' className={styles.formCompact} onFinish={onSubmit}>
+      <Form form={form} layout='vertical' className={styles.formCompact} onFinish={submit}>
         {refsFailed ? (
           <Alert
             type='error'
@@ -85,18 +121,30 @@ export function SwItemCreateModal({ open, defaultElementId, confirmLoading, onCa
 
         <Row gutter={12}>
           <Col xs={24} md={14}>
-            <Form.Item name='shortName' label='Краткое наименование' rules={[{ required: true, message: 'Укажите краткое наименование' }]}>
+            <Form.Item
+              name='shortName'
+              label='Краткое наименование'
+              rules={[{ required: true, message: 'Укажите краткое наименование' }]}
+            >
               <Input maxLength={255} />
             </Form.Item>
           </Col>
           <Col xs={24} md={10}>
-            <Form.Item name='developmentKindCode' label='Вид разработки' rules={[{ required: true, message: 'Выберите вид' }]}>
+            <Form.Item
+              name='developmentKindCode'
+              label='Вид разработки'
+              rules={[{ required: true, message: 'Выберите вид' }]}
+            >
               <Select options={kindOptions} loading={kindsQuery.isLoading} />
             </Form.Item>
           </Col>
         </Row>
 
-        <Form.Item name='fullName' label='Полное наименование' rules={[{ required: true, message: 'Укажите полное наименование' }]}>
+        <Form.Item
+          name='fullName'
+          label='Полное наименование'
+          rules={[{ required: true, message: 'Укажите полное наименование' }]}
+        >
           <Input maxLength={500} />
         </Form.Item>
 
@@ -112,12 +160,20 @@ export function SwItemCreateModal({ open, defaultElementId, confirmLoading, onCa
 
         <Row gutter={12}>
           <Col xs={24} md={12}>
-            <Form.Item name='partnerId' label='Разработчик' rules={[{ required: true, message: 'Выберите контрагента' }]}>
+            <Form.Item
+              name='partnerId'
+              label='Разработчик'
+              rules={[{ required: true, message: 'Выберите контрагента' }]}
+            >
               <Select options={partnerOptions} showSearch optionFilterProp='label' placeholder='Контрагент' />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item name='responsibleUserId' label='Ответственный' rules={[{ required: true, message: 'Выберите ответственного' }]}>
+            <Form.Item
+              name='responsibleUserId'
+              label='Ответственный'
+              rules={[{ required: true, message: 'Выберите ответственного' }]}
+            >
               <EmployeeSelect />
             </Form.Item>
           </Col>

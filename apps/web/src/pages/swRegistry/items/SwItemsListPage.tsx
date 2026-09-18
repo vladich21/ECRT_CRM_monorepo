@@ -22,7 +22,7 @@ import {
 import { SECTIONS } from '@/shared/permissions';
 import type { CreateSwItemPayload, SwItemListRow, SwItemsTabCounts } from '@/types/swRegistry';
 import { SwItemCard } from './SwItemCard';
-import { SwItemCreateModal } from './SwItemCreateModal';
+import { SwItemModal } from './SwItemModal';
 import { SwItemsFiltersModal } from './SwItemsFiltersModal';
 import { SwItemsListFiltersBar } from './SwItemsListFiltersBar';
 import { resolveSwRegistryBackPath, readSwRegistryReturnState } from '../shared/swRegistryNavigation';
@@ -334,7 +334,8 @@ export default function SwItemsListPage() {
         </>
       )}
 
-      <SwItemCreateModal
+      <SwItemModal
+        mode='create'
         open={createOpen}
         defaultElementId={elementId}
         confirmLoading={createMut.isPending}

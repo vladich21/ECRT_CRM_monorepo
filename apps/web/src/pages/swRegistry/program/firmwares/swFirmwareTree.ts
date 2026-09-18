@@ -9,11 +9,6 @@ export type FirmwareTreeRow = {
   children?: FirmwareTreeRow[];
 };
 
-export function formatDate(value: string | null): string {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString('ru-RU');
-}
-
 export function toTree(firmwares: SwFirmware[]): FirmwareTreeRow[] {
   return firmwares.map(firmware => {
     const [current, ...history] = firmware.versions ?? [];

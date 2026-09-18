@@ -3,10 +3,8 @@ import { useOutletContext } from 'react-router-dom';
 
 import styles from '../ProjectDetails.module.scss';
 import type { ProjectDetailsOutletContext } from './projectDetailsOutletContext';
+import { formatDateRu } from '@/utils/formatDate';
 
-function formatDate(dateStr: string) {
-  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '-';
-}
 
 function getInitials(name: string) {
   return name
@@ -39,7 +37,7 @@ export default function ProjectDetailsMainTab() {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{formatDate(project.start_date)}</div>
+                <div className={styles.kpiValue}>{formatDateRu(project.start_date, '-')}</div>
                 <div className={styles.kpiLabel}>Начало</div>
               </div>
               <div className={styles.kpiIcon}>
@@ -50,7 +48,7 @@ export default function ProjectDetailsMainTab() {
           <div className={styles.kpiTile}>
             <div className={styles.kpiContent}>
               <div>
-                <div className={styles.kpiValue}>{formatDate(project.end_date)}</div>
+                <div className={styles.kpiValue}>{formatDateRu(project.end_date, '-')}</div>
                 <div className={styles.kpiLabel}>Окончание</div>
               </div>
               <div className={styles.kpiIcon}>

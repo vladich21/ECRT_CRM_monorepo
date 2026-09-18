@@ -14,7 +14,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { SECTIONS } from '@/shared/permissions';
 import type { CreateSwItemPayload, SwItemListRow, SwStructureNode } from '@/types/swRegistry';
 
-import { SwItemCreateModal } from '../items/SwItemCreateModal';
+import { SwItemModal } from '../items/SwItemModal';
 import { SwProgramPanel } from '../program/SwProgramPanel';
 import { SwStructureDetailPanel, type SwStructureDetailActions } from './SwStructureDetailPanel';
 import { SwStructureElementModal } from './SwStructureElementModal';
@@ -402,7 +402,8 @@ export default function SwStructurePage() {
         onCancel={() => setModalState(null)}
         onSubmit={submitModal}
       />
-      <SwItemCreateModal
+      <SwItemModal
+        mode='create'
         open={programTarget != null}
         defaultElementId={programTarget?.id}
         confirmLoading={createProgramMut.isPending}

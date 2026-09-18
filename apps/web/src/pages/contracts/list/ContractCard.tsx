@@ -11,6 +11,7 @@ import {
   formatProjectChipLabel,
 } from '../utils/contractDetailsUtils';
 import styles from './ContractsListPage.module.scss';
+import { formatDateRu } from '@/utils/formatDate';
 
 type Refs =
   | Pick<
@@ -19,9 +20,6 @@ type Refs =
     >
   | null;
 
-function formatDate(dateStr: string) {
-  return dateStr ? new Date(dateStr).toLocaleDateString('ru-RU') : '-';
-}
 type Props = {
   contract: Contract;
   refs: Refs;
@@ -37,7 +35,7 @@ export function ContractCard({ contract, refs, onClick }: Props) {
   const effectiveTagClass = contract.is_active ? styles.contractEffectiveTag : styles.contractInactiveTag;
   const periodStr =
     contract.start_date || contract.end_date
-      ? [contract.start_date, contract.end_date].filter(Boolean).map(formatDate).join(' - ')
+      ? [contract.start_date, contract.end_date].filter(Boolean).map(d => formatDateRu(d, '-')).join(' - ')
       : '-';
   const amountExclStr = formatRub(contract.amount_excl_vat);
   const amountInclStr = formatRub(contract.amount_incl_vat);

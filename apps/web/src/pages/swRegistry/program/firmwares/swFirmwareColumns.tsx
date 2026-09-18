@@ -6,7 +6,9 @@ import type { SwFirmware, SwFirmwareVersion } from '@/types/swRegistry';
 import { formatFileSize } from '@/utils/formatFileSize';
 
 import styles from './SwFirmwaresTab.module.scss';
-import { formatDate, type FirmwareTreeRow } from './swFirmwareTree';
+import { formatDateRu } from '@/utils/formatDate';
+
+import { type FirmwareTreeRow } from './swFirmwareTree';
 
 /** Действия строки: у прошивки своё меню, у прежней версии — только скачать и удалить. */
 export type FirmwareRowActions = {
@@ -73,7 +75,7 @@ export function buildFirmwareColumns({
       title: 'Сборка',
       key: 'builtAt',
       width: 120,
-      render: (_, row) => formatDate(row.version?.builtAt ?? null),
+      render: (_, row) => formatDateRu(row.version?.builtAt ?? null),
     },
     {
       title: 'Загружена',
@@ -82,7 +84,7 @@ export function buildFirmwareColumns({
       render: (_, row) => {
         if (!row.version) return '—';
         const who = row.version.createdByName ? `, ${row.version.createdByName}` : '';
-        return `${formatDate(row.version.createdAt)}${who}`;
+        return `${formatDateRu(row.version.createdAt)}${who}`;
       },
     },
     {
