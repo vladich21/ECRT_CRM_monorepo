@@ -33,6 +33,7 @@ import {
   type SwStoredSvnFile,
 } from './swDocumentCreateWarnings';
 import { parseSwDocumentFilename } from './swDocumentFilename';
+import { useDocumentDraftFile } from './useDocumentDraftFile';
 
 const LETTER_OPTIONS = ['О', 'О₁', 'О₂', 'А', 'Б', 'В'].map(value => ({ value, label: value }));
 
@@ -103,15 +104,14 @@ export function SwDocumentCreateModal({
 }: Props) {
   const [form] = Form.useForm<FormValues>();
   const kindsQuery = useSwReferences('documentKinds');
+  const draft = useDocumentDraftFile({
+    open,
+    itemId,
+    svnEnabled,
+    submitError,
+    onFilename: name => applyFilename(name),
+  });
 
-  const [documentId, setDocumentId] = useState(newDocumentId);
-  const [source, setSource] = useState<FileSource>(svnEnabled ? 'svn' : 'upload');
-  const [svnFile, setSvnFile] = useState<SvnEntry | null>(null);
-  const [svnPickerOpen, setSvnPickerOpen] = useState(false);
-  const [upload, setUpload] = useState<UploadState>({ status: 'idle' });
-  const uploadHandle = useRef<SwDraftUpload | null>(null);
-  /** Файл из SVN, уже перенесённый бэком при отказе создания: повтор берёт его, а не качает заново. */
-  const storedSvn = useRef<SwStoredSvnFile | null>(null);
   /** Поля, которые человек правил сам: разбор имени файла их не трогает. */
   const manualFields = useRef(new Set<keyof FormValues>());
   /** Последние собранные значения: поле следует за видом и номером, пока совпадает с ними. */
@@ -133,12 +133,6 @@ export function SwDocumentCreateModal({
     if (!open) return;
     form.resetFields();
     form.setFieldsValue({ sheetsCount: 1, withApprovalSheet: sheetAllowed });
-    setDocumentId(newDocumentId());
-    setSource(svnEnabled ? 'svn' : 'upload');
-    setSvnFile(null);
-    setUpload({ status: 'idle' });
-    uploadHandle.current = null;
-    storedSvn.current = null;
     manualFields.current = new Set();
     derived.current = {};
   }, [open, sheetAllowed, svnEnabled, form]);
@@ -193,91 +187,6 @@ export function SwDocumentCreateModal({
     syncDerivedFields();
   };
 
-  const discardUpload = (state: UploadState) => {
-    const fileId = uploadedFileId(state);
-    if (fileId) void swRegistryApi.discardDocumentUpload(itemId, fileId).catch(() => undefined);
-  };
-
-  const discardStoredSvn = () => {
-    const stored = storedSvn.current;
-    storedSvn.current = null;
-    if (stored) void swRegistryApi.discardDocumentUpload(itemId, stored.fileId).catch(() => undefined);
-  };
-
-  // Отказ создания. Файл из SVN, который бэк уже перенёс, запоминаем для повтора. Занятый id документа
-  // (случайное совпадение) — резервируем новый; файлы записаны на прежний id, поэтому выбрать их заново.
-  useEffect(() => {
-    if (submitError == null) return;
-    const stored = storedSvnFileFromError(submitError);
-    if (stored) {
-      storedSvn.current = stored;
-      return;
-    }
-    if (isDocumentIdTakenError(submitError)) {
-      uploadHandle.current?.abort();
-      uploadHandle.current = null;
-      discardUpload(upload);
-      discardStoredSvn();
-      setUpload({ status: 'idle' });
-      setSvnFile(null);
-      setDocumentId(newDocumentId());
-    }
-  }, [submitError]);
-
-  const startUpload = (file: File) => {
-    uploadHandle.current?.abort();
-    discardUpload(upload);
-    setUpload({ status: 'uploading', filename: file.name, size: file.size, percent: 0 });
-    applyFilename(file.name);
-
-    // Ответы прежней (заменённой или отменённой) загрузки могут прийти позже — применяем только текущую.
-    const isCurrent = () => uploadHandle.current === handle && !handle.isAborted();
-    const handle = startSwDocumentDraftUpload(file, {
-      itemId,
-      documentId,
-      onTicket: ticket => {
-        if (!isCurrent()) return;
-        setUpload(current => (current.status === 'uploading' ? { ...current, fileId: ticket.fileId } : current));
-      },
-      onProgress: percent => {
-        if (!isCurrent()) return;
-        setUpload(current => (current.status === 'uploading' ? { ...current, percent } : current));
-      },
-    });
-    uploadHandle.current = handle;
-    handle.promise
-      .then(ticket => {
-        if (!isCurrent()) return;
-        setUpload({ status: 'done', filename: file.name, size: file.size, ...ticket });
-      })
-      .catch(() => {
-        if (!isCurrent()) return;
-        setUpload(current => ({
-          status: 'error',
-          filename: file.name,
-          message: 'Не удалось загрузить файл — выберите его ещё раз',
-          fileId: uploadedFileId(current),
-        }));
-      });
-  };
-
-  const changeSource = (next: FileSource) => {
-    if (next === source) return;
-    // Файл прежнего источника никому не нужен — сразу от него отказываемся.
-    uploadHandle.current?.abort();
-    discardUpload(upload);
-    discardStoredSvn();
-    setUpload({ status: 'idle' });
-    setSource(next);
-  };
-
-  const handleCancel = () => {
-    uploadHandle.current?.abort();
-    discardUpload(upload);
-    discardStoredSvn();
-    onCancel();
-  };
-
   const saveWarnings = useMemo(
     () => (submitError != null ? buildDocumentCreateSaveWarnings(submitError) : {}),
     [submitError],
@@ -287,36 +196,22 @@ export function SwDocumentCreateModal({
     ? existingDocuments.find(d => d.designation === designation.trim() && d.recordState !== 'deleted')
     : undefined;
 
-  const fileReady = source === 'svn' ? Boolean(svnFile) : upload.status === 'done';
-
   const kindOptions = (kindsQuery.data ?? [])
     .filter(k => k.isActive !== false)
     .map(k => ({ value: k.code, label: k.gostCode ? `${k.gostCode} · ${k.name}` : k.name }));
 
-  const svnPayload = (entry: SvnEntry): CreateSwDocumentPayload['file'] => {
-    const stored = storedSvn.current?.path === entry.path ? storedSvn.current : null;
-    return stored
-      ? {
-          source: 'svn',
-          path: entry.path,
-          storedFileId: stored.fileId,
-          revision: stored.revision,
-          repoUuid: stored.repoUuid,
-        }
-      : { source: 'svn', path: entry.path };
+  /** Отмена: залитый и перенесённый файлы не должны осиротеть в хранилище. */
+  const handleCancel = () => {
+    draft.discardAll();
+    onCancel();
   };
 
   const handleFinish = (values: FormValues) => {
-    if (!fileReady || !values.documentKindCode || !values.kindSequenceNo || !values.sheetsCount) return;
-    const file: CreateSwDocumentPayload['file'] =
-      source === 'svn'
-        ? svnPayload(svnFile!)
-        : upload.status === 'done'
-          ? { source: 'upload', fileId: upload.fileId, versionId: upload.versionId, filename: upload.filename }
-          : (undefined as never);
+    if (!draft.fileReady || !values.documentKindCode || !values.kindSequenceNo || !values.sheetsCount) return;
+    const file = draft.filePayload();
 
     const payload: CreateSwDocumentPayload = {
-      id: documentId,
+      id: draft.documentId,
       file,
       documentKindCode: values.documentKindCode,
       kindSequenceNo: values.kindSequenceNo,
@@ -341,7 +236,7 @@ export function SwDocumentCreateModal({
       onCancel={handleCancel}
       onOk={() => form.submit()}
       confirmLoading={confirmLoading}
-      okButtonProps={{ disabled: !fileReady }}
+      okButtonProps={{ disabled: !draft.fileReady }}
       maskClosable={false}
       destroyOnHidden
       okText='Создать'
@@ -367,8 +262,8 @@ export function SwDocumentCreateModal({
               className={styles.fileSourceSwitch}
               optionType='button'
               size='small'
-              value={source}
-              onChange={e => changeSource(e.target.value as FileSource)}
+              value={draft.source}
+              onChange={e => draft.changeSource(e.target.value as FileSource)}
               options={[
                 { label: 'Из SVN', value: 'svn' },
                 { label: 'С компьютера', value: 'upload' },
@@ -376,56 +271,60 @@ export function SwDocumentCreateModal({
             />
           ) : null}
 
-          {source === 'svn' ? (
+          {draft.source === 'svn' ? (
             <div className={styles.fileRow}>
-              {svnFile ? (
+              {draft.svnFile ? (
                 <>
                   <FileOutlined />
-                  <span className={styles.fileName} title={svnFile.path}>
-                    {svnFile.name}
+                  <span className={styles.fileName} title={draft.svnFile.path}>
+                    {draft.svnFile.name}
                   </span>
-                  {svnFile.revision != null ? <span className={styles.fileMeta}>r{svnFile.revision}</span> : null}
-                  {svnFile.size != null ? (
-                    <span className={styles.fileMeta}>{formatFileSize(svnFile.size)}</span>
+                  {draft.svnFile.revision != null ? (
+                    <span className={styles.fileMeta}>r{draft.svnFile.revision}</span>
+                  ) : null}
+                  {draft.svnFile.size != null ? (
+                    <span className={styles.fileMeta}>{formatFileSize(draft.svnFile.size)}</span>
                   ) : null}
                 </>
               ) : (
                 <span className={styles.fileEmpty}>Файл не выбран</span>
               )}
-              <Button size='small' icon={<FolderOpenOutlined />} onClick={() => setSvnPickerOpen(true)}>
-                {svnFile ? 'Выбрать другой' : 'Выбрать в SVN'}
+              <Button size='small' icon={<FolderOpenOutlined />} onClick={() => draft.setSvnPickerOpen(true)}>
+                {draft.svnFile ? 'Выбрать другой' : 'Выбрать в SVN'}
               </Button>
             </div>
           ) : (
             <>
               <div className={styles.fileRow}>
-                {upload.status === 'idle' ? (
+                {draft.upload.status === 'idle' ? (
                   <span className={styles.fileEmpty}>Файл не выбран</span>
                 ) : (
                   <>
                     <FileOutlined />
-                    <span className={styles.fileName} title={upload.filename}>
-                      {upload.filename}
+                    <span className={styles.fileName} title={draft.upload.filename}>
+                      {draft.upload.filename}
                     </span>
-                    {'size' in upload ? <span className={styles.fileMeta}>{formatFileSize(upload.size)}</span> : null}
+                    {'size' in draft.upload ? (
+                      <span className={styles.fileMeta}>{formatFileSize(draft.upload.size)}</span>
+                    ) : null}
                   </>
                 )}
                 <Upload
                   showUploadList={false}
                   multiple={false}
                   beforeUpload={file => {
-                    startUpload(file);
+                    draft.startUpload(file);
                     return false;
                   }}
                 >
-                  <Button size='small' icon={<CloudUploadOutlined />} loading={upload.status === 'uploading'}>
-                    {upload.status === 'idle' ? 'Выбрать файл' : 'Выбрать другой'}
+                  <Button size='small' icon={<CloudUploadOutlined />} loading={draft.upload.status === 'uploading'}>
+                    {draft.upload.status === 'idle' ? 'Выбрать файл' : 'Выбрать другой'}
                   </Button>
                 </Upload>
               </div>
-              {upload.status === 'uploading' ? <Progress percent={upload.percent} size='small' /> : null}
-              {upload.status === 'error' ? (
-                <Alert type='error' showIcon className={styles.alert} message={upload.message} />
+              {draft.upload.status === 'uploading' ? <Progress percent={draft.upload.percent} size='small' /> : null}
+              {draft.upload.status === 'error' ? (
+                <Alert type='error' showIcon className={styles.alert} message={draft.upload.message} />
               ) : null}
             </>
           )}
@@ -533,18 +432,13 @@ export function SwDocumentCreateModal({
         ) : null}
       </Form>
 
-      {svnPickerOpen ? (
+      {draft.svnPickerOpen ? (
         <SvnPickerModal
           open
           mode='select'
           startPath={svnFolderPath ?? ''}
-          onClose={() => setSvnPickerOpen(false)}
-          onSelect={entry => {
-            // Перенесённый файл относится к прежнему выбору — при смене файла он не нужен.
-            if (storedSvn.current && storedSvn.current.path !== entry.path) discardStoredSvn();
-            setSvnFile(entry);
-            applyFilename(entry.name);
-          }}
+          onClose={() => draft.setSvnPickerOpen(false)}
+          onSelect={draft.pickSvnFile}
         />
       ) : null}
     </Modal>
