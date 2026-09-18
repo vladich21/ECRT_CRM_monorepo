@@ -54,16 +54,50 @@
 }
 
 @mixin programMeta {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: v.$spacing-xl v.$spacing-4xl;
   margin: v.$spacing-xl 0 0;
   padding-top: v.$spacing-xl;
   border-top: 1px solid v.$border-tertiary;
 }
 
+@mixin metaCellBase {
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-2xs;
+  min-width: 0;
+
+  dt {
+    font-size: v.$font-sm;
+    line-height: v.$line-height-normal;
+    color: v.$text-quaternary;
+  }
+
+  dd {
+    display: flex;
+    align-items: center;
+    gap: v.$spacing-xs;
+    min-width: 0;
+    min-height: 24px;
+    margin: 0;
+    font-size: v.$font-base;
+    line-height: v.$line-height-normal;
+    color: v.$text-secondary;
+
+    :global(.ant-btn-link) {
+      height: auto;
+      padding-inline: 0;
+    }
+  }
+}
+
+@mixin metaCell {
+  @include metaCellBase;
+}
+
 @mixin metaCellWide {
-  flex: 1 1 260px;
+  @include metaCellBase;
 }
 
 @mixin metaLink {

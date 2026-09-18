@@ -167,13 +167,12 @@
 .programHeadName { @include l.programHeadName; }
 .programMeta { @include l.programMeta; }
 .metaCellWide { @include l.metaCellWide; }
-.metaCellWide { @include l.metaCellWide; }
 .metaEmpty {
   color: v.$text-placeholder;
 }
 .metaCellFull {
   display: flex;
-  flex: 1 1 100%;
+  grid-column: 1 / -1;
   flex-direction: column;
   gap: v.$spacing-2xs;
   min-width: 0;

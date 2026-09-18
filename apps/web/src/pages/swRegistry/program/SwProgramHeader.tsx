@@ -130,33 +130,31 @@ export function SwProgramHeader({
           </div>
         ) : null}
         {svnEnabled ? (
-          <div className={styles.metaCellWide}>
+          <div className={styles.metaCell}>
             <dt>Каталог в SVN</dt>
             <dd>
               {folderPath ? (
-                <span className={styles.metaText} title={folderPath}>
-                  {folderPath}
-                </span>
-              ) : (
-                <span className={styles.metaEmpty}>не привязан</span>
-              )}
-              {canEditItem ? (
-                folderPath ? (
-                  <Tooltip title='Изменить каталог'>
-                    <Button
-                      type='text'
-                      size='small'
-                      className={styles.metaAction}
-                      icon={<EditOutlined />}
-                      aria-label='Изменить каталог в SVN'
-                      onClick={onPickFolder}
-                    />
-                  </Tooltip>
-                ) : (
-                  <Button type='link' size='small' onClick={onPickFolder}>
-                    Привязать
-                  </Button>
-                )
+                <>
+                  <span className={styles.metaText} title={folderPath}>
+                    {folderPath}
+                  </span>
+                  {canEditItem ? (
+                    <Tooltip title='Изменить каталог'>
+                      <Button
+                        type='text'
+                        size='small'
+                        className={styles.metaAction}
+                        icon={<EditOutlined />}
+                        aria-label='Изменить каталог в SVN'
+                        onClick={onPickFolder}
+                      />
+                    </Tooltip>
+                  ) : null}
+                </>
+              ) : canEditItem ? (
+                <Button type='link' size='small' onClick={onPickFolder}>
+                  Привязать
+                </Button>
               ) : null}
             </dd>
           </div>

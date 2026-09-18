@@ -15,20 +15,13 @@
   color: v.$text-tertiary;
 }
 .programMeta { @include l.programMeta; }
-.metaCellWide { @include l.metaCellWide; }
-.metaCell {
-  flex: 0 1 auto;
-  max-width: 100%;
-}
+.metaCell { @include l.metaCell; }
 .metaCellWide { @include l.metaCellWide; }
 .metaText {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.metaEmpty {
-  color: v.$text-placeholder;
 }
 .metaAction {
   flex: none;
